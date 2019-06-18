@@ -1,0 +1,20 @@
+[[source]]
+url = "https://pypi.org/simple"
+name = "pypi"
+verify_ssl = true
+
+[packages]
+pytest = "*"
+pytest-pylint = "*"
+pytest-codestyle = "*"
+pytest-pydocstyle = "*"
+pytest-cov = "*"
+coverage = "*"
+coveralls = "*"
+
+[dev-packages]
+pytest = {version = "*",index = "nexus"}
+codecov = "*"
+
+[requires]
+python_version = "3.6"

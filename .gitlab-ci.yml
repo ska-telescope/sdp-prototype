@@ -1,1 +1,21 @@
-image: python:3.6-slim
+#image: "python:latest"
+#
+#variables:
+#  PIP_CACHE_DIR: "${CI_PROJECT_DIR}/.cache/pip"
+#cache:
+#  paths: [.cache/pip, venv]
+#
+#stages:
+#  - test
+#
+#test:
+#  stage: test
+#  script:
+#    - docker run --rm -it
+#        -v "$(pwd)":$(pwd)":rw
+#        -w "$(pwd)"
+#        --entrypoint=./scripts/run_test.sh
+#        skaorca/tango_python_dev:latest
+#        src/tango_scaling_test.sh
+#  coverage: coveralls
+

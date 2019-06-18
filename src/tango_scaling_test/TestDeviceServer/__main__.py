@@ -13,7 +13,11 @@ from TestDevice import TestDevice
 
 
 def init_callback():
-    """Callback called post server initialisation."""
+    """Report server start up times.
+
+    This callback is executed post server initialisation.
+    """
+    # pylint: disable=global-statement
     global START_TIME
     db = tango.Database()
     elapsed = time.time() - START_TIME
@@ -27,7 +31,7 @@ def init_callback():
 
 
 def delete_server():
-    """."""
+    """Delete the TestDeviceServer from the tango db."""
     db = tango.Database()
     db.set_timeout_millis(50000)
     server = 'TestDeviceServer/1'
@@ -41,11 +45,12 @@ def delete_server():
 
 
 def register(num_devices):
-    """."""
+    """Register devices in the tango db."""
     db = tango.Database()
     device_info = tango.DbDevInfo()
 
     device_info.server = 'TestDeviceServer/1'
+    # pylint: disable=protected-access
     device_info._class = 'TestDevice'
 
     start_time = time.time()
@@ -60,7 +65,7 @@ def register(num_devices):
 
 
 def list_devices():
-    """."""
+    """List tango devices associated with the TestDeviceServer."""
     db = tango.Database()
     server_instance = 'TestDeviceServer/1'
     device_class = 'TestDevice'
@@ -72,6 +77,7 @@ def list_devices():
 
 
 def main(args=None, **kwargs):
+    """Run (start) the device server."""
     run([TestDevice], verbose=True, msg_stream=sys.stdout,
         post_init_callback=init_callback, raises=False,
         args=args, **kwargs)
@@ -79,18 +85,18 @@ def main(args=None, **kwargs):
 
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser(description='Device registration time.')
-    parser.add_argument('num_devices', metavar='N', type=int,
+    PARSER = argparse.ArgumentParser(description='Device registration time.')
+    PARSER.add_argument('num_devices', metavar='N', type=int,
                         default=1, nargs='?',
                         help='Number of devices to start.')
-    args = parser.parse_args()
+    ARGS = PARSER.parse_args()
     delete_server()
     time.sleep(0.5)
 
     list_devices()
-    print('* Registering {} devices'.format(args.num_devices))
+    print('* Registering {} devices'.format(ARGS.num_devices))
 
-    register(args.num_devices)
+    register(ARGS.num_devices)
 
     list_devices()
 
