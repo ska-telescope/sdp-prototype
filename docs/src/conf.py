@@ -31,11 +31,9 @@ def setup(app):
     app.add_javascript('js/github.js')
 
 
-
 # -- Project information -----------------------------------------------------
-
 project = 'developer.skatelescope.org'
-copyright = '2019, SKA Organization'
+copyright = '2019, ORCA team'
 author = 'ORCA team'
 
 
@@ -113,9 +111,9 @@ html_theme = 'sphinx_rtd_theme'
 # documentation.
 #
 html_theme_options = {
-    #'logo_only' : False,
-    #'logo_only' : 'ska_logo.jpg',
-    #'logo' : 'ska_logo.jpg',
+    # 'logo_only' : False,
+    # 'logo_only' : 'ska_logo.jpg',
+    # 'logo' : 'ska_logo.jpg',
 }
 
 html_context = {
@@ -179,20 +177,26 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
-latex_documents = [
-    (master_doc, 'developerskatelescopeorg.tex', 'developer.skatelescope.org Documentation',
-     'Marco Bartolini', 'manual'),
-]
+latex_documents = [(
+    master_doc,
+    'developerskatelescopeorg.tex',
+    'developer.skatelescope.org Documentation',
+    'Marco Bartolini',
+    'manual'
+)]
 
 
 # -- Options for manual page output ---------------------------------------
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [
-    (master_doc, 'developerskatelescopeorg', 'developer.skatelescope.org Documentation',
-     [author], 1)
-]
+man_pages = [(
+    master_doc,
+    'developerskatelescopeorg',
+    'developer.skatelescope.org Documentation',
+    [author],
+    1
+)]
 
 
 # -- Options for Texinfo output ----------------------------------------------
