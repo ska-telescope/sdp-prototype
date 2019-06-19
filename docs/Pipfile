@@ -1,0 +1,21 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[[source]]
+name = "nexus"
+url = "https://nexus.engageska-portugal.pt/repository/pypi/simple"
+verify_ssl = true
+
+[dev-packages]
+sphinx-autobuild = {version = "*",index = "nexus"}
+
+[packages]
+m2r = "*"
+sphinx = {version = "*",index = "nexus"}
+sphinx-rtd-theme = {version = "*",index = "nexus"}
+sphinxcontrib-websupport = {version = "*",index = "nexus"}
+
+[requires]
+python_version = "3.6"

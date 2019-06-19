@@ -1,1 +1,7 @@
 **/build/
+**/.idea/
+**/.bash_history
+**/.cache
+**/.local
+**/__pycache__
+.coverage

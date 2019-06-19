@@ -1,0 +1,39 @@
+version: '3.6'
+
+volumes:
+  tango_mysql:
+
+services:
+  tango_database:
+    image: skasip/tango_database:1.0.4
+    container_name: tango_database
+    ports:
+      - 10000:10000
+    environment:
+      - MYSQL_HOST=tango_mysql:3306
+      - MYSQL_USER=tango
+      - MYSQL_PASSWORD=tango
+      - MYSQL_DATABASE=tango_db
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+
+  tango_mysql:
+    image: skasip/tango_mysql:1.0.3
+    container_name: tango_mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=sip1
+    deploy:
+      mode: replicated
+      replicas: 1
+    volumes:
+      - tango_mysql:/var/lib/mysql:consistent
+    healthcheck:
+      test: ["CMD", "mysql", "--user=tango", "--password=tango",
+             "-e", "SHOW DATABASES LIKE 'tango_db';"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
