@@ -56,7 +56,9 @@ apt-get install -y kubelet kubeadm kubectl
 
 Next, we will change the configuration file of Kubernetes. Run the following command:
 
-# nano /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+```text
+nano /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+```
 
 This will open a text editor, enter the following line after the last “Environment Variable”:
 
@@ -89,6 +91,7 @@ kubectl version --short
 ```
 
 ## For Only Kubernetes Node VM (knode)
+
 To join the cluster! This is probably the only step that you will be doing on 
 the node, after installing kubernetes on it.
 
