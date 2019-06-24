@@ -1,5 +1,6 @@
 #image: "python:latest"
-#
+#before_script:
+# TODO - add dependencies here
 #variables:
 #  PIP_CACHE_DIR: "${CI_PROJECT_DIR}/.cache/pip"
 #cache:
@@ -7,7 +8,7 @@
 #
 #stages:
 #  - test
-#
+#  - posttest
 #test:
 #  stage: test
 #  script:
@@ -18,4 +19,21 @@
 #        skaorca/tango_python_dev:latest
 #        src/tango_scaling_test.sh
 #  coverage: coveralls
+#  
+# Update XRAY links in JIRA
+# Currently all hard-coded, and doesn't extract gherkin test from JIRA 
+#xray:
+#  stage: posttest
+#  tags: [ska]
+#  before_script: []
+#  cache: {}
+#  #only: [master] #disabled for testing now
+#  dependencies: [test]
+#  script:
+#    - 'curl -X POST --silent --show-error --fail
+#        -H "Content-Type: multipart/form-data"
+#        -H "Authorization: Basic $JIRA_AUTH"
+#        -F file=@junit.xml
+#        https://jira.skatelescope.org/rest/raven/1.0/import/execution/junit?testExecKey=XTP-115'
+#   retry: 2 #JIRA doesn't always work first time
 
