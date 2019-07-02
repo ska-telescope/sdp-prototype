@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="ASCII"?>
 <pogoDsl:PogoSystem xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:pogoDsl="http://www.esrf.fr/tango/pogo/PogoDsl">
-  <classes name="SDPSubarray" pogoRevision="9.4">
-    <description description="" title="SDPSubarray" sourcePath="/home/ska-dev/sdp-config-proto.git/src/tango_sdp_subarray" language="PythonHL" filestogenerate="XMI   file,Code files,Python Package,Protected Regions" license="none" copyright="" hasMandatoryProperty="false" hasConcreteProperty="false" hasAbstractCommand="false" hasAbstractAttribute="false">
+  <classes name="SDPSubarray" pogoRevision="9.6">
+    <description description="" title="SDPSubarray" sourcePath="/Users/bmort/projects/sdp-config-proto.git/src/tango_sdp_subarray" language="PythonHL" filestogenerate="XMI   file,Code files,Python Package,Protected Regions" license="none" copyright="" hasMandatoryProperty="false" hasConcreteProperty="false" hasAbstractCommand="false" hasAbstractAttribute="false">
       <inheritances classname="Device_Impl" sourcePath=""/>
-      <inheritances classname="SKAObsDevice" sourcePath="./SDPSubarray/../../lmc-base-classes/skabase/SKAObsDevice"/>
-      <inheritances classname="SKASubarray" sourcePath="../lmc-base-classes/skabase/SKASubarray"/>
+      <inheritances classname="SKAObsDevice" sourcePath="../lmc-base-classes/skabase/SKAObsDevice"/>
+      <inheritances classname="SKASubarray" sourcePath="/Users/bmort/projects/sdp-config-proto.git/src/tango_sdp_subarray/../lmc-base-classes/skabase/SKASubarray"/>
       <identification contact="at stfc.ac.uk - brian.mcilwrath" author="brian.mcilwrath" emailDomain="stfc.ac.uk" classFamily="SoftwareSystem" siteSpecific="" platform="Unix Like" bus="Not Applicable" manufacturer="none" reference=""/>
     </description>
     <deviceProperties name="CapabilityTypes" description="List of Capability types e.g. capCorr, capPss,&#xA;capPstBf, capVlbi, this will be used to dynamically&#xA;define groups for subarray.">
@@ -100,7 +100,7 @@
       </argout>
       <status abstract="true" inherited="true" concrete="true"/>
     </commands>
-    <commands name="AssignResources" description="" execMethod="assign_resources" displayLevel="OPERATOR" polledPeriod="0" isDynamic="false">
+    <commands name="AssignResources" description="" execMethod="assign_resources" displayLevel="OPERATOR" polledPeriod="0">
       <argin description="List of Resources to add to subarray.">
         <type xsi:type="pogoDsl:StringArrayType"/>
       </argin>
@@ -305,7 +305,7 @@
     <states name="DISABLE" description="The device cannot be switched ON for an external reason. E.g. the power supply has its door open, the safety conditions are not satisfactory to allow the device to operate.">
       <status abstract="false" inherited="true" concrete="true"/>
     </states>
-    <preferences docHome="./doc_html" makefileHome="/usr/share/pogo/preferences"/>
+    <preferences docHome="./doc_html" makefileHome="$(TANGO_HOME)"/>
     <overlodedPollPeriodObject name="adminMode" type="attribute" pollPeriod="0"/>
     <overlodedPollPeriodObject name="centralLoggingLevel" type="attribute" pollPeriod="0"/>
     <overlodedPollPeriodObject name="configurationDelayExpected" type="attribute" pollPeriod="0"/>
