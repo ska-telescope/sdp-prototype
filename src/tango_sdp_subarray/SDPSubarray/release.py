@@ -3,7 +3,7 @@
 
 """Release information for Python Package"""
 
-name = """tangods-sdpsubarray"""
+name = "tangods-sdpsubarray"
 version = "0.1.0"
 version_info = version.split(".")
 description = ""
