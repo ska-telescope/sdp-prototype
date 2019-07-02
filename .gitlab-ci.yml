@@ -5,11 +5,11 @@ subarray_bdd_tests:
     stage: test
     image:
       name: skaorca/pytango_ska_dev:latest
-      entrypoint: ["/bin/bash", "-l", "-c"]
+#      entrypoint: ["/bin/bash", "-l", "-c"]
     script:
-      - cd ./src/tango_sdp_subarray
+#      - cd ./src/tango_sdp_subarray
       - ls
-      - python -m pytest --gherkin-terminal-reporter -vv tests/steps
+#      - python -m pytest --gherkin-terminal-reporter -vv tests/steps
 
 #subarray_unit_tests:
 #    stage: test
