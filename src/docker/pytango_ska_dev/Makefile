@@ -1,15 +1,10 @@
 #
-# Makefile for building and publishing the `tango_python_dev` image.
+# Makefile for building and publishing the `pytango_ska_dev` image.
 #
 # Targets:
 # 	build: Build the image. Creates two tags, :<current version> and :<latest>
 # 	publish: Build and publish the image to Dockerhub / cloud.docker.com
 #	clean: Remove the image from the local machine
-#	prompt: Example target giving a bash prompt running in the container
-#           and connected to a tango database deployment.
-# 	itango: Example target giving an iTango prompt running in the container
-#           and connected to a tango database deployment.
-#
 
 CRED=\033[0;31m
 CBLUE=\033[0;34m
