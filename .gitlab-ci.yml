@@ -3,20 +3,14 @@ stages:
 
 subarray_bdd_tests:
     stage: test
-    image:
-      name: skaorca/pytango_ska_dev:latest
-#      entrypoint: ["/bin/bash", "-l", "-c"]
+    image: skaorca/pytango_ska_dev:latest
     script:
       - cd ./src/tango_sdp_subarray
-      - ls
       - python -m pytest --gherkin-terminal-reporter -vv tests/steps
 
-#subarray_unit_tests:
-#    stage: test
-#    image:
-#      name: skaorca/pytango_ska_dev:latest
-#      entrypoint: ["python"]
-#    script:
-#      - cd ./src/tango_sdp_subarray
-#      - ls
-#      - -m pytest -s -vv tests/test_SDPSubarray.py
+subarray_unit_tests:
+    stage: test
+    image: skaorca/pytango_ska_dev:latest
+    script:
+      - cd ./src/tango_sdp_subarray
+      - -m pytest -s -vv tests/test_SDPSubarray.py
