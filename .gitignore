@@ -6,4 +6,4 @@
 **/.local
 **/__pycache__
 .coverage
-
+**/*.pyc
