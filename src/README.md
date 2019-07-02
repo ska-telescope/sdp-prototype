@@ -1,5 +1,5 @@
-Top level "source" folder for the SDP Configuration Prototype
-=============================================================
+Top level "source" folder for the SDP Evolutionary Prototype
+============================================================
 
-Folders within this folder can be thought of as separate projects
+Folders within this folder are essentially separate projects 
 that have simply be grouped into one repository for convenience.
