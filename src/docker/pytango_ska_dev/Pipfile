@@ -10,12 +10,15 @@ verify_ssl = true
 
 [packages]
 pytest = "*"
-pytest-pylint = "*"
+pytest_bdd = "*"
 pytest-codestyle = "*"
 pytest-pydocstyle = "*"
-# pytest-cov = "*"
+pytest-cov = "*"
+coveralls = "*"
+
+## NOT availiable for Python 3.5?!
+# pytest-pylint = "*"
 # coverage = "*"
-# coveralls = "*"
 # codecov = "*"
 
 [requires]
