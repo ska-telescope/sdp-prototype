@@ -27,9 +27,6 @@ VERSION=$(shell awk -F= '/^release=/{print $$2}' release)
 IMAGE=$(DOCKER_REGISTRY_USER)/$(NAME)
 
 IMAGES := $(shell docker images --format '{{.Repository}}:{{.Tag}}' | grep $(IMAGE))
-TANGO_DB_ID:=$(shell docker ps -f name=tango_database -f status=running -q)
-IP:=$(shell ifconfig en7 | grep inet | awk '$$1=="inet" {print $$2}')
-
 
 .PHONY: all
 all: build

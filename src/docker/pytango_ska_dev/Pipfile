@@ -1,0 +1,22 @@
+[[source]]
+url = "https://pypi.org/simple"
+name = "pypi"
+verify_ssl = true
+
+# [[source]]
+# url = "https://nexus.engageska-portugal.pt/repository/pypi/simple"
+# name = "nexus"
+# verify_ssl = true
+
+[packages]
+pytest = "*"
+pytest-pylint = "*"
+pytest-codestyle = "*"
+pytest-pydocstyle = "*"
+# pytest-cov = "*"
+# coverage = "*"
+# coveralls = "*"
+# codecov = "*"
+
+[requires]
+python_version = "3.5"
