@@ -5,7 +5,7 @@ subarray_bdd_tests:
     stage: test
     image:
       name: skaorca/pytango_ska_dev:latest
-      entrypoint: ["/bin/bash"]
+      entrypoint: ["/bin/bash", "-l", "-c"]
     script:
       - cd ./src/tango_sdp_subarray
       - ls
