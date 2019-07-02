@@ -13,4 +13,4 @@ subarray_unit_tests:
     image: skaorca/pytango_ska_dev:latest
     script:
       - cd ./src/tango_sdp_subarray
-      - -m pytest -s -vv tests/test_SDPSubarray.py
+      - python -m pytest -s -vv tests/test_SDPSubarray.py
