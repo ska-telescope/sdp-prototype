@@ -43,6 +43,12 @@ def assign_resources(subarray_device):
     # result = subarray_device.AssignResources('')
 
 
+@when('I call the command release all resources')
+def release_all_resources(subarray_device):
+    assert 'ReleaseResources' in subarray_device.get_command_list()
+    # TODO(BMo)
+
+
 @then('The obsState should be IDLE')
 def obs_state_idle(subarray_device):
     assert 'obsState' in subarray_device.get_attribute_list()
@@ -59,3 +65,10 @@ def obs_state_idle(subarray_device):
 def state_on(subarray_device):
     state = subarray_device.State()
     # assert str(state) == 'ON'
+
+
+@then('The state should be OFF')
+def state_off(subarray_device):
+    state = subarray_device.State()
+    # assert str(state) == 'OFF'
+#

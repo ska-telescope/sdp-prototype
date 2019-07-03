@@ -39,4 +39,9 @@ Feature: SDPSubarray device
 		Then The obsState should be IDLE
 		And The state should be ON
 
+	Scenario: Release Resources
+		Given I have a subarray device
+		When I call the command release all resources
+		Then The obsState should be IDLE
+		And The state should be OFF
 

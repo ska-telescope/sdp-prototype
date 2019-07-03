@@ -2,7 +2,7 @@
 """SDPSubarray"""
 
 from . import release
-# from .SDPSubarray import SDPSubarray, main
+from .SDPSubarray import SDPSubarray, main
 
 __version__ = release.version
 __version_info__ = release.version_info

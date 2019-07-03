@@ -22,12 +22,13 @@ def tango_context(request):
     context = DeviceTestContext(device, device_name=device_name,
                                 properties=properties)
 
-    # def fin():
-    #     print("teardown!")
-    #     # context.stop()
-    # request.addfinalizer(fin)
-
     context.start()
-    # return context
     yield context
     context.stop()
+
+    # def fin():
+    #     print("teardown!")
+    #     context.stop()
+    # request.addfinalizer(fin)
+    # context.start()
+    # return context
