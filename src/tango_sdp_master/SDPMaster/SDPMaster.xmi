@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ASCII"?>
 <pogoDsl:PogoSystem xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:pogoDsl="http://www.esrf.fr/tango/pogo/PogoDsl">
-  <classes name="SDPMaster" pogoRevision="9.1">
-    <description description="" title="SDP Master Tango Class" sourcePath="/home/bkm/PycharmProjects/sdp-configuration-prototype/src/tango_sdp_master/SDPMaster" language="PythonHL" filestogenerate="XMI   file,Code files" license="GPL" copyright="" hasMandatoryProperty="false" hasConcreteProperty="false" hasAbstractCommand="false" hasAbstractAttribute="false">
+  <classes name="SDPMaster" pogoRevision="9.4">
+    <description description="" title="SDP Master Tango Class" sourcePath="/home/bkm/PycharmProjects/sdp-configuration-prototype/src/tango_sdp_master/SDPMaster" language="PythonHL" filestogenerate="XMI   file,Code files,Python Package,Protected Regions" license="GPL" copyright="" hasMandatoryProperty="false" hasConcreteProperty="false" hasAbstractCommand="false" hasAbstractAttribute="false">
       <inheritances classname="Device_Impl" sourcePath=""/>
       <inheritances classname="SKABaseDevice" sourcePath="../../lmc-base-classes/skabase/SKAMaster/../SKABaseDevice"/>
       <inheritances classname="SKAMaster" sourcePath="/home/bkm/PycharmProjects/sdp-configuration-prototype/src/lmc-base-classes/skabase/SKAMaster"/>
@@ -67,7 +67,7 @@
       <argout description="[ name: EltTelState">
         <type xsi:type="pogoDsl:StringArrayType"/>
       </argout>
-      <status abstract="false" inherited="true" concrete="true"/>
+      <status abstract="false" inherited="true" concrete="true" concreteHere="true"/>
     </commands>
     <commands name="isCapabilityAchievable" description="" execMethod="is_capability_achievable" displayLevel="OPERATOR" polledPeriod="0">
       <argin description="[nrInstances][Capability types]">
@@ -86,6 +86,42 @@
         <type xsi:type="pogoDsl:VoidType"/>
       </argout>
       <status abstract="false" inherited="true" concrete="true"/>
+    </commands>
+    <commands name="on" description="Informs the SDP that it can start executing Processing Blocks. &#xA;Sets the OperatingState to ON." execMethod="on" displayLevel="OPERATOR" polledPeriod="0" isDynamic="false">
+      <argin description="">
+        <type xsi:type="pogoDsl:VoidType"/>
+      </argin>
+      <argout description="">
+        <type xsi:type="pogoDsl:VoidType"/>
+      </argout>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+    </commands>
+    <commands name="disable" description="Any Processing Blocks that are currently executing are left running, but&#xA; no new Processing Blocks will be started. &#xA;&#xA;SDP will enter the DISABLE OperatingState and remain there until &#xA;commanded otherwise or until all PBs have completed upon which it &#xA;enters STANDBY" execMethod="disable" displayLevel="OPERATOR" polledPeriod="0" isDynamic="false">
+      <argin description="disable">
+        <type xsi:type="pogoDsl:VoidType"/>
+      </argin>
+      <argout description="">
+        <type xsi:type="pogoDsl:VoidType"/>
+      </argout>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+    </commands>
+    <commands name="standby" description="Informs the SDP to stop any executing Processing. To get into &#xA;the STANDBY state all running PBs will be aborted. In normal &#xA;operation we expect diable should be triggered without first going &#xA;into STANDBY" execMethod="standby" displayLevel="OPERATOR" polledPeriod="0" isDynamic="false">
+      <argin description="">
+        <type xsi:type="pogoDsl:VoidType"/>
+      </argin>
+      <argout description="">
+        <type xsi:type="pogoDsl:VoidType"/>
+      </argout>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+    </commands>
+    <commands name="off" description="This informs SDP to terminate all non-essential services (likely all &#xA;services other than the SDP Element Master Device and the &#xA;Configuration Database). &#xA;&#xA;Once terminated SDP will transition to an Operating State of OFF. For &#xA;SDP, OFF is a final state that will require operator intervention using a &#xA;platform services interface to restart SDP" execMethod="off" displayLevel="OPERATOR" polledPeriod="0" isDynamic="false">
+      <argin description="">
+        <type xsi:type="pogoDsl:VoidType"/>
+      </argin>
+      <argout description="">
+        <type xsi:type="pogoDsl:VoidType"/>
+      </argout>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
     </commands>
     <attributes name="elementLoggerAddress" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="60000" maxX="" maxY="" allocReadMember="true">
       <dataType xsi:type="pogoDsl:StringType"/>
@@ -184,6 +220,14 @@
       <archiveEvent fire="false" libCheckCriteria="false"/>
       <status abstract="false" inherited="true" concrete="true"/>
       <properties description="The test mode of the device. &#xA;Either no test mode (empty string) or an indication of the test mode." label="" unit="" standardUnit="" displayUnit="" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
+    </attributes>
+    <attributes name="OperatingState" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="true" isDynamic="false">
+      <dataType xsi:type="pogoDsl:DoubleType"/>
+      <changeEvent fire="false" libCheckCriteria="false"/>
+      <archiveEvent fire="false" libCheckCriteria="false"/>
+      <dataReadyEvent fire="false" libCheckCriteria="true"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <properties description="" label="" unit="" standardUnit="" displayUnit="" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
     </attributes>
     <attributes name="maxCapabilities" attType="Spectrum" rwType="READ" displayLevel="OPERATOR" polledPeriod="1000" maxX="20" maxY="" allocReadMember="true">
       <dataType xsi:type="pogoDsl:StringType"/>
