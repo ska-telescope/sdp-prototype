@@ -11,24 +11,19 @@ def tango_context(request):
     """Create a test device context for the SDPSubarray device."""
     device = SDPSubarray
     device_name = 'mid_sdp/elt/subarray_00'
-    properties = {'CapabilityTypes': '',
-                  'CentralLoggingTarget': '',
-                  'ElementLoggingTarget': '',
-                  'GroupDefinitions': '',
-                  'SkaLevel': '4',
-                  'StorageLoggingTarget': 'localhost',
-                  'SubID': ''
-                  }
-    context = DeviceTestContext(device, device_name=device_name,
-                                properties=properties)
+    # properties = {'CapabilityTypes': '',
+    #               'CentralLoggingTarget': '',
+    #               'ElementLoggingTarget': '',
+    #               'GroupDefinitions': '',
+    #               'SkaLevel': '4',
+    #               'StorageLoggingTarget': 'localhost',
+    #               'SubID': ''
+    #               }
+    # tango_context = DeviceTestContext(device, device_name=device_name,
+    #                                   properties=properties)
+    tango_context = DeviceTestContext(device)
 
-    context.start()
-    yield context
-    context.stop()
+    tango_context.start()
+    yield tango_context
+    tango_context.stop()
 
-    # def fin():
-    #     print("teardown!")
-    #     context.stop()
-    # request.addfinalizer(fin)
-    # context.start()
-    # return context

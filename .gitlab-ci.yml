@@ -1,16 +1,8 @@
 stages:
   - test
 
-subarray_bdd_tests:
+subarray_tests:
     stage: test
     image: skaorca/pytango_ska_dev:latest
     script:
-      - cd ./src/tango_sdp_subarray
-      - python -m pytest --gherkin-terminal-reporter -vv tests/steps
-
-subarray_unit_tests:
-    stage: test
-    image: skaorca/pytango_ska_dev:latest
-    script:
-      - cd ./src/tango_sdp_subarray
-      - python -m pytest -s -vv tests/test_SDPSubarray.py
+      - python -m pytest --gherkin-terminal-reporter -vv /src/tango_sdp_subarray

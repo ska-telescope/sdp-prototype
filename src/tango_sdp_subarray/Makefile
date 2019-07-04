@@ -17,12 +17,12 @@ ifeq ($(strip $(DOCKER_REGISTRY_USER)),)
 endif
 
 # Get image name and version from the release file
-NAME=$(shell python -c "from SDPSubarray.release import name; print(name)")
-VERSION=$(shell python -c "from SDPSubarray import __version__; print(__version__)")
+#NAME=$(shell python -c "from SDPSubarray.release import name; print(name)")
+NAME=tangods_sdp_subarray
+#VERSION=$(shell python -c "from SDPSubarray import __version__; print(__version__)")
+VERSION=0.1.0
 IMAGE=$(DOCKER_REGISTRY_USER)/$(NAME)
-
 IMAGES := $(shell docker images --format '{{.Repository}}:{{.Tag}}' | grep $(IMAGE))
-
 
 .PHONY: all
 all: build
@@ -49,6 +49,10 @@ publish: build tag_latest
 	@echo "$(CRED)* $(CBLUE)Publishing image(s) to Dockerhub ...$(CEND)"
 	docker push $(IMAGE):$(VERSION)
 	docker push $(IMAGE):latest
+
+.PHONY: test
+test:
+	docker run --rm -t -v $(PWD):/app --entrypoint=python skaorca/pytango_ska_dev -m pytest -vv -s --gherkin-terminal-reporter
 
 .PHONY: clean
 clean:

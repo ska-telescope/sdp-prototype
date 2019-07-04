@@ -31,3 +31,4 @@ COPY Pipfile.lock Pipfile.lock
 # Install Python deps
 RUN pipenv install --deploy --ignore-pipfile --dev
 
+ENTRYPOINT ["/bin/bash"]
