@@ -9,7 +9,7 @@ subarray_tests:
       - cd src/tango_sdp_subarray
       - python -m pytest --gherkin-terminal-reporter -vv --junitxml=junit.xml .
     artifacts:
-      paths: [junit.xml]
+      paths: [src/tango_sdp_subarray/junit.xml]
       reports:
         junit: junit.xml
 
