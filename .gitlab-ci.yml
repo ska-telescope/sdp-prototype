@@ -8,11 +8,14 @@ subarray_tests:
     script:
       - cd src/tango_sdp_subarray
       - python -m pytest --gherkin-terminal-reporter -vv .
-
+    artifacts:
+      paths: [junit.xml]
+      reports:
+        junit: junit.xml
 # Update XRAY links in JIRA
 xray:
   stage: posttest
-  tags: [ska]
+  #tags: [ska]
   before_script: []
   #This line may require the magic setting of cache earlier on.
   cache: {}
