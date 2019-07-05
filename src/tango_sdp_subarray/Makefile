@@ -24,6 +24,18 @@ VERSION=0.1.0
 IMAGE=$(DOCKER_REGISTRY_USER)/$(NAME)
 IMAGES := $(shell docker images --format '{{.Repository}}:{{.Tag}}' | grep $(IMAGE))
 
+# If the first make argument is "register"
+ifeq (register,$(firstword $(MAKECMDGOALS)))
+  REGISTER_TARGET = true
+endif
+ifdef REGISTER_TARGET
+  # .. then use the rest as arguments for the make target
+  NUM_DEVICES := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+  # ...and turn them into do-nothing targets
+  $(eval $(NUM_DEVICES):;@:)
+endif
+
+
 .PHONY: all
 all: build
 
@@ -50,9 +62,63 @@ publish: build tag_latest
 	docker push $(IMAGE):$(VERSION)
 	docker push $(IMAGE):latest
 
+.PHONY: register
+register:  ## register devices (usage: make register <number of devices>)
+	@docker run --rm -t \
+		-v $(PWD):/app \
+		--entrypoint=python \
+		--network=container:databaseds \
+		-e TANGO_HOST=localhost:10000 \
+		skaorca/pytango_ska_base:latest \
+		SDPSubarray/register.py $(NUM_DEVICES)
+
+.PHONY: unregister
+unregister:
+	@docker run --rm -t \
+		-v $(PWD):/app \
+		--entrypoint=python \
+		--network=container:databaseds \
+		-e TANGO_HOST=localhost:10000 \
+		skaorca/pytango_ska_base:latest \
+		SDPSubarray/register.py --delete
+
+.PHONY: start_dev
+start_dev:
+	@docker run \
+		--rm -t \
+		-v $(PWD):/app \
+		--name=sdpsubarray \
+		--network=container:databaseds \
+		-e TANGO_HOST=localhost:10000 \
+		--entrypoint=python \
+		-d \
+		skaorca/pytango_ska_base:latest \
+		SDPSubarray 1 -v4
+
+.PHONY: start
+start:
+	@docker run \
+		--rm -t \
+		--name=sdpsubarray \
+		--network=container:databaseds \
+		-e TANGO_HOST=localhost:10000 \
+		--entrypoint=python \
+		-d \
+		skaorca/tangods_sdp_subarray:latest \
+		SDPSubarray 1 -v4
+
+
+.PHONY: stop
+stop:
+	@docker stop sdpsubarray
+
 .PHONY: test
 test:
-	docker run --rm -t -v $(PWD):/app --entrypoint=python skaorca/pytango_ska_dev -m pytest -vv -s --gherkin-terminal-reporter
+	docker run --rm -t \
+		-v $(PWD):/app \
+		--entrypoint=python \
+		skaorca/pytango_ska_dev \
+		-m pytest -vv -s --gherkin-terminal-reporter
 
 .PHONY: clean
 clean:
