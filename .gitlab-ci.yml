@@ -10,7 +10,7 @@ subarray_tests:
       - python -m pytest --gherkin-terminal-reporter -vv --junitxml=junit.xml src/tango_sdp_subarray
     artifacts:
       paths:
-      - ./src/tango_sdp_subarray/junit.xml
+      - junit.xml
       expire_in: 30 days
       when: always
       reports:
