@@ -100,6 +100,10 @@ class SDPSubarray(Device):
         """Get adminMode"""
         return self.admin_mode
 
+    def read_receiveAddresses(self) -> str:
+        """Return receive addresses map."""
+        return self.receive_addresses
+
     # --------
     # Commands
     # --------
