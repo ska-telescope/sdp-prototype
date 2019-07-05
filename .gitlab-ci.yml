@@ -6,10 +6,13 @@ subarray_tests:
     stage: test
     image: skaorca/pytango_ska_dev:latest
     script:
-      - cd src/tango_sdp_subarray
-      - python -m pytest --gherkin-terminal-reporter -vv --junitxml=junit.xml .
+#      - cd src/tango_sdp_subarray
+      - python -m pytest --gherkin-terminal-reporter -vv --junitxml=junit.xml src/tango_sdp_subarray
     artifacts:
-      paths: [src/tango_sdp_subarray/junit.xml]
+      paths:
+      - ./src/tango_sdp_subarray/junit.xml
+      expire_in: 30 days
+      when: always
       reports:
         junit: junit.xml
 
