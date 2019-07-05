@@ -1,5 +1,6 @@
 stages:
   - test
+  - posttest
 
 subarray_tests:
     stage: test
@@ -7,3 +8,19 @@ subarray_tests:
     script:
       - cd src/tango_sdp_subarray
       - python -m pytest --gherkin-terminal-reporter -vv .
+
+# Update XRAY links in JIRA
+xray:
+  stage: deploy
+  tags: [ska]
+  before_script: []
+  #This line may require the magic setting of cache earlier on.
+  cache: {}
+  dependencies: [test]
+  script:
+    - 'curl -X POST --silent --show-error --fail
+        -H "Content-Type: multipart/form-data"
+        -H "Authorization: Basic $JIRA_AUTH"
+        -F file=@junit.xml
+        https://jira.skatelescope.org/rest/raven/1.0/import/execution/junit?testExecKey=XTP-118'
+  retry: 2 #In case JIRA doesn't work first time
