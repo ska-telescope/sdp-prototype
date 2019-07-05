@@ -16,7 +16,8 @@ xray:
   before_script: []
   #This line may require the magic setting of cache earlier on.
   cache: {}
-  dependencies: [test]
+  # dependencies: [test] 
+  # commented above out because it's breaking the build
   script:
     - 'curl -X POST --silent --show-error --fail
         -H "Content-Type: multipart/form-data"
