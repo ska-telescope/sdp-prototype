@@ -7,11 +7,12 @@ subarray_tests:
     image: skaorca/pytango_ska_dev:latest
     script:
       - cd src/tango_sdp_subarray
-      - python -m pytest --gherkin-terminal-reporter -vv .
+      - python -m pytest --gherkin-terminal-reporter -vv --junitxml=junit.xml .
     artifacts:
       paths: [junit.xml]
       reports:
         junit: junit.xml
+
 # Update XRAY links in JIRA
 xray:
   stage: posttest
@@ -19,7 +20,7 @@ xray:
   before_script: []
   #This line may require the magic setting of cache earlier on.
   cache: {}
-  # dependencies: [test] 
+  # dependencies: [test]
   # commented above out because it's breaking the build
   script:
     - 'curl -X POST --silent --show-error --fail
