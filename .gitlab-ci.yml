@@ -5,4 +5,5 @@ subarray_tests:
     stage: test
     image: skaorca/pytango_ska_dev:latest
     script:
-      - python -m pytest --gherkin-terminal-reporter -vv /src/tango_sdp_subarray
+      - cd src/tango_sdp_subarray
+      - python -m pytest --gherkin-terminal-reporter -vv .
