@@ -20,30 +20,30 @@ from SDPSubarray import ObsState, AdminMode
 # ---------------------------------------------------------------------------
 
 
-# scenarios('../features/1_XR-7.feature')
+# scenarios('../features/1_XR-11.feature')
 
 
-@scenario('./1_XR-7.feature', 'Device Startup')
+@scenario('./1_XR-11.feature', 'Device Startup')
 def test_startup():
     pass
 
 
-@scenario('./1_XR-7.feature', 'Assign Resources successfully')
+@scenario('./1_XR-11.feature', 'Assign Resources successfully')
 def test_assign_resources_successfully():
     pass
 
 
-@scenario('./1_XR-7.feature', 'Assign Resources fails when ObsState != IDLE')
+@scenario('./1_XR-11.feature', 'Assign Resources fails when ObsState != IDLE')
 def test_assign_resources_invalid_obs_state():
     pass
 
 
-@scenario('./1_XR-7.feature', 'Release Resources successfully')
+@scenario('./1_XR-11.feature', 'Release Resources successfully')
 def test_release_resources_successfully():
     pass
 
 
-@scenario('./1_XR-7.feature', 'Configure command successfully')
+@scenario('./1_XR-11.feature', 'Configure command successfully')
 def test_configure_successfully():
     pass
 
