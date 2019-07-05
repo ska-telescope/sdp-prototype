@@ -36,7 +36,7 @@ class Config():
             if 'password' not in client_args:
                 client_args['password'] = os.getenv('SDP_CONFIG_PASSWORD', None)
 
-            self._backend = backend_mod.BackendEtcd3(**client_args)
+            self._backend = backend_mod.Etcd3(**client_args)
         else:
             raise ValueError("Unknown configuration backend {}!".format(backend))
 

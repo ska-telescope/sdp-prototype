@@ -1,8 +1,8 @@
 
 import etcd3
-import re
+import queue
 
-class BackendEtcd3:
+class Etcd3:
 
     def __init__(self, *args, **kw_args):
         self._client = etcd3.Client(*args, **kw_args)
@@ -31,11 +31,12 @@ class BackendEtcd3:
             return path[slash_ix:]
 
     def lease(self, ttl=10):
-        """
-        Generates a new lease. Once entered can be associated with keys,
-        which will be kept alive until the end of the lease. At that
-        point a daemon thread will be started automatically to refresh
-        the lease periodically (default seems to be TTL/4).
+        """Generates a new lease.
+
+        Once entered can be associated with keys, which will be kept
+        alive until the end of the lease. Note that this involves
+        starting a daemon thread that will refresh the lease
+        periodically (default seems to be TTL/4).
 
         :param ttl: Time to live for lease
         :returns: lease object
@@ -43,7 +44,7 @@ class BackendEtcd3:
 
         return self._client.Lease(ttl=ttl)
 
-    def get(self, path, revision=None):
+    def get(self, path, revision=None, watch=False):
         """
         Get value of a key
 
@@ -69,6 +70,22 @@ class BackendEtcd3:
 
         # Return value together with revision
         return (result, Etcd3Revision(response.header.revision, modRevision))
+
+    def watch(self, path, revision=None, watch=False):
+        """
+        Watch value of a key
+
+        :param path: Path of key to query
+        :param revision: Revision of first key value to read
+        :returns: (value, revision). value is None if it doesn't exit
+        """
+
+        tagged_path = self._tag_depth(path)
+        rev = (None if revision is None else revision.revision)
+
+        # Set up watcher
+        watcher = self._client.Watcher(tagged_path, start_revision=rev, prev_kv=True)
+        return Etc3Watcher(watcher)
 
     def list_keys(self, path, prefix=False, revision=None):
         """
@@ -199,3 +216,34 @@ class Etcd3Revision:
         self.revision = revision
         self.modRevision = modRevision
 
+    def __repr__(self):
+        return "Etc3Revision({},{})".format(self.revision, self.modRevision)
+
+class Etc3Watcher:
+    """Wrapper for etc3 watch requests.
+
+    Enter to start watching the key, at which point 
+    """
+
+    def __init__(self, watcher):
+        self._watcher = watcher
+
+    def __enter__(self):
+        """ Activates the watcher, yielding a queue for updates """
+
+        q = queue.Queue()
+        def on_event(event):
+            if event.type == etcd3.EventType.PUT:
+                q.put((event.value.decode('utf-8'),
+                       Etcd3Revision(event.mod_revision, event.mod_revision)))
+            else:
+                q.put((None, Etcd3Revision(event.mod_revision, None)))
+
+        self._watcher.onEvent(on_event)
+        self._watcher.runDaemon()
+        return q
+
+    def __exit__(self, *args):
+        """ Deactivates the watcher """
+        self._watcher.clear_callbacks()
+        self._watcher.stop()

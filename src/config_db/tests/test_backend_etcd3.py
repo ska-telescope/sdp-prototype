@@ -2,12 +2,14 @@
 from ska_sdp_config import backend
 
 import pytest
+import multiprocessing
+import time
 
 prefix = "/__test"
 
 @pytest.fixture(scope="session")
 def etcd3():
-    etcd3 = backend.BackendEtcd3()
+    etcd3 = backend.Etcd3()
     assert etcd3.delete(prefix, must_exist=False, recursive=True)
     return etcd3
 
@@ -125,6 +127,30 @@ def test_delete(etcd3):
             assert etcd3.get(child)[0] is None, child
         assert (etcd3.get(key + "x")[0] is None) == del_prefix
         assert (etcd3.get(key + "x/x")[0] is None) == del_prefix
+
+@pytest.mark.timeout(10)
+def test_watch(etcd3):
+
+    key = prefix + "/test_watch"
+
+    assert etcd3.delete(key, must_exist=False)
+    etcd3.delete("/test", must_exist=False)
+
+    with etcd3.watch(key) as watch:
+
+        # Reduce likelihood of races between the watch start and the
+        # first update
+        time.sleep(0.1)
+
+        assert etcd3.create(key, "bla")
+        assert etcd3.update(key, "bla2")
+        assert etcd3.update(key, "bla3")
+        assert etcd3.update(key, "bla4")
+
+        assert watch.get()[0] == 'bla'
+        assert watch.get()[0] == 'bla2'
+        assert watch.get()[0] == 'bla3'
+        assert watch.get()[0] == 'bla4'
 
 if __name__ == '__main__':
     pytest.main()
