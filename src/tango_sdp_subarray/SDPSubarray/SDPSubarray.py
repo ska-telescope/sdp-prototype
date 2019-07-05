@@ -60,6 +60,8 @@ class SDPSubarray(Device):
 
     adminMode = attribute(dtype=AdminMode, access=AttrWriteType.READ_WRITE)
 
+    receiveAddresses = attribute(dtype=str, access=AttrWriteType.READ)
+
     # ---------------
     # General methods
     # ---------------
