@@ -45,8 +45,7 @@ the workflow script version as well as the required underlying
 software (e.g. processing components, execution engines). `...` stands
 for arbitrary workflow-defined parameters.
 
-Processing Block Status
------------------------
+### Processing Block Status
 
 Path: `/pb/[pb_id]/state`
 
@@ -66,12 +65,28 @@ Tracks the current state of the Processing Block. This covers both the
 internal state as well as the subarray state to report via Tango. At
 some point we might include
 
-Processing Block Owner
-----------------------
+### Processing Block Owner
 
 Path: `/pb/[pb_id]/owner`
 
 Processing Block Controller process identification. Used for leader election/lock as well as a debugging aid.
 
 Contents: `controller-node-XYZ:123`
+
+Subarray
+--------
+
+Path: `/subarray/[subarray_id]`
+
+Definition and state of a telescope sub-array. Especially used for
+tracking attributes that might be required even if the subarray is not
+currently active (like `adminMode`).
+
+Contents:
+```javascript
+{
+    "adminState": "ONLINE",
+    "currentPb": "[pb_id]",
+}
+```
 
