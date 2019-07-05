@@ -20,7 +20,8 @@ endif
 #NAME=$(shell python -c "from SDPSubarray.release import name; print(name)")
 NAME=tangods_sdp_subarray
 #VERSION=$(shell python -c "from SDPSubarray import __version__; print(__version__)")
-VERSION=0.1.0
+GIT_VERSION=$(shell git rev-parse --verify --short=8 HEAD)
+VERSION=0.1.0-$(GIT_VERSION)
 IMAGE=$(DOCKER_REGISTRY_USER)/$(NAME)
 IMAGES := $(shell docker images --format '{{.Repository}}:{{.Tag}}' | grep $(IMAGE))
 
@@ -44,6 +45,7 @@ build: build_version tag_latest
 
 .PHONY: build_version
 build_version:
+	@echo "GIT $(GIT_VERSION)"
 	@echo "$(CRED)$(LINE)$(CEND)"
 	@echo "$(CBLUE)Building Docker image:$(CEND) $(IMAGE):$(VERSION)"
 	@echo "$(CRED)$(LINE)$(CEND)"
