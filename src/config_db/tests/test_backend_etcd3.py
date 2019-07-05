@@ -22,12 +22,20 @@ def test_create(etcd3):
     assert v == 'foo'
 
     # Update, check again. Make sure version was incremented
-    assert etcd3.update(key, 'bar')
+    assert etcd3.update(key, 'bar', must_be_rev=ver)
     v2,ver2 = etcd3.get(key)
     assert v2 == 'bar'
-    assert ver2 > ver
+    assert ver2.revision > ver.revision
+    assert ver2.modRevision == ver.modRevision + 1
 
-    # Check that we can obtain the previos version
+    # Check that we cannot update the original key if we provide the
+    # wrong revision
+    assert not etcd3.update(key, 'baz', must_be_rev=ver)
+    v2b,ver2b = etcd3.get(key)
+    assert v2b == 'bar'
+    assert ver2.modRevision == ver2b.modRevision
+
+    # Check that we can obtain the previous version
     v3,ver3 = etcd3.get(key, ver)
     assert v3 == 'foo'
 

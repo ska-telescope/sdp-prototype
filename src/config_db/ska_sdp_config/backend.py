@@ -53,17 +53,22 @@ class BackendEtcd3:
         """
 
         tagged_path = self._tag_depth(path)
-        response = self._client.range(tagged_path, revision=revision)
+        rev = (None if revision is None else revision.revision)
+
+        # Query range
+        response = self._client.range(tagged_path, revision=rev)
 
         # Get value returned
         result = response.kvs
+        modRevision = None
         if result is not None:
             assert len(response.kvs) == 1, "Requesting '{}' yielded more "+ \
                 "than one match!".format(tagged_path)
+            modRevision = result[0].mod_revision
             result = result[0].value.decode('utf-8')
 
         # Return value together with revision
-        return (result, response.header.revision)
+        return (result, Etcd3Revision(response.header.revision, modRevision))
 
     def list_keys(self, path, prefix=False, revision=None):
         """
@@ -80,14 +85,24 @@ class BackendEtcd3:
             tagged_path = self._tag_depth(path)
         else:
             tagged_path = self._tag_depth(path+"/")
+        rev = None
+        if revision is not None:
+            rev = revision.revision
+
+        # Query range
         response = self._client.range(
-            tagged_path, prefix=True, keys_only=True, revision=revision)
+            tagged_path, prefix=True, keys_only=True, revision=rev)
+
+        # We do not return a mod revision here - this would not be
+        # very useful anyway as we are not returning values
+        revision = Etcd3Revision(response.header.revision, None)
+
         if response.kvs is None:
-            return ([], response.header.revision)
+            return ([], revision)
         else:
             return ([ self._untag_depth(kv.key.decode('utf-8'))
-                      for kv in response.kvs],
-                    response.header.revision)
+                      for kv in response.kvs ],
+                    revision)
 
     def create(self, path, value, lease=None):
         """
@@ -111,13 +126,15 @@ class BackendEtcd3:
         txn.success(txn.put(tagged_path, value, lease_id))
         return txn.commit().succeeded
 
-    def update(self, path, value):
-        """
-        Updates an existing key. Fails if the key does not exist.
+    def update(self, path, value, must_be_rev=None):
+        """ Updates an existing key. Fails if the key does not exist.
 
         :param path: Path to update
         :param value: Value to set
+        :param from_revision: Fail if found value does not match given
+            revision (atomic update)
         :returns: Whether transaction was successful
+
         """
 
         tagged_path = self._tag_depth(path)
@@ -125,6 +142,10 @@ class BackendEtcd3:
         # Put value if version is *not* zero (i.e. it exists)
         txn = self._client.Txn()
         txn.compare(txn.key(tagged_path).version != 0)
+        if must_be_rev is not None:
+            if must_be_rev.modRevision is None:
+                raise ValueError("Did not pass a valid modRevision!")
+            txn.compare(txn.key(tagged_path).mod == must_be_rev.modRevision)
         txn.success(txn.put(tagged_path, value))
         return txn.commit().succeeded
 
@@ -159,3 +180,22 @@ class BackendEtcd3:
 
         # Execute
         return txn.commit().succeeded
+
+class Etcd3Revision:
+    """Identifies the revision of the database (+ a key)
+
+    This has two parts:
+
+    * `revision` is the database revision. Used for looking up
+      specific revisions in the database, for instance for querying a
+      consistent snapshot.
+
+    * `modRevision` identifies how often a given key has been modified
+      total. This can be used for checking whether a given key has
+      changed, for instance to implement an atomic update.
+    """
+
+    def __init__(self, revision, modRevision):
+        self.revision = revision
+        self.modRevision = modRevision
+
