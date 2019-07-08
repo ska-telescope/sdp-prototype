@@ -23,7 +23,7 @@ NAME=tangods_sdp_subarray
 GIT_VERSION=$(shell git rev-parse --verify --short=8 HEAD)
 VERSION=0.1.0-$(GIT_VERSION)
 IMAGE=$(DOCKER_REGISTRY_USER)/$(NAME)
-IMAGES := $(shell docker images --format '{{.Repository}}:{{.Tag}}' | grep $(IMAGE))
+# IMAGES := $(shell docker images --format '{{.Repository}}:{{.Tag}}' | grep $(IMAGE))
 
 # If the first make argument is "register"
 ifeq (register,$(firstword $(MAKECMDGOALS)))
@@ -116,18 +116,31 @@ stop:
 
 .PHONY: test
 test:
-	docker run --rm -t \
+	@docker run --rm -t \
 		-v $(PWD):/app \
 		--entrypoint=python \
 		skaorca/pytango_ska_dev \
 		-m pytest -vv -s --gherkin-terminal-reporter
 
-.PHONY: clean
-clean:
-ifeq ($(strip $(IMAGES)),)
-	@echo "$(CRED)No images need removing!$(CEND)"
-else
-	docker image rm $(IMAGES)
-endif
+.PHONY: ci_test
+ci_test:
+	python -m pytest -vv -s --junitxml=junit.xml
+
+
+.PHONY: test_prompt
+test_prompt:
+	@docker run --rm -it \
+		-v $(PWD):/app \
+		--entrypoint=/bin/bash \
+		skaorca/pytango_ska_dev
+
+#
+#.PHONY: clean
+#clean:
+#ifeq ($(strip $(IMAGES)),)
+#	@echo "$(CRED)No images need removing!$(CEND)"
+#else
+#	docker image rm $(IMAGES)
+#endif
 
 
