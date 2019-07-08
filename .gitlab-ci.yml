@@ -10,11 +10,11 @@ subarray_tests:
       - python -m pytest --gherkin-terminal-reporter -vv --cucumber-json=src/tango_sdp_subarray
     artifacts:
       paths:
-      - junit.xml
+      - cucumber.json
       expire_in: 30 days
       when: always
       reports:
-        junit: junit.xml
+      - cucumber.json
 
 # Update XRAY links in JIRA
 xray:
