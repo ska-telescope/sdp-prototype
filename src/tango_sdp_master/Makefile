@@ -114,11 +114,18 @@ stop:
 
 .PHONY: test
 test:
-	docker run --rm -t \
+	@docker run --rm -t \
 		-v $(PWD):/app \
 		--entrypoint=python \
 		skaorca/pytango_ska_dev \
-		-m pytest -vv -s --gherkin-terminal-reporter
+		-m pytest -vv -s
+
+.PHONY: test_prompt
+test_prompt:
+	@docker run --rm -it \
+		-v $(PWD):/app \
+		skaorca/pytango_ska_dev
+
 
 .PHONY: clean
 clean:
