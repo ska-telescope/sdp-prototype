@@ -13,8 +13,6 @@ subarray_tests:
       - cucumber.json
       expire_in: 30 days
       when: always
-      reports:
-      - cucumber.json
 
 # Update XRAY links in JIRA
 xray:
