@@ -9,6 +9,7 @@ verify_ssl = true
 # verify_ssl = true
 
 [packages]
+mock = "*"
 pytest = "*"
 pytest_bdd = "*"
 pytest-codestyle = "*"
