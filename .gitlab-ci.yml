@@ -30,5 +30,5 @@ xray:
         -H "Content-Type: multipart/form-data"
         -H "Authorization: Basic $JIRA_AUTH"
         -F file=@junit.xml
-        https://jira.skatelescope.org/rest/raven/1.0/import/execution/junit?testExecKey=XTP-118'
+        https://jira.skatelescope.org/rest/raven/1.0/import/execution/junit?testExecKey=XTP-124'
   retry: 2 #In case JIRA doesn't work first time
