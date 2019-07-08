@@ -39,21 +39,14 @@ class SDPMaster(SKAMaster):
     # Device Properties
     # -----------------
 
-
-
     # ----------
     # Attributes
     # ----------
-
-
-
 
     OperatingState = attribute(
         dtype='DevEnum',
         enum_labels=["INIT", "ON", "DISABLE", "STANDBY", "ALARM", "FAULT", "OFF", "UNKNOWN", ],
     )
-
-
 
     # ---------------
     # General methods
@@ -62,6 +55,9 @@ class SDPMaster(SKAMaster):
     def init_device(self):
         SKAMaster.init_device(self)
         # PROTECTED REGION ID(SDPMaster.init_device) ENABLED START #
+        # Initialise Attributes
+        self._operating_state = 0
+
         # PROTECTED REGION END #    //  SDPMaster.init_device
 
     def always_executed_hook(self):
@@ -82,7 +78,6 @@ class SDPMaster(SKAMaster):
         # PROTECTED REGION ID(SDPMaster.OperatingState_read) ENABLED START #
         return 0.0
         # PROTECTED REGION END #    //  SDPMaster.OperatingState_read
-
 
     # --------
     # Commands
@@ -129,6 +124,7 @@ def main(args=None, **kwargs):
     # PROTECTED REGION ID(SDPMaster.main) ENABLED START #
     return run((SDPMaster,), args=args, **kwargs)
     # PROTECTED REGION END #    //  SDPMaster.main
+
 
 if __name__ == '__main__':
     main()

@@ -19,8 +19,10 @@ sys.path.insert(0, os.path.abspath(path))
 from time import sleep
 from mock import MagicMock
 from PyTango import DevFailed, DevState
+import pytest
 from devicetest import DeviceTestCase, main
 from SDPMaster import SDPMaster
+
 
 # Note:
 #
@@ -34,6 +36,8 @@ from SDPMaster import SDPMaster
 
 
 # Device test case
+@pytest.mark.usefixtures("tango_context", "initialize_device")
+
 class SDPMasterDeviceTestCase(DeviceTestCase):
     """Test case for packet generation."""
     # PROTECTED REGION ID(SDPMaster.test_additionnal_import) ENABLED START #
@@ -195,10 +199,10 @@ class SDPMasterDeviceTestCase(DeviceTestCase):
         self.device.testMode
         # PROTECTED REGION END #    //  SDPMaster.test_testMode
 
-    def test_OperatingState(self):
+    def test_OperatingState(self, tango_context):
         """Test for OperatingState"""
         # PROTECTED REGION ID(SDPMaster.test_OperatingState) ENABLED START #
-        self.device.OperatingState
+        assert tango_context.device.OperatingState == 0
         # PROTECTED REGION END #    //  SDPMaster.test_OperatingState
 
     def test_maxCapabilities(self):
