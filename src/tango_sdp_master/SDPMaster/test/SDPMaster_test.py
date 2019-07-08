@@ -12,15 +12,17 @@
 # Path
 import sys
 import os
-path = os.path.join(os.path.dirname(__file__), os.pardir)
-sys.path.insert(0, os.path.abspath(path))
+file_path = os.path.dirname(os.path.abspath(__file__))
+module_path = os.path.abspath(os.path.join(file_path, os.pardir)) + "/SDPMaster"
+print(module_path)
+sys.path.insert(0, module_path)
 
 # Imports
 from time import sleep
-from mock import MagicMock
+from unittest.mock import MagicMock
 from PyTango import DevFailed, DevState
 import pytest
-from devicetest import DeviceTestCase, main
+# from devicetest import DeviceTestCase, main
 from SDPMaster import SDPMaster
 
 
@@ -38,12 +40,17 @@ from SDPMaster import SDPMaster
 # Device test case
 @pytest.mark.usefixtures("tango_context", "initialize_device")
 
-class SDPMasterDeviceTestCase(DeviceTestCase):
+
+class SDPMasterDeviceTestCase(object):
     """Test case for packet generation."""
     # PROTECTED REGION ID(SDPMaster.test_additionnal_import) ENABLED START #
     # PROTECTED REGION END #    //  SDPMaster.test_additionnal_import
     device = SDPMaster
-    properties = {'SkaLevel': '4', 'CentralLoggingTarget': '', 'ElementLoggingTarget': '', 'StorageLoggingTarget': 'localhost', 'GroupDefinitions': '', 'NrSubarrays': '16', 'CapabilityTypes': '', 'MaxCapabilities': '', 
+    properties = {'SkaLevel': '4', 'CentralLoggingTarget': '',
+                  'ElementLoggingTarget': '',
+                  'StorageLoggingTarget': 'localhost', 'GroupDefinitions': '',
+                  'NrSubarrays': '16', 'CapabilityTypes': '',
+                  'MaxCapabilities': '',
                   }
     empty = None  # Should be []
 

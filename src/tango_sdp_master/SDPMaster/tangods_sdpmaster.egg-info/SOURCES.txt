@@ -1,0 +1,16 @@
+LICENSE.txt
+MANIFEST.in
+README.rst
+SDPMaster.xmi
+setup.py
+SDPMaster/SDPMaster.py
+SDPMaster/__init__.py
+SDPMaster/__main__.py
+SDPMaster/release.py
+tangods_sdpmaster.egg-info/PKG-INFO
+tangods_sdpmaster.egg-info/SOURCES.txt
+tangods_sdpmaster.egg-info/dependency_links.txt
+tangods_sdpmaster.egg-info/entry_points.txt
+tangods_sdpmaster.egg-info/top_level.txt
+test/SDPMaster_test.py
+test/__init__.py

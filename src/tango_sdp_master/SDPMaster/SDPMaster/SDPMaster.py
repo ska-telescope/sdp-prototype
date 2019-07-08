@@ -20,7 +20,7 @@ from PyTango.server import attribute, command
 from PyTango.server import device_property
 from PyTango import AttrQuality, DispLevel, DevState
 from PyTango import AttrWriteType, PipeWriteType
-from SKAMaster import SKAMaster
+# from SKAMaster import SKAMaster
 # Additional import
 # PROTECTED REGION ID(SDPMaster.additionnal_import) ENABLED START #
 # PROTECTED REGION END #    //  SDPMaster.additionnal_import
@@ -28,7 +28,8 @@ from SKAMaster import SKAMaster
 __all__ = ["SDPMaster", "main"]
 
 
-class SDPMaster(SKAMaster):
+# class SDPMaster(SKAMaster):
+class SDPMaster(Device):
     """
     """
     __metaclass__ = DeviceMeta
@@ -53,7 +54,7 @@ class SDPMaster(SKAMaster):
     # ---------------
 
     def init_device(self):
-        SKAMaster.init_device(self)
+        Device.init_device(self)
         # PROTECTED REGION ID(SDPMaster.init_device) ENABLED START #
         # Initialise Attributes
         self._operating_state = 0
