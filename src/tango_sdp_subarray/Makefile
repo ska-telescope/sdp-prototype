@@ -120,11 +120,17 @@ test:
 		-v $(PWD):/app \
 		--entrypoint=python \
 		skaorca/pytango_ska_dev \
-		-m pytest -vv -s --gherkin-terminal-reporter
+		-m pytest \
+		-vv \
+		--gherkin-terminal-reporter
 
 .PHONY: ci_test
 ci_test:
-	python -m pytest -vv -s --junitxml=junit.xml
+	python -m pytest \
+		-vv \
+		--gherkin-terminal-reporter \
+		--cucumber-json=cucumber.json \
+		.
 
 
 .PHONY: test_prompt
