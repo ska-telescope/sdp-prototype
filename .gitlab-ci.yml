@@ -6,19 +6,20 @@ stages:
 #    > gitlab-runner exec docker subarray_tests
 subarray_tests:
     stage: test
-    image: skaorca/pytango_ska_dev:latest
+    image:
+      name: skaorca/pytango_ska_dev:latest
+      entrypoint: [""]
     script:
-      - cd src/tango_sdp_subarray
       - python -m pytest
           --gherkin-terminal-reporter
           -vv
           --cucumber-json=cucumber.json
-          .
-#    artifacts:
-#      paths:
-#      - cucumber.json
-#      expire_in: 30 days
-#      when: always
+          src/tango_sdp_subarray
+    artifacts:
+      paths:
+      - cucumber.json
+      expire_in: 30 days
+      when: always
 
 # Update XRAY links in JIRA
 xray:
