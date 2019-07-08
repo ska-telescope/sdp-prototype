@@ -7,7 +7,7 @@ subarray_tests:
     image: skaorca/pytango_ska_dev:latest
     script:
 #      - cd src/tango_sdp_subarray
-      - python -m pytest --gherkin-terminal-reporter -vv --junitxml=junit.xml src/tango_sdp_subarray
+      - python -m pytest --gherkin-terminal-reporter -vv --cucumber-json=src/tango_sdp_subarray
     artifacts:
       paths:
       - junit.xml
@@ -30,5 +30,5 @@ xray:
         -H "Content-Type: multipart/form-data"
         -H "Authorization: Basic $JIRA_AUTH"
         -F file=@junit.xml
-        https://jira.skatelescope.org/rest/raven/1.0/import/execution/junit?testExecKey=XTP-124'
+        https://jira.skatelescope.org/rest/raven/1.0/import/execution/cucumber?testExecKey=XTP-124'
   retry: 2 #In case JIRA doesn't work first time
