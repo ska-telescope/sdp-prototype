@@ -52,7 +52,7 @@ from tango.test_context import DeviceTestContext
 import pytest
 
 from tango.test_context import DeviceTestContext
-from src.tango_sdp_master.SDPMaster.SDPMaster.SDPMaster import SDPMaster
+from SDPMaster import SDPMaster
 
 
 @pytest.fixture(scope='session', autouse=True)

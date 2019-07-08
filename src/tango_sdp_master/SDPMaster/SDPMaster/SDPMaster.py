@@ -47,6 +47,7 @@ class SDPMaster(Device):
     OperatingState = attribute(
         dtype='DevEnum',
         enum_labels=["INIT", "ON", "DISABLE", "STANDBY", "ALARM", "FAULT", "OFF", "UNKNOWN", ],
+        access=AttrWriteType.READ
     )
 
     # ---------------
@@ -58,6 +59,7 @@ class SDPMaster(Device):
         # PROTECTED REGION ID(SDPMaster.init_device) ENABLED START #
         # Initialise Attributes
         self._operating_state = 0
+        self.set_state(DevState.ON)
 
         # PROTECTED REGION END #    //  SDPMaster.init_device
 
@@ -77,7 +79,7 @@ class SDPMaster(Device):
 
     def read_OperatingState(self):
         # PROTECTED REGION ID(SDPMaster.OperatingState_read) ENABLED START #
-        return 0.0
+        return self._operating_state
         # PROTECTED REGION END #    //  SDPMaster.OperatingState_read
 
     # --------
@@ -88,6 +90,7 @@ class SDPMaster(Device):
     )
     @DebugIt()
     def on(self):
+        """."""
         # PROTECTED REGION ID(SDPMaster.on) ENABLED START #
         self._operating_state = 1
         # PROTECTED REGION END #    //  SDPMaster.on
@@ -96,6 +99,7 @@ class SDPMaster(Device):
     )
     @DebugIt()
     def disable(self):
+        """."""
         # PROTECTED REGION ID(SDPMaster.disable) ENABLED START #
         self._operating_state = 2
         # PROTECTED REGION END #    //  SDPMaster.disable
@@ -104,6 +108,7 @@ class SDPMaster(Device):
     )
     @DebugIt()
     def standby(self):
+        """."""
         # PROTECTED REGION ID(SDPMaster.standby) ENABLED START #
         self._operating_state = 3
         # PROTECTED REGION END #    //  SDPMaster.standby
@@ -112,6 +117,7 @@ class SDPMaster(Device):
     )
     @DebugIt()
     def off(self):
+        """."""
         # PROTECTED REGION ID(SDPMaster.off) ENABLED START #
         self._operating_state = 6
         # PROTECTED REGION END #    //  SDPMaster.off
