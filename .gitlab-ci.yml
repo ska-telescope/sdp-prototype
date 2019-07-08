@@ -32,7 +32,7 @@ xray:
   # commented above out because it's breaking the build
   script:
     - 'curl -X POST --silent --show-error --fail
-        -H "Content-Type: multipart/form-data"
+        "Content-Type: application/json"
         -H "Authorization: Basic $JIRA_AUTH"
         -F file=@cucumber.json
         https://jira.skatelescope.org/rest/raven/1.0/import/execution/cucumber?testExecKey=XTP-124'
