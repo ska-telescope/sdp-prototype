@@ -69,12 +69,6 @@ class SDPMasterDeviceTestCase(DeviceTestCase):
         self.device.Status()
         # PROTECTED REGION END #    //  SDPMaster.test_Status
 
-    def test_GetVersionInfo(self):
-        """Test for GetVersionInfo"""
-        # PROTECTED REGION ID(SDPMaster.test_GetVersionInfo) ENABLED START #
-        self.device.GetVersionInfo()
-        # PROTECTED REGION END #    //  SDPMaster.test_GetVersionInfo
-
     def test_isCapabilityAchievable(self):
         """Test for isCapabilityAchievable"""
         # PROTECTED REGION ID(SDPMaster.test_isCapabilityAchievable) ENABLED START #
@@ -110,6 +104,12 @@ class SDPMasterDeviceTestCase(DeviceTestCase):
         # PROTECTED REGION ID(SDPMaster.test_off) ENABLED START #
         self.device.off()
         # PROTECTED REGION END #    //  SDPMaster.test_off
+
+    def test_GetVersionInfo(self):
+        """Test for GetVersionInfo"""
+        # PROTECTED REGION ID(SDPMaster.test_GetVersionInfo) ENABLED START #
+        self.device.GetVersionInfo()
+        # PROTECTED REGION END #    //  SDPMaster.test_GetVersionInfo
 
     def test_elementLoggerAddress(self):
         """Test for elementLoggerAddress"""

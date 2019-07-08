@@ -41,12 +41,6 @@ class SDPMaster(SKAMaster):
 
 
 
-
-
-
-
-
-
     # ----------
     # Attributes
     # ----------
@@ -54,19 +48,9 @@ class SDPMaster(SKAMaster):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
     OperatingState = attribute(
-        dtype='double',
+        dtype='DevEnum',
+        enum_labels=["INIT", "ON", "DISABLE", "STANDBY", "ALARM", "FAULT", "OFF", "UNKNOWN", ],
     )
 
 
@@ -105,21 +89,11 @@ class SDPMaster(SKAMaster):
     # --------
 
     @command(
-    dtype_out=('str',), 
-    doc_out="[ name: EltTelState", 
-    )
-    @DebugIt()
-    def GetVersionInfo(self):
-        # PROTECTED REGION ID(SDPMaster.GetVersionInfo) ENABLED START #
-        return [""]
-        # PROTECTED REGION END #    //  SDPMaster.GetVersionInfo
-
-    @command(
     )
     @DebugIt()
     def on(self):
         # PROTECTED REGION ID(SDPMaster.on) ENABLED START #
-        pass
+        self._operating_state = 1
         # PROTECTED REGION END #    //  SDPMaster.on
 
     @command(
@@ -127,7 +101,7 @@ class SDPMaster(SKAMaster):
     @DebugIt()
     def disable(self):
         # PROTECTED REGION ID(SDPMaster.disable) ENABLED START #
-        pass
+        self._operating_state = 2
         # PROTECTED REGION END #    //  SDPMaster.disable
 
     @command(
@@ -135,7 +109,7 @@ class SDPMaster(SKAMaster):
     @DebugIt()
     def standby(self):
         # PROTECTED REGION ID(SDPMaster.standby) ENABLED START #
-        pass
+        self._operating_state = 3
         # PROTECTED REGION END #    //  SDPMaster.standby
 
     @command(
@@ -143,7 +117,7 @@ class SDPMaster(SKAMaster):
     @DebugIt()
     def off(self):
         # PROTECTED REGION ID(SDPMaster.off) ENABLED START #
-        pass
+        self._operating_state = 6
         # PROTECTED REGION END #    //  SDPMaster.off
 
 # ----------
