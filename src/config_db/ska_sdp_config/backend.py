@@ -279,22 +279,22 @@ class Etc3Watcher(object):
 class Etcd3Transaction(object):
 
     def __init__(self, backend, max_retries=64):
-        self.backend = backend
-        self.revision = None
-        self.queries = {}
-        self.updates = {}
+        self._backend = backend
+        self._revision = None
+        self._queries = {}
+        self._updates = {}
         # TODO: deletes? Might get tricky mixing ranged deletes with
         # create...
-        self.max_retries = max_retries
-        self.committed = False
-        self.do_loop = False
-        self.do_wait = False
+        self._max_retries = max_retries
+        self._committed = False
+        self._loop = False
+        self._watch = False
 
-        self.watchers = {}
-        self.watch_queue = queue_m.Queue()
+        self._watchers = {}
+        self._watch_queue = queue_m.Queue()
 
     def _ensure_uncommitted(self):
-        if self.committed:
+        if self._committed:
             raise RuntimeError("Attempted to modify committed transaction!")
 
     def get(self, path):
@@ -302,20 +302,20 @@ class Etcd3Transaction(object):
         self._ensure_uncommitted()
 
         # Check whether it was written as part of this transaction
-        if path in self.updates:
-            return self.updates[path][0]
+        if path in self._updates:
+            return self._updates[path][0]
 
         # Check whether we already have the request response
         query = ("get", path)
-        if query in self.queries:
-            return self.queries[query][0]
+        if query in self._queries:
+            return self._queries[query][0]
 
         # Perform get request
-        v, rev = self.queries[query] = self.backend.get(path, revision=self.revision)
+        v, rev = self._queries[query] = self._backend.get(path, revision=self._revision)
 
         # Set revision, if not already done so
-        if self.revision is None:
-            self.revision = rev
+        if self._revision is None:
+            self._revision = rev
         return v
 
     def list_keys(self, path):
@@ -323,21 +323,21 @@ class Etcd3Transaction(object):
         self._ensure_uncommitted()
 
         # Check whether any written keys match the description
-        updated_keys = [ key for key in self.updates.keys()
+        updated_keys = [ key for key in self._updates.keys()
                          if key.startswith(path) ]
 
         # Check whether we already have the request response
         query = ("list_keys", path)
-        if query in self.queries:
-            return self.queries[query][0]
+        if query in self._queries:
+            return self._queries[query][0]
 
         # Perform request
-        v, rev = self.queries[query] = self.backend.list_keys(
-            path, revision=self.revision)
+        v, rev = self._queries[query] = self._backend.list_keys(
+            path, revision=self._revision)
 
         # Set revision, return
-        if self.revision is None:
-            self.revision = rev
+        if self._revision is None:
+            self._revision = rev
         return v
 
     def create(self, path, value, lease=None):
@@ -351,7 +351,7 @@ class Etcd3Transaction(object):
             return False
 
         # Add update request
-        self.updates[path] = (value, lease)
+        self._updates[path] = (value, lease)
         return True
 
     def update(self, path, value):
@@ -364,7 +364,7 @@ class Etcd3Transaction(object):
             return False
 
         # Add update request
-        self.updates[path] = (value, None)
+        self._updates[path] = (value, None)
         return True
 
     def commit(self):
@@ -372,18 +372,18 @@ class Etcd3Transaction(object):
         self._ensure_uncommitted()
 
         # If we have made no updates, we don't need to verify the log
-        if len(self.updates) == 0:
-            self.committed = True
+        if len(self._updates) == 0:
+            self._committed = True
             return True
 
         # Create transaction
-        txn = self.backend._client.Txn()
+        txn = self._backend._client.Txn()
 
         # Verify the query log
-        for query, result in self.queries.items():
+        for query, result in self._queries.items():
 
             if query[0] == 'get':
-                tagged_path = self.backend._tag_depth(query[1])
+                tagged_path = self._backend._tag_depth(query[1])
                 rev = result[1]
 
                 if rev.modRevision is None:
@@ -398,48 +398,48 @@ class Etcd3Transaction(object):
                     txn.compare(txn.key(tagged_path).mod == rev.modRevision)
 
             elif query[0] == 'list_keys':
-                tagged_path = self.backend._tag_depth(query[1])
+                tagged_path = self._backend._tag_depth(query[1])
                 rev = result[1]
 
                 # Make sure that all returned keys still exist
                 for res_path in result[0]:
-                    tagged_res_path = self.backend._tag_depth(res_path)
+                    tagged_res_path = self._backend._tag_depth(res_path)
                     txn.compare(txn.key(tagged_res_path).version > 0)
 
                 # Also check that no new keys have entered the range
                 # (by checking whether the request would contain any
                 # keys with a newer create revision than our request)
                 txn.compare(txn.key(tagged_path, prefix=True).create
-                            < self.revision.revision+1)
+                            < self._revision.revision+1)
 
             else:
                 assert False
 
         # Commit changes. Note that the dictionary guarantees that we
         # only update any key at most once.
-        for path, (value, lease) in self.updates.items():
-            tagged_path = self.backend._tag_depth(path)
+        for path, (value, lease) in self._updates.items():
+            tagged_path = self._backend._tag_depth(path)
             txn.success(txn.put(tagged_path, value, lease))
 
         # Done
-        self.committed = True
+        self._committed = True
         return txn.commit().succeeded
 
-    def reset(self):
+    def reset(self, revision=None):
         """
         After a call to commit(), resets the transaction so it can be restarted.
         """
 
-        if not self.committed:
+        if not self._committed:
             raise RuntimeError("Called reset on an uncomitted transaction!")
 
         # Reset
-        self.revision = None
-        self.queries = {}
-        self.updates = {}
-        self.committed = False
-        self.do_loop = False
-        self.do_wait = False
+        self._revision = revision
+        self._queries = {}
+        self._updates = {}
+        self._committed = False
+        self._loop = False
+        self._watch = False
 
     def loop(self, watch=False):
         """Always repeat transaction execution, even if it succeeds
@@ -448,18 +448,18 @@ class Etcd3Transaction(object):
         transaction changed
         """
 
-        if self.do_loop:
+        if self._loop:
             # If called multiple times, looping immediately takes precedence
-            self.do_watch = (self.do_watch and watch)
+            self._watch = (self._watch and watch)
         else:
-            self.do_loop = True
-            self.do_watch = watch
+            self._loop = True
+            self._watch = watch
 
     def __iter__(self):
 
         try:
 
-            for _ in range(self.max_retries):
+            for _ in range(self._max_retries):
 
                 # Should build up a transaction
                 yield self
@@ -468,24 +468,22 @@ class Etcd3Transaction(object):
                 if self.commit():
 
                     # No further loop?
-                    if not self.do_loop:
+                    if not self._loop:
                         return
 
                     # Set watches?
-                    if self.do_wait:
-                        self.wait()
+                    if self._watch:
+                        # Wait for something to happen
+                        rev = self.watch()
+                        # Reset setting new revision
+                        self.reset(rev)
                         continue
 
                 # Repeat after reset otherwise
                 self.reset()
 
         finally:
-
             self.clear_watch()
-            # Remove watchers
-            for watcher in self.watchers:
-                watcher.stop()
-            self.watchers = []
 
         # Ran out of repeats? Fail
         raise RuntimeError("Transaction did not succeed after {} retries!"
@@ -494,30 +492,35 @@ class Etcd3Transaction(object):
     def clear_watch(self):
 
         # Remove watchers
-        for watcher in self.watchers.values():
+        for watcher in self._watchers.values():
             watcher.stop()
-        self.watchers = {}
+        self._watchers = {}
 
-    def wait(self):
-        """ Wait for a change on one of the values read """
+    def watch(self):
+        """Wait for a change on one of the values read. Returns the revision
+        at which a change was detected."""
 
         # Make sure we have a watcher on every key read
         # (TODO: lists)
-        for typ, key in self.queries:
-            if typ == 'get' and self.watchers[key] is None:
-                self.watchers[key] = self.backend.watch(key, revision=self.revision)
-                self.watchers[key].start(self.watch_queue)
+        for typ, key in self._queries:
+            if typ == 'get' and self._watchers.get(key) is None:
+                self._watchers[key] = self._backend.watch(key, revision=self._revision)
+                self._watchers[key].start(self._watch_queue)
 
         # TODO: remove watches that are not used any more?
 
         while True:
 
             # Wait for something to get pushed on the queue
-            value, rev = self.queue.get()
+            path, value, rev = self._watch_queue.get()
 
             # Check that revision is newer (prevent duplicated updates)
-            if rev.revision <= self.revision.revision:
+            if rev.revision <= self._revision.revision:
+                continue
+
+            # Check that it is actually something we are waiting on
+            if ('get', path) not in self._queries:
                 continue
 
             # Alright, finished waiting
-            return
+            return rev

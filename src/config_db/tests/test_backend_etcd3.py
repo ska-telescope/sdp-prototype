@@ -292,15 +292,46 @@ def test_transaction_wait(etcd3):
 
     etcd3.create(key, "0")
 
+    # Test straightforward looping
+    values_seen = []
+    for i, txn in enumerate(etcd3.txn()):
+        values_seen.append(txn.get(key))
+        if i < 4:
+            txn.loop()
+        if i == 0:
+            for j in range(1,5):
+                etcd3.update(key, str(j))
+    assert values_seen == ['0'] + 4 * ['4']
+
+    # Now test with watch flag set. This would block unless we make
+    # the appropriate number of updates. Note that in contrast to the
+    # last example, here we have a guarantee that we see every
+    # individual value.
+    values_seen = []
+    for i, txn in enumerate(etcd3.txn()):
+        values_seen.append(txn.get(key))
+        if i < 4:
+            txn.loop(watch=True)
+        if i == 0:
+            for j in range(1,5):
+                etcd3.update(key, str(j))
+    assert i == 4
+    assert values_seen == ['4','1','2','3','4']
+    assert len(txn._watchers) == 0
+
+    # Make sure we can successfully cancel underlying watchers using "break"
     values_seen = []
     for i, txn in enumerate(etcd3.txn()):
         values_seen.append(txn.get(key))
         if i == 0:
-            for j in range(4):
-                etcd3.update(key, str(j))
-        if i < 4:
+            etcd3.update(key, "x")
             txn.loop(watch=True)
-
+        if i == 1:
+            assert len(txn._watchers) == 1
+            break
+    assert len(txn._watchers) == 0
+    assert i == 1
+    assert values_seen == ['4','x']
 
 if __name__ == '__main__':
     pytest.main()
