@@ -8,7 +8,7 @@ prefix = "/__test_pb"
 @pytest.fixture(scope="session")
 def cfg():
     cfg = config.Config(global_prefix=prefix)
-    assert cfg._backend.delete(prefix, must_exist=False, recursive=True)
+    cfg._backend.delete(prefix, must_exist=False, recursive=True)
     return cfg
 
 def test_create_pb(cfg):

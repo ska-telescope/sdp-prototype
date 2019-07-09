@@ -148,7 +148,8 @@ class Etcd3(object):
         txn = self._client.Txn()
         txn.compare(txn.key(tagged_path).version == 0)
         txn.success(txn.put(tagged_path, value, lease_id))
-        return txn.commit().succeeded
+        if not txn.commit().succeeded:
+            raise Collision(path, "Cannot create {}, as it already exists!".format(path))
 
     def update(self, path, value, must_be_rev=None):
         """ Updates an existing key. Fails if the key does not exist.
@@ -171,7 +172,8 @@ class Etcd3(object):
                 raise ValueError("Did not pass a valid modRevision!")
             txn.compare(txn.key(tagged_path).mod == must_be_rev.modRevision)
         txn.success(txn.put(tagged_path, value))
-        return txn.commit().succeeded
+        if not txn.commit().succeeded:
+            raise Vanished(path, "Cannot update {}, as it does not exist!".format(path))
 
     def delete(self, path,
                must_exist = True, recursive = False, prefix = False,
@@ -203,7 +205,8 @@ class Etcd3(object):
                 txn.success(txn.delete(dpath, prefix=True))
 
         # Execute
-        return txn.commit().succeeded
+        if not txn.commit().succeeded:
+            raise Vanished(path, "Cannot delete {}, as it does not exist!".format(path))
 
     def close(self):
         """ Closes the client connection """
@@ -215,6 +218,30 @@ class Etcd3(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
         return False
+
+class Collision(RuntimeError):
+
+    def __init__(self, path, message):
+        self.path = path
+        super().__init__(message)
+
+    def __str__(self):
+        return super(self).__str__()
+
+    def __repr__(self):
+        return super().__repr__()
+
+class Vanished(RuntimeError):
+
+    def __init__(self, path, message):
+        self.path = path
+        super().__init__(message)
+
+    def __str__(self):
+        return super().__str__()
+
+    def __repr__(self):
+        return super().__repr__()
 
 class Etcd3Revision(object):
     """Identifies the revision of the database (+ a key)
@@ -348,11 +375,10 @@ class Etcd3Transaction(object):
         # and put it into the query log
         result = self.get(path)
         if result is not None:
-            return False
+            raise Collision(path, "Cannot create {}, as it already exists!".format(path))
 
         # Add update request
         self._updates[path] = (value, lease)
-        return True
 
     def update(self, path, value):
 
@@ -361,7 +387,7 @@ class Etcd3Transaction(object):
         # As with "update"
         result = self.get(path)
         if result is None:
-            return False
+            raise Collision(path, "Cannot update {}, as it does not exist!".format(path))
 
         # Add update request
         self._updates[path] = (value, None)

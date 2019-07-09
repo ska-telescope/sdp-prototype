@@ -9,7 +9,7 @@ import json
 # Permit identifiers up to 64 bytes in length
 _id_re = re.compile("[_A-Za-z0-9]{1,64}")
 
-class Config():
+class Config(object):
 
     def __init__(self, backend=None, global_prefix='', **client_args):
         """
@@ -114,8 +114,8 @@ class Config():
             pb_path = self._pb_path+set_pb_id
 
             # Attempt to create processing block
-            if self._backend.create(pb_path, json.dumps(pb)):
-                return entity.ProcessingBlock(pb, pb_path)
+            self._backend.create(pb_path, json.dumps(pb))
+            return entity.ProcessingBlock(pb, pb_path)
 
         raise RuntimeError("Exhausted retries while trying to create processing block!")
 

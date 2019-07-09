@@ -10,9 +10,9 @@ prefix = "/__test"
 @pytest.fixture(scope="session")
 def etcd3():
     with backend.Etcd3() as etcd3:
-        assert etcd3.delete(prefix, must_exist=False, recursive=True)
+        etcd3.delete(prefix, must_exist=False, recursive=True)
         yield etcd3
-        assert etcd3.delete(prefix, must_exist=False, recursive=True)
+        etcd3.delete(prefix, must_exist=False, recursive=True)
 
 def test_valid(etcd3):
     with pytest.raises(ValueError, match="trailing"):
@@ -23,15 +23,16 @@ def test_valid(etcd3):
 def test_create(etcd3):
     key = prefix + "/test_create"
 
-    assert etcd3.create(key, "foo")
-    assert not etcd3.create(key, "foo")
+    etcd3.create(key, "foo")
+    with pytest.raises(backend.Collision):
+        etcd3.create(key, "foo")
 
     # Check value
     v,ver = etcd3.get(key)
     assert v == 'foo'
 
     # Update, check again. Make sure version was incremented
-    assert etcd3.update(key, 'bar', must_be_rev=ver)
+    etcd3.update(key, 'bar', must_be_rev=ver)
     v2,ver2 = etcd3.get(key)
     assert v2 == 'bar'
     assert ver2.revision > ver.revision
@@ -39,7 +40,8 @@ def test_create(etcd3):
 
     # Check that we cannot update the original key if we provide the
     # wrong revision
-    assert not etcd3.update(key, 'baz', must_be_rev=ver)
+    with pytest.raises(backend.Vanished):
+        etcd3.update(key, 'baz', must_be_rev=ver)
     v2b,ver2b = etcd3.get(key)
     assert v2b == 'bar'
     assert ver2.modRevision == ver2b.modRevision
@@ -49,8 +51,9 @@ def test_create(etcd3):
     assert v3 == 'foo'
 
     # Delete key
-    assert etcd3.delete(key)
-    assert not etcd3.delete(key)
+    etcd3.delete(key)
+    with pytest.raises(backend.Vanished):
+        etcd3.delete(key)
 
 def test_list(etcd3):
 
@@ -86,11 +89,13 @@ def test_list(etcd3):
 def test_lease(etcd3):
     key = prefix + "/test_lease"
     with etcd3.lease(ttl=5) as lease:
-        assert etcd3.create(key, "blub", lease=lease)
-        assert not etcd3.create(key, "blub", lease=lease)
+        etcd3.create(key, "blub", lease=lease)
+        with pytest.raises(backend.Collision):
+            etcd3.create(key, "blub", lease=lease)
         assert lease.alive()
     # Key should have been removed by lease expiring
-    assert not etcd3.delete(key)
+    with pytest.raises(backend.Vanished):
+        etcd3.delete(key)
 
 def test_delete(etcd3):
 
@@ -105,11 +110,12 @@ def test_delete(etcd3):
             etcd3.create(child, n)
 
         # Create some keys in a parallel structure sharing a prefix
-        etcd3.create(key + "x", "keep!")
-        etcd3.create(key + "x/x", "keep!")
+        if del_prefix == False:
+            etcd3.create(key + "x", "keep!")
+            etcd3.create(key + "x/x", "keep!")
 
         # Delete root
-        assert etcd3.delete(key, prefix=del_prefix)
+        etcd3.delete(key, prefix=del_prefix)
         for n, child in enumerate(childs):
             if n > 0:
                 assert etcd3.get(child)[0] == str(n), child
@@ -117,8 +123,9 @@ def test_delete(etcd3):
         assert etcd3.get(key + "x/x")[0] == "keep!"
 
         # This should fail now
-        assert not etcd3.delete(key, recursive=True, must_exist=True,
-                                prefix=del_prefix)
+        with pytest.raises(backend.Vanished):
+            etcd3.delete(key, recursive=True, must_exist=True,
+                         prefix=del_prefix)
         for n, child in enumerate(childs):
             if n > 0:
                 assert etcd3.get(child)[0] == str(n), child
@@ -128,8 +135,8 @@ def test_delete(etcd3):
         # But this one should work, and remove remaining keys
         # (except those with the same prefix but different path
         #  unless we set the option before)
-        assert etcd3.delete(key, recursive=True, must_exist=False,
-                            prefix=del_prefix)
+        etcd3.delete(key, recursive=True, must_exist=False,
+                     prefix=del_prefix)
         for child in childs:
             assert etcd3.get(child)[0] is None, child
         assert (etcd3.get(key + "x")[0] is None) == del_prefix
@@ -140,8 +147,7 @@ def test_watch(etcd3):
 
     key = prefix + "/test_watch"
 
-    assert etcd3.delete(key, must_exist=False)
-    etcd3.delete("/test", must_exist=False)
+    etcd3.delete(key, must_exist=False)
 
     with etcd3.watch(key) as watch:
 
@@ -149,15 +155,15 @@ def test_watch(etcd3):
         # first update
         time.sleep(0.1)
 
-        assert etcd3.create(key, "bla")
-        assert etcd3.update(key, "bla2")
-        assert etcd3.update(key, "bla3")
-        assert etcd3.update(key, "bla4")
+        etcd3.create(key, "bla")
+        etcd3.update(key, "bla2")
+        etcd3.update(key, "bla3")
+        etcd3.update(key, "bla4")
 
-        assert watch.get()[0] == 'bla'
-        assert watch.get()[0] == 'bla2'
-        assert watch.get()[0] == 'bla3'
-        assert watch.get()[0] == 'bla4'
+        assert watch.get()[1] == 'bla'
+        assert watch.get()[1] == 'bla2'
+        assert watch.get()[1] == 'bla3'
+        assert watch.get()[1] == 'bla4'
 
 def test_transaction_simple(etcd3):
 
@@ -166,36 +172,36 @@ def test_transaction_simple(etcd3):
 
     # Make sure we can do simple things, like reading a key
     for txn in etcd3.txn():
-        assert txn.create(key, "test")
+        txn.create(key, "test")
     assert etcd3.get(key)[0] == "test"
     for txn in etcd3.txn():
         assert txn.get(key) == "test"
         assert txn.get(key) == "test"
     for txn in etcd3.txn():
-        assert txn.update(key, "test2")
+        txn.update(key, "test2")
     assert etcd3.get(key)[0] == "test2"
     for txn in etcd3.txn():
-        assert txn.update(key, "test3")
+        txn.update(key, "test3")
         assert txn.get(key) == "test3"
     assert etcd3.get(key)[0] == "test3"
-    assert etcd3.delete(key)
+    etcd3.delete(key)
     for txn in etcd3.txn():
-        assert txn.create(key, "test")
+        txn.create(key, "test")
         assert txn.get(key) == "test"
-        assert txn.update(key, "test2")
+        txn.update(key, "test2")
         assert txn.get(key) == "test2"
     assert etcd3.get(key)[0] == "test2"
 
     for txn in etcd3.txn():
         assert txn.get(key2) is None
         assert txn.get(key) == "test2"
-        assert txn.create(key2, "test2")
-        assert txn.update(key, "test4")
+        txn.create(key2, "test2")
+        txn.update(key, "test4")
         assert txn.get(key) == "test4"
         assert txn.get(key2) == "test2"
     assert etcd3.get(key2)[0] == "test2"
 
-    assert etcd3.delete(key, recursive=True)
+    etcd3.delete(key, recursive=True)
 
 def test_transaction_conc(etcd3):
 
@@ -205,8 +211,8 @@ def test_transaction_conc(etcd3):
     key4 = key + "/4"
 
     # Ensure reading is consistent
-    assert etcd3.create(key, "1")
-    assert etcd3.create(key2, "1")
+    etcd3.create(key, "1")
+    etcd3.create(key2, "1")
     for i, txn in enumerate(etcd3.txn()):
         # First "get" should bake in revision, so subsequent calls
         # return values from this point in time
@@ -235,32 +241,35 @@ def test_transaction_conc(etcd3):
             etcd3.create(key4, "1")
         txn.update(key3, int(i))
     assert i == 1
-    assert etcd3.delete(key4)
+    etcd3.delete(key4)
 
     # This is especially important because it underpins the safety
     # check of create():
     for i, txn in enumerate(etcd3.txn()):
         # "Succeeds" first time only to cause the transaction to get
         # re-run to find a failure the second time around
-        assert txn.create(key4, "2") == (i == 0)
         if i == 0:
+            txn.create(key4, "2")
             etcd3.create(key4, "1")
+        if i == 1:
+            with pytest.raises(backend.Collision):
+                txn.create(key4, "2")
     assert i == 1
 
-    assert etcd3.delete(key, recursive=True)
+    etcd3.delete(key, recursive=True)
 
 def test_transaction_list(etcd3):
 
     key = prefix + "/test_txn_list"
     keys = [ key+"/"+str(i) for i in range(10) ]
     for k in keys:
-        assert etcd3.create(k, k)
+        etcd3.create(k, k)
 
     # Ensure that we can list the keys
     assert set(etcd3.list_keys(key+'/')[0]) == set(keys)
     for txn in etcd3.txn():
         assert set(txn.list_keys(key+'/')) == set(keys)
-    assert etcd3.delete(key, recursive=True, must_exist=False)
+    etcd3.delete(key, recursive=True, must_exist=False)
 
     # Test iteratively building up
     for i,k in enumerate(keys):
@@ -272,7 +281,7 @@ def test_transaction_list(etcd3):
     for i,txn in enumerate(etcd3.txn()):
         txn.list_keys(key+'/')
         etcd3.delete(keys[5], must_exist=False)
-        assert txn.update(keys[4], keys[3-i]) # stand-in side effect
+        txn.update(keys[4], keys[3-i]) # stand-in side effect
     assert i == 1
     assert etcd3.get(keys[5])[0] is None
 
@@ -281,9 +290,9 @@ def test_transaction_list(etcd3):
         txn.list_keys(key+'/')
         if i == 0:
             etcd3.create(keys[5], keys[5])
-        assert txn.update(keys[4], keys[3-i]) # stand-in side effect
+        txn.update(keys[4], keys[3-i]) # stand-in side effect
     assert i == 1
-    assert etcd3.delete(key, recursive=True, must_exist=False)
+    etcd3.delete(key, recursive=True, must_exist=False)
 
 
 def test_transaction_wait(etcd3):
