@@ -1,6 +1,6 @@
 
 import etcd3
-import queue
+import queue as queue_m
 
 class Etcd3(object):
 
@@ -95,7 +95,7 @@ class Etcd3(object):
 
         # Set up watcher
         watcher = self._client.Watcher(tagged_path, start_revision=rev, prev_kv=True)
-        return Etc3Watcher(watcher)
+        return Etc3Watcher(watcher, path)
 
     def list_keys(self, path, prefix=False, revision=None):
         """
@@ -243,28 +243,38 @@ class Etc3Watcher(object):
     Enter to start watching the key, at which point 
     """
 
-    def __init__(self, watcher):
+    def __init__(self, watcher, path):
         self._watcher = watcher
+        self.path = path
+        self.queue = None
 
-    def __enter__(self):
+    def start(self, queue=None):
         """ Activates the watcher, yielding a queue for updates """
 
-        q = queue.Queue()
+        if queue is None:
+            self.queue = queue = queue_m.Queue()
         def on_event(event):
             if event.type == etcd3.EventType.PUT:
-                q.put((event.value.decode('utf-8'),
-                       Etcd3Revision(event.mod_revision, event.mod_revision)))
+                queue.put((self.path, event.value.decode('utf-8'),
+                           Etcd3Revision(event.mod_revision, event.mod_revision)))
             else:
-                q.put((None, Etcd3Revision(event.mod_revision, None)))
+                queue.put((self.path, None, Etcd3Revision(event.mod_revision, None)))
 
         self._watcher.onEvent(on_event)
         self._watcher.runDaemon()
-        return q
 
-    def __exit__(self, *args):
+    def stop(self):
         """ Deactivates the watcher """
         self._watcher.clear_callbacks()
         self._watcher.stop()
+        self.queue = None
+
+    def __enter__(self):
+        self.start()
+        return self.queue
+
+    def __exit__(self, *args):
+        self.stop()
 
 class Etcd3Transaction(object):
 
@@ -277,6 +287,11 @@ class Etcd3Transaction(object):
         # create...
         self.max_retries = max_retries
         self.committed = False
+        self.do_loop = False
+        self.do_wait = False
+
+        self.watchers = {}
+        self.watch_queue = queue_m.Queue()
 
     def _ensure_uncommitted(self):
         if self.committed:
@@ -288,18 +303,15 @@ class Etcd3Transaction(object):
 
         # Check whether it was written as part of this transaction
         if path in self.updates:
-            print(path, "-> (u) ", *self.updates[path])
             return self.updates[path][0]
 
         # Check whether we already have the request response
         query = ("get", path)
         if query in self.queries:
-            print(query, "-> (r) ", *self.queries[query])
             return self.queries[query][0]
 
         # Perform get request
         v, rev = self.queries[query] = self.backend.get(path, revision=self.revision)
-        print(query, "->", v, rev)
 
         # Set revision, if not already done so
         if self.revision is None:
@@ -426,21 +438,86 @@ class Etcd3Transaction(object):
         self.queries = {}
         self.updates = {}
         self.committed = False
+        self.do_loop = False
+        self.do_wait = False
+
+    def loop(self, watch=False):
+        """Always repeat transaction execution, even if it succeeds
+
+        :param watch: Wait with repeat until one of the values read in the
+        transaction changed
+        """
+
+        if self.do_loop:
+            # If called multiple times, looping immediately takes precedence
+            self.do_watch = (self.do_watch and watch)
+        else:
+            self.do_loop = True
+            self.do_watch = watch
 
     def __iter__(self):
 
-        for _ in range(self.max_retries):
+        try:
 
-            # Should build up a transaction
-            yield self
+            for _ in range(self.max_retries):
 
-            # Try to commit, done if succeeded
-            if self.commit():
-                return
+                # Should build up a transaction
+                yield self
 
-            # Repeat after reset otherwise
-            self.reset()
+                # Try to commit, done if succeeded
+                if self.commit():
+
+                    # No further loop?
+                    if not self.do_loop:
+                        return
+
+                    # Set watches?
+                    if self.do_wait:
+                        self.wait()
+                        continue
+
+                # Repeat after reset otherwise
+                self.reset()
+
+        finally:
+
+            self.clear_watch()
+            # Remove watchers
+            for watcher in self.watchers:
+                watcher.stop()
+            self.watchers = []
 
         # Ran out of repeats? Fail
         raise RuntimeError("Transaction did not succeed after {} retries!"
                            .format(self.max_retries))
+
+    def clear_watch(self):
+
+        # Remove watchers
+        for watcher in self.watchers.values():
+            watcher.stop()
+        self.watchers = {}
+
+    def wait(self):
+        """ Wait for a change on one of the values read """
+
+        # Make sure we have a watcher on every key read
+        # (TODO: lists)
+        for typ, key in self.queries:
+            if typ == 'get' and self.watchers[key] is None:
+                self.watchers[key] = self.backend.watch(key, revision=self.revision)
+                self.watchers[key].start(self.watch_queue)
+
+        # TODO: remove watches that are not used any more?
+
+        while True:
+
+            # Wait for something to get pushed on the queue
+            value, rev = self.queue.get()
+
+            # Check that revision is newer (prevent duplicated updates)
+            if rev.revision <= self.revision.revision:
+                continue
+
+            # Alright, finished waiting
+            return

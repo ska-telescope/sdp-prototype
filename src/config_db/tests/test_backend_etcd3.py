@@ -285,5 +285,22 @@ def test_transaction_list(etcd3):
     assert i == 1
     assert etcd3.delete(key, recursive=True, must_exist=False)
 
+
+def test_transaction_wait(etcd3):
+
+    key = prefix + "/test_txn_wait"
+
+    etcd3.create(key, "0")
+
+    values_seen = []
+    for i, txn in enumerate(etcd3.txn()):
+        values_seen.append(txn.get(key))
+        if i == 0:
+            for j in range(4):
+                etcd3.update(key, str(j))
+        if i < 4:
+            txn.loop(watch=True)
+
+
 if __name__ == '__main__':
     pytest.main()
