@@ -2,7 +2,7 @@
 import etcd3
 import queue
 
-class Etcd3:
+class Etcd3(object):
 
     def __init__(self, *args, **kw_args):
         self._client = etcd3.Client(*args, **kw_args)
@@ -44,15 +44,23 @@ class Etcd3:
 
         return self._client.Lease(ttl=ttl)
 
+    def txn(self, max_retries=64):
+        """ Creates a new (STM) transaction
+        """
+        return Etcd3Transaction(self, max_retries)
+
     def get(self, path, revision=None, watch=False):
         """
         Get value of a key
 
         :param path: Path of key to query
-        :param revision: Revision of key to read
+        :param revision: Database revision for which to read key
         :returns: (value, revision). value is None if it doesn't exit
         """
 
+        # Check/prepare parameters
+        if path[-1] == '/':
+            raise ValueError("Path should not have a trailing '/'!")
         tagged_path = self._tag_depth(path)
         rev = (None if revision is None else revision.revision)
 
@@ -76,10 +84,12 @@ class Etcd3:
         Watch value of a key
 
         :param path: Path of key to query
-        :param revision: Revision of first key value to read
+        :param revision: Database revision from which to watch
         :returns: (value, revision). value is None if it doesn't exit
         """
 
+        if path[-1] == '/':
+            raise ValueError("Path should not have a trailing '/'!")
         tagged_path = self._tag_depth(path)
         rev = (None if revision is None else revision.revision)
 
@@ -91,17 +101,14 @@ class Etcd3:
         """
         List keys under current path
 
-        :param path: Parent path of keys to query
-        :param prefix: Return keys on same recursion level with
-            matchin prefix instead of children
+        :param path: Prefix of keys to query. Append '/' to list
+           child paths
+        :param revision: Database revision for which to list
         :returns: (key list, revision)
         """
 
         # Prepare parameters
-        if prefix:
-            tagged_path = self._tag_depth(path)
-        else:
-            tagged_path = self._tag_depth(path+"/")
+        tagged_path = self._tag_depth(path)
         rev = None
         if revision is not None:
             rev = revision.revision
@@ -198,7 +205,18 @@ class Etcd3:
         # Execute
         return txn.commit().succeeded
 
-class Etcd3Revision:
+    def close(self):
+        """ Closes the client connection """
+        self._client.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+        return False
+
+class Etcd3Revision(object):
     """Identifies the revision of the database (+ a key)
 
     This has two parts:
@@ -219,7 +237,7 @@ class Etcd3Revision:
     def __repr__(self):
         return "Etc3Revision({},{})".format(self.revision, self.modRevision)
 
-class Etc3Watcher:
+class Etc3Watcher(object):
     """Wrapper for etc3 watch requests.
 
     Enter to start watching the key, at which point 
@@ -247,3 +265,182 @@ class Etc3Watcher:
         """ Deactivates the watcher """
         self._watcher.clear_callbacks()
         self._watcher.stop()
+
+class Etcd3Transaction(object):
+
+    def __init__(self, backend, max_retries=64):
+        self.backend = backend
+        self.revision = None
+        self.queries = {}
+        self.updates = {}
+        # TODO: deletes? Might get tricky mixing ranged deletes with
+        # create...
+        self.max_retries = max_retries
+        self.committed = False
+
+    def _ensure_uncommitted(self):
+        if self.committed:
+            raise RuntimeError("Attempted to modify committed transaction!")
+
+    def get(self, path):
+
+        self._ensure_uncommitted()
+
+        # Check whether it was written as part of this transaction
+        if path in self.updates:
+            print(path, "-> (u) ", *self.updates[path])
+            return self.updates[path][0]
+
+        # Check whether we already have the request response
+        query = ("get", path)
+        if query in self.queries:
+            print(query, "-> (r) ", *self.queries[query])
+            return self.queries[query][0]
+
+        # Perform get request
+        v, rev = self.queries[query] = self.backend.get(path, revision=self.revision)
+        print(query, "->", v, rev)
+
+        # Set revision, if not already done so
+        if self.revision is None:
+            self.revision = rev
+        return v
+
+    def list_keys(self, path):
+
+        self._ensure_uncommitted()
+
+        # Check whether any written keys match the description
+        updated_keys = [ key for key in self.updates.keys()
+                         if key.startswith(path) ]
+
+        # Check whether we already have the request response
+        query = ("list_keys", path)
+        if query in self.queries:
+            return self.queries[query][0]
+
+        # Perform request
+        v, rev = self.queries[query] = self.backend.list_keys(
+            path, revision=self.revision)
+
+        # Set revision, return
+        if self.revision is None:
+            self.revision = rev
+        return v
+
+    def create(self, path, value, lease=None):
+
+        self._ensure_uncommitted()
+
+        # Attempt to get the value - mainly to check whether it exists
+        # and put it into the query log
+        result = self.get(path)
+        if result is not None:
+            return False
+
+        # Add update request
+        self.updates[path] = (value, lease)
+        return True
+
+    def update(self, path, value):
+
+        self._ensure_uncommitted()
+
+        # As with "update"
+        result = self.get(path)
+        if result is None:
+            return False
+
+        # Add update request
+        self.updates[path] = (value, None)
+        return True
+
+    def commit(self):
+
+        self._ensure_uncommitted()
+
+        # If we have made no updates, we don't need to verify the log
+        if len(self.updates) == 0:
+            self.committed = True
+            return True
+
+        # Create transaction
+        txn = self.backend._client.Txn()
+
+        # Verify the query log
+        for query, result in self.queries.items():
+
+            if query[0] == 'get':
+                tagged_path = self.backend._tag_depth(query[1])
+                rev = result[1]
+
+                if rev.modRevision is None:
+                    # Did not exist? Verify continued non-existance. Note
+                    # that it is not possible for the key to have been
+                    # created, then deleted again in the meantime.
+                    txn.compare(txn.key(tagged_path).version == 0)
+                else:
+                    # Otherwise check matching modRevision. This
+                    # actually guarantees that the key has not been
+                    # touched since we read it.
+                    txn.compare(txn.key(tagged_path).mod == rev.modRevision)
+
+            elif query[0] == 'list_keys':
+                tagged_path = self.backend._tag_depth(query[1])
+                rev = result[1]
+
+                # Make sure that all returned keys still exist
+                for res_path in result[0]:
+                    tagged_res_path = self.backend._tag_depth(res_path)
+                    txn.compare(txn.key(tagged_res_path).version > 0)
+
+                # Also check that no new keys have entered the range
+                # (by checking whether the request would contain any
+                # keys with a newer create revision than our request)
+                txn.compare(txn.key(tagged_path, prefix=True).create
+                            < self.revision.revision+1)
+
+            else:
+                assert False
+
+        # Commit changes. Note that the dictionary guarantees that we
+        # only update any key at most once.
+        for path, (value, lease) in self.updates.items():
+            tagged_path = self.backend._tag_depth(path)
+            txn.success(txn.put(tagged_path, value, lease))
+
+        # Done
+        self.committed = True
+        return txn.commit().succeeded
+
+    def reset(self):
+        """
+        After a call to commit(), resets the transaction so it can be restarted.
+        """
+
+        if not self.committed:
+            raise RuntimeError("Called reset on an uncomitted transaction!")
+
+        # Reset
+        self.revision = None
+        self.queries = {}
+        self.updates = {}
+        self.committed = False
+
+    def __iter__(self):
+
+        for _ in range(self.max_retries):
+
+            # Should build up a transaction
+            yield self
+
+            # Try to commit, done if succeeded
+            if self.commit():
+                return
+
+            # Repeat after reset otherwise
+            self.reset()
+
+        # Ran out of repeats? Fail
+        raise RuntimeError("Transaction did not succeed after {} retries!"
+                           .format(self.max_retries))
