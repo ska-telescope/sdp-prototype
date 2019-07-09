@@ -32,9 +32,8 @@ xray:
   # commented above out because it's breaking the build
   # https://confluence.xpand-it.com/display/public/XRAY/Import+Execution+Results+-+REST
   script:
-    - 'curl -X POST --silent --show-error --fail
-        "Content-Type: application/json"
-        -H "Authorization: Basic $JIRA_AUTH"
-        --data @cucumber.json
-        https://jira.skatelescope.org/rest/raven/1.0/import/execution/cucumber'
+    - 'curl -X POST -H "Content-Type: application/json"
+         -H "Authorization: Basic $JIRA_AUTH"
+         --data @cucumber.json
+         https://jira.skatelescope.org/rest/raven/1.0/import/execution/cucumber'
   retry: 2 #In case JIRA doesn't work first time
