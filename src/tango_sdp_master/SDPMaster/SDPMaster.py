@@ -20,10 +20,6 @@ from PyTango.server import attribute, command
 from PyTango.server import device_property
 from PyTango import AttrQuality, DispLevel, DevState
 from PyTango import AttrWriteType, PipeWriteType
-# from SKAMaster import SKAMaster
-# Additional import
-# PROTECTED REGION ID(SDPMaster.additionnal_import) ENABLED START #
-# PROTECTED REGION END #    //  SDPMaster.additionnal_import
 
 __all__ = ["SDPMaster", "main"]
 
@@ -46,7 +42,8 @@ class SDPMaster(Device):
 
     OperatingState = attribute(
         dtype='DevEnum',
-        enum_labels=["INIT", "ON", "DISABLE", "STANDBY", "ALARM", "FAULT", "OFF", "UNKNOWN", ],
+        enum_labels=["INIT", "ON", "DISABLE", "STANDBY", "ALARM", "FAULT",
+                     "OFF", "UNKNOWN", ],
         access=AttrWriteType.READ
     )
 

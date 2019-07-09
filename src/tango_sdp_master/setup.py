@@ -17,7 +17,7 @@ setup_dir = os.path.dirname(os.path.abspath(__file__))
 # make sure we use latest info from local code
 sys.path.insert(0, setup_dir)
 
-readme_filename = os.path.join(setup_dir, 'README.rst')
+readme_filename = os.path.join(setup_dir, 'README.md')
 with open(readme_filename) as file:
     long_description = file.read()
 
@@ -31,12 +31,26 @@ setup(name=name,
       description='',
       packages=pack,
       include_package_data=True,
-      test_suite="test",
+      # test_suite="test",
       entry_points={'console_scripts':['SDPMaster = SDPMaster:main']},
       author='brian.mcilwrath',
       author_email='brian.mcilwrath at stfc.ac.uk',
       license='GPL',
       long_description=long_description,
       url='www.tango-controls.org',
-      platforms="Unix Like"
+      platforms="Unix Like",
+      install_requires=['pytango==9.2.5', 'mock'],
+      setup_requires = [
+           # dependency for `python setup.py test`
+           'pytest-runner',
+           # dependencies for `python setup.py build_sphinx`
+           'sphinx',
+           'recommonmark'
+      ],
+      tests_require=[
+          'pytest',
+          'pytest-cov',
+          'pytest-json-report',
+          'pycodestyle',
+      ],
       )

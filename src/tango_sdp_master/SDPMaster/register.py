@@ -1,5 +1,5 @@
 # coding: utf-8
-"""Register the SDPSubarray device(s) with the Tango Db."""
+"""Register the SDPMaster device(s) with the Tango Db."""
 import argparse
 from tango import Database, DbDevInfo
 
@@ -13,7 +13,7 @@ def delete_server(server_name):
 
 
 def register_master(server_name, class_name):
-    """Register subarray devices."""
+    """Register master device."""
     tango_db = Database()
     device_info = DbDevInfo()
 

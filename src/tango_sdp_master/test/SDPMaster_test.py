@@ -9,20 +9,8 @@
 # See LICENSE.txt for more info.
 """Contain the tests for the SDP Master Tango Class."""
 
-# Path
-import sys
-import os
-file_path = os.path.dirname(os.path.abspath(__file__))
-module_path = os.path.abspath(os.path.join(file_path, os.pardir)) + "/SDPMaster"
-print(module_path)
-sys.path.insert(0, module_path)
-
 # Imports
-from time import sleep
-from unittest.mock import MagicMock
-from PyTango import DevFailed, DevState
 import pytest
-# from devicetest import DeviceTestCase, main
 from SDPMaster import SDPMaster
 
 
@@ -39,8 +27,6 @@ from SDPMaster import SDPMaster
 
 # Device test case
 @pytest.mark.usefixtures("tango_context")
-
-
 class TestSDPMaster(object):
     """Test case for packet generation."""
     # PROTECTED REGION ID(SDPMaster.test_additionnal_import) ENABLED START #
@@ -61,6 +47,32 @@ class TestSDPMaster(object):
         # cls.numpy = SDPMaster.numpy = MagicMock()
         # PROTECTED REGION ID(SDPMaster.test_mocking) ENABLED START #
         # PROTECTED REGION END #    //  SDPMaster.test_mocking
+
+    def test_operating_state(self, tango_context):
+        """Test for Operating State."""
+        # PROTECTED REGION ID(SDPMaster.test_OperatingState) ENABLED START #
+        assert tango_context.device.OperatingState == 0
+        # PROTECTED REGION END #    //  SDPMaster.test_OperatingState
+
+    def test_on_state(self, tango_context):
+        """Test for ON State."""
+        tango_context.device.on()
+        assert tango_context.device.OperatingState == 1
+
+    def test_standby_state(self, tango_context):
+        """Test for STANDBY State."""
+        tango_context.device.standby()
+        assert tango_context.device.OperatingState == 3
+
+    def test_disable_state(self, tango_context):
+        """Test for DISABLE State."""
+        tango_context.device.disable()
+        assert tango_context.device.OperatingState == 2
+
+    def test_off_state(self, tango_context):
+        """Test for OFF State."""
+        tango_context.device.off()
+        assert tango_context.device.OperatingState == 6
 
     # def test_properties(self):
     #     # test the properties
@@ -205,15 +217,7 @@ class TestSDPMaster(object):
     #     # PROTECTED REGION ID(SDPMaster.test_testMode) ENABLED START #
     #     self.device.testMode
     #     # PROTECTED REGION END #    //  SDPMaster.test_testMode
-
-    def test_OperatingState(self, tango_context):
-        """Test for OperatingState"""
-        # PROTECTED REGION ID(SDPMaster.test_OperatingState) ENABLED START #
-        # print(tango_context.device.State())
-        # print(tango_context.device.OperatingState)
-        assert tango_context.device.OperatingState == 0
-        # PROTECTED REGION END #    //  SDPMaster.test_OperatingState
-
+    #
     # def test_maxCapabilities(self):
     #     """Test for maxCapabilities"""
     #     # PROTECTED REGION ID(SDPMaster.test_maxCapabilities) ENABLED START #

@@ -80,7 +80,7 @@ unregister:
 		--network=container:databaseds \
 		-e TANGO_HOST=localhost:10000 \
 		skaorca/pytango_ska_base:latest \
-		SDPSubarray/register.py --delete
+		SDPMaster/register.py --delete
 
 .PHONY: start_dev
 start_dev:
