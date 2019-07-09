@@ -1,15 +1,10 @@
 #
-# Makefile for building and publishing the `tango_python_dev` image.
+# Makefile for building and publishing the `tangods_sdpsubarray` image.
 #
 # Targets:
 # 	build: Build the image. Creates two tags, :<current version> and :<latest>
 # 	publish: Build and publish the image to Dockerhub / cloud.docker.com
 #	clean: Remove the image from the local machine
-#	prompt: Example target giving a bash prompt running in the container
-#           and connected to a tango database deployment.
-# 	itango: Example target giving an iTango prompt running in the container
-#           and connected to a tango database deployment.
-#
 
 CRED=\033[0;31m
 CBLUE=\033[0;34m
@@ -22,13 +17,11 @@ ifeq ($(strip $(DOCKER_REGISTRY_USER)),)
 endif
 
 # Get image name and version from the release file
-NAME=$(shell awk -F= '/^name=/{print $$2}' release)
-VERSION=$(shell awk -F= '/^release=/{print $$2}' release)
+NAME=$(shell python -c "from SDPSubarray.release import name; print(name)")
+VERSION=$(shell python -c "from SDPSubarray import __version__; print(__version__)")
 IMAGE=$(DOCKER_REGISTRY_USER)/$(NAME)
 
 IMAGES := $(shell docker images --format '{{.Repository}}:{{.Tag}}' | grep $(IMAGE))
-TANGO_DB_ID:=$(shell docker ps -f name=tango_database -f status=running -q)
-IP:=$(shell ifconfig en7 | grep inet | awk '$$1=="inet" {print $$2}')
 
 
 .PHONY: all

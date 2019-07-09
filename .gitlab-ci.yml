@@ -1,21 +1,16 @@
-#image: "python:latest"
-#
-#variables:
-#  PIP_CACHE_DIR: "${CI_PROJECT_DIR}/.cache/pip"
-#cache:
-#  paths: [.cache/pip, venv]
-#
-#stages:
-#  - test
-#
-#test:
-#  stage: test
-#  script:
-#    - docker run --rm -it
-#        -v "$(pwd)":$(pwd)":rw
-#        -w "$(pwd)"
-#        --entrypoint=./scripts/run_test.sh
-#        skaorca/tango_python_dev:latest
-#        src/tango_scaling_test.sh
-#  coverage: coveralls
+stages:
+  - test
 
+subarray_bdd_tests:
+    stage: test
+    image: skaorca/pytango_ska_dev:latest
+    script:
+      - cd ./src/tango_sdp_subarray
+      - python -m pytest --gherkin-terminal-reporter -vv tests/steps
+
+subarray_unit_tests:
+    stage: test
+    image: skaorca/pytango_ska_dev:latest
+    script:
+      - cd ./src/tango_sdp_subarray
+      - python -m pytest -s -vv tests/test_SDPSubarray.py
