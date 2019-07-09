@@ -122,6 +122,7 @@ test:
 		skaorca/pytango_ska_dev \
 		-m pytest \
 		-vv \
+		--cucumber-json=cucumber.json \
 		--gherkin-terminal-reporter
 
 .PHONY: ci_test
