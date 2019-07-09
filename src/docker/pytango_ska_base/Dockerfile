@@ -31,6 +31,8 @@ RUN pipenv install --deploy --ignore-pipfile --dev
 
 FROM python:3.5-slim-stretch
 
+WORKDIR /app
+
 ENV DEBIAN_FRONTEND=noninteractive \
     LANG=C.UTF-8 \
     LC_ALL=C.UTF-8 \

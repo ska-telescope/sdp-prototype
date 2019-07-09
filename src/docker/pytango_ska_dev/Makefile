@@ -18,7 +18,8 @@ endif
 
 # Get image name and version from the release file
 NAME=$(shell awk -F= '/^name=/{print $$2}' release)
-VERSION=$(shell awk -F= '/^release=/{print $$2}' release)
+GIT_VERSION=$(shell git rev-parse --verify --short=8 HEAD)
+VERSION=$(shell awk -F= '/^release=/{print $$2}' release)-$(GIT_VERSION)
 IMAGE=$(DOCKER_REGISTRY_USER)/$(NAME)
 
 IMAGES := $(shell docker images --format '{{.Repository}}:{{.Tag}}' | grep $(IMAGE))

@@ -16,6 +16,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
 RUN apt-get update && apt-get install -y --no-install-recommends \
         libtango9 \
         libboost-python1.62.0 \
+        make \
     && rm -rf /var/lib/apt/lists/*
 
 
@@ -31,3 +32,4 @@ COPY Pipfile.lock Pipfile.lock
 # Install Python deps
 RUN pipenv install --deploy --ignore-pipfile --dev
 
+ENTRYPOINT ["/bin/bash"]
