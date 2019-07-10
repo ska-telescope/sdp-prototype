@@ -497,13 +497,10 @@ class Etcd3Transaction(object):
                     if not self._loop:
                         return
 
-                    # Set watches?
+                    # Use watches? Then wait for something to happen
+                    # before looping.
                     if self._watch:
-                        # Wait for something to happen
-                        rev = self.watch()
-                        # Reset setting new revision
-                        self.reset(rev)
-                        continue
+                        self.watch()
 
                 # Repeat after reset otherwise
                 self.reset()
@@ -535,18 +532,26 @@ class Etcd3Transaction(object):
 
         # TODO: remove watches that are not used any more?
 
+        block = True
+        revision = self._revision.revision
         while True:
 
             # Wait for something to get pushed on the queue
-            path, value, rev = self._watch_queue.get()
+            try:
+                path, value, rev = self._watch_queue.get(block=block)
+            except queue_m.Empty:
+                return revision
 
             # Check that revision is newer (prevent duplicated updates)
-            if rev.revision <= self._revision.revision:
+            if rev.revision <= revision:
                 continue
 
             # Check that it is actually something we are waiting on
             if ('get', path) not in self._queries:
                 continue
 
-            # Alright, finished waiting
-            return rev
+            # Alright, we can stop waiting. However, we will attempt
+            # to clear the queue before we do so, as we might get a
+            # lot of updates in batch
+            revision = rev
+            block = False

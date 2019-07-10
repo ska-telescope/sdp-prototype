@@ -321,9 +321,7 @@ def test_transaction_wait(etcd3):
         values_seen.append(txn.get(key))
         if i < 4:
             txn.loop(watch=True)
-        if i == 0:
-            for j in range(1,5):
-                etcd3.update(key, str(j))
+            etcd3.update(key, str(i+1))
     assert i == 4
     assert values_seen == ['4','1','2','3','4']
     assert len(txn._watchers) == 0
