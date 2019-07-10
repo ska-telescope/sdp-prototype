@@ -108,7 +108,7 @@ def test_delete(etcd3):
 
     key = prefix + "/test_delete"
 
-    # Two passes - with and without deleting keys with same prefix
+    # Two passes - with and without deleting keys by prefix
     for del_prefix in [False, True]:
 
         # Create deeply recursive structure
@@ -171,6 +171,19 @@ def test_watch(etcd3):
         assert watch.get()[1] == 'bla2'
         assert watch.get()[1] == 'bla3'
         assert watch.get()[1] == 'bla4'
+
+    # Check that we can also watch multiple keys with the same prefix
+    with etcd3.watch(key+"/a", prefix=True) as watch:
+        time.sleep(0.1)
+
+        etcd3.create(key+"/ab", "bla")
+        etcd3.create(key+"/ac", "bla2")
+        etcd3.create(key+"/ba", "bla3")
+        etcd3.create(key+"/ad", "bla4")
+
+        assert watch.get()[0:2] == (key+"/ab", 'bla')
+        assert watch.get()[0:2] == (key+"/ac", 'bla2')
+        assert watch.get()[0:2] == (key+"/ad", 'bla4')
 
 def test_transaction_simple(etcd3):
 
@@ -268,7 +281,7 @@ def test_transaction_conc(etcd3):
 def test_transaction_list(etcd3):
 
     key = prefix + "/test_txn_list"
-    keys = [ key+"/"+str(i) for i in range(10) ]
+    keys = [ key+"/"+str(i) for i in range(5) ]
     for k in keys:
         etcd3.create(k, k)
 
@@ -276,13 +289,24 @@ def test_transaction_list(etcd3):
     assert set(etcd3.list_keys(key+'/')[0]) == set(keys)
     for txn in etcd3.txn():
         assert set(txn.list_keys(key+'/')) == set(keys)
-    etcd3.delete(key, recursive=True, must_exist=False)
+
+    # Ensure that we can add another key into the range and have it
+    # appear to the transaction *before* we commit
+    keys.append(key+"/xxx")
+    assert set(etcd3.list_keys(key+'/')[0]) == set(keys[:-1])
+    for txn in etcd3.txn():
+        assert set(txn.list_keys(key+'/')) == set(keys[:-1])
+        txn.create(key+"/xxx", "xxx")
+        assert set(txn.list_keys(key+'/')) == set(keys)
+        assert set(etcd3.list_keys(key+'/')[0]) == set(keys[:-1])
+    assert set(etcd3.list_keys(key+'/')[0]) == set(keys)
 
     # Test iteratively building up
+    etcd3.delete(key, recursive=True, must_exist=False)
     for i,k in enumerate(keys):
         for txn in etcd3.txn():
-            txn.create(k, k)
             assert set(txn.list_keys(key+'/')) == set(keys[:i])
+            txn.create(k, k)
 
     # Removing keys causes a re-run, but a value update does not.
     for i,txn in enumerate(etcd3.txn()):
@@ -301,7 +325,7 @@ def test_transaction_list(etcd3):
     assert i == 1
     etcd3.delete(key, recursive=True, must_exist=False)
 
-
+@pytest.mark.timeout(10)
 def test_transaction_wait(etcd3):
 
     key = prefix + "/test_txn_wait"
