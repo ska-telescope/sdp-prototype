@@ -321,6 +321,7 @@ class Etcd3Transaction(object):
         self._committed = False
         self._loop = False
         self._watch = False
+        self._retries = 0
 
         self._watchers = {}
         self._watch_queue = queue_m.Queue()
@@ -490,13 +491,16 @@ class Etcd3Transaction(object):
 
         try:
 
-            for _ in range(self._max_retries):
+            while self._retries <= self._max_retries:
 
                 # Should build up a transaction
                 yield self
 
-                # Try to commit, done if succeeded
-                if self.commit():
+                # Try to commit, count how many times we have tried
+                if not self.commit():
+                    self._retries += 1
+                else:
+                    self._retries = 0
 
                     # No further loop?
                     if not self._loop:
@@ -515,7 +519,7 @@ class Etcd3Transaction(object):
 
         # Ran out of repeats? Fail
         raise RuntimeError("Transaction did not succeed after {} retries!"
-                           .format(self.max_retries))
+                           .format(self._max_retries))
 
     def clear_watch(self):
 

@@ -346,6 +346,34 @@ def test_transaction_wait(etcd3):
     assert len(txn._watchers) == 0
     assert i == 1
     assert values_seen == ['4','x']
+    etcd3.delete(key, recursive=True, must_exist=False)
+
+@pytest.mark.timeout(10)
+def test_transaction_retries(etcd3):
+
+    key = prefix + "/test_txn_retries"
+
+    etcd3.create(key, "0")
+
+    # Check that we actually give up eventually
+    with pytest.raises(RuntimeError, match="9 retries"):
+        for i, txn in enumerate(etcd3.txn(max_retries = 9)):
+            v2 = txn.get(key)
+            etcd3.update(key, i)
+            txn.update(key, v2 + "x")
+    assert i == 9
+    assert etcd3.get(key)[0] == "9"
+
+    # Check that the counter resets if a transactions succeeds, even
+    # if we loop explicitly
+    with pytest.raises(RuntimeError, match="5 retries"):
+        for i, txn in enumerate(etcd3.txn(max_retries = 5)):
+            v2 = txn.get(key)
+            if i != 5:
+                etcd3.update(key, i)
+            txn.update(key, v2 + "x")
+            txn.loop()
+    assert i == 11
 
 if __name__ == '__main__':
     pytest.main()
