@@ -140,6 +140,8 @@ class Etcd3(object):
         """
 
         # Prepare parameters
+        if path[-1] == '/':
+            raise ValueError("Path should not have a trailing '/'!")
         tagged_path = self._tag_depth(path)
         lease_id = (0 if lease is None else lease.ID)
         value = str(value).encode('utf-8')
@@ -162,6 +164,9 @@ class Etcd3(object):
 
         """
 
+        # Validate parameters
+        if path[-1] == '/':
+            raise ValueError("Path should not have a trailing '/'!")
         tagged_path = self._tag_depth(path)
         value = str(value).encode('utf-8')
         # Put value if version is *not* zero (i.e. it exists)

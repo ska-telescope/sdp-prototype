@@ -16,9 +16,16 @@ def etcd3():
 
 def test_valid(etcd3):
     with pytest.raises(ValueError, match="trailing"):
+        etcd3.create(prefix + "/", "")
+    with pytest.raises(ValueError, match="trailing"):
+        etcd3.update(prefix + "/", "")
+    with pytest.raises(ValueError, match="trailing"):
         etcd3.get(prefix + "/")
     with pytest.raises(ValueError, match="trailing"):
         etcd3.watch(prefix + "/")
+    with pytest.raises(ValueError, match="trailing"):
+        for txn in etcd3.txn():
+            txn.get(prefix + "/")
 
 def test_create(etcd3):
     key = prefix + "/test_create"
