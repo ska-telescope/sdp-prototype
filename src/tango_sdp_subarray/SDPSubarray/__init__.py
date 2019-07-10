@@ -3,6 +3,7 @@
 # pylint: disable=invalid-name
 
 from . import release
+
 from .SDPSubarray import (
     SDPSubarray,
     AdminMode,
