@@ -23,6 +23,7 @@ def test_valid(etcd3):
         etcd3.get(prefix + "/")
     with pytest.raises(ValueError, match="trailing"):
         etcd3.watch(prefix + "/")
+    etcd3.watch(prefix + "/", prefix=True)
     with pytest.raises(ValueError, match="trailing"):
         for txn in etcd3.txn():
             txn.get(prefix + "/")
@@ -76,19 +77,19 @@ def test_list(etcd3):
     etcd3.create(key+"/a/d/x", "")
 
     # Try listing
-    assert set(etcd3.list_keys(key+'/')[0]) == set([
-        key+"/a", key+"/ab", key+"/b", key+"/ax"])
-    assert set(etcd3.list_keys(key)[0]) == set([])
-    assert set(etcd3.list_keys(key+"/a")[0]) == set([
-        key+"/a", key+"/ab", key+"/ax"])
-    assert set(etcd3.list_keys(key+"/b")[0]) == set([
-        key+"/b"])
-    assert set(etcd3.list_keys(key+"/a/")[0]) == set([
-        key+"/a/d"])
-    assert set(etcd3.list_keys(key+"/ab/")[0]) == set([
-        key+"/ab/c"])
-    assert set(etcd3.list_keys(key+"/ab")[0]) == set([
-        key+"/ab"])
+    assert etcd3.list_keys(key+'/')[0] == [
+        key+"/a", key+"/ab", key+"/ax", key+"/b" ]
+    assert etcd3.list_keys(key)[0] == []
+    assert etcd3.list_keys(key+"/a")[0] == [
+        key+"/a", key+"/ab", key+"/ax"]
+    assert etcd3.list_keys(key+"/b")[0] == [
+        key+"/b"]
+    assert etcd3.list_keys(key+"/a/")[0] == [
+        key+"/a/d"]
+    assert etcd3.list_keys(key+"/ab/")[0] == [
+        key+"/ab/c"]
+    assert etcd3.list_keys(key+"/ab")[0] == [
+        key+"/ab"]
 
     # Remove
     etcd3.delete(key, must_exist=False, recursive=True)
@@ -172,6 +173,22 @@ def test_watch(etcd3):
         assert watch.get()[1] == 'bla3'
         assert watch.get()[1] == 'bla4'
 
+    # Check that we can watch all children
+    with etcd3.watch(key+"/", prefix=True) as watch:
+        time.sleep(0.1)
+
+        etcd3.create(key+"/ab", "bla")
+        etcd3.create(key+"/ac", "bla2")
+        etcd3.create(key+"/ba", "bla3")
+        etcd3.create(key+"/ad", "bla4")
+
+        assert watch.get()[0:2] == (key+"/ab", 'bla')
+        assert watch.get()[0:2] == (key+"/ac", 'bla2')
+        assert watch.get()[0:2] == (key+"/ba", 'bla3')
+        assert watch.get()[0:2] == (key+"/ad", 'bla4')
+
+    etcd3.delete(key, recursive=True)
+
     # Check that we can also watch multiple keys with the same prefix
     with etcd3.watch(key+"/a", prefix=True) as watch:
         time.sleep(0.1)
@@ -184,6 +201,8 @@ def test_watch(etcd3):
         assert watch.get()[0:2] == (key+"/ab", 'bla')
         assert watch.get()[0:2] == (key+"/ac", 'bla2')
         assert watch.get()[0:2] == (key+"/ad", 'bla4')
+
+    etcd3.delete(key, recursive=True, must_exist=False)
 
 def test_transaction_simple(etcd3):
 
@@ -325,7 +344,7 @@ def test_transaction_list(etcd3):
     assert i == 1
     etcd3.delete(key, recursive=True, must_exist=False)
 
-@pytest.mark.timeout(10)
+@pytest.mark.timeout(2)
 def test_transaction_wait(etcd3):
 
     key = prefix + "/test_txn_wait"
@@ -370,7 +389,94 @@ def test_transaction_wait(etcd3):
     assert len(txn._watchers) == 0
     assert i == 1
     assert values_seen == ['4','x']
+
+@pytest.mark.timeout(2)
+def test_transaction_watchers(etcd3):
+
+    key = prefix + "/test_txn_watchers"
+    etcd3.create(key, "test")
+
+    # Test that watchers get cancelled as we read fewer values
+    def watcher_count(typ):
+        return len([ () for t, _ in txn._watchers if t == typ ])
+    for i, txn in enumerate(etcd3.txn()):
+        txn.get(key)
+        if i == 0:
+            # No watch request yet
+            assert watcher_count("get") == 0
+            assert watcher_count("list") == 0
+            txn.list_keys(key+"/")
+            txn.get(key+"/1")
+            txn.get(key+"/2")
+        if i == 1:
+            # Get watcher for "key", list watcher for "key/*"
+            assert watcher_count("get") == 1
+            assert watcher_count("list") == 1
+            txn.get(key+"/1")
+            txn.get(key+"/2")
+        if i == 2:
+            # Get watchers for "key", "key/1" and "key/2"
+            assert watcher_count("get") == 3
+            assert watcher_count("list") == 0
+            txn.get(key+"/1")
+        if i == 3:
+            # Get watchers for "key" and "key/1"
+            assert len(txn._watchers) == 2
+        if i == 4:
+            assert len(txn._watchers) == 1
+        else:
+            etcd3.update(key, str(i))
+            txn.loop(watch=True)
+    assert len(txn._watchers) == 0
+    assert i == 4
+
     etcd3.delete(key, recursive=True, must_exist=False)
+
+@pytest.mark.timeout(2)
+def test_transaction_watch_list(etcd3):
+
+    key = prefix + "/test_txn_watchers"
+    etcd3.create(key + "/a", "test")
+    etcd3.create(key + "/b", "test2")
+    etcd3.create(key + "/c", "test3")
+
+    for i, txn in enumerate(etcd3.txn()):
+        keys = txn.list_keys(key+"/")
+        if i == 0:
+            assert not txn._got_timeout
+            assert keys == [key + "/a", key + "/b", key + "/c"]
+            # Deleting a key in range should cause loop
+            etcd3.delete(key + "/a")
+        if i == 1:
+            assert not txn._got_timeout
+            assert keys == [key + "/b", key + "/c"]
+            # Creating a key in range should cause loop
+            etcd3.create(key + "/a", "asd")
+        if i == 2:
+            assert not txn._got_timeout
+            assert keys == [key + "/a", key + "/b", key + "/c"]
+            # Updating a key should *not* cause a loop
+            etcd3.update(key + "/a", "asd2")
+        if i == 3:
+            assert txn._got_timeout
+            assert keys == [key + "/a", key + "/b", key + "/c"]
+            # Except of course if we also read it
+            txn.get(key + "/a")
+            etcd3.update(key + "/a", "asd3")
+        if i == 4:
+            assert not txn._got_timeout
+            assert keys == [key + "/a", key + "/b", key + "/c"]
+            # Similarly, updating keys at higher or lower levels
+            # should be ignored
+            etcd3.create(key, "parent")
+            etcd3.create(key + "/a/b", "child")
+        if i == 5:
+            assert txn._got_timeout
+            assert keys == [key + "/a", key + "/b", key + "/c"]
+            break
+        # Use a timeout to make sure we don't block. A bit of an
+        # inexact science.
+        txn.loop(watch=True, watch_timeout=0.5)
 
 @pytest.mark.timeout(10)
 def test_transaction_retries(etcd3):

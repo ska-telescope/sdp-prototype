@@ -1,6 +1,7 @@
 
 import etcd3
 import queue as queue_m
+import time
 
 class Etcd3(object):
 
@@ -79,7 +80,7 @@ class Etcd3(object):
         # Return value together with revision
         return (result, Etcd3Revision(response.header.revision, modRevision))
 
-    def watch(self, path, prefix=True, revision=None):
+    def watch(self, path, prefix=False, revision=None):
         """
         Watch key or key range.  Use a path ending with `'/'` in
         combination with `prefix` to watch all child keys.
@@ -90,7 +91,7 @@ class Etcd3(object):
         :returns: `Etcd3Watcher` object for watch request
         """
 
-        if path[-1] == '/':
+        if path[-1] == '/' and not prefix:
             raise ValueError("Path should not have a trailing '/'!")
         tagged_path = self._tag_depth(path)
         rev = (None if revision is None else revision.revision)
@@ -127,8 +128,8 @@ class Etcd3(object):
         if response.kvs is None:
             return ([], revision)
         else:
-            return ([ self._untag_depth(kv.key.decode('utf-8'))
-                      for kv in response.kvs ],
+            return (sorted([ self._untag_depth(kv.key.decode('utf-8'))
+                             for kv in response.kvs ]),
                     revision)
 
     def create(self, path, value, lease=None):
@@ -328,6 +329,8 @@ class Etcd3Transaction(object):
         self._committed = False
         self._loop = False
         self._watch = False
+        self._watch_timeout = None
+        self._got_timeout = False # For test cases
         self._retries = 0
 
         self._watchers = {}
@@ -370,7 +373,7 @@ class Etcd3Transaction(object):
 
         # Check whether we already have the request response
         if path in self._list_queries:
-            return list(set(self._list_queries[path][0] + added_keys))
+            return sorted(set(self._list_queries[path][0] + added_keys))
 
         # Perform request
         v, rev = self._list_queries[path] = self._backend.list_keys(
@@ -379,7 +382,7 @@ class Etcd3Transaction(object):
         # Set revision, return
         if self._revision is None:
             self._revision = rev
-        return list(set(v + added_keys))
+        return sorted(set(v + added_keys))
 
     def create(self, path, value, lease=None):
 
@@ -475,8 +478,9 @@ class Etcd3Transaction(object):
         self._committed = False
         self._loop = False
         self._watch = False
+        self._watch_timeout = None
 
-    def loop(self, watch=False):
+    def loop(self, watch=False, watch_timeout=None):
         """Always repeat transaction execution, even if it succeeds
 
         :param watch: Once the transaction succeeds, block until one of
@@ -489,6 +493,8 @@ class Etcd3Transaction(object):
         else:
             self._loop = True
             self._watch = watch
+        if watch and watch_timeout is not None:
+            self._watch_timeout = watch_timeout
 
     def __iter__(self):
 
@@ -587,14 +593,23 @@ class Etcd3Transaction(object):
         # Make sure the watchers we have in place match what we read
         self._update_watchers()
 
+        # Wait for updates from the watcher queue
         block = True
         revision = self._revision
+        start_time = time.time()
         while True:
+
+            # Determine timeout
+            timeout = None
+            if self._watch_timeout is not None:
+                timeout = max(0, start_time + self._watch_timeout - time.time())
 
             # Wait for something to get pushed on the queue
             try:
-                path, value, rev = self._watch_queue.get(block=block)
+                path, value, rev = self._watch_queue.get(block, timeout)
             except queue_m.Empty:
+                print("Timeout: {}".format(block))
+                self._got_timeout = block
                 return revision
 
             # Check that revision is newer (prevent duplicated updates)
@@ -607,7 +622,7 @@ class Etcd3Transaction(object):
                 # Are we getting this because of one of the list queries?
                 tagged_path = self._backend._tag_depth(path)
                 found_match = False
-                for list_path, (result, _) in self._list_queries:
+                for list_path, (result, _) in self._list_queries.items():
                     if tagged_path.startswith(self._backend._tag_depth(list_path)):
 
                         # We should not notify for a value change,
