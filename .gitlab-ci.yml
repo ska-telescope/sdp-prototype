@@ -40,7 +40,7 @@ subarray_tests:
 
 # Update XRAY links in JIRA
 xray:
-  stage: posttest
+  stage: deploy
   #tags: [ska]
   before_script: []
   #This line may require the magic setting of cache earlier on.
