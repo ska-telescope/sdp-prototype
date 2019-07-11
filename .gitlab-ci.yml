@@ -1,6 +1,22 @@
+image: "python:latest"
+
+before_script:
+  - python -V
+  - pip install virtualenv
+  - virtualenv venv
+  - source venv/bin/activate
+  - pip install -r requirements.txt
+      pytest pytest-xdist nbval pytest-cov pytest-rerunfailures
+
+# Set up caching as suggested by GitLab's Python template
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+cache:
+  paths: [.cache/pip,venv]
+
 stages:
   - test
-  - posttest
+  - deploy
 
 # This can be run locally with
 #    > gitlab-runner exec docker subarray_tests
@@ -21,6 +37,7 @@ subarray_tests:
       expire_in: 30 days
       when: always
 
+
 # Update XRAY links in JIRA
 xray:
   stage: posttest
@@ -31,6 +48,7 @@ xray:
   # dependencies: [test]
   # commented above out because it's breaking the build
   # https://confluence.xpand-it.com/display/public/XRAY/Import+Execution+Results+-+REST
+  dependencies: [test]
   script:
     - 'curl -X POST -H "Content-Type: application/json"
          -H "Authorization: Basic $JIRA_AUTH"
