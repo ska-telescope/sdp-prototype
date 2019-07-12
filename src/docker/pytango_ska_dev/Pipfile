@@ -10,7 +10,10 @@ verify_ssl = true
 
 [packages]
 mock = "*"
+pyassert = "*"
+# pact-python = "*"  # requires gcc so will need a layered build
 pytest = "*"
+pytest-mock = "*"
 pytest_bdd = "*"
 pytest-codestyle = "*"
 pytest-pydocstyle = "*"
