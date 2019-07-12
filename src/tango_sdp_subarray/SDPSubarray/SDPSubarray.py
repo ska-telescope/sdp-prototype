@@ -14,7 +14,6 @@ from jsonschema import validate
 from tango import AttrWriteType, DebugIt, DevState, Except
 from tango.server import Device, DeviceMeta, attribute, command, run
 
-
 # from skabase.SKASubarray import SKASubarray
 
 
