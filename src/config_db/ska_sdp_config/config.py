@@ -6,9 +6,6 @@ import re
 import os
 import json
 
-# Permit identifiers up to 64 bytes in length
-_id_re = re.compile("[_A-Za-z0-9]{1,64}")
-
 class Config(object):
 
     def __init__(self, backend=None, global_prefix='', **client_args):
@@ -57,65 +54,150 @@ class Config(object):
 
         return self._backend.lease(ttl)
 
-    def create_pb(self, workflow, parameters={}, scan_parameters={},
-                  pb_id=None, sbi_id=None):
+    def txn(self, max_retries=64):
+        """Returns a transaction object that can be used for consistently
+        querying or changing the configuration state. As we do not use
+        locks, transactions might have to be repeated in order to
+        guarantee atomicity.
+
+        Suggested usage is as follows:
+        ```
+        for txn in config.txn():
+            # Use txn to read+write configuration
+            # [Possibly call txn.loop()]
+        ```
+
+        As the `for` loop suggests, the code might get run multiple
+        times even if not forced by calling `loop`. Any writes using
+        the transaction will be discarded if the transaction fails,
+        but the application must make sure that the loop body has no
+        other observable side effects.
+
+        :param max_retries: Number of transaction retries before a
+            `RuntimeError` gets raised.
         """
-        Creates a new processing block
+        return TransactionFactory(
+            self, self._backend.txn(max_retries=max_retries))
 
-        :param workflow: Workflow description (JSON for now)
-        :param parameters: Workflow parameters
-        :param scan_parameters: Scan parameters (unneded for batch processing)
-        :param pb_id: Processing block ID.
-        :param sbi_id: Scheduling block ID, if it exists.
-        :returns: ProcessingBlock object
+class TransactionFactory(object):
+    """ Helper object for making transactions """
+
+    def __init__(self, config, txn):
+        self._config = config
+        self._txn = txn
+
+    def __iter__(self):
+        for txn in self._txn:
+            yield Transaction(self._config, txn)
+
+class Transaction(object):
+
+    def __init__(self, config, txn):
+        self._cfg = config
+        self._txn = txn
+        self._pb_path = config._pb_path
+
+    def _to_json(self, obj):
+        # We only write dictionaries (JSON objects) at the moment
+        assert(isinstance(obj, dict))
+        # Export to JSON. No need to convert to ASCII, as the backend
+        # should handle unicode. Otherwise we optimise for legibility
+        # over compactness.
+        return json.dumps(
+            obj, ensure_ascii=False,
+            indent=2, separators=(',', ': '), sort_keys=True)
+
+    def _get(self, path):
+        """ Gets a JSON object from the database """
+
+        txt = self._txn.get(path)
+        if txt is None:
+            return None
+        else:
+            return json.loads(txt)
+
+    def _create(self, path, obj):
+        """ Sets a new path in the database to a JSON object """
+        self._txn.create(path, self._to_json(obj))
+
+    def _update(self, path, obj):
+        """ Sets a existing path in the database to a JSON object """
+        self._txn.update(path, self._to_json(obj))
+
+    def list_processing_blocks(self, prefix=""):
+        """Querys processing block IDs that currently exist in the
+        configuration.
+
+        :param prefix: If given, only search for processing block IDs
+           with the given prefix
+        :returns: Processing block ids, in lexographical order
         """
 
-        # Make sure workflow JSON is valid (TODO: move)
-        if set(workflow.keys()) != set(['name', 'type', 'version']):
-            raise ValueError("Workflow must specify exactly name, type and version!")
-        parameters = dict(parameters)
-        scan_parameters = dict(scan_parameters)
-        if pb_id is not None:
-            pb_id = str(pb_id)
-        if sbi_id is not None:
-            sbi_id = str(sbi_id)
+        # List keys
+        pb_path = self._pb_path
+        keys = self._txn.list_keys(pb_path + prefix)
 
-        # Might need to retry if multiple processing blocks are
-        # getting created concurrently
-        for retry in range(10):
+        # return list, stripping the prefix
+        assert all([ key.startswith(pb_path) for key in keys])
+        return list([ key[len(pb_path):] for key in keys ])
 
-            # Choose new processing block ID
-            if pb_id is not None:
-                set_pb_id = pb_id
-            else:
+    def new_processing_block_id(self, workflow_type):
+        """Generates a new processing block ID that does not yet exist in the
+        configuration.
 
-                # Find existing processing blocks with same prefix
-                pb_id_prefix = "{}-{}-".format(
-                        workflow['type'],
-                        date.today().strftime('%Y%m%d'))
-                existing_keys, _ = self._backend.list_keys(
-                    self._pb_path+pb_id_prefix, prefix=True)
-                print(existing_keys)
+        :param workflow_type: Type of workflow / processing block to create
 
-                # Choose ID that doesn't exist
-                for pb_ix in range(999999):
-                    set_pb_id = pb_id_prefix + "{:03}".format(pb_ix)
-                    if self._pb_path+set_pb_id not in existing_keys:
-                        break
+        :returns: Processing block id
+        """
 
-            # Make dictionary describing processing block
-            pb = {
-                'pb_id': set_pb_id,
-                'sbi_id': sbi_id,
-                'workflow': workflow,
-                'parameters': parameters,
-                'scan_parameters': scan_parameters
-            }
-            pb_path = self._pb_path+set_pb_id
+        # Find existing processing blocks with same prefix
+        pb_id_prefix = "{}-{}-".format(
+            workflow_type,
+            date.today().strftime('%Y%m%d'))
+        existing_ids = self.list_processing_blocks(pb_id_prefix)
 
-            # Attempt to create processing block
-            self._backend.create(pb_path, json.dumps(pb))
-            return entity.ProcessingBlock(pb, pb_path)
+        # Choose ID that doesn't exist
+        for pb_ix in range(9999):
+            pb_id = pb_id_prefix + "{:04}".format(pb_ix)
+            if pb_id not in existing_ids:
+                break
+        if pb_ix >= 9999:
+            raise RuntimeError("Exhausted maximum number of processing blocks!")
+        return pb_id
 
-        raise RuntimeError("Exhausted retries while trying to create processing block!")
+    def get_processing_block(self, pb_id):
+        """
+        Looks up processing block data.
 
+        :param pb_id: Processing block ID to look up
+        :returns: Processing block entity, or None if it doesn't exist
+        """
+        dct = self._get_json(self._cfg.pb_path + pb_id)
+        if dct is None:
+            return None
+        else:
+            return ProcessingBlock(None, None, None, dct=dct)
+
+    def create(self, obj):
+        """
+        Creates an entity in the database
+
+        :param obj: Object to create
+        """
+
+        if isinstance(obj, entity.ProcessingBlock):
+            self._create(self._pb_path + obj.pb_id, obj.to_dict())
+        else:
+            raise ValueError("Unknown object type: {}".format(obj))
+
+    def update(self, obj):
+        """
+        Updates an entity in the database
+
+        :param obj: Object to update
+        """
+
+        if isinstance(obj, entity.ProcessingBlock):
+            self._update(self._pb_path + obj.pb_id, obj.dict)
+        else:
+            raise ValueError("Unknown object type: {}".format(obj))
