@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "2c3c155c1b0f28cc3199ead7031494738e7e4d48acdbb46dea8a091b139596cf"
+            "sha256": "e7722c38351f4d3aeb50cc46c251c9588f6cee76496952fcfcdef42954e9fcdb"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -210,6 +210,13 @@
             ],
             "version": "==1.8.0"
         },
+        "pyassert": {
+            "hashes": [
+                "sha256:ccae35ca67605f997d97f94b8f2ef0e57fb42274fec5c67571f127a378fa10d4"
+            ],
+            "index": "pypi",
+            "version": "==0.4.2"
+        },
         "pycodestyle": {
             "hashes": [
                 "sha256:95a2219d12372f05704562a14ec30bc76b05a5b297b21a5dfe3f6fac3491ae56",
@@ -259,6 +266,14 @@
             ],
             "index": "pypi",
             "version": "==2.7.1"
+        },
+        "pytest-mock": {
+            "hashes": [
+                "sha256:43ce4e9dd5074993e7c021bb1c22cbb5363e612a2b5a76bc6d956775b10758b7",
+                "sha256:5bf5771b1db93beac965a7347dc81c675ec4090cb841e49d9d34637a25c30568"
+            ],
+            "index": "pypi",
+            "version": "==1.10.4"
         },
         "pytest-pydocstyle": {
             "hashes": [
