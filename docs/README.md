@@ -18,7 +18,7 @@ Build the documentation locally:
 pipenv run make html
 ```
 
-This will create a subdirectory `/build/html`. To browse the documents crated
+This will create a subdirectory `/build/html`. To browse the documents created
 open `/build/html/index.html` in a web browser.
 
 
