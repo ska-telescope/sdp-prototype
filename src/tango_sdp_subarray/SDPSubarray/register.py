@@ -4,13 +4,41 @@ import argparse
 from tango import Database, DbDevInfo
 
 
+def is_subarray_device_registered(server_name: str):
+    """Check if the SDPSubarray device is already registered with the db.
+
+    :param server_name: Name of the Tango device server.
+    """
+    return server_name in list(Database().get_server_list(server_name))
+
+
+def registered_subarray_devices(server_name: str, class_name: str) -> list:
+    """Get list of registered subarray devices.
+
+    :param server_name: Name of the Tango device server.
+    :param class_name: Name of the Tango device class.
+    :return: List of device names
+    """
+    return list(Database().get_device_name(server_name, class_name))
+
+
+def list_subarray_devices(server_name: str, class_name: str):
+    """List the subarray devices registered.
+
+    :param server_name: Name of the Tango device server.
+    :param class_name: Name of the Tango device class.
+    """
+    devices = registered_subarray_devices(server_name, class_name)
+    print('- No. registered devices: {}'.format(len(devices)))
+
+
 def delete_server(server_name: str):
     """Delete the specified device server.
 
-    :param server_name: Name of a Tango device server.
+    :param server_name: Name of the Tango device server to delete.
     """
     tango_db = Database()
-    if server_name in list(tango_db.get_server_list(server_name)):
+    if is_subarray_device_registered(server_name):
         print('- Removing device server: {}'.format(server_name))
         tango_db.delete_server(server_name)
 

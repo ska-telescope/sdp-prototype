@@ -1,0 +1,16 @@
+#
+# Docker compose file that launches a device server with a number of
+# SDPSubarray devices
+#
+
+version: '3.6'
+
+services:
+  sdp_subarray:
+    image: skaorca/tangods_sdp_subarray:latest
+    container_name: ${CONTAINER_NAME_PREFIX}sdp_subarray
+    network_mode: ${NETWORK_MODE}
+    environment:
+      - TANGO_HOST=${TANGO_HOST}
+    stdin_open: true
+    command: ["1", "-v4"]

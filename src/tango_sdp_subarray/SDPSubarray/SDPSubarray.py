@@ -13,6 +13,7 @@ from jsonschema import validate
 
 from tango import AttrWriteType, DebugIt, DevState, Except
 from tango.server import Device, DeviceMeta, attribute, command, run
+from register import registered_subarray_devices, register_subarray_devices
 # from skabase.SKASubarray import SKASubarray
 
 
@@ -279,6 +280,12 @@ class SDPSubarray(Device):
 
 def main(args=None, **kwargs):
     """Run server."""
+    server_name = 'SDPSubarray/1'
+    class_name = 'SDPSubarray'
+    devices = registered_subarray_devices(server_name, class_name)
+    if not len(devices):
+        print('Registering devices:')
+        register_subarray_devices(server_name, class_name, 16)
     return run((SDPSubarray,), args=args, **kwargs)
 
 

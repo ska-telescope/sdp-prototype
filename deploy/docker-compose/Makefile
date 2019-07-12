@@ -29,6 +29,9 @@ ifdef SERVICE_TARGET
   $(eval $(SERVICE):;@:)
 endif
 
+.DEFAULT_GOAL := help
+
+
 #
 # Never use the network=host mode when running CI jobs, and add extra
 # distinguishing identifiers to the network name and container names to
@@ -81,7 +84,7 @@ minimal:  ## start the base tango system
 	@echo "network mode = $(NETWORK_MODE)"
 	$(DOCKER_COMPOSE_ARGS) docker-compose -f tango_facility.yml up -d
 
-up: minimal
+up: minimal  ## start the base TANGO system and prepare all services
 	$(DOCKER_COMPOSE_ARGS) docker-compose $(COMPOSE_FILE_ARGS) up --no-start
 
 down:  ## stop all services and tear down the system

@@ -30,6 +30,7 @@ unregister:  ## Unregister devices
 
 .PHONY: start_dev start stop
 
+
 start_dev:  ## Start the device from the current code
 	@docker run \
 		--rm -t \
@@ -38,7 +39,6 @@ start_dev:  ## Start the device from the current code
 		--network=container:databaseds \
 		-e TANGO_HOST=localhost:10000 \
 		--entrypoint=python \
-		-d \
 		skaorca/pytango_ska_base:latest \
 		$(CLASS) 1 -v4
 
