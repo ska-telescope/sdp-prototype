@@ -108,7 +108,7 @@ class Etcd3(object):
         :param path: Prefix of keys to query. Append '/' to list
            child paths.
         :param revision: Database revision for which to list
-        :returns: (key list, revision)
+        :returns: (sorted key list, revision)
         """
 
         # Prepare parameters
@@ -314,6 +314,11 @@ class Etc3Watcher(object):
         self.stop()
 
 class Etcd3Transaction(object):
+    """
+    Makes it possible to string multiple queries and updates together
+    in a way that we can guarantee atomicity. This might occassionally
+    require iterating the transaction.
+    """
 
     def __init__(self, backend, max_retries=64):
         self._backend = backend
@@ -365,15 +370,21 @@ class Etcd3Transaction(object):
 
         self._ensure_uncommitted()
 
-        # We might have created an uncommitted key that falls into the
-        # range - add to list
+        # We might have created or deleted an uncommitted key that
+        # falls into the range - add to list
         tagged_path = self._backend._tag_depth(path)
-        added_keys = [ key for key in self._updates.keys()
-                       if self._backend._tag_depth(key).startswith(tagged_path) ]
+        matching_vals = [
+            kv for kv in self._updates.items()
+            if self._backend._tag_depth(kv[0]).startswith(tagged_path) ]
+        added_keys = set([ key for key, val in matching_vals
+                           if val is not None ])
+        removed_keys = set([ key for key, val in matching_vals
+                             if val is None ])
 
         # Check whether we already have the request response
         if path in self._list_queries:
-            return sorted(set(self._list_queries[path][0] + added_keys))
+            return sorted(set(self._list_queries[path][0])
+                          - removed_keys | added_keys)
 
         # Perform request
         v, rev = self._list_queries[path] = self._backend.list_keys(
@@ -382,7 +393,7 @@ class Etcd3Transaction(object):
         # Set revision, return
         if self._revision is None:
             self._revision = rev
-        return sorted(set(v + added_keys))
+        return sorted(set(v) - removed_keys | added_keys)
 
     def create(self, path, value, lease=None):
 
@@ -408,9 +419,28 @@ class Etcd3Transaction(object):
 
         # Add update request
         self._updates[path] = (value, None)
-        return True
+
+    def delete(self, path, must_exist = True):
+        """
+        Deletes the given key or key range
+
+        :param path: Path (prefix) of keys to remove
+        :param must_exist: Fail if path does not exist?
+        """
+
+        # As with "update"
+        result = self.get(path)
+        if result is None:
+            raise Vanished(path, "Cannot delete {}, as it does not exist!".format(path))
+
+        # Add delete request
+        self._updates[path] = (value, None)
 
     def commit(self):
+        """
+        Commits the transaction. This can fail, in which case the
+        transaction must get `reset` and built up again.
+        """
 
         self._ensure_uncommitted()
 
@@ -456,7 +486,10 @@ class Etcd3Transaction(object):
         # only update any key at most once.
         for path, (value, lease) in self._updates.items():
             tagged_path = self._backend._tag_depth(path)
-            txn.success(txn.put(tagged_path, value, lease))
+            if value is None:
+                txn.success(txn.delete(tagged_path, value, lease))
+            else:
+                txn.success(txn.put(tagged_path, value, lease))
 
         # Done
         self._committed = True
