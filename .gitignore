@@ -9,3 +9,4 @@
 **/*.pyc
 **/junit.xml
 **/cucumber.json
+**/.pytest_cache

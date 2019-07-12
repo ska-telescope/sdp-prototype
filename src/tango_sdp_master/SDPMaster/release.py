@@ -10,7 +10,7 @@
 """Release information for Python Package"""
 
 name = """tangods-sdpmaster"""
-version = "1.0.0"
+version = "0.2.0"
 version_info = version.split(".")
 description = """"""
 author = "brian.mcilwrath"

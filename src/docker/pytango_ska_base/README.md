@@ -1,32 +1,40 @@
-# Experimental ORCA Docker Py
+# Experimental ORCA Pytango Docker base image with SKA Tango base classes 
 
-Extends the ORCA base image with development and testing packages.
+Eventually this should be deprecated in favour of an `ska-docker` base image.
 
-# Quick start
+## Quick start
 
-Build with:
+If making a change, update the version number in the `release` file.
 
-```bash
-make
-```
+Then, if the Pipenv file has been changed:
 
-Publish with: 
-```bash
-make publish
-```
-
-Update the version number in the `release` file.
-
-Update the `pipenv` lock file with:
+Build with: 
 
 ```bash
-pipenv lock -v --clear --dev 
+make clean_build
 ```
 
+or, if only the Dockerfile has changed:
 
-## TODO
+```bash
+make build
+```
 
-- Add `make piplock` target to update the `Pipfile.lock` file
-- Update to Python 3.6 or 3.7 (currently limited by libboost-python on stretch) 
-- Use the ska-docker images instead!
+Publish (to dockerhub) with:
+ 
+```bash
+make push
+```
+
+To remove old `skaorca/pytango_ska_base` image tags:
+
+```bash
+make rm_old
+```
+
+To remove all `skaorca/pytango_ska_base` image tags
+
+```bash
+make rm
+```
 

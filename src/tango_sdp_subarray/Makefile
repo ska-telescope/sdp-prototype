@@ -1,10 +1,6 @@
 #
-# Makefile for building and publishing the `tangods_sdpsubarray` image.
+# Makefile for building and publishing the `tangods_sdp_subarray` image.
 #
-# Targets:
-# 	build: Build the image. Creates two tags, :<current version> and :<latest>
-# 	publish: Build and publish the image to Dockerhub / cloud.docker.com
-#	clean: Remove the image from the local machine
 
 CRED=\033[0;31m
 CBLUE=\033[0;34m
@@ -17,13 +13,12 @@ ifeq ($(strip $(DOCKER_REGISTRY_USER)),)
 endif
 
 # Get image name and version from the release file
-#NAME=$(shell python -c "from SDPSubarray.release import name; print(name)")
 NAME=tangods_sdp_subarray
-#VERSION=$(shell python -c "from SDPSubarray import __version__; print(__version__)")
+VERSION=0.2.0
 GIT_VERSION=$(shell git rev-parse --verify --short=8 HEAD)
-VERSION=0.1.0-$(GIT_VERSION)
 IMAGE=$(DOCKER_REGISTRY_USER)/$(NAME)
-# IMAGES := $(shell docker images --format '{{.Repository}}:{{.Tag}}' | grep $(IMAGE))
+IMAGES := $(shell docker image ls --format '{{.Repository}}:{{.Tag}}' --filter=reference="$(IMAGE)*:*")
+
 
 # If the first make argument is "register"
 ifeq (register,$(firstword $(MAKECMDGOALS)))
@@ -36,35 +31,73 @@ ifdef REGISTER_TARGET
   $(eval $(NUM_DEVICES):;@:)
 endif
 
+.DEFAULT_GOAL := help
 
-.PHONY: all
-all: build
 
-.PHONY: build
-build: build_version tag_latest
-
-.PHONY: build_version
-build_version:
-	@echo "GIT $(GIT_VERSION)"
+build:  ## Build the image, tagged as :$(VERSION)-$(GIT_VERSION)
 	@echo "$(CRED)$(LINE)$(CEND)"
-	@echo "$(CBLUE)Building Docker image:$(CEND) $(IMAGE):$(VERSION)"
+	@echo "$(CBLUE)Building image:$(CEND) $(IMAGE):$(VERSION)-$(GIT_VERSION)"
 	@echo "$(CRED)$(LINE)$(CEND)"
-	docker build -t ${IMAGE}:${VERSION} .
+	docker build -t ${IMAGE}:${VERSION}-$(GIT_VERSION) .
 
-.PHONY: tag_latest
+clean_build: refresh_pipenv build ## Refresh the Pipfile and build the image
+
+tag_version:
+	@echo "$(CRED)$(LINE)$(CEND)"
+	@echo "$(CBLUE)Tagging image:$(CEND) ${IMAGE}:${VERSION}-$(GIT_VERSION) -> $(IMAGE):$(VERSION)"
+	@echo "$(CRED)$(LINE)$(CEND)"
+	docker tag ${IMAGE}:${VERSION}-$(GIT_VERSION) ${IMAGE}:${VERSION}
+
 tag_latest:
 	@echo "$(CRED)$(LINE)$(CEND)"
-	@echo "$(CBLUE)Tagging image:$(CEND) $(IMAGE):latest"
+	@echo "$(CBLUE)Tagging image:$(CEND) ${IMAGE}:${VERSION}-$(GIT_VERSION) -> $(IMAGE):latest"
 	@echo "$(CRED)$(LINE)$(CEND)"
-	docker tag $(IMAGE):$(VERSION) $(IMAGE):latest
+	docker tag ${IMAGE}:${VERSION}-$(GIT_VERSION) $(IMAGE):latest
 
-.PHONY: publish
-publish: build tag_latest
-	@echo "$(CRED)* $(CBLUE)Publishing image(s) to Dockerhub ...$(CEND)"
+tag: tag_version tag_latest  ## Create image tags :latest, :$(VERSION)
+
+push: tag  ## Push images (to dockerhub)
+	@echo "$(CRED)$(LINE)$(CEND)"
+	@echo "$(CBLUE)Pushing images to Dockerhub ...$(CEND)"
+	@echo "$(CRED)$(LINE)$(CEND)"
+	docker push $(IMAGE):$(VERSION)-$(GIT_VERSION)
 	docker push $(IMAGE):$(VERSION)
 	docker push $(IMAGE):latest
 
-.PHONY: register
+refresh_pipenv:
+	-@pipenv --rm 2>/dev/null || true
+	pipenv lock -v --clear --dev
+
+OLD_IMAGES = $(IMAGES)
+OLD_IMAGES := $(filter-out $(IMAGE):latest, $(OLD_IMAGES))
+OLD_IMAGES := $(filter-out $(IMAGE):$(VERSION), $(OLD_IMAGES))
+OLD_IMAGES := $(filter-out $(IMAGE):$(VERSION)-$(GIT_VERSION), $(OLD_IMAGES))
+
+info: ## Print information on images
+	@echo "NAME = $(NAME)"
+	@echo "IMAGE = $(IMAGE)"
+	@echo "VERSION = $(VERSION)"
+	@echo "GIT_VERSION = $(GIT_VERSION)"
+	@echo "IMAGES = $(IMAGES)"
+	@echo "OLD_IMAGES =$(OLD_IMAGES)"
+
+list:  ## List images built from this folder
+	@docker image ls --filter=reference="$(IMAGE):*"
+
+rm:  ## Remove all images built from this folder
+ifeq ($(strip $(IMAGES)),)
+	@echo "$(CRED)No images to remove!$(CEND)"
+else
+	docker image rm $(IMAGES)
+endif
+
+rm_old:  ## Remove old images built from this folder
+ifeq ($(strip $(OLD_IMAGES)),)
+	@echo "$(CRED)No images to remove!$(CEND)"
+else
+	docker image rm $(OLD_IMAGES)
+endif
+
 register:  ## register devices (usage: make register <number of devices>)
 	@docker run --rm -t \
 		-v $(PWD):/app \
@@ -74,8 +107,7 @@ register:  ## register devices (usage: make register <number of devices>)
 		skaorca/pytango_ska_base:latest \
 		SDPSubarray/register.py $(NUM_DEVICES)
 
-.PHONY: unregister
-unregister:
+unregister:  ## Unregister devices
 	@docker run --rm -t \
 		-v $(PWD):/app \
 		--entrypoint=python \
@@ -84,8 +116,7 @@ unregister:
 		skaorca/pytango_ska_base:latest \
 		SDPSubarray/register.py --delete
 
-.PHONY: start_dev
-start_dev:
+start_dev:  ## Start the device from the current code
 	@docker run \
 		--rm -t \
 		-v $(PWD):/app \
@@ -97,8 +128,7 @@ start_dev:
 		skaorca/pytango_ska_base:latest \
 		SDPSubarray 1 -v4
 
-.PHONY: start
-start:
+start:  ## Start the device from the current Docker image
 	@docker run \
 		--rm -t \
 		--name=sdpsubarray \
@@ -110,12 +140,11 @@ start:
 		SDPSubarray 1 -v4
 
 
-.PHONY: stop
-stop:
+stop:  ## Stop the device
 	@docker stop sdpsubarray
 
-.PHONY: test
-test:
+
+test:  ## Run tests for the device
 	@docker run --rm -t \
 		-v $(PWD):/app \
 		--entrypoint=python \
@@ -125,29 +154,29 @@ test:
 		--cucumber-json=cucumber.json \
 		--gherkin-terminal-reporter
 
-.PHONY: ci_test
-ci_test:
+ci_test: # Test command run by the CI
 	python -m pytest \
 		-vv \
 		--gherkin-terminal-reporter \
 		--cucumber-json=cucumber.json \
 		.
 
-
-.PHONY: test_prompt
-test_prompt:
+test_shell:  ## Provide a test shell with the current code
 	@docker run --rm -it \
 		-v $(PWD):/app \
 		--entrypoint=/bin/bash \
 		skaorca/pytango_ska_dev
 
-#
-#.PHONY: clean
-#clean:
-#ifeq ($(strip $(IMAGES)),)
-#	@echo "$(CRED)No images need removing!$(CEND)"
-#else
-#	docker image rm $(IMAGES)
-#endif
+help:  ## Show this help.
+	@echo "$(CRED)$(LINE)$(CEND)"
+	@echo "$(CBLUE)NAME        $(CEND): $(NAME)"
+	@echo "$(CBLUE)IMAGE       $(CEND): $(IMAGE)"
+	@echo "$(CBLUE)VERSION     $(CEND): $(VERSION)"
+	@echo "$(CBLUE)GIT VERSION $(CEND): $(GIT_VERSION)"
+	@echo "$(CRED)$(LINE)$(CEND)"
+	@echo "$(CBLUE)Targets:$(CEND)"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-
+.PHONY: build clean_build tag_version tag_latest tag refresh_pipenv
+.PHONY: info rm rm_old register unregister start_dev start stop
+.PHONY: test ci_test test_shell help

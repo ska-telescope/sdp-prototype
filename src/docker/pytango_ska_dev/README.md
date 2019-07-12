@@ -1,34 +1,44 @@
 # Experimental ORCA Docker development image
 
-Extends the ORCA pytango SLA base image with development and testing packages.
+Extends the ORCA `pytango_ska_base` image with development and testing
+packages.
 
 This image can also be used with PyCharm Pro to provide a Python interpreter.
 
-# Quick start
+Eventually this should be deprecated in favour of a `ska-docker` base image.
 
-Build with:
+## Quick start
 
-```bash
-make
-```
+If making a change, update the version number in the `release` file.
 
-Publish with: 
-```bash
-make publish
-```
+Then, if the Pipenv file has been changed:
 
-Update the version number in the `release` file.
-
-Update the `pipenv` lock file with:
+Build with: 
 
 ```bash
-pipenv lock -v --clear --dev 
+make clean_build
 ```
 
+or, if only the Dockerfile has changed:
 
-## TODO
+```bash
+make build
+```
 
-- Add `make piplock` target to update the `Pipfile.lock` file
-- Update to Python 3.6 or 3.7 (currently limited by libboost-python on stretch) 
-- Use the ska-docker images instead!
+Publish (to dockerhub) with:
+ 
+```bash
+make push
+```
 
+To remove old `skaorca/pytango_ska_dev` image tags:
+
+```bash
+make rm_old
+```
+
+To remove all `skaorca/pytango_ska_dev` image tags
+
+```bash
+make rm
+```

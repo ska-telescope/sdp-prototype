@@ -3,10 +3,11 @@ name = "pypi"
 url = "https://pypi.org/simple"
 verify_ssl = true
 
+[packages]
+pytango = {version="*", index="pypi"}
+lmcbaseclasses = {git = "https://github.com/ska-telescope/lmc-base-classes.git",editable = true}
+
 [dev-packages]
 
-[packages]
-mock = "*"
-
 [requires]
-python_version = "3.5"
+python_version = "3.7"

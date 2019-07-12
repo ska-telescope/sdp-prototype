@@ -1,14 +1,14 @@
+# Note: Tests can be run locally with
+#   gitlab-runner exec <executor, eg. docker> <stage name>
+
 stages:
   - test
   - posttest
 
-# This can be run locally with
-#    > gitlab-runner exec docker subarray_tests
+# Test the SDPSubarray device
 subarray_tests:
     stage: test
-    image:
-      name: skaorca/pytango_ska_dev:latest
-      entrypoint: [""]
+    image: skaorca/pytango_ska_dev:latest
     script:
       - python -m pytest
           --gherkin-terminal-reporter
@@ -21,16 +21,16 @@ subarray_tests:
       expire_in: 30 days
       when: always
 
+# Test the SDPMaster device
+master_tests:
+    stage: test
+    image: skaorca/pytango_ska_dev:latest
+    script:
+      - python -m pytest -vv src/tango_sdp_master
+
 # Update XRAY links in JIRA
 xray:
   stage: posttest
-  #tags: [ska]
-  before_script: []
-  #This line may require the magic setting of cache earlier on.
-  cache: {}
-  # dependencies: [test]
-  # commented above out because it's breaking the build
-  # https://confluence.xpand-it.com/display/public/XRAY/Import+Execution+Results+-+REST
   script:
     - 'curl -X POST -H "Content-Type: application/json"
          -H "Authorization: Basic $JIRA_AUTH"

@@ -21,3 +21,9 @@ test: ## Run test (usage make test <path>)
         -vv \
         --cucumber-json=cucumber.json \
         $(TEST_DIR)
+
+list:  ## List all ORCA images
+	@docker image ls --filter=reference="skaorca/*:*"
+
+list_ska: ## List all ska-docker images
+	@docker image ls --filter=reference="*/ska-docker/*:*"
