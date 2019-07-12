@@ -1,10 +1,12 @@
-SDP Configuration Prototype
-===========================
+SDP Prototype (PI#3)
+====================
 
-This repository contains a set of packages for a minimal SDP system capable
-of configuring and executing a simple visibility receive workflow resulting in
-CASA Measurement sets being written to disk. This work has been carried out
-for SP-244
+This repository contains a set of packages for deploying a minimal SDP
+system capable of configuring and executing a simple visibility receive
+workflow.
+
+This work is being been carried out in PI#3 for
+`SP-244 <https://jira.skatelescope.org/browse/SP-244>`_
 
 .. toctree::
   :maxdepth: 1
@@ -18,6 +20,7 @@ for SP-244
   Getting Started<getting_started>
   SDP Master Device<sdp_master>
   SDP Subarray Device<sdp_subarray>
+  Configuration Database Schema<config_db_schema>
   Visibility Receive Workflow<vis_receive_workflow>
 
 Indices and tables
