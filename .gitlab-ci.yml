@@ -36,7 +36,7 @@ sdpmaster_tests:
       name: skaorca/pytango_ska_dev:latest
       entrypoint: [""]
     before_script:
-      - pip install -r testing_requirements.txt
+      - pip install -r tools/testing_requirements.txt
     script:
       - ./tools/run_tests.sh src/tango_sdp_sdpmaster
     artifacts:
