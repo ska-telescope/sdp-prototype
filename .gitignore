@@ -8,7 +8,6 @@
 .coverage
 **/*.pyc
 **/junit.xml
-<<<<<<< HEAD
 **/htmlcov/
 
 # Python temp files
@@ -48,4 +47,3 @@ test_reports.xml
 **/dist/
 =======
 **/cucumber.json
->>>>>>> 85324c0440add2520ddeffbf5157e544c5dd7f8d
