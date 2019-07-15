@@ -31,6 +31,15 @@ master_tests:
 # Update XRAY links in JIRA
 xray:
   stage: posttest
+  only:
+    - master
+  #tags: [ska]
+  before_script: []
+  #This line may require the magic setting of cache earlier on.
+  cache: {}
+  # dependencies: [test]
+  # commented above out because it's breaking the build
+  # https://confluence.xpand-it.com/display/public/XRAY/Import+Execution+Results+-+REST
   script:
     - 'curl -X POST -H "Content-Type: application/json"
          -H "Authorization: Basic $JIRA_AUTH"
