@@ -11,7 +11,7 @@ verify_ssl = true
 [packages]
 mock = "*"
 pyassert = "*"
-# pact-python = "*"  # requires gcc so will need a layered build
+pact-python = "*"
 pytest = "*"
 pytest-mock = "*"
 pytest_bdd = "*"
@@ -26,4 +26,4 @@ coveralls = "*"
 # codecov = "*"
 
 [requires]
-python_version = "3.5"
+python_version = "3.7"

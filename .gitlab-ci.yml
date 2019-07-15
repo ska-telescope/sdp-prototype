@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 image: "python:latest"
 
 ## Set up caching as suggested by GitLab's Python template
@@ -5,20 +6,20 @@ image: "python:latest"
 #  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
 #cache:
 #  paths: [.cache/pip,venv]
+=======
+# Note: Tests can be run locally with
+#   gitlab-runner exec <executor, eg. docker> <stage name>
 
 stages:
   - test
   - deploy
 
-# This can be run locally with
-#    > gitlab-runner exec docker subarray_tests
+# Test the SDPSubarray device
 subarray_tests:
     stage: test
-    image:
-      name: skaorca/pytango_ska_dev:latest
-      entrypoint: [""]
+    image: skaorca/pytango_ska_dev:latest
     script:
-      - python -m pytest
+      - ./scripts/run_tests.sh
           --gherkin-terminal-reporter
           -vv
           --cucumber-json=cucumber.json
@@ -30,7 +31,7 @@ subarray_tests:
       when: always
 
 #    > gitlab-runner exec docker sdpmaster_tests
-sdpmaster_tests:
+master_tests:
     stage: test
     image:
       name: skaorca/pytango_ska_dev:latest
@@ -44,7 +45,9 @@ sdpmaster_tests:
 
 # Update XRAY links in JIRA
 xray:
-  stage: deploy
+  stage: posttest
+  only:
+    - master
   #tags: [ska]
   before_script: []
   #This line may require the magic setting of cache earlier on.

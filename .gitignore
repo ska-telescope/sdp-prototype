@@ -47,3 +47,4 @@ test_reports.xml
 **/dist/
 =======
 **/cucumber.json
+**/.pytest_cache
