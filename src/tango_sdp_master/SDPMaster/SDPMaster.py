@@ -12,7 +12,7 @@ from PyTango import DevState
 from PyTango import AttrWriteType
 
 
-from register import is_registered, register_master
+from .register import is_registered, register_master
 
 
 __all__ = ["SDPMaster", "main"]
