@@ -1,3 +1,4 @@
 etcd3-py
 pytest
 pytest-timeout
+docopt
