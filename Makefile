@@ -6,6 +6,10 @@ endif
 ifeq (test_script,$(firstword $(MAKECMDGOALS)))
   TEST_TARGET = true
 endif
+ifeq (test_script_bdd,$(firstword $(MAKECMDGOALS)))
+  TEST_TARGET = true
+endif
+
 
 ifdef TEST_TARGET
   # .. then use the rest as arguments for the make target
