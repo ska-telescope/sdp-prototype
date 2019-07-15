@@ -36,9 +36,9 @@ sdpmaster_tests:
       name: skaorca/pytango_ska_dev:latest
       entrypoint: [""]
     before_script:
-      - pip install -r tools/testing_requirements.txt
+      - pip install -r scripts/testing_requirements.txt
     script:
-      - ./tools/run_tests.sh src/tango_sdp_master
+      - ./scripts/run_tests.sh src/tango_sdp_master
     artifacts:
       paths: [htmlcov/]
 
@@ -68,14 +68,13 @@ pages:
   dependencies: [sdpmaster_tests] # For coverage
   script:
     # Make Sphinx documentation
-
-    - pip install sphinx sphinx-rtd-theme
-    - make -C docs html
-    # Make notebooks
-    # - make -j 4 -k -C iPython notebooks_html
-    # Copy all into "public"
-    - cp -R docs/_build/html public
-    # - cp -R iPython/out public/iPython
+#    - pip install sphinx sphinx-rtd-theme
+#    - make -C docs html
+#    # Make notebooks
+#    - make -j 4 -k -C iPython notebooks_html
+#    # Copy all into "public"
+#    - cp -R docs/_build/html public
+#    # - cp -R iPython/out public/iPython
     - cp -R htmlcov public
   artifacts:
     paths: [public/]
