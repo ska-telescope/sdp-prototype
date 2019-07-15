@@ -164,6 +164,7 @@ build_pytango_ska_dev:
 # Push images to image registry
 push:
   stage: deploy
+  image: docker:stable
   script:
     - cd docker/pytango_base
     - make DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST push
