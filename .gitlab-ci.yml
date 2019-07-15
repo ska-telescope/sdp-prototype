@@ -13,7 +13,6 @@ image: "python:latest"
 stages:
   - test
   - posttest
-  - deploy
 
 # Test the SDPSubarray device
 subarray_tests:
@@ -53,23 +52,10 @@ xray:
          https://jira.skatelescope.org/rest/raven/1.0/import/execution/cucumber'
   retry: 2 #In case JIRA doesn't work first time
 
-# 1. The Sphinx documentation (root)
-# 2. All the notebooks (note that this will re-run them)
-# 3. Coverage reports
+# Publish Coverage reports
 pages:
-  stage: deploy
-  tags: [sdp]
-  only: [master]
-  dependencies: [sdpmaster_tests] # For coverage
+  stage: posttest
   script:
-    # Make Sphinx documentation
-#    - pip install sphinx sphinx-rtd-theme
-#    - make -C docs html
-#    # Make notebooks
-#    - make -j 4 -k -C iPython notebooks_html
-#    # Copy all into "public"
-#    - cp -R docs/_build/html public
-#    # - cp -R iPython/out public/iPython
     - cp -R htmlcov public
   artifacts:
     paths: [public/]
