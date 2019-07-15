@@ -65,7 +65,8 @@ pages:
   stage: deploy
   tags: [sdp]
   only: [master]
-  dependencies: [test] # For coverage
+  dependencies:
+    - test # For coverage
   script:
     # Make Sphinx documentation
     - pip install sphinx sphinx-rtd-theme
