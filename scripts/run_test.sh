@@ -21,7 +21,7 @@ NC=$(tput sgr0)
 
 
 [[ -n $1 ]] && [[ -d $1 ]] || {
-   printf "directory not provided or does not exist\n"
+   printf "directory not provided or does not exist: '$1'\n"
    Usage
 }
 
@@ -39,7 +39,7 @@ else
     --pylint-rcfile=.pylintrc
     --codestyle
     --docstyle
-    --cov-config=./scripts/setup.cfg \
+    --cov-config=./scripts/setup.cfg
     --cov=${DIR}
     --cov-report=term
     --cov-report=html
@@ -48,13 +48,13 @@ fi
 
 if [[ $# -ge 1 ]]
 then
-    prefix_options=$'-m pytest -s -v \
+    prefix_options=$'-m pytest -vv
     --rootdir=.'
     printf "%s------------------------------------------------------\n" \
             "$RED"
     printf "* OPTIONS=%s%s\n" "$NC" "$*"
 else
-     prefix_options=$'-m pytest -s -vv
+     prefix_options=$'-m pytest -vv
     --rootdir=.'
 fi
 printf "%s------------------------------------------------------\n" \
