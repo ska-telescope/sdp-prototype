@@ -39,6 +39,9 @@ else
     --pylint-rcfile=.pylintrc
     --codestyle
     --docstyle
+    --cov=src/tango_sdp_master
+    --cov-report=term
+    --cov-report=html
     "
 fi
 

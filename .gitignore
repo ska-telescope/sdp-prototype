@@ -8,6 +8,7 @@
 .coverage
 **/*.pyc
 **/junit.xml
+**/htmlcov/
 
 # Python temp files
 **/__pycache__/

@@ -40,10 +40,7 @@ sdpmaster_tests:
     script:
       - ./tools/run_tests.sh src/tango_sdp_master
     artifacts:
-      paths:
-      - cucumber.json
-      expire_in: 30 days
-      when: always
+      paths: [htmlcov/]
 
 # Update XRAY links in JIRA
 xray:
@@ -60,3 +57,25 @@ xray:
          --data @cucumber.json
          https://jira.skatelescope.org/rest/raven/1.0/import/execution/cucumber'
   retry: 2 #In case JIRA doesn't work first time
+
+# 1. The Sphinx documentation (root)
+# 2. All the notebooks (note that this will re-run them)
+# 3. Coverage reports
+pages:
+  stage: deploy
+  tags: [sdp]
+  only: [master]
+  dependencies: [test] # For coverage
+  script:
+    # Make Sphinx documentation
+    - pip install sphinx sphinx-rtd-theme
+    - make -C docs html
+    # Make notebooks
+    # - make -j 4 -k -C iPython notebooks_html
+    # Copy all into "public"
+    - cp -R docs/_build/html public
+    # - cp -R iPython/out public/iPython
+    - cp -R htmlcov public
+  artifacts:
+    paths: [public/]
+    expire_in: 1 week
