@@ -27,6 +27,7 @@ subarray_tests:
     artifacts:
       paths:
       - cucumber.json
+      - htmlcov/
       expire_in: 30 days
       when: always
 
@@ -53,7 +54,7 @@ xray:
   retry: 2 #In case JIRA doesn't work first time
 
 # Publish Coverage reports
-pages:
+coverage_report:
   stage: posttest
   script:
     - cp -R htmlcov public
