@@ -1,7 +1,12 @@
-image: "python:latest"
-
+#
 # Note: Tests can be run locally with
 #   gitlab-runner exec <executor, eg. docker> <stage name>
+#
+
+image: docker:stable
+
+services:
+  - docker:dind
 
 stages:
   - test
@@ -14,7 +19,10 @@ variables:
 cache:
     paths: [.cache/pip]
 
-# Test the SDPSubarray device
+before_script:
+  - docker login -u $DOCKER_REGISTRY_USER_LOGIN -p $CI_REGISTRY_PASS_LOGIN $CI_REGISTRY
+
+  # Test the SDPSubarray device
 subarray_tests:
     stage: test
     image: skaorca/pytango_ska_dev:latest
@@ -104,6 +112,34 @@ xray:
          --data @cucumber.json
          https://jira.skatelescope.org/rest/raven/1.0/import/execution/cucumber'
   retry: 2 # In case JIRA doesn't work first time
+
+# Build the ORCA Tango base image
+build_pytango_base:
+    retry: 2
+    stage: build
+    before_script:
+      - docker info
+    script:
+      - cd docker/pytango_base
+      - make DOCKER_BUILD_ARGS="--no-cache" build
+#      - make DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST push
+#      - make push
+    only:
+      changes:
+        - docker/pytango_base
+
+#build_pytango_ska_base:
+#    retry: 2
+#    stage: docker_build
+#    script:
+#      - cd docker/pytango_ska_base
+#      - make build
+#      - make push
+#      - make push
+#    only:
+#      changes:
+#        - docker/pytango_ska_base
+
 
 # Generate gitlab pages. This is done only for the master.
 pages:
