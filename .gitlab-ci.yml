@@ -5,11 +5,14 @@ image: "python:latest"
 #  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
 #cache:
 #  paths: [.cache/pip,venv]
+
+
 # Note: Tests can be run locally with
 #   gitlab-runner exec <executor, eg. docker> <stage name>
 
 stages:
   - test
+  - posttest
   - deploy
 
 # Test the SDPSubarray device
@@ -18,40 +21,31 @@ subarray_tests:
     image: skaorca/pytango_ska_dev:latest
     script:
       - ./scripts/run_test.sh
+          src/tango_sdp_subarray
           --gherkin-terminal-reporter
           -vv
           --cucumber-json=cucumber.json
-          src/tango_sdp_subarray
     artifacts:
       paths:
       - cucumber.json
       expire_in: 30 days
       when: always
 
-#    > gitlab-runner exec docker sdpmaster_tests
+# Test the SDPMaster device.
+# Run locally with: gitlab-runner exec docker master_tests
 master_tests:
     stage: test
-    image:
-      name: skaorca/pytango_ska_dev:latest
-      entrypoint: [""]
-    before_script:
-      - pip install -r scripts/testing_requirements.txt
+    image: skaorca/pytango_ska_dev:latest
     script:
       - ./scripts/run_test.sh src/tango_sdp_master
     artifacts:
       paths: [htmlcov/]
 
-# Update XRAY links in JIRA
+# Update XRay links in JIRA
 xray:
   stage: posttest
   only:
     - master
-  #tags: [ska]
-  before_script: []
-  #This line may require the magic setting of cache earlier on.
-  cache: {}
-  # commented above out because it's breaking the build
-  # https://confluence.xpand-it.com/display/public/XRAY/Import+Execution+Results+-+REST
   script:
     - 'curl -X POST -H "Content-Type: application/json"
          -H "Authorization: Basic $JIRA_AUTH"

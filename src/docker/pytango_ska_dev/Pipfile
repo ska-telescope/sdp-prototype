@@ -15,15 +15,11 @@ pact-python = "*"
 pytest = "*"
 pytest-mock = "*"
 pytest_bdd = "*"
+pytest-pylint = "*"
 pytest-codestyle = "*"
 pytest-pydocstyle = "*"
 pytest-cov = "*"
 coveralls = "*"
-
-## NOT availiable for Python 3.5?!
-# pytest-pylint = "*"
-# coverage = "*"
-# codecov = "*"
 
 [requires]
 python_version = "3.7"
