@@ -1,0 +1,4 @@
+#!/usr/bin/env python
+
+import ska_sdp_config.cli
+ska_sdp_config.cli.main()
