@@ -235,12 +235,62 @@ def test_transaction_simple(etcd3):
         assert txn.get(key2) is None
         assert txn.get(key) == "test2"
         txn.create(key2, "test2")
+        assert txn.get(key2) == "test2"
         txn.update(key, "test4")
         assert txn.get(key) == "test4"
         assert txn.get(key2) == "test2"
     assert etcd3.get(key2)[0] == "test2"
 
     etcd3.delete(key, recursive=True)
+
+def test_transaction_delete(etcd3):
+
+    key = prefix + "/test_txn_delete"
+
+    etcd3.create(key, "1")
+    for txn in etcd3.txn():
+        txn.delete(key)
+    assert etcd3.get(key)[0] is None
+
+    etcd3.create(key, "1")
+    for txn in etcd3.txn():
+        with pytest.raises(backend.Collision):
+            txn.create(key, "2")
+        txn.delete(key)
+        with pytest.raises(backend.Vanished):
+            txn.update(key, "3")
+        with pytest.raises(backend.Vanished):
+            txn.delete(key)
+        txn.create(key, "4")
+    assert etcd3.get(key)[0] == "4"
+
+    etcd3.delete(key)
+    for txn in etcd3.txn():
+        with pytest.raises(backend.Vanished):
+            txn.update(key, "3")
+        with pytest.raises(backend.Vanished):
+            txn.delete(key)
+        txn.create(key, "4")
+        with pytest.raises(backend.Collision):
+            txn.create(key, "2")
+        txn.update(key, "3")
+        txn.delete(key)
+    assert etcd3.get(key)[0] is None
+
+def test_transaction_lease(etcd3):
+
+    key = prefix + "/test_txn_lease"
+
+    with etcd3.lease(ttl=5) as lease:
+        for txn in etcd3.txn():
+            txn.create(key, "blub", lease=lease)
+            with pytest.raises(backend.Collision):
+                txn.create(key, "blub", lease=lease)
+        for txn in etcd3.txn():
+            assert txn.get(key) == "blub"
+        assert lease.alive()
+    for txn in etcd3.txn():
+        assert txn.get(key) is None
 
 def test_transaction_conc(etcd3):
 

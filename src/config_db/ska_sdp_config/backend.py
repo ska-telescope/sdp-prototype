@@ -415,7 +415,7 @@ class Etcd3Transaction(object):
         # As with "update"
         result = self.get(path)
         if result is None:
-            raise Collision(path, "Cannot update {}, as it does not exist!".format(path))
+            raise Vanished(path, "Cannot update {}, as it does not exist!".format(path))
 
         # Add update request
         self._updates[path] = (value, None)
@@ -486,10 +486,11 @@ class Etcd3Transaction(object):
         # only update any key at most once.
         for path, (value, lease) in self._updates.items():
             tagged_path = self._backend._tag_depth(path)
+            lease_id = (None if lease is None else lease.ID)
             if value is None:
-                txn.success(txn.delete(tagged_path, value, lease))
+                txn.success(txn.delete(tagged_path, value, lease_id))
             else:
-                txn.success(txn.put(tagged_path, value, lease))
+                txn.success(txn.put(tagged_path, value, lease_id))
 
         # Done
         self._committed = True
