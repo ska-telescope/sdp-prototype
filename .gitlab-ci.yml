@@ -124,9 +124,9 @@ build_pytango_base:
 #      - make DOCKER_BUILD_ARGS="--no-cache" build
 #      - make DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST push
 #      - make push
-    only:
-      changes:
-        - docker/pytango_base
+#    only:
+#      changes:
+#        - docker/pytango_base
 
 #build_pytango_ska_base:
 #    retry: 2
