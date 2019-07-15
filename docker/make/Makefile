@@ -22,7 +22,7 @@ build:  ## Build the image, tagged as :$(VERSION)-$(GIT_VERSION)
 	@echo "$(CRED)$(LINE)$(CEND)"
 	docker build --pull $(DOCKER_BUILD_ARGS) -t ${IMAGE}:${VERSION}-$(GIT_VERSION) .
 
-clean_build: refresh_pipenv build ## Refresh the Pipfile and build the image
+clean_build: piplock build ## Refresh the Pipfile and build the image
 
 SOURCE:=$(IMAGE):$(VERSION)-$(GIT_VERSION)
 ifeq ($(strip $(DOCKER_REGISTRY_HOST)),)
@@ -57,7 +57,7 @@ endif
 pull: ## Pull the latest image version
 	@docker pull $(IMAGE):latest
 
-refresh_pipenv:
+piplock:  ## Rebuild the Pipfile.lock file
 	-@pipenv --rm 2>/dev/null || true
 	pipenv lock -v --clear --dev
 
