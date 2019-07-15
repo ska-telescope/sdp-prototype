@@ -46,7 +46,7 @@ class Etcd3(object):
         return self._client.Lease(ttl=ttl)
 
     def txn(self, max_retries=64):
-        """ Creates a new (STM) transaction
+        """ Creates a new transaction
         """
         return Etcd3Transaction(self, max_retries)
 
@@ -56,7 +56,7 @@ class Etcd3(object):
 
         :param path: Path of key to query
         :param revision: Database revision for which to read key
-        :returns: (value, revision). value is None if it doesn't exit
+        :returns: (value, revision). value is None if it doesn't exist
         """
 
         # Check/prepare parameters
@@ -103,7 +103,7 @@ class Etcd3(object):
 
     def list_keys(self, path, revision=None):
         """
-        List keys under current path
+        List keys under given path
 
         :param path: Prefix of keys to query. Append '/' to list
            child paths.
@@ -135,12 +135,13 @@ class Etcd3(object):
     def create(self, path, value, lease=None):
         """
         Create a key at the path in question and initialises it with the
-        value. Fails if the value already exists.
+        value. Fails if the key already exists. If a lease is given,
+        the key will automatically get deleted once it expires.
 
         :param path: Path to create
         :param value: Value to set
         :param lease: Lease to associate
-        :returns: Whether creation succeeded
+        :raises: Collision
         """
 
         # Prepare parameters
@@ -162,10 +163,9 @@ class Etcd3(object):
 
         :param path: Path to update
         :param value: Value to set
-        :param from_revision: Fail if found value does not match given
+        :param must_be_rev: Fail if found value does not match given
             revision (atomic update)
-        :returns: Whether transaction was successful
-
+        :raises: Vanished
         """
 
         # Validate parameters
@@ -251,16 +251,16 @@ class Vanished(RuntimeError):
         return super(RuntimeError, self).__str__()
 
 class Etcd3Revision(object):
-    """Identifies the revision of the database (+ a key)
+    """Identifies the revision of the database
 
     This has two parts:
 
-    * `revision` is the database revision. Used for looking up
-      specific revisions in the database, for instance for querying a
-      consistent snapshot.
+    * `revision` is the database revision at the point in time when
+      the query was made. Can be used for querying a consistent
+      snapshot.
 
-    * `modRevision` identifies how often a given key has been modified
-      total. This can be used for checking whether a given key has
+    * `modRevision` given the revision when a key was last
+      modified. This can be used for checking whether a key has
       changed, for instance to implement an atomic update.
     """
 
@@ -274,7 +274,8 @@ class Etcd3Revision(object):
 class Etc3Watcher(object):
     """Wrapper for etc3 watch requests.
 
-    Enter to start watching the key, at which point 
+    Entering the watcher using a `with` block yields a queue of `(key,
+    val, rev)` triples.
     """
 
     def __init__(self, watcher, backend):
@@ -320,6 +321,32 @@ class Etcd3Transaction(object):
     require iterating the transaction.
     """
 
+    # TODO/ideas:
+    #
+    # Ranged deletes - in contrast to the main backend we cannot
+    # release a range of keys (especially recursively) in a
+    # transaction yet. The tricky bit is to make this consistent with
+    # the rest of the transaction machinery and properly
+    # atomic. Easiest solution might just be to simply use a bunch of
+    # list_key and single delete calls to get the same effect. Would
+    # be slightly inefficient, but would get the job done.
+    #
+    # Caching - especially when looping a transaction most of the
+    # queried data from the database might still be valid. So after a
+    # loop we could just migrate the known information to a _cache
+    # (plus any further information we got from watches). Then once
+    # the "new" database revision has been determined we might just
+    # send one cheap query to the database to figure out which bits of
+    # it are still current.
+    #
+    # Cheaper update/create checks - right now we query the old value
+    # of the key on every update/create call, even though we are only
+    # interested in whether or not the key exists. We could instead
+    # query this along the same lines as list_keys. Not entirely sure
+    # this is worthwhile though, given that it is quite typical to
+    # "get" a key before "updating" it anyway, and collisions on
+    # "create" should be quite rare.
+
     def __init__(self, backend, max_retries=64):
         self._backend = backend
         self._max_retries = max_retries
@@ -328,8 +355,6 @@ class Etcd3Transaction(object):
         self._get_queries = {} # Query log
         self._list_queries = {} # Query log
         self._updates = {} # Delayed updates
-        # TODO: deletes? Might get tricky mixing ranged deletes with
-        # create...
 
         self._committed = False
         self._loop = False
@@ -346,6 +371,12 @@ class Etcd3Transaction(object):
             raise RuntimeError("Attempted to modify committed transaction!")
 
     def get(self, path):
+        """
+        Get value of a key
+
+        :param path: Path of key to query
+        :returns: Key value. None if it doesn't exist.
+        """
 
         self._ensure_uncommitted()
 
@@ -367,6 +398,13 @@ class Etcd3Transaction(object):
         return v
 
     def list_keys(self, path):
+        """
+        List keys under given path
+
+        :param path: Prefix of keys to query. Append '/' to list
+           child paths.
+        :returns: sorted key list
+        """
 
         self._ensure_uncommitted()
 
@@ -396,6 +434,15 @@ class Etcd3Transaction(object):
         return sorted(set(v) - removed_keys | added_keys)
 
     def create(self, path, value, lease=None):
+        """Create a key at the path in question and initialises it with the
+        value. Fails if the key already exists. If a lease is given,
+        the key will automatically get deleted once it expires.
+
+        :param path: Path to create
+        :param value: Value to set
+        :param lease: Lease to associate
+        :raises: Collision
+        """
 
         self._ensure_uncommitted()
 
@@ -409,6 +456,12 @@ class Etcd3Transaction(object):
         self._updates[path] = (value, lease)
 
     def update(self, path, value):
+        """ Updates an existing key. Fails if the key does not exist.
+
+        :param path: Path to update
+        :param value: Value to set
+        :raises: Vanished
+        """
 
         self._ensure_uncommitted()
 
@@ -434,12 +487,13 @@ class Etcd3Transaction(object):
             raise Vanished(path, "Cannot delete {}, as it does not exist!".format(path))
 
         # Add delete request
-        self._updates[path] = (value, None)
+        self._updates[path] = (None, None)
 
     def commit(self):
         """
         Commits the transaction. This can fail, in which case the
         transaction must get `reset` and built up again.
+        :returns: Whether the commit succeeded
         """
 
         self._ensure_uncommitted()
@@ -616,7 +670,6 @@ class Etcd3Transaction(object):
         # not generate much churn here.
         for query, watcher in list(self._watchers.items()):
             if query not in active_watchers:
-                print("Stopping ", query, "active", active_watchers)
                 watcher.stop()
                 del self._watchers[query]
 
@@ -642,7 +695,6 @@ class Etcd3Transaction(object):
             try:
                 path, value, rev = self._watch_queue.get(block, timeout)
             except queue_m.Empty:
-                print("Timeout: {}".format(block))
                 self._got_timeout = block
                 return revision
 
