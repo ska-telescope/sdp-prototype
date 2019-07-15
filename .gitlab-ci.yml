@@ -117,7 +117,7 @@ build_pytango_base:
     services:
       - docker:dind
     before_script:
-      - docker login -u $DOCKER_REGISTRY_USER_LOGIN --password-stdin $CI_REGISTRY_PASS_LOGIN $CI_REGISTRY
+      - docker login -u $DOCKER_REGISTRY_USER_LOGIN -p $CI_REGISTRY_PASS_LOGIN $CI_REGISTRY
     script:
       - cd docker/pytango_base
       - make DOCKER_BUILD_ARGS="--no-cache" build
