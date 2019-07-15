@@ -1,33 +1,24 @@
 # -*- coding: utf-8 -*-
-#
-# This file is part of the SDPMaster project
-#
-#
-#
-# Distributed under the terms of the GPL license.
-# See LICENSE.txt for more info.
 
-""" SDP Master Tango Class
-
-"""
+"""Tango SDP Master device module."""
+# pylint: disable=invalid-name, import-error, no-name-in-module
 
 # PyTango imports
-import PyTango
 from PyTango import DebugIt
 from PyTango.server import run
 from PyTango.server import Device, DeviceMeta
 from PyTango.server import attribute, command
-from PyTango.server import device_property
-from PyTango import AttrQuality, DispLevel, DevState
-from PyTango import AttrWriteType, PipeWriteType
+from PyTango import DevState
+from PyTango import AttrWriteType
 
 __all__ = ["SDPMaster", "main"]
 
 
-# class SDPMaster(SKAMaster):
 class SDPMaster(Device):
-    """
-    """
+    """SDP Master device class."""
+
+    # pylint: disable=attribute-defined-outside-init
+
     __metaclass__ = DeviceMeta
     # PROTECTED REGION ID(SDPMaster.class_variable) ENABLED START #
     # PROTECTED REGION END #    //  SDPMaster.class_variable
@@ -52,6 +43,7 @@ class SDPMaster(Device):
     # ---------------
 
     def init_device(self):
+        """Initialise the device."""
         Device.init_device(self)
         # PROTECTED REGION ID(SDPMaster.init_device) ENABLED START #
         # Initialise Attributes
@@ -61,13 +53,13 @@ class SDPMaster(Device):
         # PROTECTED REGION END #    //  SDPMaster.init_device
 
     def always_executed_hook(self):
+        """Run for on each call."""
         # PROTECTED REGION ID(SDPMaster.always_executed_hook) ENABLED START #
-        pass
         # PROTECTED REGION END #    //  SDPMaster.always_executed_hook
 
     def delete_device(self):
+        """Device destructor."""
         # PROTECTED REGION ID(SDPMaster.delete_device) ENABLED START #
-        pass
         # PROTECTED REGION END #    //  SDPMaster.delete_device
 
     # ------------------
@@ -75,6 +67,7 @@ class SDPMaster(Device):
     # ------------------
 
     def read_OperatingState(self):
+        """Read the SDP Operating State."""
         # PROTECTED REGION ID(SDPMaster.OperatingState_read) ENABLED START #
         return self._operating_state
         # PROTECTED REGION END #    //  SDPMaster.OperatingState_read
@@ -87,7 +80,7 @@ class SDPMaster(Device):
     )
     @DebugIt()
     def on(self):
-        """."""
+        """SDP if fully operational and will accept commands."""
         # PROTECTED REGION ID(SDPMaster.on) ENABLED START #
         self._operating_state = 1
         # PROTECTED REGION END #    //  SDPMaster.on
@@ -96,7 +89,7 @@ class SDPMaster(Device):
     )
     @DebugIt()
     def disable(self):
-        """."""
+        """SDP is in a drain state with respect to processing.."""
         # PROTECTED REGION ID(SDPMaster.disable) ENABLED START #
         self._operating_state = 2
         # PROTECTED REGION END #    //  SDPMaster.disable
@@ -105,7 +98,7 @@ class SDPMaster(Device):
     )
     @DebugIt()
     def standby(self):
-        """."""
+        """SDP is in low-power mode."""
         # PROTECTED REGION ID(SDPMaster.standby) ENABLED START #
         self._operating_state = 3
         # PROTECTED REGION END #    //  SDPMaster.standby
@@ -114,7 +107,7 @@ class SDPMaster(Device):
     )
     @DebugIt()
     def off(self):
-        """."""
+        """Only SDP Master device running but rest powered off."""
         # PROTECTED REGION ID(SDPMaster.off) ENABLED START #
         self._operating_state = 6
         # PROTECTED REGION END #    //  SDPMaster.off
@@ -125,6 +118,7 @@ class SDPMaster(Device):
 
 
 def main(args=None, **kwargs):
+    """Run server."""
     # PROTECTED REGION ID(SDPMaster.main) ENABLED START #
     return run((SDPMaster,), args=args, **kwargs)
     # PROTECTED REGION END #    //  SDPMaster.main

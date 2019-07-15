@@ -1,13 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#
-# This file is part of the SDPMaster project
-#
-#
-#
-# Distributed under the terms of the GPL license.
-# See LICENSE.txt for more info.
-"""Contain the tests for the SDP Master Tango Class."""
+
+"""Tests for the SDP Master Tango Class."""
+# pylint: disable=redefined-outer-name, invalid-name
+
 
 # Imports
 import pytest
@@ -27,8 +23,11 @@ from SDPMaster import SDPMaster
 
 # Device test case
 @pytest.mark.usefixtures("tango_context")
-class TestSDPMaster(object):
+class TestSDPMaster:
     """Test case for packet generation."""
+
+    # pylint: disable=, no-self-use,
+
     # PROTECTED REGION ID(SDPMaster.test_additionnal_import) ENABLED START #
     # PROTECTED REGION END #    //  SDPMaster.test_additionnal_import
     device = SDPMaster
@@ -94,9 +93,10 @@ class TestSDPMaster(object):
     #
     # def test_isCapabilityAchievable(self):
     #     """Test for isCapabilityAchievable"""
-    #     # PROTECTED REGION ID(SDPMaster.test_isCapabilityAchievable) ENABLED START #
+    #     # PROTECTED REGION ID(SDPMaster.test_isCapabilityAchievable)
+    #     ENABLED START #
     #     self.device.isCapabilityAchievable([[0], [""]])
-    #     # PROTECTED REGION END #    //  SDPMaster.test_isCapabilityAchievable
+    #     # PROTECTED REGION END #   //  SDPMaster.test_isCapabilityAchievable
     #
     # def test_Reset(self):
     #     """Test for Reset"""
@@ -136,25 +136,29 @@ class TestSDPMaster(object):
     #
     # def test_elementLoggerAddress(self):
     #     """Test for elementLoggerAddress"""
-    #     # PROTECTED REGION ID(SDPMaster.test_elementLoggerAddress) ENABLED START #
+    #     # PROTECTED REGION ID(SDPMaster.test_elementLoggerAddress)
+    #     ENABLED START #
     #     self.device.elementLoggerAddress
     #     # PROTECTED REGION END #    //  SDPMaster.test_elementLoggerAddress
     #
     # def test_elementAlarmAddress(self):
     #     """Test for elementAlarmAddress"""
-    #     # PROTECTED REGION ID(SDPMaster.test_elementAlarmAddress) ENABLED START #
+    #     # PROTECTED REGION ID(SDPMaster.test_elementAlarmAddress)
+    #     ENABLED START #
     #     self.device.elementAlarmAddress
     #     # PROTECTED REGION END #    //  SDPMaster.test_elementAlarmAddress
     #
     # def test_elementTelStateAddress(self):
     #     """Test for elementTelStateAddress"""
-    #     # PROTECTED REGION ID(SDPMaster.test_elementTelStateAddress) ENABLED START #
+    #     # PROTECTED REGION ID(SDPMaster.test_elementTelStateAddress)
+    #     ENABLED START #
     #     self.device.elementTelStateAddress
     #     # PROTECTED REGION END #    //  SDPMaster.test_elementTelStateAddress
     #
     # def test_elementDatabaseAddress(self):
     #     """Test for elementDatabaseAddress"""
-    #     # PROTECTED REGION ID(SDPMaster.test_elementDatabaseAddress) ENABLED START #
+    #     # PROTECTED REGION ID(SDPMaster.test_elementDatabaseAddress)
+    #     ENABLED START #
     #     self.device.elementDatabaseAddress
     #     # PROTECTED REGION END #    //  SDPMaster.test_elementDatabaseAddress
     #
@@ -172,19 +176,22 @@ class TestSDPMaster(object):
     #
     # def test_centralLoggingLevel(self):
     #     """Test for centralLoggingLevel"""
-    #     # PROTECTED REGION ID(SDPMaster.test_centralLoggingLevel) ENABLED START #
+    #     # PROTECTED REGION ID(SDPMaster.test_centralLoggingLevel)
+    #     ENABLED START #
     #     self.device.centralLoggingLevel
     #     # PROTECTED REGION END #    //  SDPMaster.test_centralLoggingLevel
     #
     # def test_elementLoggingLevel(self):
     #     """Test for elementLoggingLevel"""
-    #     # PROTECTED REGION ID(SDPMaster.test_elementLoggingLevel) ENABLED START #
+    #     # PROTECTED REGION ID(SDPMaster.test_elementLoggingLevel)
+    #     ENABLED START #
     #     self.device.elementLoggingLevel
     #     # PROTECTED REGION END #    //  SDPMaster.test_elementLoggingLevel
     #
     # def test_storageLoggingLevel(self):
     #     """Test for storageLoggingLevel"""
-    #     # PROTECTED REGION ID(SDPMaster.test_storageLoggingLevel) ENABLED START #
+    #     # PROTECTED REGION ID(SDPMaster.test_storageLoggingLevel)
+    #     ENABLED START #
     #     self.device.storageLoggingLevel
     #     # PROTECTED REGION END #    //  SDPMaster.test_storageLoggingLevel
     #
@@ -220,17 +227,18 @@ class TestSDPMaster(object):
     #
     # def test_maxCapabilities(self):
     #     """Test for maxCapabilities"""
-    #     # PROTECTED REGION ID(SDPMaster.test_maxCapabilities) ENABLED START #
+    #     # PROTECTED REGION ID(SDPMaster.test_maxCapabilities) ENABLED START
     #     self.device.maxCapabilities
     #     # PROTECTED REGION END #    //  SDPMaster.test_maxCapabilities
     #
     # def test_availableCapabilities(self):
     #     """Test for availableCapabilities"""
-    #     # PROTECTED REGION ID(SDPMaster.test_availableCapabilities) ENABLED START #
+    #     # PROTECTED REGION ID(SDPMaster.test_availableCapabilities)
+    #     ENABLED START #
     #     self.device.availableCapabilities
     #     # PROTECTED REGION END #    //  SDPMaster.test_availableCapabilities
 
 
-# Main execution
-if __name__ == "__main__":
-    main()
+# # Main execution
+# if __name__ == "__main__":
+#     main()

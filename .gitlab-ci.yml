@@ -18,6 +18,8 @@ stages:
 subarray_tests:
     stage: test
     image: skaorca/pytango_ska_dev:latest
+    before_script:
+      - pip install pytest-pylint==0.13.0
     script:
       - ./scripts/run_test.sh
           src/tango_sdp_subarray
@@ -36,6 +38,8 @@ subarray_tests:
 master_tests:
     stage: test
     image: skaorca/pytango_ska_dev:latest
+    before_script:
+      - pip install pytest-pylint==0.13.0
     script:
       - ./scripts/run_test.sh src/tango_sdp_master
     artifacts:
