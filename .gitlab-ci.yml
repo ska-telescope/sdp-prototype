@@ -19,7 +19,7 @@ subarray_tests:
     stage: test
     image: skaorca/pytango_ska_dev:latest
     script:
-      - ./scripts/run_tests.sh
+      - ./scripts/run_test.sh
           --gherkin-terminal-reporter
           -vv
           --cucumber-json=cucumber.json
@@ -39,7 +39,7 @@ master_tests:
     before_script:
       - pip install -r scripts/testing_requirements.txt
     script:
-      - ./scripts/run_tests.sh src/tango_sdp_master
+      - ./scripts/run_test.sh src/tango_sdp_master
     artifacts:
       paths: [htmlcov/]
 
