@@ -36,7 +36,7 @@ then
 else
     full_test_options="
     --pylint
-    --pylint-rcfile=.pylintrc
+    --pylint-rcfile=./scripts/pylintrc
     --codestyle
     --docstyle
     --cov-config=./scripts/setup.cfg
