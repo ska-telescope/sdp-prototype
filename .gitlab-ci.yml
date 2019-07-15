@@ -2,7 +2,6 @@
 # Note: Tests can be run locally with
 #   gitlab-runner exec <executor, eg. docker> <stage name>
 #
-
 image: docker:stable
 
 services:
@@ -19,10 +18,7 @@ variables:
 cache:
     paths: [.cache/pip]
 
-before_script:
-  - docker login -u $DOCKER_REGISTRY_USER_LOGIN -p $CI_REGISTRY_PASS_LOGIN $CI_REGISTRY
-
-  # Test the SDPSubarray device
+# Test the SDPSubarray device
 subarray_tests:
     stage: test
     image: skaorca/pytango_ska_dev:latest
@@ -115,13 +111,17 @@ xray:
 
 # Build the ORCA Tango base image
 build_pytango_base:
-    retry: 2
     stage: build
+    image: docker:stable
+    services:
+      - docker:dind
     before_script:
+      - docker login -u $DOCKER_REGISTRY_USER_LOGIN -p $CI_REGISTRY_PASS_LOGIN $CI_REGISTRY
       - docker info
+      - env
     script:
       - cd docker/pytango_base
-      - make DOCKER_BUILD_ARGS="--no-cache" build
+#      - make DOCKER_BUILD_ARGS="--no-cache" build
 #      - make DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST push
 #      - make push
     only:
