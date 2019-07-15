@@ -1,10 +1,10 @@
 image: "python:latest"
 
-# Set up caching as suggested by GitLab's Python template
-variables:
-  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-cache:
-  paths: [.cache/pip,venv]
+## Set up caching as suggested by GitLab's Python template
+#variables:
+#  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+#cache:
+#  paths: [.cache/pip,venv]
 
 stages:
   - test
@@ -65,10 +65,10 @@ pages:
   stage: deploy
   tags: [sdp]
   only: [master]
-  dependencies:
-    - test # For coverage
+  dependencies: [sdpmaster_tests] # For coverage
   script:
     # Make Sphinx documentation
+
     - pip install sphinx sphinx-rtd-theme
     - make -C docs html
     # Make notebooks
