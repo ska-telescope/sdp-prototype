@@ -10,7 +10,7 @@ class ProcessingBlock:
 
     def __init__(self, pb_id, sbi_id, workflow,
                  parameters={}, scan_parameters={},
-                 dct=None):
+                 **kwargs):
         """
         Creates a new processing block structure
 
@@ -24,16 +24,14 @@ class ProcessingBlock:
         """
 
         # Get parameter dictionary
-        if dct is not None:
-            self._dict = dct
-        else:
-            self._dict = {
-                'pb_id': str(pb_id),
-                'sbi_id': None if sbi_id is None else str(sbi_id),
-                'workflow': dict(copy.deepcopy(workflow)),
-                'parameters': dict(copy.deepcopy(parameters)),
-                'scan_parameters': dict(copy.deepcopy(scan_parameters))
-            }
+        self._dict = {
+            'pb_id': str(pb_id),
+            'sbi_id': None if sbi_id is None else str(sbi_id),
+            'workflow': dict(copy.deepcopy(workflow)),
+            'parameters': dict(copy.deepcopy(parameters)),
+            'scan_parameters': dict(copy.deepcopy(scan_parameters))
+        }
+        self._dict.update(kwargs)
 
         # Validate
         if set(self.workflow) != set(['name', 'type', 'version']):
@@ -43,7 +41,7 @@ class ProcessingBlock:
 
     def to_dict(self):
         """ Returns workflow scan parameters """
-        return self._dict['scan_parameters']
+        return self._dict
 
     @property
     def pb_id(self):
@@ -71,3 +69,6 @@ class ProcessingBlock:
         """ Returns workflow scan parameters """
         return self._dict['scan_parameters']
 
+    def __repr__(self):
+        return "ProcessingBlock({})".format(
+            ", ".join(["{}={}".format(k, repr(v)) for k, v in self._dict.items()]))
