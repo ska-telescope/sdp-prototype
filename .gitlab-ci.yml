@@ -11,7 +11,7 @@ stages:
 # Set up caching as suggested by GitLab's Python template
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-  cache:
+cache:
     paths: [.cache/pip,venv]
 
 # Test the SDPSubarray device
