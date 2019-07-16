@@ -12,7 +12,7 @@ image: "python:latest"
 
 stages:
   - test
-  - deploy
+  - posttest
 
 # Test the SDPSubarray device
 subarray_tests:
@@ -48,7 +48,7 @@ master_tests:
 
 # Update XRay links in JIRA
 xray:
-  stage: deploy
+  stage: posttest
   only:
     - master
   script:
@@ -60,7 +60,7 @@ xray:
 
 # Publish Coverage reports
 pages:
-  stage: deploy
+  stage: posttest
   before_script:
     - coverage html
   script:
