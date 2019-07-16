@@ -29,7 +29,7 @@ subarray_tests:
     artifacts:
       paths:
       - cucumber.json
-      - htmlcov/
+      - .coverage
       expire_in: 30 days
       when: always
 
@@ -44,7 +44,7 @@ master_tests:
       - ./scripts/run_test.sh src/tango_sdp_master
     artifacts:
       paths:
-        - htmlcov/
+        - .coverage
 
 # Update XRay links in JIRA
 xray:
@@ -61,6 +61,8 @@ xray:
 # Publish Coverage reports
 pages:
   stage: deploy
+  before_script:
+    - coverage html
   script:
     - mv htmlcov/ public/
   artifacts:

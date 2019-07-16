@@ -40,10 +40,13 @@ else
     --codestyle
     --docstyle
     --cov-config=./scripts/setup.cfg
-    --cov=${DIR}
     --cov-report=term
-    --cov-report=html
+    --no-cov-on-fail
+    --cov-append
+    --cov-branch
+    --cov=${DIR}
     "
+#    --cov-report=html
 fi
 
 if [[ $# -ge 1 ]]
