@@ -18,6 +18,11 @@ RUN pipenv install --deploy --ignore-pipfile --dev
 # =============================================================================
 FROM skaorca/pytango_ska_base:latest
 
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        make \
+    && rm -rf /var/lib/apt/lists/*
+
 # Copy the venv from the build
 COPY --from=build /venv /venv
 
