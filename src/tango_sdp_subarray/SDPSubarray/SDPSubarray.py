@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """Tango SDPSubarray device module."""
 
+# pylint: disable=invalid-name
+
 from enum import IntEnum
 from inspect import currentframe, getframeinfo
 
@@ -12,6 +14,7 @@ from tango.server import Device, DeviceMeta, attribute, command, run
 # https://pytango.readthedocs.io/en/stable/data_types.html#devenum-pythonic-usage
 class AdminMode(IntEnum):
     """AdminMode enum."""
+
     OFFLINE = 0
     ONLINE = 1
     MAINTENANCE = 2
@@ -21,6 +24,7 @@ class AdminMode(IntEnum):
 
 class HealthState(IntEnum):
     """HealthState enum."""
+
     OK = 0
     DEGRADED = 1
     FAILED = 2
@@ -29,6 +33,7 @@ class HealthState(IntEnum):
 
 class ObsState(IntEnum):
     """ObsState enum."""
+
     IDLE = 0  #: Idle state
     CONFIGURING = 1  #: Configuring state
     READY = 2  #: Ready state
@@ -46,6 +51,8 @@ class SDPSubarray(Device):
         This should eventually inherit from SKASubarray but these need
         some work before doing so would add any value to this device.
     """
+
+    # pylint: disable=attribute-defined-outside-init
 
     __metaclass__ = DeviceMeta
 
@@ -68,7 +75,7 @@ class SDPSubarray(Device):
     # ---------------
 
     def init_device(self):
-        """Initialises the device."""
+        """Initialise the device."""
         # SKASubarray.init_device(self)
         Device.init_device(self)
         self.set_state(DevState.OFF)
@@ -76,10 +83,10 @@ class SDPSubarray(Device):
         self.admin_mode = AdminMode.OFFLINE
 
     def always_executed_hook(self):
-        pass
+        """Run for on each call."""
 
     def delete_device(self):
-        pass
+        """Device destructor."""
 
     # ------------------
     # Attributes methods
@@ -154,6 +161,7 @@ class SDPSubarray(Device):
 
         :param config: Resource specification (currently ignored)
         """
+        # pylint: disable=unused-argument
         if self.obs_state != ObsState.IDLE:
             frame_info = getframeinfo(currentframe())
             Except.throw_exception('Command: AssignReources failed',
@@ -175,6 +183,7 @@ class SDPSubarray(Device):
 
         :param config: Resource specification (currently ignored).
         """
+        # pylint: disable=unused-argument
         if self.obs_state != ObsState.IDLE:
             frame_info = getframeinfo(currentframe())
             Except.throw_exception('Command: ReleaseResources failed',
@@ -195,6 +204,7 @@ class SDPSubarray(Device):
 
         :param pb_config: JSON Processing Block configuration.
         """
+        # pylint: disable=unused-argument
         self.obs_state = ObsState.CONFIGURING
         # time.sleep(1)
         self.obs_state = ObsState.READY
@@ -209,6 +219,7 @@ class SDPSubarray(Device):
 
         :param scan_config: JSON Scan configuration.
         """
+        # pylint: disable=unused-argument
         self.obs_state = ObsState.CONFIGURING
         # time.sleep(0.5)
         self.obs_state = ObsState.READY
@@ -232,7 +243,7 @@ class SDPSubarray(Device):
         self.obs_state = ObsState.IDLE
 
     def _scan_complete(self):
-        """Updates the obsState to READY when a scan is complete.
+        """Update the obsState to READY when a scan is complete.
 
         Internal state transition.
         """

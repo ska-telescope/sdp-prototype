@@ -1,3 +1,12 @@
+image: "python:latest"
+
+## Set up caching as suggested by GitLab's Python template
+#variables:
+#  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+#cache:
+#  paths: [.cache/pip,venv]
+
+
 # Note: Tests can be run locally with
 #   gitlab-runner exec <executor, eg. docker> <stage name>
 
@@ -10,39 +19,53 @@ subarray_tests:
     stage: test
     image: skaorca/pytango_ska_dev:latest
     script:
-      - python -m pytest
+      - ./scripts/run_test.sh
+          src/tango_sdp_subarray
           --gherkin-terminal-reporter
           -vv
           --cucumber-json=cucumber.json
-          src/tango_sdp_subarray
+      - mv .coverage $CI_JOB_NAME.coverage
     artifacts:
       paths:
       - cucumber.json
+      - $CI_JOB_NAME.coverage
       expire_in: 30 days
       when: always
 
-# Test the SDPMaster device
+# Test the SDPMaster device.
+# Run locally with: gitlab-runner exec docker master_tests
 master_tests:
     stage: test
     image: skaorca/pytango_ska_dev:latest
     script:
-      - python -m pytest -vv src/tango_sdp_master
+      - ./scripts/run_test.sh src/tango_sdp_master
+      - mv .coverage $CI_JOB_NAME.coverage
+    artifacts:
+      paths:
+        - $CI_JOB_NAME.coverage
 
-# Update XRAY links in JIRA
+# Update XRay links in JIRA
 xray:
   stage: posttest
   only:
     - master
-  #tags: [ska]
-  before_script: []
-  #This line may require the magic setting of cache earlier on.
-  cache: {}
-  # dependencies: [test]
-  # commented above out because it's breaking the build
-  # https://confluence.xpand-it.com/display/public/XRAY/Import+Execution+Results+-+REST
   script:
     - 'curl -X POST -H "Content-Type: application/json"
          -H "Authorization: Basic $JIRA_AUTH"
          --data @cucumber.json
          https://jira.skatelescope.org/rest/raven/1.0/import/execution/cucumber'
   retry: 2 #In case JIRA doesn't work first time
+
+# Publish Coverage reports
+pages:
+  stage: posttest
+  before_script:
+    - pip install coverage
+    - coverage combine *.coverage
+    - coverage html
+  script:
+    - mv htmlcov/ public/
+  artifacts:
+    paths:
+      - public/
+    expire_in: 1 week

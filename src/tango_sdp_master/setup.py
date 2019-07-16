@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#
-# This file is part of the SDPMaster project
-#
-#
-#
-# Distributed under the terms of the GPL license.
-# See LICENSE.txt for more info.
+"""This file is part of the SDPMaster project.
+
+Distributed under the terms of the GPL license.
+See LICENSE.txt for more info.
+"""
+# pylint: disable=invalid-name, exec-used, undefined-variable
 
 import os
 import sys
@@ -32,7 +31,7 @@ setup(name=name,
       packages=pack,
       include_package_data=True,
       # test_suite="test",
-      entry_points={'console_scripts':['SDPMaster = SDPMaster:main']},
+      entry_points={'console_scripts': ['SDPMaster = SDPMaster:main']},
       author='brian.mcilwrath',
       author_email='brian.mcilwrath at stfc.ac.uk',
       license='GPL',
@@ -40,12 +39,12 @@ setup(name=name,
       url='www.tango-controls.org',
       platforms="Unix Like",
       install_requires=['pytango==9.2.5', 'mock'],
-      setup_requires = [
-           # dependency for `python setup.py test`
-           'pytest-runner',
-           # dependencies for `python setup.py build_sphinx`
-           'sphinx',
-           'recommonmark'
+      setup_requires=[
+          # dependency for `python setup.py test`
+          'pytest-runner',
+          # dependencies for `python setup.py build_sphinx`
+          'sphinx',
+          'recommonmark'
       ],
       tests_require=[
           'pytest',

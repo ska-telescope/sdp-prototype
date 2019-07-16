@@ -38,7 +38,7 @@ tag_latest:
 	@echo "$(CRED)$(LINE)$(CEND)"
 	docker tag ${IMAGE}:${VERSION}-$(GIT_VERSION) $(IMAGE):latest
 
-tag: tag_version tag_latest
+tag: tag_version tag_latest  ## Tag current image as :latest and :$(VERISON)
 
 push: tag  ## Push images (to dockerhub)
 	@echo "$(CRED)$(LINE)$(CEND)"
@@ -75,7 +75,7 @@ list:  ## List images built from this folder
 	@docker image ls --filter=reference="$(IMAGE):*"
 
 list_old:  ## List old images build from this folder
-	@docker image ls --filter=reference="$(IMAGE):*"
+	@echo "$(OLD_IMAGES)"
 
 rm:  ## Remove all images built from this folder
 ifeq ($(strip $(IMAGES)),)

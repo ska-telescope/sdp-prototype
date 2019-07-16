@@ -1,5 +1,6 @@
 [![pipeline status](https://gitlab.com/ska-telescope/sdp-prototype/badges/master/pipeline.svg)](https://gitlab.com/ska-telescope/sdp-prototype/pipelines)
 [![Documentation Status](https://readthedocs.org/projects/sdp-prototype/badge/?version=latest)](https://sdp-prototype.readthedocs.io/en/latest/?badge=latest)
+[![Coverage report](https://gitlab.com/ska-telescope/sdp-prototype/badges/master/coverage.svg)](https://ska-telescope.gitlab.io/sdp-prototype/)
 
 # SDP Evolutionary Prototype
 
