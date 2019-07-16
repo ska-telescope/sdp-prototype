@@ -50,8 +50,10 @@ master_tests:
 # Update XRay links in JIRA
 xray:
   stage: posttest
-  only:
-    - master
+#  only:
+#    - master
+  dependencies:
+    - master_tests
   script:
     - 'curl -X POST -H "Content-Type: application/json"
          -H "Authorization: Basic $JIRA_AUTH"
