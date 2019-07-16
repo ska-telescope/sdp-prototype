@@ -114,19 +114,16 @@ xray:
   retry: 2 # In case JIRA doesn't work first time
 
 # Build the skaorca/pytango_base image
-build_pytango_base:
-    stage: build_0
-#    image: docker:stable
-#    services:
-#      - docker:dind
-#    tags:
-#      - shell
-    before_script:
-      - docker login -u $DOCKER_REGISTRY_USER_LOGIN -p $CI_REGISTRY_PASS_LOGIN $CI_REGISTRY
-      - apk add make
-    script:
-      - cd docker/pytango_base
-      - make DOCKER_BUILD_ARGS="--no-cache" build
+#build_pytango_base:
+#    stage: build_0
+##    tags:
+##      - shell
+#    before_script:
+#      - docker login -u $DOCKER_REGISTRY_USER_LOGIN -p $CI_REGISTRY_PASS_LOGIN $CI_REGISTRY
+#      - apk add make git
+#    script:
+#      - cd docker/pytango_base
+#      - make DOCKER_BUILD_ARGS="--no-cache" build
 #    only:
 #      changes:
 #        - docker/pytango_base
@@ -139,7 +136,7 @@ build_pytango_base:
 #      - docker:dind
 #    before_script:
 #      - docker login -u $DOCKER_REGISTRY_USER_LOGIN -p $CI_REGISTRY_PASS_LOGIN $CI_REGISTRY
-#      - apk add make
+#      - apk add make git
 #    script:
 #      - cd docker/pytango_ska_base
 #      - make DOCKER_BUILD_ARGS="--no-cache" build
@@ -148,29 +145,30 @@ build_pytango_base:
 #        - docker/pytango_ska_base
 
 # Build the skaorca/pytango_ska_dev image
-#build_pytango_ska_dev:
-#    stage: build_3
-#    image: docker:stable
-#    services:
-#      - docker:dind
-#    before_script:
-#      - docker login -u $DOCKER_REGISTRY_USER_LOGIN -p $CI_REGISTRY_PASS_LOGIN $CI_REGISTRY
-#      - apk add make
-#    script:
-#      - cd docker/pytango_ska_dev
-#      - make DOCKER_BUILD_ARGS="--no-cache" build
-#    only:
-#      changes:
-#        - docker/pytango_ska_dev
+build_pytango_ska_dev:
+    stage: build_3
+    tags:
+      - shell
+    before_script:
+      - docker login -u $DOCKER_REGISTRY_USER_LOGIN -p $CI_REGISTRY_PASS_LOGIN $CI_REGISTRY
+      - apk add make git
+    script:
+      - cd docker/pytango_ska_dev
+      - make DOCKER_BUILD_ARGS="--no-cache" build
+    only:
+      changes:
+        - docker/pytango_ska_dev
 
 # Push images to image registry
 push:
   stage: deploy
+  tags:
+    - shell
   script:
     - docker image ls
-    - cd docker/pytango_base
-    - make DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST push
-    - make push
+#    - cd docker/pytango_base
+#    - make DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST push
+#    - make push
   when: manual
 
 # Generate gitlab pages. This is done only for the master.
