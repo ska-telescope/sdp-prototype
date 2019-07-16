@@ -30,6 +30,8 @@ before_script:
 # Test the SDPSubarray device
 subarray_tests:
     stage: test
+    tags:
+      - docker
     image: skaorca/pytango_ska_dev:latest
     before_script:
       - pipenv install jsonschema
@@ -50,6 +52,8 @@ subarray_tests:
 # Test the SDPMaster device.
 master_tests:
     stage: test
+    tags:
+      - docker
     image: skaorca/pytango_ska_dev:latest
     script:
       - ./scripts/run_test.sh src/tango_sdp_master
@@ -97,6 +101,8 @@ build_docs:
 # Generate combined test coverage report
 coverage_report:
   stage: post_test
+  tags:
+    - docker
   image: python:latest
   before_script:
     - pip install coverage
@@ -111,8 +117,10 @@ coverage_report:
 
 # Update XRay links in JIRA. This is done only for the master
 xray:
-  image: python:latest
   stage: post_test
+  image: python:latest
+  tags:
+    - docker
   only: [master]
   script:
     - 'curl -X POST -H "Content-Type: application/json"
@@ -179,8 +187,10 @@ push:
 
 # Generate gitlab pages. This is done only for the master.
 pages:
-  image: python:latest
   stage: deploy
+  tags:
+    - docker
+  image: python:latest
   only: [master]
   script:
     - cp -R htmlcov public/
