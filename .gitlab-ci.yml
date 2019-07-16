@@ -155,9 +155,9 @@ build_pytango_ska_dev:
     script:
       - cd docker/pytango_ska_dev
       - make DOCKER_BUILD_ARGS="--no-cache" build
-    only:
-      changes:
-        - docker/pytango_ska_dev
+#    only:
+#      changes:
+#        - docker/pytango_ska_dev
 
 # Push images to image registry
 push:
