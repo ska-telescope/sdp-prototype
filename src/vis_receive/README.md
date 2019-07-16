@@ -1,8 +1,7 @@
 # Simple visibility receive workflow prototype
 
 This code was originally written for the 
-[SKA Science Data Processor Integration Prototype]
-(https://github.com/SKA-ScienceDataProcessor/integration-prototype) and copied 
+[SKA Science Data Processor Integration Prototype](https://github.com/SKA-ScienceDataProcessor/integration-prototype) and copied 
 to this repository.
 
 ## Introduction
