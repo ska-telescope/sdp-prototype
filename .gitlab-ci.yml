@@ -1,18 +1,18 @@
 image: "python:latest"
 
-## Set up caching as suggested by GitLab's Python template
-#variables:
-#  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-#cache:
-#  paths: [.cache/pip,venv]
-
-
 # Note: Tests can be run locally with
 #   gitlab-runner exec <executor, eg. docker> <stage name>
 
 stages:
   - test
-  - posttest
+  - post_test
+  - deploy
+
+# Set up caching as suggested by GitLab's Python template
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  cache:
+    paths: [.cache/pip,venv]
 
 # Test the SDPSubarray device
 subarray_tests:
@@ -29,11 +29,9 @@ subarray_tests:
       paths:
       - cucumber.json
       - $CI_JOB_NAME.coverage
-      expire_in: 30 days
-      when: always
+      expire_in: 1 week
 
 # Test the SDPMaster device.
-# Run locally with: gitlab-runner exec docker master_tests
 master_tests:
     stage: test
     image: skaorca/pytango_ska_dev:latest
@@ -44,30 +42,37 @@ master_tests:
       paths:
         - $CI_JOB_NAME.coverage
 
-# Update XRay links in JIRA
+# Generate combined test coverage report
+coverage_report:
+  stage: post_test
+  before_script:
+    - pip install coverage
+  script:
+    - coverage combine *.coverage
+    - coverage report
+    - coverage html
+  coverage: '/TOTAL\s+\d+\s+\d+\s+\d+\s+\d+\s+(\d+\%)/'
+  artifacts:
+    paths: [htmlcov/]
+    expire_in: 1 week
+
+# Update XRay links in JIRA. This is done only for the master
 xray:
-  stage: posttest
-  only:
-    - master
+  stage: post_test
+  only: [master]
   script:
     - 'curl -X POST -H "Content-Type: application/json"
          -H "Authorization: Basic $JIRA_AUTH"
          --data @cucumber.json
          https://jira.skatelescope.org/rest/raven/1.0/import/execution/cucumber'
-  retry: 2 #In case JIRA doesn't work first time
+  retry: 2 # In case JIRA doesn't work first time
 
-# Generate and publish coverage report
-coverage:
-  stage: posttest
-  before_script:
-    - pip install coverage
-    - coverage combine *.coverage
-    - coverage report
-    - coverage html
+# Generate gitlab pages. This is done only for the master.
+pages:
+  stage: deploy
+  only: [master]
   script:
-    - mv htmlcov/ public/
-  coverage: '/TOTAL\s+\d+\s+\d+\s+\d+\s+\d+\s+(\d+\%)/'
+    - cp -R htmlcov public/
   artifacts:
-    paths:
-      - public/
+    paths: [public/]
     expire_in: 1 week
