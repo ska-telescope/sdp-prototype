@@ -11,6 +11,10 @@ stages:
   - build_3
   - deploy
 
+# ============================================================================
+# Run linters & tests
+# ============================================================================
+
 # Test the SDPSubarray device
 test_subarray_device:
     stage: test
@@ -51,7 +55,7 @@ config_db_tests:
       - name: quay.io/coreos/etcd:latest
         alias: etcd
         command:
-          - /usr/local/bin/etcd 
+          - /usr/local/bin/etcd
           - "--advertise-client-urls=http://0.0.0.0:2379"
           - "--listen-client-urls=http://0.0.0.0:2379"
           - "--initial-advertise-peer-urls=http://0.0.0.0:2380"
@@ -78,6 +82,11 @@ build_docs:
   artifacts:
     paths: [docs/build/html/]
     expire_in: 1 day
+
+# ============================================================================
+# Generate test reports
+# ============================================================================
+
 
 # Generate combined test coverage report
 coverage_report:
@@ -108,19 +117,25 @@ xray_report:
          https://jira.skatelescope.org/rest/raven/1.0/import/execution/cucumber'
   retry: 2 # In case JIRA doesn't work first time
 
+# ============================================================================
+# Build and Push docker images
+# ============================================================================
+
 # Build and push the `pytango_base` image.
 # Only build when there is a change.
 build_pytango_base:
   stage: build_0
+#  tags: [shell]
   tags: [docker]
   image: docker:stable
   services:
     - docker:dind
   only:
-    changes: [docker/pytango_base]
+    changes:
+      - docker/pytango_base
   before_script:
-    - docker login -u $NEXUS_USER -p $NEXUS_PASS $NEXUS_HOST
     - apk add make git
+    - docker login -u $NEXUS_USER -p $NEXUS_PASS $NEXUS_HOST
   script:
     - cd docker/pytango_base
     - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME DOCKER_BUILD_ARGS="--no-cache" build
@@ -131,15 +146,18 @@ build_pytango_base:
 # Only build when there is a change.
 build_pytango_ska_base:
   stage: build_1
+#  tags: [shell]
   tags: [docker]
   image: docker:stable
   services:
     - docker:dind
   only:
-    changes: [docker/pytango_ska_base]
+    changes:
+      - docker/pytango_ska_base
+      - docker/pytango_base
   before_script:
-    - docker login -u $NEXUS_USER -p $NEXUS_PASS $NEXUS_HOST
     - apk add make git
+    - docker login -u $NEXUS_USER -p $NEXUS_PASS $NEXUS_HOST
   script:
     - cd docker/pytango_ska_base
     - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME DOCKER_BUILD_ARGS="--no-cache" build
@@ -150,15 +168,19 @@ build_pytango_ska_base:
 # Only build when there is a change.
 build_pytango_ska_dev:
   stage: build_2
+#  tags: [shell]
   tags: [docker]
   image: docker:stable
   services:
     - docker:dind
-#  only:
-#    changes: [docker/pytango_ska_dev]
+  only:
+    changes:
+      - docker/pytango_ska_base
+      - docker/pytango_base
+      - docker/pytango_ska_dev
   before_script:
-    - docker login -u $NEXUS_USER -p $NEXUS_PASS $NEXUS_HOST
     - apk add make git
+    - docker login -u $NEXUS_USER -p $NEXUS_PASS $NEXUS_HOST
   script:
     - cd docker/pytango_ska_dev
     - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME DOCKER_BUILD_ARGS="--no-cache" build
@@ -168,15 +190,19 @@ build_pytango_ska_dev:
 # Build and push `tangods_sdp_master` image.
 build_tangods_sdp_master:
   stage: build_3
+#  tags: [shell]
   tags: [docker]
   image: docker:stable
   services:
     - docker:dind
-  only:
-    changes: [src/tango_sdp_master]
+#  only:
+#    changes:
+#      - src/tango_sdp_master
+#      - docker/pytango_base
+#      - docker/pytango_ska_base
   before_script:
-    - docker login -u $NEXUS_USER -p $NEXUS_PASS $NEXUS_HOST
     - apk add make git
+    - docker login -u $NEXUS_USER -p $NEXUS_PASS $NEXUS_HOST
   script:
     - cd src/tango_sdp_master
     - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME DOCKER_BUILD_ARGS="--no-cache" build
@@ -186,20 +212,28 @@ build_tangods_sdp_master:
 # Build and push `tangods_sdp_subarray` image.
 build_tangods_sdp_subarray:
   stage: build_3
+#  tags: [shell]
   tags: [docker]
   image: docker:stable
   services:
     - docker:dind
-  only:
-    changes: [src/tango_sdp_subarray]
+#  only:
+#    changes:
+#      - src/tango_sdp_master
+#      - docker/pytango_base
+#      - docker/pytango_ska_base
   before_script:
-    - docker login -u $NEXUS_USER -p $NEXUS_PASS $NEXUS_HOST
     - apk add make git
+    - docker login -u $NEXUS_USER -p $NEXUS_PASS $NEXUS_HOST
   script:
     - cd src/tango_sdp_subarray
     - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME DOCKER_BUILD_ARGS="--no-cache" build
     - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME tag
     - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push
+
+# ============================================================================
+# Publish reports
+# ============================================================================
 
 # Generate gitlab pages. This is done only for the master.
 pages:
