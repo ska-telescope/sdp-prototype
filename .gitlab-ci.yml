@@ -27,6 +27,7 @@ subarray_tests:
           -vv
           --cucumber-json=cucumber.json
     artifacts:
+      name: "test-results-$CI_JOB_NAME"
       paths:
       - cucumber.json
       - .coverage
@@ -43,6 +44,7 @@ master_tests:
     script:
       - ./scripts/run_test.sh src/tango_sdp_master
     artifacts:
+      name: "test-results-$CI_JOB_NAME"
       paths:
         - .coverage
 
