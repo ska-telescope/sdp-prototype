@@ -221,11 +221,11 @@ build_tangods_sdp_subarray:
   image: docker:stable
   services:
     - docker:dind
-#  only:
-#    changes:
-#      - docker/pytango_base
-#      - docker/pytango_ska_base
-#      - src/tango_sdp_subarray
+  only:
+    changes:
+      - docker/pytango_base
+      - docker/pytango_ska_base
+      - src/tango_sdp_subarray
   before_script:
     - apk add make git
     - docker login -u $NEXUS_USER -p $NEXUS_PASS $NEXUS_HOST
