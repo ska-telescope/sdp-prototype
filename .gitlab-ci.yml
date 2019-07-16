@@ -166,11 +166,18 @@ build_pytango_ska_dev:
     script:
       - cd docker/pytango_ska_dev
       - make DOCKER_BUILD_ARGS="--no-cache" build
+      # Push to nexus
+      - make DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST push
+      # Push to dockerhub
+      - make push
 #    only:
 #      changes:
 #        - docker/pytango_ska_dev
 
 # Push images to image registry
+# FIXME(BMo) if this is a manual step need to solve the case where \
+#            the image is pushed and tagged from a CI build a GIT_VERSION \
+#            that is different from the GIT_VERSION of the make build?
 push:
   stage: deploy
   tags:
@@ -179,9 +186,8 @@ push:
     - docker login -u $DOCKER_REGISTRY_USER_LOGIN -p $CI_REGISTRY_PASS_LOGIN $CI_REGISTRY
   script:
     - docker image ls
-#    - cd docker/pytango_base
-#    - make DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST push
-#    - make push
+    - cd docker/pytango_ska_dev
+    - make DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST push
   when: manual
 
 # Generate gitlab pages. This is done only for the master.
