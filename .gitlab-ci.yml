@@ -115,25 +115,86 @@ xray:
          https://jira.skatelescope.org/rest/raven/1.0/import/execution/cucumber'
   retry: 2 # In case JIRA doesn't work first time
 
-# Build and push the `skaorca/pytango_ska_dev` image.
+# Build and push the `pytango_base` image.
 # Only build when there is a change.
-build_pytango_ska_dev:
-    stage: build_3
+build_pytango_base:
+    stage: build_0
     tags: [shell]
+#    image: docker:stable
     services:
       - docker:dind
 #    only:
 #      changes: [docker/pytango_ska_dev]
     before_script:
-      - docker login -u $NEXUS_USER -p $NEXUS_PASS $NEXUS_REGISTRY_SERVER
+      - docker login -u $NEXUS_USER -p $NEXUS_PASS $NEXUS_HOST
     script:
-      - echo "$CI_PROJECT_NAME"
+      - cd docker/pytango_base
+      - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME DOCKER_BUILD_ARGS="--no-cache" build
+      - echo "1. *******************************************************"
+      - docker image ls
+      - echo "**********************************************************"
+      - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME tag
+      - echo "2. *******************************************************"
+      - docker image ls
+      - echo "**********************************************************"
+      - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push
+      - echo "3. *******************************************************"
+      - docker image ls
+      - echo "**********************************************************"
+
+# Build and push the `pytango_ska_base` image.
+# Only build when there is a change.
+build_pytango_ska_base:
+    stage: build_1
+    tags: [shell]
+#    image: docker:stable
+    services:
+      - docker:dind
+#    only:
+#      changes: [docker/pytango_ska_dev]
+    before_script:
+      - docker login -u $NEXUS_USER -p $NEXUS_PASS $NEXUS_HOST
+    script:
+      - cd docker/pytango_ska_base
+      - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME DOCKER_BUILD_ARGS="--no-cache" build
+      - echo "1. *******************************************************"
+      - docker image ls
+      - echo "**********************************************************"
+      - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME tag
+      - echo "2. *******************************************************"
+      - docker image ls
+      - echo "**********************************************************"
+      - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push
+      - echo "3. *******************************************************"
+      - docker image ls
+      - echo "**********************************************************"
+
+# Build and push the `pytango_ska_dev` image.
+# Only build when there is a change.
+build_pytango_ska_dev:
+    stage: build_2
+    tags: [shell]
+#    image: docker:stable
+    services:
+      - docker:dind
+#    only:
+#      changes: [docker/pytango_ska_dev]
+    before_script:
+      - docker login -u $NEXUS_USER -p $NEXUS_PASS $NEXUS_HOST
+    script:
       - cd docker/pytango_ska_dev
-      - make DOCKER_BUILD_ARGS="--no-cache" build
+      - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME DOCKER_BUILD_ARGS="--no-cache" build
+      - echo "1. *******************************************************"
       - docker image ls
-      - make DOCKER_REGISTRY_HOST=$NEXUS_REGISTRY_ADDRESS DOCKER_REGISTRY_USER=sdp-prototype push  # Push to nexus
-      - make push  # Push to dockerhub
+      - echo "**********************************************************"
+      - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME tag
+      - echo "2. *******************************************************"
       - docker image ls
+      - echo "**********************************************************"
+      - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push
+      - echo "3. *******************************************************"
+      - docker image ls
+      - echo "**********************************************************"
 
 # Generate gitlab pages. This is done only for the master.
 pages:

@@ -1,7 +1,10 @@
 # =============================================================================
 # Build layer - Extend the PyTango SKA base image with testing packages
 # =============================================================================
-FROM skaorca/pytango_ska_base:latest as build
+ARG DOCKER_REGISTRY_USER
+ARG DOCKER_REGISTRY_HOST
+FROM ${DOCKER_REGISTRY_HOST}/${DOCKER_REGISTRY_USER}/pytango_ska_base:latest as build
+#FROM skaorca/pytango_ska_base:latest as build
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -16,7 +19,8 @@ RUN pipenv install --deploy --ignore-pipfile --dev
 # =============================================================================
 # Final layer - Copy venv from build layer without build deps
 # =============================================================================
-FROM skaorca/pytango_ska_base:latest
+#FROM skaorca/pytango_ska_base:latest
+FROM ${DOCKER_REGISTRY_HOST}/${DOCKER_REGISTRY_USER}/pytango_ska_base:latest
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
