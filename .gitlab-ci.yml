@@ -3,6 +3,7 @@
 #   gitlab-runner exec <executor, eg. docker> <stage name>
 #
 image: docker:stable
+#image: python:latest
 
 services:
   - docker:dind
@@ -40,6 +41,7 @@ subarray_tests:
       - cucumber.json
       - $CI_JOB_NAME.coverage
       expire_in: 1 week
+
 
 # Test the SDPMaster device.
 master_tests:
@@ -91,6 +93,7 @@ build_docs:
 # Generate combined test coverage report
 coverage_report:
   stage: post_test
+  image: python:latest
   before_script:
     - pip install coverage
   script:
@@ -104,6 +107,7 @@ coverage_report:
 
 # Update XRay links in JIRA. This is done only for the master
 xray:
+  image: python:latest
   stage: post_test
   only: [master]
   script:
@@ -173,6 +177,7 @@ push:
 
 # Generate gitlab pages. This is done only for the master.
 pages:
+  image: python:latest
   stage: deploy
   only: [master]
   script:
