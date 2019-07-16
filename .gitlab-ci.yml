@@ -23,6 +23,10 @@ variables:
 cache:
     paths: [.cache/pip]
 
+# Log into the container registry
+before_script:
+  - docker login -u $DOCKER_REGISTRY_USER_LOGIN -p $CI_REGISTRY_PASS_LOGIN $CI_REGISTRY
+
 # Test the SDPSubarray device
 subarray_tests:
     stage: test
@@ -153,9 +157,7 @@ build_pytango_ska_dev:
     stage: build_3
     tags:
       - shell
-    before_script:
-      - docker login -u $DOCKER_REGISTRY_USER_LOGIN -p $CI_REGISTRY_PASS_LOGIN $CI_REGISTRY
-      - apk add make git
+#      - apk add make git
     script:
       - cd docker/pytango_ska_dev
       - make DOCKER_BUILD_ARGS="--no-cache" build
