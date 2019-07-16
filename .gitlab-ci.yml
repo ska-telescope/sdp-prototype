@@ -116,8 +116,8 @@ build_pytango_base:
   image: docker:stable
   services:
     - docker:dind
-#  only:
-#    changes: [docker/pytango_base]
+  only:
+    changes: [docker/pytango_base]
   before_script:
     - docker login -u $NEXUS_USER -p $NEXUS_PASS $NEXUS_HOST
     - apk add make git
@@ -135,8 +135,8 @@ build_pytango_ska_base:
   image: docker:stable
   services:
     - docker:dind
-#  only:
-#    changes: [docker/pytango_ska_base]
+  only:
+    changes: [docker/pytango_ska_base]
   before_script:
     - docker login -u $NEXUS_USER -p $NEXUS_PASS $NEXUS_HOST
     - apk add make git
@@ -165,39 +165,41 @@ build_pytango_ska_dev:
     - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME tag
     - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push
 
-#build_tangods_sdp_master:
-#  stage: build_3
-#  tags: [docker]
-#  image: docker:stable
-#  services:
-#    - docker:dind
-##  only:
-##    changes: [src/tango_sdp_master]
-#  before_script:
-#    - docker login -u $NEXUS_USER -p $NEXUS_PASS $NEXUS_HOST
-#    - apk add make git
-#  script:
-#    - cd src/tango_sdp_master
-#    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME DOCKER_BUILD_ARGS="--no-cache" build
-#    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME tag
-#    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push
-#
-#build_tangods_sdp_subarray:
-#  stage: build_3
-#  tags: [docker]
-#  image: docker:stable
-#  services:
-#    - docker:dind
-##  only:
-##    changes: [src/tango_sdp_subarray]
-#  before_script:
-#    - docker login -u $NEXUS_USER -p $NEXUS_PASS $NEXUS_HOST
-#    - apk add make git
-#  script:
-#    - cd src/tango_sdp_subarray
-#    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME DOCKER_BUILD_ARGS="--no-cache" build
-#    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME tag
-#    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push
+# Build and push `tangods_sdp_master` image.
+build_tangods_sdp_master:
+  stage: build_3
+  tags: [docker]
+  image: docker:stable
+  services:
+    - docker:dind
+  only:
+    changes: [src/tango_sdp_master]
+  before_script:
+    - docker login -u $NEXUS_USER -p $NEXUS_PASS $NEXUS_HOST
+    - apk add make git
+  script:
+    - cd src/tango_sdp_master
+    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME DOCKER_BUILD_ARGS="--no-cache" build
+    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME tag
+    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push
+
+# Build and push `tangods_sdp_subarray` image.
+build_tangods_sdp_subarray:
+  stage: build_3
+  tags: [docker]
+  image: docker:stable
+  services:
+    - docker:dind
+  only:
+    changes: [src/tango_sdp_subarray]
+  before_script:
+    - docker login -u $NEXUS_USER -p $NEXUS_PASS $NEXUS_HOST
+    - apk add make git
+  script:
+    - cd src/tango_sdp_subarray
+    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME DOCKER_BUILD_ARGS="--no-cache" build
+    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME tag
+    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push
 
 # Generate gitlab pages. This is done only for the master.
 pages:
