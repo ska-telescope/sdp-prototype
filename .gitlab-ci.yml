@@ -153,8 +153,8 @@ build_pytango_ska_base:
     - docker:dind
   only:
     changes:
-      - docker/pytango_ska_base
       - docker/pytango_base
+      - docker/pytango_ska_base
   before_script:
     - apk add make git
     - docker login -u $NEXUS_USER -p $NEXUS_PASS $NEXUS_HOST
@@ -175,8 +175,8 @@ build_pytango_ska_dev:
     - docker:dind
   only:
     changes:
-      - docker/pytango_ska_base
       - docker/pytango_base
+      - docker/pytango_ska_base
       - docker/pytango_ska_dev
   before_script:
     - apk add make git
@@ -195,11 +195,11 @@ build_tangods_sdp_master:
   image: docker:stable
   services:
     - docker:dind
-#  only:
-#    changes:
-#      - src/tango_sdp_master
-#      - docker/pytango_base
-#      - docker/pytango_ska_base
+  only:
+    changes:
+      - docker/pytango_base
+      - docker/pytango_ska_base
+      - src/tango_sdp_master
   before_script:
     - apk add make git
     - docker login -u $NEXUS_USER -p $NEXUS_PASS $NEXUS_HOST
@@ -217,11 +217,11 @@ build_tangods_sdp_subarray:
   image: docker:stable
   services:
     - docker:dind
-#  only:
-#    changes:
-#      - src/tango_sdp_master
-#      - docker/pytango_base
-#      - docker/pytango_ska_base
+  only:
+    changes:
+      - docker/pytango_base
+      - docker/pytango_ska_base
+      - src/tango_sdp_subarray
   before_script:
     - apk add make git
     - docker login -u $NEXUS_USER -p $NEXUS_PASS $NEXUS_HOST
