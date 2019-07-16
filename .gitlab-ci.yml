@@ -49,7 +49,7 @@ master_tests:
 
 # Update XRay links in JIRA
 xray:
-  stage: posttest
+  stage: deploy
   only:
     - master
   script:
