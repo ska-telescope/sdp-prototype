@@ -43,7 +43,9 @@ master_tests:
     script:
       - ./scripts/run_test.sh src/tango_sdp_master
     artifacts:
-      paths: [htmlcov/]
+      # paths: [htmlcov/]
+      paths:
+        - coverage/
 
 # Update XRay links in JIRA
 xray:
@@ -58,10 +60,13 @@ xray:
   retry: 2 #In case JIRA doesn't work first time
 
 # Publish Coverage reports
-coverage_report:
+# coverage_report:
+pages:
   stage: posttest
   script:
-    - cp -R htmlcov public
+    # - cp -R htmlcov public
+    - mv coverage/ public/
   artifacts:
-    paths: [public/]
+    paths:
+      - public
     expire_in: 1 week
