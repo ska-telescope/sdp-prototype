@@ -4,16 +4,25 @@ import argparse
 from tango import Database, DbDevInfo
 
 
-def delete_server(server_name):
-    """Delete the specified device server."""
+def delete_server(server_name: str):
+    """Delete the specified device server.
+
+    :param server_name: Name of a Tango device server.
+    """
     tango_db = Database()
     if server_name in list(tango_db.get_server_list(server_name)):
         print('- Removing device server: {}'.format(server_name))
         tango_db.delete_server(server_name)
 
 
-def register_subarray_devices(server_name, class_name, num_devices):
-    """Register subarray devices."""
+def register_subarray_devices(server_name: str, class_name: str,
+                              num_devices: int):
+    """Register subarray devices.
+
+    :param server_name: Name of a Tango device server.
+    :param class_name: Class name of the Tango device server.
+    :param num_devices: Number of Subarray devices to create.
+    """
     tango_db = Database()
     device_info = DbDevInfo()
 

@@ -1,39 +1,78 @@
+image: "python:latest"
+
+# Note: Tests can be run locally with
+#   gitlab-runner exec <executor, eg. docker> <stage name>
+
 stages:
   - test
-  - posttest
+  - post_test
+  - deploy
 
-# This can be run locally with
-#    > gitlab-runner exec docker subarray_tests
+# Set up caching as suggested by GitLab's Python template
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+cache:
+    paths: [.cache/pip,venv]
+
+# Test the SDPSubarray device
 subarray_tests:
     stage: test
-    image:
-      name: skaorca/pytango_ska_dev:latest
-      entrypoint: [""]
+    image: skaorca/pytango_ska_dev:latest
     script:
-      - python -m pytest
+      - ./scripts/run_test.sh
+          src/tango_sdp_subarray
           --gherkin-terminal-reporter
           -vv
           --cucumber-json=cucumber.json
-          src/tango_sdp_subarray
+      - mv .coverage $CI_JOB_NAME.coverage
     artifacts:
       paths:
       - cucumber.json
-      expire_in: 30 days
-      when: always
+      - $CI_JOB_NAME.coverage
+      expire_in: 1 week
 
-# Update XRAY links in JIRA
+# Test the SDPMaster device.
+master_tests:
+    stage: test
+    image: skaorca/pytango_ska_dev:latest
+    script:
+      - ./scripts/run_test.sh src/tango_sdp_master
+      - mv .coverage $CI_JOB_NAME.coverage
+    artifacts:
+      paths:
+        - $CI_JOB_NAME.coverage
+
+# Generate combined test coverage report
+coverage_report:
+  stage: post_test
+  before_script:
+    - pip install coverage
+  script:
+    - coverage combine *.coverage
+    - coverage report
+    - coverage html
+  coverage: '/TOTAL\s+\d+\s+\d+\s+\d+\s+\d+\s+(\d+\%)/'
+  artifacts:
+    paths: [htmlcov/]
+    expire_in: 1 week
+
+# Update XRay links in JIRA. This is done only for the master
 xray:
-  stage: posttest
-  #tags: [ska]
-  before_script: []
-  #This line may require the magic setting of cache earlier on.
-  cache: {}
-  # dependencies: [test]
-  # commented above out because it's breaking the build
-  # https://confluence.xpand-it.com/display/public/XRAY/Import+Execution+Results+-+REST
+  stage: post_test
+  only: [master]
   script:
     - 'curl -X POST -H "Content-Type: application/json"
          -H "Authorization: Basic $JIRA_AUTH"
          --data @cucumber.json
          https://jira.skatelescope.org/rest/raven/1.0/import/execution/cucumber'
-  retry: 2 #In case JIRA doesn't work first time
+  retry: 2 # In case JIRA doesn't work first time
+
+# Generate gitlab pages. This is done only for the master.
+pages:
+  stage: deploy
+  only: [master]
+  script:
+    - cp -R htmlcov public/
+  artifacts:
+    paths: [public/]
+    expire_in: 1 week

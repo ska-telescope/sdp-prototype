@@ -1,30 +1,40 @@
 # Experimental ORCA PyTango Docker base image
 
+Eventually this should be deprecated in favour of an `ska-docker` base image.
+
 ## Quick start
 
-Build with:
+If making a change, update the version number in the `release` file.
+
+Then, if the Pipenv file has been changed:
+
+Build with: 
 
 ```bash
-make
+make clean_build
 ```
 
-Publish with: 
-```bash
-make publish
-```
-
-Update the version number in the `release` file.
-
-Update the `pipenv` lock file with:
+or, if only the Dockerfile has changed:
 
 ```bash
-pipenv lock -v --clear --dev 
+make build
 ```
 
+Publish (to dockerhub) with:
+ 
+```bash
+make push
+```
 
-## TODO
+To remove old `skaorca/pytango_base` image tags:
 
-- Add `make piplock` target to update the `Pipfile.lock` file
-- Update to Python 3.6 or 3.7 (currently limited by libboost-python on stretch) 
-- Use the ska-docker images instead!
+```bash
+make rm_old
+```
+
+To remove all `skaorca/pytango_base` image tags
+
+```bash
+make rm
+```
 

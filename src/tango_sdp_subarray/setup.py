@@ -1,12 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#
-# This file is part of the SDPSubarray project
-#
-#
-#
-# Distributed under the terms of the none license.
-# See LICENSE.txt for more info.
+"""Setup script for the SDP Subarray Device package."""
+# pylint: disable=invalid-name, exec-used, undefined-variable
+
 
 import os
 import sys
@@ -26,13 +22,13 @@ exec(open(release_filename).read())
 
 pack = ['SDPSubarray']
 
-setup(name=name,
-      version=version,
+setup(name=NAME,
+      version=VERSION,
       description='',
       packages=pack,
       include_package_data=True,
       test_suite="test",
-      entry_points={'console_scripts':['SDPSubarray = SDPSubarray:main']},
+      entry_points={'console_scripts': ['SDPSubarray = SDPSubarray:main']},
       author='brian.mcilwrath',
       author_email='brian.mcilwrath at stfc.ac.uk',
       license='none',

@@ -1,7 +1,3 @@
-#
-# Makefile for building and publishing the `tangods_sdp_master` image.
-#
-
 CRED=\033[0;31m
 CBLUE=\033[0;34m
 CEND=\033[0m
@@ -13,26 +9,14 @@ ifeq ($(strip $(DOCKER_REGISTRY_USER)),)
 endif
 
 # Get image name and version from the release file
-NAME=tangods_sdp_master
-VERSION=0.2.0
+NAME=$(shell awk -F= '/^name=/{print $$2}' release)
 GIT_VERSION=$(shell git rev-parse --verify --short=8 HEAD)
+VERSION=$(shell awk -F= '/^release=/{print $$2}' release)
 IMAGE=$(DOCKER_REGISTRY_USER)/$(NAME)
 IMAGES := $(shell docker image ls --format '{{.Repository}}:{{.Tag}}' --filter=reference="$(IMAGE)*:*")
 
 
-# If the first make argument is "register"
-ifeq (register,$(firstword $(MAKECMDGOALS)))
-  REGISTER_TARGET = true
-endif
-ifdef REGISTER_TARGET
-  # .. then use the rest as arguments for the make target
-  NUM_DEVICES := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
-  # ...and turn them into do-nothing targets
-  $(eval $(NUM_DEVICES):;@:)
-endif
-
 .DEFAULT_GOAL := help
-
 
 build:  ## Build the image, tagged as :$(VERSION)-$(GIT_VERSION)
 	@echo "$(CRED)$(LINE)$(CEND)"
@@ -54,7 +38,7 @@ tag_latest:
 	@echo "$(CRED)$(LINE)$(CEND)"
 	docker tag ${IMAGE}:${VERSION}-$(GIT_VERSION) $(IMAGE):latest
 
-tag: tag_version tag_latest  ## Create image tags :latest, :$(VERSION)
+tag: tag_version tag_latest  ## Tag current image as :latest and :$(VERISON)
 
 push: tag  ## Push images (to dockerhub)
 	@echo "$(CRED)$(LINE)$(CEND)"
@@ -63,6 +47,9 @@ push: tag  ## Push images (to dockerhub)
 	docker push $(IMAGE):$(VERSION)-$(GIT_VERSION)
 	docker push $(IMAGE):$(VERSION)
 	docker push $(IMAGE):latest
+
+pull: ## Pull the latest image version
+	@docker pull $(IMAGE):latest
 
 refresh_pipenv:
 	-@pipenv --rm 2>/dev/null || true
@@ -81,8 +68,14 @@ info: ## Print information on images
 	@echo "IMAGES = $(IMAGES)"
 	@echo "OLD_IMAGES =$(OLD_IMAGES)"
 
+list_all:  ## List skaorca/pytango_* images
+	@docker image ls --filter=reference="skaorca/pytango_*:*"
+
 list:  ## List images built from this folder
 	@docker image ls --filter=reference="$(IMAGE):*"
+
+list_old:  ## List old images build from this folder
+	@echo "$(OLD_IMAGES)"
 
 rm:  ## Remove all images built from this folder
 ifeq ($(strip $(IMAGES)),)
@@ -98,71 +91,6 @@ else
 	docker image rm $(OLD_IMAGES)
 endif
 
-register:  ## register devices (usage: make register <number of devices>)
-	@docker run --rm -t \
-		-v $(PWD):/app \
-		--entrypoint=python \
-		--network=container:databaseds \
-		-e TANGO_HOST=localhost:10000 \
-		skaorca/pytango_ska_base:latest \
-		SDPMaster/register.py $(NUM_DEVICES)
-
-unregister:  ## Unregister devices
-	@docker run --rm -t \
-		-v $(PWD):/app \
-		--entrypoint=python \
-		--network=container:databaseds \
-		-e TANGO_HOST=localhost:10000 \
-		skaorca/pytango_ska_base:latest \
-		SDPMaster/register.py --delete
-
-start_dev:  ## Start the device from the current code
-	@docker run \
-		--rm -t \
-		-v $(PWD):/app \
-		--name=sdpmaster \
-		--network=container:databaseds \
-		-e TANGO_HOST=localhost:10000 \
-		--entrypoint=python \
-		-d \
-		skaorca/pytango_ska_base:latest \
-		SDPMaster 1 -v4
-
-start:  ## Start the device from the current Docker image
-	@docker run \
-		--rm -t \
-		--name=sdpmaster \
-		--network=container:databaseds \
-		-e TANGO_HOST=localhost:10000 \
-		--entrypoint=python \
-		-d \
-		skaorca/tangods_sdp_master:latest \
-		SDPMaster 1 -v4
-
-
-stop:  ## Stop the device
-	@docker stop sdpmaster
-
-
-test:  ## Run tests for the device
-	@docker run --rm -t \
-		-v $(PWD):/app \
-		skaorca/pytango_ska_dev \
-		python -m pytest -vv
-
-ci_test: # Test command run by the CI
-	python -m pytest \
-		-vv \
-		--gherkin-terminal-reporter \
-		--cucumber-json=cucumber.json \
-		.
-
-test_shell:  ## Provide a test shell with the current code
-	@docker run --rm -it \
-		-v $(PWD):/app \
-		--entrypoint=/bin/bash \
-		skaorca/pytango_ska_dev
-
 help:  ## Show this help.
 	@echo "$(CRED)$(LINE)$(CEND)"
 	@echo "$(CBLUE)NAME        $(CEND): $(NAME)"
@@ -171,8 +99,8 @@ help:  ## Show this help.
 	@echo "$(CBLUE)GIT VERSION $(CEND): $(GIT_VERSION)"
 	@echo "$(CRED)$(LINE)$(CEND)"
 	@echo "$(CBLUE)Targets:$(CEND)"
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-30s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' ../Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-.PHONY: build clean_build tag_version tag_latest tag refresh_pipenv
-.PHONY: info rm rm_old register unregister start_dev start stop
-.PHONY: test ci_test test_shell help
+
+.PHONY: build clean_build tag_version tag_latest tag
+.PHONY: push pull refresh_pipenv info list_old list_all rm rm_old help
