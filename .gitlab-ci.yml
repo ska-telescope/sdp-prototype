@@ -50,10 +50,8 @@ master_tests:
 # Update XRay links in JIRA
 xray:
   stage: posttest
-#  only:
-#    - master
-  dependencies:
-    - master_tests
+  only:
+    - master
   script:
     - 'curl -X POST -H "Content-Type: application/json"
          -H "Authorization: Basic $JIRA_AUTH"
@@ -62,13 +60,14 @@ xray:
   retry: 2 #In case JIRA doesn't work first time
 
 # Publish Coverage reports
-# coverage_report:
 pages:
-  stage: posttest
+  stage: deploy
+  dependencies:
+    - master_tests
   script:
     # - cp -R htmlcov public
     - mv htmlcov/ public/
   artifacts:
     paths:
-      - public
+      - public/
     expire_in: 1 week
