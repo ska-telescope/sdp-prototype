@@ -141,6 +141,7 @@ build_pytango_base:
     - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME DOCKER_BUILD_ARGS="--no-cache" build
     - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME tag
     - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push
+  retry: 2
 
 # Build and push the `pytango_ska_base` image.
 # Only build when there is a change.
@@ -163,6 +164,7 @@ build_pytango_ska_base:
     - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME DOCKER_BUILD_ARGS="--no-cache" build
     - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME tag
     - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push
+  retry: 2
 
 # Build and push the `pytango_ska_dev` image.
 # Only build when there is a change.
@@ -186,6 +188,7 @@ build_pytango_ska_dev:
     - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME DOCKER_BUILD_ARGS="--no-cache" build
     - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME tag
     - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push
+  retry: 2
 
 # Build and push `tangods_sdp_master` image.
 build_tangods_sdp_master:
@@ -208,6 +211,7 @@ build_tangods_sdp_master:
     - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME DOCKER_BUILD_ARGS="--no-cache" build
     - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME tag
     - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push
+  retry: 2
 
 # Build and push `tangods_sdp_subarray` image.
 build_tangods_sdp_subarray:
@@ -217,11 +221,11 @@ build_tangods_sdp_subarray:
   image: docker:stable
   services:
     - docker:dind
-  only:
-    changes:
-      - docker/pytango_base
-      - docker/pytango_ska_base
-      - src/tango_sdp_subarray
+#  only:
+#    changes:
+#      - docker/pytango_base
+#      - docker/pytango_ska_base
+#      - src/tango_sdp_subarray
   before_script:
     - apk add make git
     - docker login -u $NEXUS_USER -p $NEXUS_PASS $NEXUS_HOST
@@ -230,6 +234,7 @@ build_tangods_sdp_subarray:
     - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME DOCKER_BUILD_ARGS="--no-cache" build
     - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME tag
     - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push
+  retry: 2
 
 # ============================================================================
 # Publish reports
