@@ -120,7 +120,8 @@ xray:
 build_pytango_ska_dev:
     stage: build_3
     tags: [shell]
-    services: [docker:dind]
+    services:
+      - docker:dind
 #    only:
 #      changes: [docker/pytango_ska_dev]
     before_script:
