@@ -61,8 +61,6 @@ xray:
 # Publish Coverage reports
 pages:
   stage: deploy
-  dependencies:
-    - master_tests
   script:
     - mv htmlcov/ public/
   artifacts:
