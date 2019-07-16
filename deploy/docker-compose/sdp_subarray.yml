@@ -13,4 +13,12 @@ services:
     environment:
       - TANGO_HOST=${TANGO_HOST}
     stdin_open: true
+#    entrypoint:
+#      - /usr/local/bin/wait-for-it.sh
+#      - ${TANGO_HOST}
+#      - --timeout=30
+#      - --strict
+#      - --
+#      - python
+#      - SDPSubarray
     command: ["1", "-v4"]

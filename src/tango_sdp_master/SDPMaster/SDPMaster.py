@@ -11,8 +11,6 @@ from PyTango.server import attribute, command
 from PyTango import DevState
 from PyTango import AttrWriteType
 
-from .register import is_registered, register_master
-
 
 __all__ = ["SDPMaster", "main"]
 
@@ -123,11 +121,16 @@ class SDPMaster(Device):
 def main(args=None, **kwargs):
     """Run server."""
     # PROTECTED REGION ID(SDPMaster.main) ENABLED START #
-    server_name = 'SDPMaster/1'
-    class_name = 'SDPMaster'
-    if not is_registered(server_name):
-        print('Registering devices:')
-        register_master(server_name, class_name)
+    from register import is_registered, register_master
+    from tango import ConnectionFailed
+    try:
+        server_name = 'SDPMaster/1'
+        class_name = 'SDPMaster'
+        if not is_registered(server_name):
+            print('Registering devices:')
+            register_master(server_name, class_name)
+    except ConnectionFailed:
+        pass
     return run((SDPMaster,), args=args, **kwargs)
     # PROTECTED REGION END #    //  SDPMaster.main
 

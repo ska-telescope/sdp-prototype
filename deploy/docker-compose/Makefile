@@ -13,14 +13,6 @@ ifeq (start,$(firstword $(MAKECMDGOALS)))
   SERVICE_TARGET = true
 else ifeq (stop,$(firstword $(MAKECMDGOALS)))
   SERVICE_TARGET = true
-else ifeq (attach,$(firstword $(MAKECMDGOALS)))
-  SERVICE_TARGET = true
-ifndef NETWORK_MODE
-$(error NETWORK_MODE must specify the network to attach to, e.g., make NETWORK_MODE=tangonet-powersupply ...)
-endif
-ifndef TANGO_HOST
-$(error TANGO_HOST must specify the Tango database device, e.g., make TANGO_HOST=powersupply-databaseds:100000 ...)
-endif
 endif
 ifdef SERVICE_TARGET
   # .. then use the rest as arguments for the make target
@@ -81,7 +73,9 @@ DOCKER_COMPOSE_ARGS := MYSQL_HOST=$(MYSQL_HOST) \
 	NETWORK_MODE=$(NETWORK_MODE)
 
 minimal:  ## start the base tango system
-	@echo "network mode = $(NETWORK_MODE)"
+ifneq ($(NETWORK_MODE),host)
+	docker network inspect $(NETWORK_MODE) &> /dev/null || ([ $$? -ne 0 ] && docker network create $(NETWORK_MODE))
+endif
 	$(DOCKER_COMPOSE_ARGS) docker-compose -f tango_facility.yml up -d
 
 up: minimal  ## start the base TANGO system and prepare all services

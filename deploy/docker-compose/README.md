@@ -9,22 +9,40 @@ database device server:
 make up
 ```
 
-Start the SDP Master device server container:
+If this works correctly, `docker ps` should report two containers with names:
+`tangodb`, and `databaseds`
+
+
+Next start the SDP Master and SDP Subarray device server containers:
 
 ```bash
-make sdp_master
+make start sdp_master
+make start sdp_subarray
 ```
 
-Start the SDP Subarray device server container:
-
-```bash
-make sdp_subarray
-```
-
-Start an `itango` shell:
+In order to test the deployment, start an `itango` shell:
 
 ```bash
 make itango_shell
 ```
 
+Get the list of registered devices by using the command:
+
+```bash
+lsdev
+``` 
+
+Create a connection to the SDPMaster device with:
+
+```python
+d = DeviceProxy('mid_sdp/elt/master')
+```
+
+Query the state of the SDPMaster with:
+
+```python
+d.status()
+```
+
+If successful, this should report `'The device is in ON state'`.
 
