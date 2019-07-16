@@ -62,6 +62,7 @@ xray:
 pages:
   stage: posttest
   before_script:
+    - pip install coverage
     - coverage html
   script:
     - mv htmlcov/ public/
