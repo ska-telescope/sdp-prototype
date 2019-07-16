@@ -45,7 +45,7 @@ master_tests:
     artifacts:
       # paths: [htmlcov/]
       paths:
-        - coverage/
+        - htmlcov/
 
 # Update XRay links in JIRA
 xray:
@@ -67,7 +67,7 @@ pages:
   stage: posttest
   script:
     # - cp -R htmlcov public
-    - mv coverage/ public/
+    - mv htmlcov/ public/
   artifacts:
     paths:
       - public
