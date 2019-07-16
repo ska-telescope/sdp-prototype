@@ -43,7 +43,6 @@ master_tests:
     script:
       - ./scripts/run_test.sh src/tango_sdp_master
     artifacts:
-      # paths: [htmlcov/]
       paths:
         - htmlcov/
 
@@ -65,7 +64,6 @@ pages:
   dependencies:
     - master_tests
   script:
-    # - cp -R htmlcov public
     - mv htmlcov/ public/
   artifacts:
     paths:
