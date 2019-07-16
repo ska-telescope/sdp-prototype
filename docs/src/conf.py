@@ -17,6 +17,11 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
+
+# autodoc_mock_imports = ['PyTango', 'tango', 'tango.server', 'run',
+#                         'DeviceMeta', 'command']
+autodoc_mock_imports = ['PyTango', 'tango', 'skabase']
+
 import os
 import sys
 import sphinx_rtd_theme
@@ -24,7 +29,14 @@ import sphinx_rtd_theme
 
 # -- Path set up --------------------------------------------------------------
 
-# sys.path.insert(0, os.path.abspath('.'))
+sys.path.insert(0, os.path.abspath(
+    os.path.join('..', '..', 'src', 'tango_sdp_subarray', 'SDPSubarray')
+))
+sys.path.insert(0, os.path.abspath(
+    os.path.join('..', '..', 'src', 'tango_sdp_master', 'SDPMaster')
+))
+
+
 
 def setup(app):
     app.add_stylesheet('css/custom.css')

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-"""SDPSubarray"""
+"""SDPSubarray device package."""
+# pylint: disable=invalid-name
 
 from . import release
 from .SDPSubarray import (
@@ -10,6 +11,6 @@ from .SDPSubarray import (
     main
 )
 
-__version__ = release.version
-__version_info__ = release.version_info
-__author__ = release.author
+__version__ = release.VERSION
+__version_info__ = release.VERSION_INFO
+__author__ = release.AUTHOR

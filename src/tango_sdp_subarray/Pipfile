@@ -13,14 +13,6 @@ pytango = {version="*", index="pypi"}
 lmcbaseclasses = {git = "https://github.com/ska-telescope/lmc-base-classes.git",editable = true}
 
 [dev-packages]
-pytest = "*"
-pytest-pylint = "*"
-pytest-codestyle = "*"
-pytest-pydocstyle = "*"
-# pytest-cov = "*"
-# coverage = "*"
-# coveralls = "*"
-# codecov = "*"
 
 [requires]
-python_version = "3.6"
+python_version = "3.7"
