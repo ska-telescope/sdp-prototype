@@ -119,8 +119,8 @@ build_pytango_base:
 #    image: docker:stable
 #    services:
 #      - docker:dind
-    tags:
-      - shell
+#    tags:
+#      - shell
     before_script:
       - docker login -u $DOCKER_REGISTRY_USER_LOGIN -p $CI_REGISTRY_PASS_LOGIN $CI_REGISTRY
       - apk add make
@@ -165,9 +165,7 @@ build_pytango_base:
 
 # Push images to image registry
 push:
-  stage: deloy
-  tags:
-    - shell
+  stage: deploy
   script:
     - docker image ls
     - cd docker/pytango_base
