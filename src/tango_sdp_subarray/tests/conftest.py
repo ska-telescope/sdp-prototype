@@ -15,4 +15,3 @@ def tango_context():
     tango_context.start()
     yield tango_context
     tango_context.stop()
-
