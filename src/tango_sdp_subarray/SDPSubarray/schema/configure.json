@@ -1,26 +1,123 @@
 {
-    "id": "PB_27062019_0001_ingest",
-    "sbi_id": "SBI_27062019_0001",
-    "type": "REAL_TIME",
-    "workflow": {
-        "id": "vis_ingest",
-        "version": "0.1.0",
-    }
-    "parameters": {
-        "num_stations": 4,
-        "num_channels": 372,
-        "num_polarisations": 4,
-        "freq_start_hz": 0.35e9,
-        "freq_end_hz": 1.05e9,
-        "fields": {
-            "0": { "system": "ICRS", "name": ..., "ra": ..., "dec": ... },
-            "1": { "system": "ICRS", "name": ..., "ra": ..., "dec": ... },
-            ...
-        }
-    }
-    "scan_parameters: {
-        "scan_id": 12345,
-        "field_id": 0,
-        "interval_ms": 140,
-    }
+   "$schema":"http://json-schema.org/draft-04/schema#",
+   "title":"Configure Scan",
+   "description":"Schema for Configure Scan",
+   "version":"1.0.0",
+   "type":"object",
+   "properties":{
+      "id":{
+         "type":"string",
+         "description":"Primary PB Id, SBI-[date]-[project]-*",
+         "pattern":"^PB_[0-9]{8}_[a-z|A-Z]+-.*$"
+      },
+      "sbi_id":{
+         "type":"string",
+         "description":"Primary SBI Id, SBI-[date]-[project]-*",
+         "pattern":"^SBI-[0-9]{8}-[a-z|A-Z]+-.*$"
+      },
+      "type":{
+         "type":"string"
+      },
+      "workflow":{
+         "type":"object",
+         "properties":{
+            "id":{
+               "type":"string"
+            },
+            "version":{
+               "type":"string"
+            }
+         },
+         "required":[
+            "id",
+            "version"
+         ]
+      },
+      "parameters":{
+         "type":"object",
+         "properties":{
+            "num_stations":{
+               "type":"integer"
+            },
+            "num_channels":{
+               "type":"integer"
+            },
+            "num_polarisations":{
+               "type":"integer"
+            },
+            "freq_start_hz":{
+               "type":"number"
+            },
+            "freq_end_hz":{
+               "type":"number"
+            },
+            "fields":{
+               "type":"object",
+               "properties":{
+                  "0":{
+                     "type":"object",
+                     "properties":{
+                        "system":{
+                           "type":"string"
+                        }
+                     },
+                     "required":[
+                        "system"
+                     ]
+                  },
+                  "1":{
+                     "type":"object",
+                     "properties":{
+                        "system":{
+                           "type":"string"
+                        }
+                     },
+                     "required":[
+                        "system"
+                     ]
+                  }
+               },
+               "required":[
+                  "0",
+                  "1"
+               ]
+            }
+         },
+         "required":[
+            "num_stations",
+            "num_channels",
+            "num_polarisations",
+            "freq_start_hz",
+            "freq_end_hz",
+            "fields"
+         ]
+      },
+      "scan_parameters":{
+         "type":"object",
+         "properties":{
+            "scan_id":{
+               "type":"integer"
+            },
+            "field_id":{
+               "type":"integer"
+            },
+            "interval_ms":{
+               "type":"integer"
+            }
+         },
+         "required":[
+            "scan_id",
+            "field_id",
+            "interval_ms"
+         ]
+      }
+   },
+   "required":[
+      "id",
+      "sbi_id",
+      "type",
+      "workflow",
+      "parameters",
+      "scan_parameters"
+   ]
 }

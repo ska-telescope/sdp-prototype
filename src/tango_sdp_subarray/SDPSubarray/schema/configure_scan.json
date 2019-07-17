@@ -1,5 +1,23 @@
 {
-    "scan_id": 12346,
-    "field_id": 1,
-    "interval_ms": 140,
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title":"Configure Scan",
+    "description":"Schema for Configure Scan",
+    "version":"1.0.0",
+    "type": "object",
+    "properties": {
+        "scan_id": {
+            "type": "integer",
+        },
+        "field_id": {
+            "type": "integer",
+        },
+        "interval_ms": {
+            "type": "integer",
+        },
+    },
+    "required": [
+        "scan_id",
+        "field_id",
+        "interval_ms"
+    ],
 }
