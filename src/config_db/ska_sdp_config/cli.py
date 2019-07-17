@@ -80,9 +80,9 @@ def cmd_create_pb(txn, workflow, _args):
     return pb_id
 
 
-def main():
+def main(argv):
     """Command line interface implementation."""
-    args = docopt.docopt(__doc__)
+    args = docopt.docopt(__doc__, argv=argv)
 
     # Validate
     path = args["<path>"]
