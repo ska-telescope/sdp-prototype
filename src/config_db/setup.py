@@ -1,7 +1,6 @@
+"""PIP set-up for SKA SDP configuration database package."""
 
 from setuptools import setup
-import unittest
-test_loader = unittest.TestLoader()
 
 setup(
     name='ska-sdp-config',
