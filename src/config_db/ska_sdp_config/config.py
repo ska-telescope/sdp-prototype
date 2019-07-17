@@ -10,7 +10,7 @@ from . import backend as backend_mod, entity
 
 
 class Config():
-    """High-level API for SKA SDP configuration."""
+    """Connection to SKA SDP configuration."""
 
     def __init__(self, backend=None, global_prefix='', owner=None,
                  **cargs):
@@ -90,24 +90,26 @@ class Config():
         return self._client_lease
 
     def txn(self, max_retries=64):
-        """Create a transaction for atomic configuration query/change.
+        """Create a :class:`Transaction` for atomic configuration query/change.
 
         As we do not use locks, transactions might have to be repeated in
         order to guarantee atomicity. Suggested usage is as follows:
-        ```
-        for txn in config.txn():
-            # Use txn to read+write configuration
-            # [Possibly call txn.loop()]
-        ```
+
+        .. code-block:: python
+
+            for txn in config.txn():
+                # Use txn to read+write configuration
+                # [Possibly call txn.loop()]
 
         As the `for` loop suggests, the code might get run multiple
-        times even if not forced by calling `loop`. Any writes using
-        the transaction will be discarded if the transaction fails,
-        but the application must make sure that the loop body has no
-        other observable side effects.
+        times even if not forced by calling
+        :meth:`Transaction.loop`. Any writes using the transaction
+        will be discarded if the transaction fails, but the
+        application must make sure that the loop body has no other
+        observable side effects.
 
         :param max_retries: Number of transaction retries before a
-            `RuntimeError` gets raised.
+            :class:`RuntimeError` gets raised.
         """
         return TransactionFactory(
             self, self._backend.txn(max_retries=max_retries))
@@ -206,7 +208,7 @@ class Transaction():
         assert all([key.startswith(pb_path) for key in keys])
         return list([key[len(pb_path):] for key in keys])
 
-    def new_processing_block_id(self, workflow_type):
+    def new_processing_block_id(self, workflow_type: str):
         """Generate a new processing block ID that does not yet in use.
 
         :param workflow_type: Type of workflow / processing block to create
@@ -227,7 +229,7 @@ class Transaction():
             raise RuntimeError("Exceeded daily number of processing blocks!")
         return pb_id
 
-    def get_processing_block(self, pb_id):
+    def get_processing_block(self, pb_id: str) -> entity.ProcessingBlock:
         """
         Look up processing block data.
 
@@ -239,25 +241,25 @@ class Transaction():
             return None
         return entity.ProcessingBlock(**dct)
 
-    def create_processing_block(self, obj):
+    def create_processing_block(self, pb: entity.ProcessingBlock):
         """
-        Add a new processing block to the configuration.
+        Add a new :class:`ProcessingBlock` to the configuration.
 
         :param obj: Processing block to create
         """
-        assert isinstance(obj, entity.ProcessingBlock)
-        self._create(self._pb_path + obj.pb_id, obj.to_dict())
+        assert isinstance(pb, entity.ProcessingBlock)
+        self._create(self._pb_path + pb.pb_id, pb.to_dict())
 
-    def update_processing_block(self, obj):
+    def update_processing_block(self, pb: entity.ProcessingBlock):
         """
-        Update a processing block in the configuration.
+        Update a :class:`ProcessingBlock` in the configuration.
 
         :param obj: Processing block to update
         """
-        assert isinstance(obj, entity.ProcessingBlock)
-        self._update(self._pb_path + obj.pb_id, obj.dict)
+        assert isinstance(pb, entity.ProcessingBlock)
+        self._update(self._pb_path + pb.pb_id, pb.to_dict())
 
-    def get_processing_block_owner(self, pb_id):
+    def get_processing_block_owner(self, pb_id: str) -> dict:
         """
         Look up the current processing block owner.
 
@@ -269,7 +271,7 @@ class Transaction():
             return None
         return dct
 
-    def is_processing_block_owner(self, pb_id):
+    def is_processing_block_owner(self, pb_id: str) -> bool:
         """
         Check whether this client is owner of the processing block.
 
@@ -278,11 +280,12 @@ class Transaction():
         """
         return self.get_processing_block_owner(pb_id) == self._cfg.owner
 
-    def take_processing_block(self, pb_id, lease):
+    def take_processing_block(self, pb_id: str, lease):
         """
         Take ownership of the processing block.
 
         :param pb_id: Processing block ID to take ownership of
+        :raises: backend.Collision
         """
         # Lease must be provided
         assert lease is not None
@@ -290,9 +293,9 @@ class Transaction():
         # Provide information identifying this process
         self._create(self._pb_path + pb_id + "/owner", self._cfg.owner, lease)
 
-    def take_processing_block_by_workflow(self, workflow, lease):
+    def take_processing_block_by_workflow(self, workflow: dict, lease):
         """
-        Take ownership of unclaimed processing block matchin a workflow.
+        Take ownership of unclaimed processing block matching a workflow.
 
         :param pb_id: Workflow description. Must exactly match the
             workflow description used to create the processing block.

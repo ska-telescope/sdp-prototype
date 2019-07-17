@@ -351,10 +351,10 @@ class Etcd3Transaction():
     succeeds. The easiest way is to use transactions as an iterator,
     which implements the appropriate logic:
 
-    ```
-    for txn in etcd3.txn():
-       # ... transaction steps ...
-    ```
+    .. code-block:: python
+
+        for txn in etcd3.txn():
+             # ... transaction steps ...
 
     This can also be used to loop a transaction manually, possibly
     waiting for read values to change (see :meth:`Etcd3Transaction.loop`).
@@ -519,9 +519,9 @@ class Etcd3Transaction():
 
     def delete(self, path, must_exist=True):
         """
-        Delete the given key or key range.
+        Delete the given key.
 
-        :param path: Path (prefix) of keys to remove
+        :param path: Path of key to remove
         :param must_exist: Fail if path does not exist?
         """
         if must_exist:
@@ -559,7 +559,7 @@ class Etcd3Transaction():
 
             if rev.mod_revision is None:
                 # Did not exist? Verify continued non-existance. Note
-                # that it is not possible for the key to have been
+                # that it is possible for the key to have been
                 # created, then deleted again in the meantime.
                 txn.compare(txn.key(tagged_path).version == 0)
             else:
