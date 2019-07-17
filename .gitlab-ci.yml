@@ -128,7 +128,7 @@ xray_report:
   variables:
     DOCKER_REGISTRY_HOST: $NEXUS_HOST
     DOCKER_REGISTRY_USER: $CI_PROJECT_NAME
-    GIT_VERSION: $CI_COMMIT_SHA
+    GIT_VERSION: ${CI_COMMIT_SHA:0:8}
   tags: [docker]
   image: docker:stable
   services:
@@ -201,7 +201,7 @@ build_tangods_sdp_subarray:
     BUILD_PATH: src/tango_sdp_subarray
 
 # ============================================================================
-# Push versioned docker images
+# Push versioned docker images (only from master)
 # ============================================================================
 
 .push_docker:
@@ -210,7 +210,7 @@ build_tangods_sdp_subarray:
     GIT_STRATEGY: none  # Dont need GitLab to clone the source code.
     DOCKER_REGISTRY_HOST: $NEXUS_HOST
     DOCKER_REGISTRY_USER: $CI_PROJECT_NAME
-    GIT_VERSION: $CI_COMMIT_SHA
+    GIT_VERSION: ${CI_COMMIT_SHA:0:8}
   tags: [docker]
   image: docker:stable
 #  only:
