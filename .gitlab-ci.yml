@@ -42,8 +42,8 @@ master_tests:
       paths:
         - $CI_JOB_NAME.coverage
 
-# Test the SDPMaster device.
-master_tests:
+# Test the configuration database
+config_db_tests:
     stage: test
     image: skaorca/pytango_ska_dev:latest
     script:
