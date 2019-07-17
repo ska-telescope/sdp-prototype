@@ -2,6 +2,7 @@
 
 # pylint: disable=missing-docstring,redefined-outer-name,invalid-name
 
+import os
 import time
 import pytest
 
@@ -12,7 +13,8 @@ PREFIX = "/__test"
 
 @pytest.fixture(scope="session")
 def etcd3():
-    with backend.Etcd3() as etcd3:
+    host = os.getenv('SDP_TEST_HOST', '127.0.0.1')
+    with backend.Etcd3(host=host) as etcd3:
         etcd3.delete(PREFIX, must_exist=False, recursive=True)
         yield etcd3
         etcd3.delete(PREFIX, must_exist=False, recursive=True)

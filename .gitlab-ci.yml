@@ -48,6 +48,8 @@ config_db_tests:
     image: skaorca/pytango_ska_dev:latest
     services:
       - quay.io/coreos/etcd:latest
+    variables:
+      SDP_TEST_HOST: quay-io-coreos-etcd
     script:
       - pipenv install etcd3-py
       - ./scripts/run_test.sh src/config_db

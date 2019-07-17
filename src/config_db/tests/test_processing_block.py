@@ -18,7 +18,8 @@ WORKFLOW = {
 # pylint: disable=W0212
 @pytest.fixture(scope="session")
 def cfg():
-    with config.Config(global_prefix=PREFIX) as cfg:
+    host = os.getenv('SDP_TEST_HOST', '127.0.0.1')
+    with config.Config(global_prefix=PREFIX, host=host) as cfg:
         cfg._backend.delete(PREFIX, must_exist=False, recursive=True)
         yield cfg
         cfg._backend.delete(PREFIX, must_exist=False, recursive=True)
