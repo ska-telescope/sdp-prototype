@@ -10,8 +10,10 @@ endif
 
 # Get image name and version from the release file
 NAME=$(shell awk -F= '/^name=/{print $$2}' release)
-GIT_VERSION=$(shell git rev-parse --verify --short=8 HEAD)
 VERSION=$(shell awk -F= '/^release=/{print $$2}' release)
+ifeq ($(strip $(GIT_VERSION)),)
+	GIT_VERSION=$(shell git rev-parse --verify --short=8 HEAD)
+endif
 ifeq ($(strip $(DOCKER_REGISTRY_HOST)),)
 	IMAGE=$(DOCKER_REGISTRY_USER)/$(NAME)
 	DOCKER_REGISTRY_HOST=index.docker.io
@@ -30,30 +32,34 @@ build:  ## Build the image, tagged as :$(VERSION)-$(GIT_VERSION)
 	@echo "$(CRED)$(LINE)$(CEND)"
 	@echo "$(CBLUE)Building image:$(CEND) $(IMAGE):$(VERSION)-$(GIT_VERSION)"
 	@echo "$(CRED)$(LINE)$(CEND)"
-	docker build --pull $(DOCKER_BUILD_ARGS) \
+	docker build --pull \
 	--build-arg DOCKER_REGISTRY_HOST=$(DOCKER_REGISTRY_HOST) \
 	--build-arg DOCKER_REGISTRY_USER=$(DOCKER_REGISTRY_USER) \
+	$(DOCKER_BUILD_ARGS) \
 	-t $(DEFAULT_TAG) .
 
-tag_version:
-	@echo "$(CBLUE)Tagging image:$(CEND) $(DEFAULT_TAG) $(CRED)->$(CEND) $(IMAGE):$(VERSION)"
-	@docker tag $(DEFAULT_TAG) $(IMAGE):$(VERSION)
+push: ## Push default image (tagged as :$(VERSION)-(GIT_VERSION)
+	@echo "$(CBLUE)Pushing:$(CEND) $(IMAGE):$(VERSION)-$(GIT_VERSION)"
+	docker push $(DEFAULT_TAG)
 
 tag_latest:
-	@echo "$(CBLUE)Tagging image:$(CEND) $(DEFAULT_TAG) $(CRED)->$(CEND) $(IMAGE):latest"
+	@echo "$(CBLUE)Tagging:$(CEND) $(DEFAULT_TAG) $(CRED)->$(CEND) $(IMAGE):latest"
 	@docker tag $(DEFAULT_TAG) $(IMAGE):latest
 
-tag: tag_version tag_latest ## Tag images
-	@echo "$(CBLUE)Tagging image:$(CEND) $(DEFAULT_TAG) $(CRED)->$(CEND) $(IMAGE):$(VERSION)-$(GIT_VERSION)"
-	@docker tag $(DEFAULT_TAG) $(IMAGE):$(VERSION)-$(GIT_VERSION)
+push_latest: tag_latest ## Push the image tagged as :latest
+	@echo "$(CBLUE)Pushing:$(CEND) $(IMAGE):latest"
+	@docker push $(IMAGE):latest
 
-push: ## Push images
-	@echo "$(CBLUE)Pushing image:$(CEND) $(IMAGE):$(VERSION)-$(GIT_VERSION)"
-	docker push $(IMAGE):$(VERSION)-$(GIT_VERSION)
-	@echo "$(CBLUE)Pushing image:$(CEND) $(IMAGE):$(VERSION)"
-	docker push $(IMAGE):$(VERSION)
-	@echo "$(CBLUE)Pushing image:$(CEND) $(IMAGE):latest"
-	docker push $(IMAGE):latest
+tag_version:
+	@echo "$(CBLUE)Tagging:$(CEND) $(DEFAULT_TAG) $(CRED)->$(CEND) $(IMAGE):$(VERSION)"
+	@docker tag $(DEFAULT_TAG) $(IMAGE):$(VERSION)
+
+push_version: tag_version  ## Push the image tagged as :$(VERSION) (without the git sha)
+	@echo "$(CBLUE)Pushing:$(CEND) $(IMAGE):$(VERSION)"
+	@docker push $(IMAGE):$(VERSION)
+
+pull: ## Fetch the latest image
+	@docker pull $(IMAGE):latest
 
 ls:  ## List images built from this folder
 	@echo "$(CBLUE)Images matching:$(CEND) $(IMAGE):*"

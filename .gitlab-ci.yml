@@ -5,47 +5,46 @@
 stages:
   - test
   - post_test
-  - build_0
-  - build_1
-  - build_2
-  - build_3
+  - docker_build_0
+  - docker_build_1
+  - docker_build_2
+  - docker_push
   - deploy
 
 # ============================================================================
 # Run linters & tests
 # ============================================================================
 
+.tango_tests:
+  stage: test
+  tags: [docker]
+  image: skaorca/pytango_ska_dev:latest
+
 # Test the SDPSubarray device
 test_subarray_device:
-    stage: test
-    tags: [docker]
-    image: skaorca/pytango_ska_dev:latest
-    before_script:
-      - pipenv install jsonschema
-    script:
-      - ./scripts/run_test.sh
-          src/tango_sdp_subarray
-          --gherkin-terminal-reporter
-          -vv
-          --cucumber-json=cucumber.json
-      - mv .coverage $CI_JOB_NAME.coverage
-    artifacts:
-      paths:
-      - cucumber.json
-      - $CI_JOB_NAME.coverage
-      expire_in: 1 week
+  extends: .tango_tests
+  script:
+    - ./scripts/run_test.sh
+        src/tango_sdp_subarray
+        --gherkin-terminal-reporter
+        -vv
+        --cucumber-json=cucumber.json
+    - mv .coverage $CI_JOB_NAME.coverage
+  artifacts:
+    paths:
+    - cucumber.json
+    - $CI_JOB_NAME.coverage
+    expire_in: 1 week
 
 # Test the SDPMaster device.
 test_master_device:
-    stage: test
-    tags: [docker]
-    image: skaorca/pytango_ska_dev:latest
-    script:
-      - ./scripts/run_test.sh src/tango_sdp_master
-      - mv .coverage $CI_JOB_NAME.coverage
-    artifacts:
-      paths:
-        - $CI_JOB_NAME.coverage
+  extends: .tango_tests
+  script:
+    - ./scripts/run_test.sh src/tango_sdp_master
+    - mv .coverage $CI_JOB_NAME.coverage
+  artifacts:
+    paths:
+      - $CI_JOB_NAME.coverage
 
 # Test the configuration database
 config_db_tests:
@@ -118,123 +117,141 @@ xray_report:
   retry: 2 # In case JIRA doesn't work first time
 
 # ============================================================================
-# Build and Push docker images
+# Build docker images
+# Note: There are some optimisations to make to this section but that will
+# also involve updating the Dockerfiles to be more friendly to caching
+# https://blog.callr.tech/building-docker-images-with-gitlab-ci-best-practices/
 # ============================================================================
 
-# Build and push the `pytango_base` image.
-# Only build when there is a change.
-build_pytango_base:
-  stage: build_0
-#  tags: [shell]
+# Common settings for building docker images
+.build_docker:
+  variables:
+    DOCKER_REGISTRY_HOST: $NEXUS_HOST
+    DOCKER_REGISTRY_USER: $CI_PROJECT_NAME
+    GIT_VERSION: $CI_COMMIT_SHA
   tags: [docker]
   image: docker:stable
   services:
     - docker:dind
-  only:
-    changes:
-      - docker/pytango_base
   before_script:
     - apk add make git
     - docker login -u $NEXUS_USER -p $NEXUS_PASS $NEXUS_HOST
   script:
-    - cd docker/pytango_base
-    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME DOCKER_BUILD_ARGS="--no-cache" build
-    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME tag
-    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push
+    - cd $BUILD_PATH
+    - make DOCKER_BUILD_ARGS="--no-cache" build
+    - make push
   retry: 2
+
+# Common settings for building Tango docker images
+.build_docker_tango_device:
+  extends: .build_docker
+  only:
+    changes:
+      - docker/pytango_base/*
+      - docker/pytango_ska_base/*
+      - $(BUILD_PATH)/*
+
+# Build and push the `pytango_base` image.
+build_pytango_base:
+  extends: .build_docker
+  stage: docker_build_0
+  variables:
+    BUILD_PATH: docker/pytango_base
+  only:
+    changes:
+      - $(BUILD_PATH)/*
 
 # Build and push the `pytango_ska_base` image.
 # Only build when there is a change.
 build_pytango_ska_base:
-  stage: build_1
-#  tags: [shell]
-  tags: [docker]
-  image: docker:stable
-  services:
-    - docker:dind
+  extends: .build_docker
+  stage: docker_build_1
+  variables:
+    BUILD_PATH: docker/pytango_ska_base
   only:
     changes:
-      - docker/pytango_base
-      - docker/pytango_ska_base
-  before_script:
-    - apk add make git
-    - docker login -u $NEXUS_USER -p $NEXUS_PASS $NEXUS_HOST
-  script:
-    - cd docker/pytango_ska_base
-    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME DOCKER_BUILD_ARGS="--no-cache" build
-    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME tag
-    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push
-  retry: 2
+      - docker/pytango_base/*
+      - $(BUILD_PATH)/*
 
 # Build and push the `pytango_ska_dev` image.
 # Only build when there is a change.
 build_pytango_ska_dev:
-  stage: build_2
-#  tags: [shell]
-  tags: [docker]
-  image: docker:stable
-  services:
-    - docker:dind
+  extends: .build_docker
+  stage: docker_build_2
+  variables:
+    BUILD_PATH: docker/pytango_ska_dev
   only:
     changes:
-      - docker/pytango_base
-      - docker/pytango_ska_base
-      - docker/pytango_ska_dev
-  before_script:
-    - apk add make git
-    - docker login -u $NEXUS_USER -p $NEXUS_PASS $NEXUS_HOST
-  script:
-    - cd docker/pytango_ska_dev
-    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME DOCKER_BUILD_ARGS="--no-cache" build
-    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME tag
-    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push
-  retry: 2
+      - docker/pytango_base/*
+      - docker/pytango_ska_base/*
+      - $(BUILD_PATH)/*
 
 # Build and push `tangods_sdp_master` image.
 build_tangods_sdp_master:
-  stage: build_3
-#  tags: [shell]
-  tags: [docker]
-  image: docker:stable
-  services:
-    - docker:dind
-  only:
-    changes:
-      - docker/pytango_base
-      - docker/pytango_ska_base
-      - src/tango_sdp_master
-  before_script:
-    - apk add make git
-    - docker login -u $NEXUS_USER -p $NEXUS_PASS $NEXUS_HOST
-  script:
-    - cd src/tango_sdp_master
-    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME DOCKER_BUILD_ARGS="--no-cache" build
-    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME tag
-    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push
-  retry: 2
+  extends: .build_docker_tango_device
+  stage: docker_build_2
+  variables:
+    BUILD_PATH: src/tango_sdp_master
 
 # Build and push `tangods_sdp_subarray` image.
 build_tangods_sdp_subarray:
-  stage: build_3
-#  tags: [shell]
+  extends: .build_docker_tango_device
+  stage: docker_build_2
+  variables:
+    BUILD_PATH: src/tango_sdp_subarray
+
+# ============================================================================
+# Push versioned docker images
+# ============================================================================
+
+.push_docker:
+  stage: docker_push
+  variables:
+    GIT_STRATEGY: none  # Dont need GitLab to clone the source code.
+    DOCKER_REGISTRY_HOST: $NEXUS_HOST
+    DOCKER_REGISTRY_USER: $CI_PROJECT_NAME
+    GIT_VERSION: $CI_COMMIT_SHA
   tags: [docker]
   image: docker:stable
+  only:
+    # Only the master should tag latest and version with no git sha
+    - master
   services:
     - docker:dind
-  only:
-    changes:
-      - docker/pytango_base
-      - docker/pytango_ska_base
-      - src/tango_sdp_subarray
   before_script:
-    - apk add make git
+    - apk add make
     - docker login -u $NEXUS_USER -p $NEXUS_PASS $NEXUS_HOST
   script:
-    - cd src/tango_sdp_subarray
-    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME DOCKER_BUILD_ARGS="--no-cache" build
-    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME tag
-    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push
+    - cd $BUILD_PATH
+    - make pull
+    - make push_latest
+    - make push_version
   retry: 2
+
+push_pytango_base:
+  extends: .push_docker
+  variables:
+    BUILD_PATH: docker/pytango_base
+
+push_pytango_ska_base:
+  extends: .push_docker
+  variables:
+    BUILD_PATH: docker/pytango_ska_base
+
+push_pytango_ska_dev:
+  extends: .push_docker
+  variables:
+    BUILD_PATH: docker/pytango_ska_dev
+
+push_tangods_sdp_master:
+  extends: .push_docker
+  variables:
+    BUILD_PATH: src/tango_sdp_master
+
+push_tangods_sdp_subarray:
+  extends: .push_docker
+  variables:
+    BUILD_PATH: src/tango_sdp_subarray
 
 # ============================================================================
 # Publish reports
