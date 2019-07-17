@@ -47,9 +47,9 @@ config_db_tests:
     stage: test
     image: skaorca/pytango_ska_dev:latest
     services:
-      - quay.io/coreos/etcd:v3.0.6
+      - quay.io/coreos/etcd:latest
     script:
-      - pip install etcd3-py
+      - pip install wheel etcd3-py
       - ./scripts/run_test.sh src/config_db
       - mv .coverage $CI_JOB_NAME.coverage
     artifacts:
