@@ -49,7 +49,8 @@ config_db_tests:
     services:
       - quay.io/coreos/etcd:latest
     script:
-      - pip install wheel etcd3-py
+      - pip install wheel
+      - pip install etcd3-py
       - ./scripts/run_test.sh src/config_db
       - mv .coverage $CI_JOB_NAME.coverage
     artifacts:
