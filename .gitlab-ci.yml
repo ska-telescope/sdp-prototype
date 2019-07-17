@@ -221,7 +221,7 @@ build_tangods_sdp_subarray:
   services:
     - docker:dind
   before_script:
-    - apk add make
+    - apk add make git
     - docker login -u $NEXUS_USER -p $NEXUS_PASS $NEXUS_HOST
   script:
     - cd $BUILD_PATH
