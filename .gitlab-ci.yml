@@ -219,8 +219,6 @@ build_tangods_sdp_subarray:
   image: docker:stable
   only:
     - master
-    changes:
-      $(BUILD_PATH)/*
   services:
     - docker:dind
   before_script:
