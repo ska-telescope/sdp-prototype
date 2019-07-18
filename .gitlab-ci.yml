@@ -138,9 +138,9 @@ xray_report:
   image: docker:stable
   services:
     - docker:dind
-#  only:
-#    changes:
-#      - $(BUILD_PATH)/*
+  only:
+    changes:
+      - $(BUILD_PATH)/*
   before_script:
     - apk add make git
     - docker login -u $NEXUS_USER -p $NEXUS_PASS $NEXUS_HOST
@@ -214,8 +214,8 @@ build_tangods_sdp_subarray:
   only:
     refs:
     - master
-#    changes:
-#      - $(BUILD_PATH)/*
+    changes:
+      - $(BUILD_PATH)/*
   services:
     - docker:dind
   before_script:
