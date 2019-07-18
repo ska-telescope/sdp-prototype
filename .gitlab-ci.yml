@@ -16,7 +16,6 @@ stages:
 .tango_tests:
   stage: test
   tags: [docker]
-#  image: skaorca/pytango_ska_dev:latest
   image: nexus.engageska-portugal.pt/sdp-prototype/pytango_ska_dev:latest
 
 # Test the SDPSubarray device
@@ -146,12 +145,8 @@ xray_report:
     - apk add make git
     - docker login -u $NEXUS_USER -p $NEXUS_PASS $NEXUS_HOST
   script:
-    - echo $CI_PROJECT_NAME
-    - echo $DOCKER_REGISTRY_HOST
-    - echo $DOCKER_REGISTRY_USER
     - cd $BUILD_PATH
     - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME pull
-    - docker image ls
     - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME build
     - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push
 #    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push_version
