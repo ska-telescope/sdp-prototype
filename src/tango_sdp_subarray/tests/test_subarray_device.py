@@ -116,13 +116,13 @@ def command_configure(subarray_device):
     """Call the Configure command.
 
     :param subarray_device: An SDPSubarray device.
-    :param schema_path: Path to the SBI config schema (optional).
     """
 
     pb_config_path = join(dirname(__file__), 'data',
                           'pb_config.json')
     with open(pb_config_path, 'r') as file:
         pb_config = json.loads(file.read())
+    # print(pb_config)
     subarray_device.Configure(pb_config)
 
 

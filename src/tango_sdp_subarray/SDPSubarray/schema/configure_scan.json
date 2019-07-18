@@ -1,5 +1,5 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$schema": "http://json-schema.org/draft-07/schema#",
     "title":"Configure Scan",
     "description":"Schema for Configure Scan",
     "version":"1.0.0",
@@ -17,6 +17,6 @@
         "interval_ms": {
             "type": "integer",
              "description":"Schema for Configure Scan"
-        },
+        }
     }
 }

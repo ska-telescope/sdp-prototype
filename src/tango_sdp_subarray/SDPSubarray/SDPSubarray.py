@@ -214,20 +214,20 @@ class SDPSubarray(Device):
         self.obs_state = ObsState.CONFIGURING
         # time.sleep(1)
 
-        # Validate the SBI config schema
-        if schema_path is None:
-            schema_path = join(dirname(__file__), 'schema',
-                               'configure_pb.json')
-
-        with open(schema_path, 'r') as file:
-            schema = json.loads(file.read())
-            validate(pb_config, schema)
+        # # Validate the SBI config schema
+        # if schema_path is None:
+        #     schema_path = join(dirname(__file__), 'schema',
+        #                        'configure_pb.json')
+        #
+        # with open(schema_path, 'r') as file:
+        #     schema = json.loads(file.read())
+        #     validate(pb_config, schema)
 
         self.obs_state = ObsState.READY
 
     @command(dtype_in=str)
     @DebugIt()
-    def ConfigureScan(self, scan_config: str, schema_path: str = None):
+    def ConfigureScan(self, scan_config: dict, schema_path: str = None):
         """Configure the subarray device to execute a scan.
 
         This allows scan specific, late-binding information to be provided
@@ -244,9 +244,14 @@ class SDPSubarray(Device):
         if schema_path is None:
             schema_path = join(dirname(__file__), 'schema',
                                'configure_scan.json')
+
+        # with open(scan_config, 'r') as file:
+        #     scan_c = json.loads(file.read())
+
         with open(schema_path, 'r') as file:
             schema = json.loads(file.read())
             validate(scan_config, schema)
+
 
         self.obs_state = ObsState.READY
 
