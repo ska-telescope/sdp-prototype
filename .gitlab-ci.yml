@@ -12,7 +12,7 @@ stages:
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
 cache:
-    paths: [.cache/pip,venv]
+    paths: [.cache/pip]
 
 # Test the SDPSubarray device
 subarray_tests:
@@ -39,6 +39,30 @@ master_tests:
     image: skaorca/pytango_ska_dev:latest
     script:
       - ./scripts/run_test.sh src/tango_sdp_master
+      - mv .coverage $CI_JOB_NAME.coverage
+    artifacts:
+      paths:
+        - $CI_JOB_NAME.coverage
+
+# Test the configuration database
+config_db_tests:
+    stage: test
+    image: skaorca/pytango_ska_dev:latest
+    services:
+      - name: quay.io/coreos/etcd:latest
+        alias: etcd
+        command:
+          - /usr/local/bin/etcd 
+          - "--advertise-client-urls=http://0.0.0.0:2379"
+          - "--listen-client-urls=http://0.0.0.0:2379"
+          - "--initial-advertise-peer-urls=http://0.0.0.0:2380"
+          - "--listen-peer-urls=http://0.0.0.0:2380"
+          - "--initial-cluster=default=http://0.0.0.0:2380"
+    variables:
+      SDP_TEST_HOST: etcd
+    script:
+      - pipenv install etcd3-py
+      - ./scripts/run_test.sh src/config_db
       - mv .coverage $CI_JOB_NAME.coverage
     artifacts:
       paths:
