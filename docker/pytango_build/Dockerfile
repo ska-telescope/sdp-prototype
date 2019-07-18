@@ -26,21 +26,9 @@ RUN apt-get update \
         python3-venv \
         libboost-python1.67-dev \
         libtango-dev \
+        git \
     && rm -rf /var/lib/apt/lists/*
 
 # Hack to avoid issue where the setup.py for PyTango cannot find libboost!
 RUN ln -s /usr/lib/x86_64-linux-gnu/libboost_python3-py37.so \
     /usr/lib/x86_64-linux-gnu/libboost_python-py37.so
-
-# Install python packages
-RUN python3 -m pip install pipenv wheel
-
-# Set up the Virtualenv
-RUN python3 -m venv /venv
-
-# Copy the Pipfile
-COPY Pipfile Pipfile
-COPY Pipfile.lock Pipfile.lock
-
-# Install Python deps
-RUN pipenv install --deploy --ignore-pipfile --dev

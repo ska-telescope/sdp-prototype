@@ -8,7 +8,7 @@ verify_ssl = true
 # name = "nexus"
 # verify_ssl = true
 
-[packages]
+[dev-packages]
 mock = "*"
 pyassert = "*"
 pact-python = "*"
@@ -16,10 +16,15 @@ pytest = "*"
 pytest-mock = "*"
 pytest_bdd = "*"
 pytest-pylint = "*"
+pytest-timeout = "*"
 pytest-codestyle = "*"
 pytest-pydocstyle = "*"
 pytest-cov = "*"
 coveralls = "*"
+
+[packages]
+wheel = "*"
+jsonschema = "*"
 
 [requires]
 python_version = "3.7"

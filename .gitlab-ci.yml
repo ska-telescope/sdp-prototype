@@ -1,6 +1,6 @@
 #
 # Note: Tests can be run locally with
-#   gitlab-runner exec <executor, eg. docker> <stage name>
+#   gitlab-runner exec <executor, eg. docker> <job name>
 #
 stages:
   - test
@@ -8,6 +8,7 @@ stages:
   - docker_build_0
   - docker_build_1
   - docker_build_2
+  - docker_build_3
   - docker_push
   - deploy
 
@@ -123,7 +124,7 @@ xray_report:
 # https://blog.callr.tech/building-docker-images-with-gitlab-ci-best-practices/
 # ============================================================================
 
-# Common settings for building docker images
+# *** Common settings for building docker images
 .build_docker:
   variables:
     DOCKER_REGISTRY_HOST: $NEXUS_HOST
@@ -142,34 +143,37 @@ xray_report:
     - make push
   retry: 2
 
-# Common settings for building Tango docker images
-.build_docker_tango_device:
+# Build and push the `pytango_build` image.
+build_pytango_build:
   extends: .build_docker
+  stage: docker_build_0
+  variables:
+    BUILD_PATH: docker/pytango_build
   only:
     changes:
-      - docker/pytango_base/*
-      - docker/pytango_ska_base/*
       - $(BUILD_PATH)/*
 
 # Build and push the `pytango_base` image.
 build_pytango_base:
   extends: .build_docker
-  stage: docker_build_0
+  stage: docker_build_1
   variables:
     BUILD_PATH: docker/pytango_base
   only:
     changes:
+      - docker/pytango_build/*
       - $(BUILD_PATH)/*
 
 # Build and push the `pytango_ska_base` image.
 # Only build when there is a change.
 build_pytango_ska_base:
   extends: .build_docker
-  stage: docker_build_1
+  stage: docker_build_2
   variables:
     BUILD_PATH: docker/pytango_ska_base
   only:
     changes:
+      - docker/pytango_build/*
       - docker/pytango_base/*
       - $(BUILD_PATH)/*
 
@@ -177,11 +181,22 @@ build_pytango_ska_base:
 # Only build when there is a change.
 build_pytango_ska_dev:
   extends: .build_docker
-  stage: docker_build_2
+  stage: docker_build_3
   variables:
     BUILD_PATH: docker/pytango_ska_dev
   only:
     changes:
+      - docker/pytango_build/*
+      - docker/pytango_base/*
+      - docker/pytango_ska_base/*
+      - $(BUILD_PATH)/*
+
+# *** Common settings for building Tango docker images
+.build_docker_tango_device:
+  extends: .build_docker
+  only:
+    changes:
+      - docker/pytango_build/*
       - docker/pytango_base/*
       - docker/pytango_ska_base/*
       - $(BUILD_PATH)/*
@@ -189,14 +204,14 @@ build_pytango_ska_dev:
 # Build and push `tangods_sdp_master` image.
 build_tangods_sdp_master:
   extends: .build_docker_tango_device
-  stage: docker_build_2
+  stage: docker_build_3
   variables:
     BUILD_PATH: src/tango_sdp_master
 
 # Build and push `tangods_sdp_subarray` image.
 build_tangods_sdp_subarray:
   extends: .build_docker_tango_device
-  stage: docker_build_2
+  stage: docker_build_3
   variables:
     BUILD_PATH: src/tango_sdp_subarray
 
@@ -207,9 +222,6 @@ build_tangods_sdp_subarray:
 .push_docker:
   stage: docker_push
   variables:
-    # would be nice to do this but at the moment the image name being
-    # pushed is derived from the Makefile in the code...
-#    GIT_STRATEGY: none  # Dont need GitLab to clone the source code.
     DOCKER_REGISTRY_HOST: $NEXUS_HOST
     DOCKER_REGISTRY_USER: $CI_PROJECT_NAME
     GIT_VERSION: ${CI_COMMIT_SHA:0:8}
@@ -230,30 +242,66 @@ build_tangods_sdp_subarray:
     - make push_version
   retry: 2
 
+push_pytango_build:
+  extends: .push_docker
+  variables:
+    BUILD_PATH: docker/pytango_build
+  only:
+    changes:
+      - $(BUILD_PATH)/*
+
 push_pytango_base:
   extends: .push_docker
   variables:
     BUILD_PATH: docker/pytango_base
+  only:
+    changes:
+      - docker/pytango_build/*
+      - $(BUILD_PATH)/*
 
 push_pytango_ska_base:
   extends: .push_docker
   variables:
     BUILD_PATH: docker/pytango_ska_base
+  only:
+    changes:
+      - docker/pytango_build/*
+      - docker/pytango_base/*
+      - $(BUILD_PATH)/*
 
 push_pytango_ska_dev:
   extends: .push_docker
   variables:
     BUILD_PATH: docker/pytango_ska_dev
+  only:
+    changes:
+      - docker/pytango_build/*
+      - docker/pytango_base/*
+      - docker/pytango_ska_base/*
+      - $(BUILD_PATH)/*
 
 push_tangods_sdp_master:
   extends: .push_docker
   variables:
     BUILD_PATH: src/tango_sdp_master
+  only:
+    changes:
+      - docker/pytango_build/*
+      - docker/pytango_base/*
+      - docker/pytango_ska_base/*
+      - $(BUILD_PATH)/*
 
 push_tangods_sdp_subarray:
   extends: .push_docker
   variables:
     BUILD_PATH: src/tango_sdp_subarray
+  only:
+    changes:
+      - docker/pytango_build/*
+      - docker/pytango_base/*
+      - docker/pytango_ska_base/*
+      - $(BUILD_PATH)/*
+
 
 # ============================================================================
 # Publish reports

@@ -35,8 +35,11 @@ build:  ## Build the image, tagged as :$(VERSION)-$(GIT_VERSION)
 	docker build --pull \
 	--build-arg DOCKER_REGISTRY_HOST=$(DOCKER_REGISTRY_HOST) \
 	--build-arg DOCKER_REGISTRY_USER=$(DOCKER_REGISTRY_USER) \
+	--cache-from $(IMAGE):latest \
 	$(DOCKER_BUILD_ARGS) \
 	-t $(DEFAULT_TAG) .
+
+
 
 push: ## Push default image (tagged as :$(VERSION)-(GIT_VERSION)
 	@echo "$(CBLUE)Pushing:$(CEND) $(IMAGE):$(VERSION)-$(GIT_VERSION)"
