@@ -1,6 +1,6 @@
 BSD 3-Clause License
 
-Copyright (c) 2019, SKA Organisation
+Copyright (c) 2019, University of Oxford, UKRI STFC RAL, Peter Wortmann, Verity L Allan, Chris Hadjigeorgiu 
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
