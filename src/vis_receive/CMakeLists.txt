@@ -19,6 +19,30 @@ set(recv_SRC
 )
 
 # -----------------------------------------------------------------------------
+# Measurement Set write support 
+# -----------------------------------------------------------------------------
+
+if(OSKAR_DIR)
+		find_path(OSKAR_INCLUDE_DIR oskar_measurement_set.h
+    		     	HINTS ${OSKAR_DIR}
+							PATH_SUFFIXES include)	
+		find_path(OSKAR_LIBRARY_DIR liboskar_ms.so
+    		    	HINTS ${OSKAR_DIR}
+							PATH_SUFFIXES lib)	
+		if(OSKAR_INCLUDE_DIR)
+				include_directories("${OSKAR_INCLUDE_DIR}")
+				list(APPEND recv_SRC
+  		  		${PROJECT_SOURCE_DIR}/src/write_ms_access.c
+				)
+		endif()
+		if(OSKAR_LIBRARY_DIR)
+			link_directories("${OSKAR_LIBRARY_DIR}")
+		endif()
+		include_directories("${CASACORE_HOME}/include")
+		link_directories("${CASACORE_HOME}/lib")
+endif()
+
+# -----------------------------------------------------------------------------
 # Coveralls
 # -----------------------------------------------------------------------------
 
@@ -77,13 +101,20 @@ include (CTest)
 file(STRINGS "VERSION" RECV_VERSION)
 add_definitions(-DRECV_VERSION="${RECV_VERSION}")
 
+
 # Build library.
 add_library(vis_recv ${recv_SRC})
 target_link_libraries(vis_recv Threads::Threads)
+if(OSKAR_LIBRARY_DIR)
+	target_link_libraries(vis_recv oskar_ms casa_casa casa_ms casa_meas)
+endif()
 
 # Build executable.
 add_executable(recv src/main.c)
 target_link_libraries(recv vis_recv Threads::Threads)
+if(OSKAR_LIBRARY_DIR)
+	target_link_libraries(recv oskar_ms casa_casa casa_ms casa_meas)
+endif()
 
 # Build tests.
 include(CTest)
