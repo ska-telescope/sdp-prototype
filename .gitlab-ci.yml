@@ -212,7 +212,10 @@ build_tangods_sdp_subarray:
     - engageska
   image: docker:stable
   only:
+    refs:
     - master
+#    changes:
+#      - $(BUILD_PATH)/*
   services:
     - docker:dind
   before_script:
