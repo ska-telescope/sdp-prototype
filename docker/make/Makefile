@@ -58,6 +58,8 @@ push_version: tag_version  ## Push the image tagged as :$(VERSION) (without the 
 	@echo "$(CBLUE)Pushing:$(CEND) $(IMAGE):$(VERSION)"
 	@docker push $(IMAGE):$(VERSION)
 
+push_all: push push_latest push_version ## Push all tags
+
 pull: ## Fetch the latest image
 	@docker pull $(IMAGE):latest
 
@@ -80,5 +82,5 @@ help:  ## Show this help.
 	@echo "$(CBLUE)Targets:$(CEND)"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' ../make/Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-.PHONY: build clean_build tag_version tag_latest tag
-.PHONY: push pull refresh_pipenv info list_old list_all rm rm_old help
+.PHONY: piplock build push tag_latest push_latest tag_version push_version \
+        push_all pull ls rm help
