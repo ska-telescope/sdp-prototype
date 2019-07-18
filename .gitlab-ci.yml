@@ -128,7 +128,7 @@ xray_report:
 .build_docker:
   variables:
     DOCKER_REGISTRY_HOST: $NEXUS_HOST
-    DOCKER_REGISTRY_USER: sdp-prototype
+    DOCKER_REGISTRY_USER: $CI_PROJECT_NAME
     GIT_VERSION: ${CI_COMMIT_SHA:0:8}
   tags:
     - docker
@@ -140,10 +140,13 @@ xray_report:
     - apk add make git
     - docker login -u $NEXUS_USER -p $NEXUS_PASS $NEXUS_HOST
   script:
+    - echo $CI_PROJECT_NAME
+    - echo $DOCKER_REGISTRY_HOST
+    - echo $DOCKER_REGISTRY_USER
     - cd $BUILD_PATH
-    - make pull
-    - make build
-    - make push
+    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME pull
+    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME build
+    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push
   retry: 2
 
 # Build and push the `pytango_build` image.
@@ -242,9 +245,9 @@ build_tangods_sdp_subarray:
     - docker login -u $NEXUS_USER -p $NEXUS_PASS $NEXUS_HOST
   script:
     - cd $BUILD_PATH
-    - make pull
-    - make push_latest
-    - make push_version
+    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME pull
+    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push_latest
+    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push_version
   retry: 2
 
 push_pytango_build:
