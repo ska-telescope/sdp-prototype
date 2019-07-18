@@ -9,6 +9,9 @@
 #include <unistd.h>
 
 #include "receiver.h"
+#ifdef WITH_MS
+#include "write_ms_access.h"
+#endif
 
 static char* construct_output_root(const char* output_location,
         const char* output_name)
@@ -72,6 +75,13 @@ int main(int argc, char** argv)
             num_times_in_buffer, num_threads_recv, num_threads_write,
             num_streams, port_start, num_channels_per_file, output_root);
     receiver_start(receiver);
+#ifdef WITH_MS
+    struct Buffer** buf = malloc(sizeof(struct Buffer)*num_buffers);
+		for (int i = 0; i<num_buffers; i++){
+				buf[i] = receiver->buffers[i];
+				write_ms("test_ms", 4, buf[i]->num_channels, buf[i]->num_times, buf[i]->num_baselines );
+		}
+#endif
     receiver_free(receiver);
     free(output_root);
     return 0;
