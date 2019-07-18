@@ -49,3 +49,10 @@ Feature: SDPSubarray device
 		When obsState == IDLE
 		And I call Configure
 		Then obsState == READY
+
+	@XTP-123 @XTP-118
+	Scenario: Configure Scan command successfully
+		Given I have a SDPSubarray device
+		When obsState == IDLE
+		And I call Configure Scan
+		Then obsState == READY

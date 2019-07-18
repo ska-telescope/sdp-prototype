@@ -1,0 +1,22 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title":"Configure Scan",
+    "description":"Schema for Configure Scan",
+    "version":"1.0.0",
+    "type": "object",
+    "properties": {
+        "scan_id": {
+            "type": "integer",
+            "description":"Scan Id",
+            "pattern":"^[0-9]{5}$"
+        },
+        "field_id": {
+            "type": "integer",
+            "description":"Field Id"
+        },
+        "interval_ms": {
+            "type": "integer",
+             "description":"Schema for Configure Scan"
+        }
+    }
+}
