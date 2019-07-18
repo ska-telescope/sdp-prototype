@@ -75,7 +75,7 @@ build_docs:
   before_script:
     - pip install -r docs/requirements.txt
   script:
-    - make -k docs html
+    - make -C docs html
   artifacts:
     paths: [docs/build/html/]
     expire_in: 1 day
