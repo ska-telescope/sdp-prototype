@@ -139,7 +139,8 @@ xray_report:
     - docker login -u $NEXUS_USER -p $NEXUS_PASS $NEXUS_HOST
   script:
     - cd $BUILD_PATH
-    - make DOCKER_BUILD_ARGS="--no-cache" build
+    - make pull
+    - make build
     - make push
   retry: 2
 
@@ -307,14 +308,24 @@ push_tangods_sdp_subarray:
 # Publish reports
 # ============================================================================
 
-# Generate gitlab pages. This is done only for the master.
+# Generate gitlab pages.
+# https://gitlab.com/gitlab-org/gitlab-ce/issues/35141
 pages:
   stage: deploy
   tags: [docker]
   image: python:latest
-  only: [master]
   script:
+    - echo $CI_COMMIT_REF_NAME
+    - echo $CI_COMMIT_TAG
     - cp -R htmlcov public/
+    - if [[ "$CI_COMMIT_REF_NAME" = "master" && "$CI_COMMIT_TAG" = "" ]]; then
+        echo "This is master branch";
+        cp -R htmlcov public/
+      else
+        echo "This is a development branch";
+        cp -R htmlcov public/$(CI_COMMIT_REF_NAME)/
+      fi;
+  cache:
+    paths: [public/]
   artifacts:
     paths: [public/]
-    expire_in: 1 week

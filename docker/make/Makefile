@@ -28,18 +28,23 @@ piplock:  ## Rebuild the Pipfile.lock file
 	-@pipenv --rm 2>/dev/null || true
 	pipenv lock -v --clear --dev
 
+CACHE_IMAGE:=$(shell docker image ls -q --filter=reference="$(IMAGE):latest")
+ifeq ($(CACHE_IMAGE),)
+	CACHE_FROM_ARG =
+else
+	CACHE_FROM_ARG = --cache-from $(IMAGE):latest
+endif
+
 build:  ## Build the image, tagged as :$(VERSION)-$(GIT_VERSION)
 	@echo "$(CRED)$(LINE)$(CEND)"
 	@echo "$(CBLUE)Building image:$(CEND) $(IMAGE):$(VERSION)-$(GIT_VERSION)"
 	@echo "$(CRED)$(LINE)$(CEND)"
-	docker build --pull \
+	docker build \
+	--pull \
 	--build-arg DOCKER_REGISTRY_HOST=$(DOCKER_REGISTRY_HOST) \
 	--build-arg DOCKER_REGISTRY_USER=$(DOCKER_REGISTRY_USER) \
-	--cache-from $(IMAGE):latest \
-	$(DOCKER_BUILD_ARGS) \
+	$(CACHE_FROM_ARG) \
 	-t $(DEFAULT_TAG) .
-
-
 
 push: ## Push default image (tagged as :$(VERSION)-(GIT_VERSION)
 	@echo "$(CBLUE)Pushing:$(CEND) $(IMAGE):$(VERSION)-$(GIT_VERSION)"
@@ -64,7 +69,7 @@ push_version: tag_version  ## Push the image tagged as :$(VERSION) (without the 
 push_all: push push_latest push_version ## Push all tags
 
 pull: ## Fetch the latest image
-	@docker pull $(IMAGE):latest
+	@docker pull $(IMAGE):latest || true
 
 ls:  ## List images built from this folder
 	@echo "$(CBLUE)Images matching:$(CEND) $(IMAGE):*"

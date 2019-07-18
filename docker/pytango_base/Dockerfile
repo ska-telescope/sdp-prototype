@@ -4,6 +4,8 @@
 
 # -----------------------------------------------------------------------------
 # Build layer - This is slow as it builds pytango from source!
+# Could avoid this build image if using the --target build flag
+#  https://andrewlock.net/caching-docker-layers-on-serverless-build-hosts-with-multi-stage-builds---target,-and---cache-from/
 # -----------------------------------------------------------------------------
 ARG DOCKER_REGISTRY_USER
 ARG DOCKER_REGISTRY_HOST

@@ -24,14 +24,22 @@ piplock:  ## Rebuild the Pipfile.lock file
 	-@pipenv --rm 2>/dev/null || true
 	pipenv lock -v --clear --dev
 
+CACHE_IMAGE:=$(shell docker image ls -q --filter=reference="$(IMAGE):latest")
+ifeq ($(CACHE_IMAGE),)
+	CACHE_FROM_ARG =
+else
+	CACHE_FROM_ARG = --cache-from $(IMAGE):latest
+endif
+
 build:  ## Build the image, tagged as :$(VERSION)-$(GIT_VERSION)
 	@echo "$(CRED)$(LINE)$(CEND)"
 	@echo "$(CBLUE)Building image:$(CEND) $(IMAGE):$(VERSION)-$(GIT_VERSION)"
 	@echo "$(CRED)$(LINE)$(CEND)"
-	docker build --pull \
+	docker build \
+	--pull \
 	--build-arg DOCKER_REGISTRY_HOST=$(DOCKER_REGISTRY_HOST) \
 	--build-arg DOCKER_REGISTRY_USER=$(DOCKER_REGISTRY_USER) \
-	$(DOCKER_BUILD_ARGS) \
+	$(CACHE_FROM_ARG) \
 	-t $(DEFAULT_TAG) .
 
 push: ## Push default image (tagged as :$(VERSION)-(GIT_VERSION)
