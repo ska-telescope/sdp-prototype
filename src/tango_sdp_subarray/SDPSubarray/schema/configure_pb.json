@@ -1,19 +1,17 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Configure Scan",
+  "title": "Configure PB",
   "description": "Schema for Configure",
   "version": "1.0.0",
   "type": "object",
   "properties": {
     "id": {
       "type": "string",
-      "description": "PB Id, PB_[date]_[unique_id]_[project]",
-      "pattern": "^PB_[0-9]{8}_[0-9]{4}_.*$"
+      "description": "PB Id, PB_[date]_[unique_id]_[project]"
     },
     "sbi_id": {
       "type": "string",
-      "description": "SBI Id, SBI_[date]_[unique_id]",
-      "pattern": "^SBI_[0-9]{8}_[0-9]{4}$"
+      "description": "SBI Id, SBI_[date]_[unique_id]"
     },
     "type": {
       "type": "string",
@@ -33,68 +31,10 @@
       }
     },
     "parameters": {
-      "type": "object",
-      "properties": {
-        "num_stations": {
-          "type": "integer",
-          "description": "Number of stations"
-        },
-        "num_channels": {
-          "type": "integer",
-          "description": "Number of channels"
-        },
-        "num_polarisations": {
-          "type": "integer",
-          "description": "Number of polarisations"
-        },
-        "freq_start_hz": {
-          "type": "number",
-          "description": "Frequency start"
-        },
-        "freq_end_hz": {
-          "type": "number",
-          "description": "Frequency end"
-        },
-        "fields": {
-          "type": "object",
-          "properties": {
-            "system": {
-              "type": "string",
-              "description": "Type of system"
-            },
-            "name": {
-              "type": "string",
-              "description": "Name of field"
-            },
-            "ra": {
-              "type": "string",
-              "description": "right ascension"
-            },
-            "dec": {
-              "type": "string",
-              "description": "declination"
-            }
-          }
-        }
-      }
+      "type": "object"
     },
     "scan_parameters": {
-      "type": "object",
-      "properties": {
-        "scan_id": {
-          "type": "integer",
-          "description": "Scan Id",
-          "pattern": "^[0-9]{5}$"
-        },
-        "field_id": {
-          "type": "integer",
-          "description": "Field Id"
-        },
-        "interval_ms": {
-          "type": "integer",
-          "description": "Interval time"
-        }
-      }
+      "type": "object"
     }
   }
 }

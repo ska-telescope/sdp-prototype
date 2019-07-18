@@ -118,11 +118,11 @@ def command_configure(subarray_device):
     :param subarray_device: An SDPSubarray device.
     """
 
-    # pb_config_path = join(dirname(__file__), 'data',
-    #                       'pb_config.json')
-    # with open(pb_config_path, 'r') as file:
-    #     pb_config = json.loads(file.read())
-    subarray_device.Configure('')
+    pb_config_path = join(dirname(__file__), 'data',
+                          'pb_config.json')
+    with open(pb_config_path, 'r') as file:
+        pb_config = file.read()
+    subarray_device.Configure(pb_config)
 
 
 @when('I call Configure Scan')
@@ -130,12 +130,13 @@ def command_configure_scan(subarray_device):
     """Call the Configure Scan command.
 
     :param subarray_device: An SDPSubarray device.
-    """
+    # """
+
     scan_config_path = join(dirname(__file__), 'data',
                             'scan_config.json')
-    # with open(scan_config_path, 'r') as file:
-    #     scan_config = json.loads(file.read())
-    subarray_device.ConfigureScan(scan_config_path)
+    with open(scan_config_path, 'r') as file:
+        scan_config = file.read()
+    subarray_device.ConfigureScan(scan_config)
 
 
 # -----------------------------------------------------------------------------
