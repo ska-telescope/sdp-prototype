@@ -128,9 +128,11 @@ xray_report:
 .build_docker:
   variables:
     DOCKER_REGISTRY_HOST: $NEXUS_HOST
-    DOCKER_REGISTRY_USER: $CI_PROJECT_NAME
+    DOCKER_REGISTRY_USER: sdp-prototype
     GIT_VERSION: ${CI_COMMIT_SHA:0:8}
-  tags: [docker]
+  tags:
+    - docker
+    - engageska
   image: docker:stable
   services:
     - docker:dind
@@ -150,9 +152,9 @@ build_pytango_build:
   stage: docker_build_0
   variables:
     BUILD_PATH: docker/pytango_build
-  only:
-    changes:
-      - $(BUILD_PATH)/*
+#  only:
+#    changes:
+#      - $(BUILD_PATH)/*
 
 # Build and push the `pytango_base` image.
 build_pytango_base:
@@ -160,10 +162,10 @@ build_pytango_base:
   stage: docker_build_1
   variables:
     BUILD_PATH: docker/pytango_base
-  only:
-    changes:
-      - docker/pytango_build/*
-      - $(BUILD_PATH)/*
+#  only:
+#    changes:
+#      - docker/pytango_build/*
+#      - $(BUILD_PATH)/*
 
 # Build and push the `pytango_ska_base` image.
 # Only build when there is a change.
@@ -172,11 +174,11 @@ build_pytango_ska_base:
   stage: docker_build_2
   variables:
     BUILD_PATH: docker/pytango_ska_base
-  only:
-    changes:
-      - docker/pytango_build/*
-      - docker/pytango_base/*
-      - $(BUILD_PATH)/*
+#  only:
+#    changes:
+#      - docker/pytango_build/*
+#      - docker/pytango_base/*
+#      - $(BUILD_PATH)/*
 
 # Build and push the `pytango_ska_dev` image.
 # Only build when there is a change.
@@ -185,22 +187,22 @@ build_pytango_ska_dev:
   stage: docker_build_3
   variables:
     BUILD_PATH: docker/pytango_ska_dev
-  only:
-    changes:
-      - docker/pytango_build/*
-      - docker/pytango_base/*
-      - docker/pytango_ska_base/*
-      - $(BUILD_PATH)/*
+#  only:
+#    changes:
+#      - docker/pytango_build/*
+#      - docker/pytango_base/*
+#      - docker/pytango_ska_base/*
+#      - $(BUILD_PATH)/*
 
 # *** Common settings for building Tango docker images
 .build_docker_tango_device:
   extends: .build_docker
-  only:
-    changes:
-      - docker/pytango_build/*
-      - docker/pytango_base/*
-      - docker/pytango_ska_base/*
-      - $(BUILD_PATH)/*
+#  only:
+#    changes:
+#      - docker/pytango_build/*
+#      - docker/pytango_base/*
+#      - docker/pytango_ska_base/*
+#      - $(BUILD_PATH)/*
 
 # Build and push `tangods_sdp_master` image.
 build_tangods_sdp_master:
@@ -226,7 +228,9 @@ build_tangods_sdp_subarray:
     DOCKER_REGISTRY_HOST: $NEXUS_HOST
     DOCKER_REGISTRY_USER: $CI_PROJECT_NAME
     GIT_VERSION: ${CI_COMMIT_SHA:0:8}
-  tags: [docker]
+  tags:
+    - docker
+    - engageska
   image: docker:stable
 #  only:
 #    # Only the master should tag latest and version with no git sha
@@ -317,6 +321,7 @@ pages:
   script:
     - echo $CI_COMMIT_REF_NAME
     - echo $CI_COMMIT_TAG
+    - echo $CI_PROJECT_NAME
     - cp -R htmlcov public/
     - if [[ "$CI_COMMIT_REF_NAME" = "master" && "$CI_COMMIT_TAG" = "" ]]; then
         echo "This is master branch";
