@@ -20,7 +20,7 @@
 
 # autodoc_mock_imports = ['PyTango', 'tango', 'tango.server', 'run',
 #                         'DeviceMeta', 'command']
-autodoc_mock_imports = ['PyTango', 'tango', 'skabase']
+autodoc_mock_imports = ['PyTango', 'tango', 'skabase', 'etcd', 'jsonschema']
 
 import os
 import sys
