@@ -3,8 +3,13 @@
 
 # pylint: disable=invalid-name
 
+from os.path import dirname, join
+
 from enum import IntEnum
 from inspect import currentframe, getframeinfo
+
+import json
+from jsonschema import validate
 
 from tango import AttrWriteType, DebugIt, DevState, Except
 from tango.server import Device, DeviceMeta, attribute, command, run
@@ -196,32 +201,53 @@ class SDPSubarray(Device):
 
     @command(dtype_in=str)
     @DebugIt()
-    def Configure(self, pb_config: str):
+    def Configure(self, pb_config: str, schema_path: str = None):
         """Configure the device to execute a real-time Processing Block (PB).
 
         Provides PB configuration and parameters needed to execute the first
         scan in the form of a JSON string.
 
         :param pb_config: JSON Processing Block configuration.
+        :param schema_path: Path to the PB config schema (optional).
         """
         # pylint: disable=unused-argument
         self.obs_state = ObsState.CONFIGURING
         # time.sleep(1)
+
+        # Validate the SBI config schema
+        if schema_path is None:
+            schema_path = join(dirname(__file__), 'schema',
+                               'configure_pb.json')
+
+        with open(schema_path, 'r') as file:
+            schema = json.loads(file.read())
+            validate(pb_config, schema)
+
         self.obs_state = ObsState.READY
 
     @command(dtype_in=str)
     @DebugIt()
-    def ConfigureScan(self, scan_config: str):
+    def ConfigureScan(self, scan_config: str, schema_path: str = None):
         """Configure the subarray device to execute a scan.
 
         This allows scan specific, late-binding information to be provided
         to the configured PB workflow.
 
         :param scan_config: JSON Scan configuration.
+        :param schema_path: Path to the Scan config schema (optional).
         """
         # pylint: disable=unused-argument
         self.obs_state = ObsState.CONFIGURING
         # time.sleep(0.5)
+
+        # Validate the SBI config schema
+        if schema_path is None:
+            schema_path = join(dirname(__file__), 'schema',
+                               'configure_scan.json')
+        with open(schema_path, 'r') as file:
+            schema = json.loads(file.read())
+            validate(scan_config, schema)
+
         self.obs_state = ObsState.READY
 
     @command

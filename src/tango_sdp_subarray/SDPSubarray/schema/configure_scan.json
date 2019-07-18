@@ -7,17 +7,16 @@
     "properties": {
         "scan_id": {
             "type": "integer",
+            "description":"Scan Id",
+            "pattern":"^[0-9]{5}$"
         },
         "field_id": {
             "type": "integer",
+            "description":"Field Id"
         },
         "interval_ms": {
             "type": "integer",
+             "description":"Schema for Configure Scan"
         },
-    },
-    "required": [
-        "scan_id",
-        "field_id",
-        "interval_ms"
-    ],
+    }
 }
