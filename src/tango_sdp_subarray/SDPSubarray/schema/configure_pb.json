@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Configure PB",
+  "description": "Schema for Configure",
+  "version": "1.0.0",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "PB Id, PB_[date]_[unique_id]_[project]"
+    },
+    "sbi_id": {
+      "type": "string",
+      "description": "SBI Id, SBI_[date]_[unique_id]"
+    },
+    "type": {
+      "type": "string",
+      "description": "REAL_TIME or OFFLINE"
+    },
+    "workflow": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Project Id"
+        },
+        "version": {
+          "type": "string",
+          "description": "Workflow version"
+        }
+      }
+    },
+    "parameters": {
+      "type": "object"
+    },
+    "scan_parameters": {
+      "type": "object"
+    }
+  }
+}
