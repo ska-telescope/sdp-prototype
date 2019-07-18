@@ -5,10 +5,7 @@
 stages:
   - test
   - post_test
-  - docker_build_0
-  - docker_build_1
-  - docker_build_2
-  - docker_build_3
+  - docker_build
   - docker_push
   - deploy
 
@@ -19,7 +16,8 @@ stages:
 .tango_tests:
   stage: test
   tags: [docker]
-  image: skaorca/pytango_ska_dev:latest
+#  image: skaorca/pytango_ska_dev:latest
+  image: nexus.engageska-portugal.pt/sdp-prototype/pytango_ska_dev:latest
 
 # Test the SDPSubarray device
 test_subarray_device:
@@ -50,7 +48,7 @@ test_master_device:
 # Test the configuration database
 config_db_tests:
     stage: test
-    image: skaorca/pytango_ska_dev:latest
+    image: nexus.engageska-portugal.pt/sdp-prototype/pytango_ska_dev:latest
     services:
       - name: quay.io/coreos/etcd:latest
         alias: etcd
@@ -119,9 +117,15 @@ xray_report:
 
 # ============================================================================
 # Build docker images
-# Note: There are some optimisations to make to this section but that will
-# also involve updating the Dockerfiles to be more friendly to caching
-# https://blog.callr.tech/building-docker-images-with-gitlab-ci-best-practices/
+# Note(1): There are some optimisations to make to this section but that will
+#          also involve updating the Dockerfiles to be more friendly to caching
+#          https://blog.callr.tech/building-docker-images-with-gitlab-ci-best-practices/
+#          https://andrewlock.net/caching-docker-layers-on-serverless-build-hosts-with-multi-stage-builds---target,-and---cache-from/
+# Note(2): Images should be rebuild for each CI job which should be fast
+#          due to build caching. This allows avoid us having to have
+#          dependencies between build stages.
+#          This also means that a each a PR should only update 1
+#          image in a build dependency chain.
 # ============================================================================
 
 # *** Common settings for building docker images
@@ -136,6 +140,9 @@ xray_report:
   image: docker:stable
   services:
     - docker:dind
+#  only:
+#    changes:
+#      - $(BUILD_PATH)/*
   before_script:
     - apk add make git
     - docker login -u $NEXUS_USER -p $NEXUS_PASS $NEXUS_HOST
@@ -148,83 +155,56 @@ xray_report:
     - docker image ls
     - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME build
     - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push
-    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push_latest
+#    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push_version
+#    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push_latest
   retry: 2
 
 # Build and push the `pytango_build` image.
 build_pytango_build:
   extends: .build_docker
-  stage: docker_build_0
+  stage: docker_build
   variables:
     BUILD_PATH: docker/pytango_build
-#  only:
-#    changes:
-#      - $(BUILD_PATH)/*
 
 # Build and push the `pytango_base` image.
 build_pytango_base:
   extends: .build_docker
-  stage: docker_build_1
+  stage: docker_build
   variables:
     BUILD_PATH: docker/pytango_base
-#  only:
-#    changes:
-#      - docker/pytango_build/*
-#      - $(BUILD_PATH)/*
 
 # Build and push the `pytango_ska_base` image.
 # Only build when there is a change.
 build_pytango_ska_base:
   extends: .build_docker
-  stage: docker_build_2
+  stage: docker_build
   variables:
     BUILD_PATH: docker/pytango_ska_base
-#  only:
-#    changes:
-#      - docker/pytango_build/*
-#      - docker/pytango_base/*
-#      - $(BUILD_PATH)/*
 
 # Build and push the `pytango_ska_dev` image.
 # Only build when there is a change.
 build_pytango_ska_dev:
   extends: .build_docker
-  stage: docker_build_3
+  stage: docker_build
   variables:
     BUILD_PATH: docker/pytango_ska_dev
-#  only:
-#    changes:
-#      - docker/pytango_build/*
-#      - docker/pytango_base/*
-#      - docker/pytango_ska_base/*
-#      - $(BUILD_PATH)/*
-
-# *** Common settings for building Tango docker images
-.build_docker_tango_device:
-  extends: .build_docker
-#  only:
-#    changes:
-#      - docker/pytango_build/*
-#      - docker/pytango_base/*
-#      - docker/pytango_ska_base/*
-#      - $(BUILD_PATH)/*
 
 # Build and push `tangods_sdp_master` image.
 build_tangods_sdp_master:
-  extends: .build_docker_tango_device
-  stage: docker_build_3
+  extends: .build_docker
+  stage: docker_build
   variables:
     BUILD_PATH: src/tango_sdp_master
 
 # Build and push `tangods_sdp_subarray` image.
 build_tangods_sdp_subarray:
-  extends: .build_docker_tango_device
-  stage: docker_build_3
+  extends: .build_docker
+  stage: docker_build
   variables:
     BUILD_PATH: src/tango_sdp_subarray
 
 # ============================================================================
-# Push versioned docker images (only from master)
+# Push versioned docker images (only from master & if change)
 # ============================================================================
 
 .push_docker:
@@ -237,9 +217,10 @@ build_tangods_sdp_subarray:
     - docker
     - engageska
   image: docker:stable
-#  only:
-#    # Only the master should tag latest and version with no git sha
-#    - master
+  only:
+    - master
+    changes:
+      $(BUILD_PATH)/*
   services:
     - docker:dind
   before_script:
@@ -248,69 +229,39 @@ build_tangods_sdp_subarray:
   script:
     - cd $BUILD_PATH
     - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME pull
-    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push_latest
     - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push_version
+    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push_latest
   retry: 2
 
 push_pytango_build:
   extends: .push_docker
   variables:
     BUILD_PATH: docker/pytango_build
-  only:
-    changes:
-      - $(BUILD_PATH)/*
 
 push_pytango_base:
   extends: .push_docker
   variables:
     BUILD_PATH: docker/pytango_base
-  only:
-    changes:
-      - docker/pytango_build/*
-      - $(BUILD_PATH)/*
 
 push_pytango_ska_base:
   extends: .push_docker
   variables:
     BUILD_PATH: docker/pytango_ska_base
-  only:
-    changes:
-      - docker/pytango_build/*
-      - docker/pytango_base/*
-      - $(BUILD_PATH)/*
 
 push_pytango_ska_dev:
   extends: .push_docker
   variables:
     BUILD_PATH: docker/pytango_ska_dev
-  only:
-    changes:
-      - docker/pytango_build/*
-      - docker/pytango_base/*
-      - docker/pytango_ska_base/*
-      - $(BUILD_PATH)/*
 
 push_tangods_sdp_master:
   extends: .push_docker
   variables:
     BUILD_PATH: src/tango_sdp_master
-  only:
-    changes:
-      - docker/pytango_build/*
-      - docker/pytango_base/*
-      - docker/pytango_ska_base/*
-      - $(BUILD_PATH)/*
 
 push_tangods_sdp_subarray:
   extends: .push_docker
   variables:
     BUILD_PATH: src/tango_sdp_subarray
-  only:
-    changes:
-      - docker/pytango_build/*
-      - docker/pytango_base/*
-      - docker/pytango_ska_base/*
-      - $(BUILD_PATH)/*
 
 
 # ============================================================================
@@ -318,7 +269,7 @@ push_tangods_sdp_subarray:
 # ============================================================================
 
 # Generate gitlab pages.
-# https://gitlab.com/gitlab-org/gitlab-ce/issues/35141
+# https://gitlab.com/gitlab-org/gitlab-ce/issues/35141#note_42991819
 pages:
   stage: deploy
   tags: [docker]
@@ -330,10 +281,10 @@ pages:
     - cp -R htmlcov public/
     - if [[ "$CI_COMMIT_REF_NAME" = "master" && "$CI_COMMIT_TAG" = "" ]]; then
         echo "This is master branch";
-        cp -R htmlcov public/
+        cp -R htmlcov public/;
       else
         echo "This is a development branch";
-        cp -R htmlcov public/$(CI_COMMIT_REF_NAME)/
+        cp -R htmlcov public/$(CI_COMMIT_REF_NAME)/;
       fi;
   cache:
     paths: [public/]
