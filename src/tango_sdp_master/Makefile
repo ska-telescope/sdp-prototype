@@ -16,7 +16,7 @@ register:  ## register devices (usage: make register <number of devices>)
 		--entrypoint=python \
 		--network=container:databaseds \
 		-e TANGO_HOST=localhost:10000 \
-		skaorca/pytango_ska_base:latest \
+		$(BASE_IMAGE) \
 		$(CLASS)/register.py
 
 unregister:  ## Unregister devices
@@ -25,11 +25,10 @@ unregister:  ## Unregister devices
 		--entrypoint=python \
 		--network=container:databaseds \
 		-e TANGO_HOST=localhost:10000 \
-		skaorca/pytango_ska_base:latest \
+		$(BASE_IMAGE) \
 		$(CLASS)/register.py --delete
 
 .PHONY: start_dev start stop
-
 
 
 start_dev:  ## Start the device from the current code
@@ -40,7 +39,7 @@ start_dev:  ## Start the device from the current code
 		--network=container:databaseds \
 		-e TANGO_HOST=localhost:10000 \
 		--entrypoint=python \
-		skaorca/pytango_ska_base:latest \
+		$(IMAGE):latest \
 		$(CLASS) 1 -v4
 
 start:  ## Start the device from the current Docker image
@@ -62,7 +61,7 @@ stop:  ## Stop the device
 test:  ## Run tests for the device
 	@docker run --rm -t \
 		-v $(PWD):/app \
-		skaorca/pytango_ska_dev \
+		$(DEV_IMAGE) \
 		python -m pytest \
 		-vv \
 		.
@@ -70,7 +69,7 @@ test:  ## Run tests for the device
 lint:  ## Run test and linter
 	@docker run --rm -t \
 		-v $(PWD):/app \
-		skaorca/pytango_ska_dev \
+		$(DEV_IMAGE) \
 		python -m pytest \
 		--pylint \
 		--pylint-rcfile=../../scripts/.pylintrc \
@@ -83,4 +82,4 @@ test_shell:  ## Provide a test shell with the current code
 	@docker run --rm -it \
 		-v $(PWD):/app \
 		--entrypoint=/bin/bash \
-		skaorca/pytango_ska_dev
+		$(DEV_IMAGE)
