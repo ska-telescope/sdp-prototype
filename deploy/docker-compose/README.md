@@ -6,7 +6,7 @@ Start a minimal tango facility consisting of a Tango database, and Tango
 database device server:
 
 ```bash
-make up
+make minimal
 ```
 
 If this works correctly, `docker ps` should report two containers with names:

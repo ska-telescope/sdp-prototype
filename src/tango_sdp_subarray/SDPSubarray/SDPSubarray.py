@@ -55,7 +55,6 @@ class SDPSubarray(Device):
         This should eventually inherit from SKASubarray but these need
         some work before doing so would add any value to this device.
     """
-
     # pylint: disable=attribute-defined-outside-init
 
     __metaclass__ = DeviceMeta
@@ -278,6 +277,8 @@ class SDPSubarray(Device):
 
 def main(args=None, **kwargs):
     """Run server."""
+    # Register a subarray device in the tango db using device server name
+    # 'SDPSubarray/1', if the devices have not already been registered.
     from register import (register_subarray_devices,
                           registered_subarray_devices)
     from tango import ConnectionFailed

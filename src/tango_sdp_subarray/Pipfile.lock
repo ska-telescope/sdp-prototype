@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "56673fb26b5b16498a0d2576feaab3cad546c6607a5e3446366341d19a787c1f"
+            "sha256": "93ae45a4b2b6650a6e176671728a691044cee01498650d7e6eacb252a870fc1e"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -16,32 +16,26 @@
         ]
     },
     "default": {
-        "argparse": {
+        "attrs": {
             "hashes": [
-                "sha256:62b089a55be1d8949cd2bc7e0df0bddb9e028faefc8c32038cc84862aefdd6e4",
-                "sha256:c31647edb69fd3d465a847ea3157d37bed1f95f19760b11a47aa91c04b666314"
+                "sha256:69c0dbf2ed392de1cb5ec704444b08a5ef81680a61cb899dc08127123af36a79",
+                "sha256:f0b870f674851ecbfbbbd364d6b5cbdff9dcedbc7f3f5e18a6891057f21fe399"
             ],
-            "version": "==1.4.0"
+            "version": "==19.1.0"
         },
-        "enum34": {
+        "jsonschema": {
             "hashes": [
-                "sha256:2d81cbbe0e73112bdfe6ef8576f2238f2ba27dd0d55752a776c41d38b7da2850",
-                "sha256:644837f692e5f550741432dd3f223bbb9852018674981b1664e5dc339387588a",
-                "sha256:6bd0f6ad48ec2aa117d3d141940d484deccda84d4fcd884f5c3d93c23ecd8c79",
-                "sha256:8ad8c4783bf61ded74527bffb48ed9b54166685e4230386a9ed9b1279e2df5b1"
+                "sha256:0c0a81564f181de3212efa2d17de1910f8732fa1b71c42266d983cd74304e20d",
+                "sha256:a5f6559964a3851f59040d3b961de5e68e70971afb88ba519d27e6a039efff1a"
             ],
-            "version": "==1.1.6"
+            "index": "pypi",
+            "version": "==3.0.1"
         },
-        "future": {
+        "pyrsistent": {
             "hashes": [
-                "sha256:67045236dcfd6816dc439556d009594abf643e5eb48992e36beac09c2ca659b8"
+                "sha256:50cffebc87ca91b9d4be2dcc2e479272bcb466b5a0487b6c271f7ddea6917e14"
             ],
-            "version": "==0.17.1"
-        },
-        "lmcbaseclasses": {
-            "editable": true,
-            "git": "https://github.com/ska-telescope/lmc-base-classes.git",
-            "ref": "163bf05797d56fd24f21c336d7bc65542aef39c3"
+            "version": "==0.15.3"
         },
         "pytango": {
             "hashes": [
