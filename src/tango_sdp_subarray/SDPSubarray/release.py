@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 """Release information for Python Package."""
 
-NAME = "tangods-sdpsubarray"
+NAME = "ska-sdp-subarray"
 VERSION = "0.2.0"
 VERSION_INFO = VERSION.split(".")
-DESCRIPTION = ""
+DESCRIPTION = open('README.md').read()
 AUTHOR = "ORCA Team"
-LICENSE = "BSD-3-clause"
+LICENSE = 'License :: OSI Approved :: BSD License'
 COPYRIGHT = ""
