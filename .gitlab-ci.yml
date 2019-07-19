@@ -180,9 +180,9 @@ build_pytango_ska_dev:
   stage: docker_build
   variables:
     BUILD_PATH: docker/pytango_ska_dev
-  only:
-    changes:
-      - $(BUILD_PATH)/*
+#  only:
+#    changes:
+#      - $(BUILD_PATH)/*
 
 # Build and push `tangods_sdp_master` image.
 build_tangods_sdp_master:
@@ -220,7 +220,7 @@ build_tangods_sdp_subarray:
     - docker login -u $NEXUS_USER -p $NEXUS_PASS $NEXUS_HOST
   script:
     - cd $BUILD_PATH
-    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME pull
+    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME pull_default
     - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push_version
     - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push_latest
   retry: 2

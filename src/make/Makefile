@@ -65,6 +65,9 @@ push_version: tag_version  ## Push the image tagged as :$(VERSION) (without the 
 pull: ## Fetch the latest image
 	@docker pull $(IMAGE):latest
 
+pull_default: ## Fetch the default Git versioned image
+	@docker pull $(DEFAULT_TAG) || true
+
 ls:  ## List images built from this folder
 	@echo "$(CBLUE)Images matching:$(CEND) $(IMAGE):*"
 	@docker image ls --filter=reference="$(IMAGE):*"
