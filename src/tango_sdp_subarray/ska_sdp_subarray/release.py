@@ -2,7 +2,7 @@
 """Release information for Python Package."""
 
 NAME = "ska-sdp-subarray"
-VERSION = "0.5.1"
+VERSION = "0.5.2"
 VERSION_INFO = VERSION.split(".")
 AUTHOR = "ORCA Team"
 LICENSE = 'License :: OSI Approved :: BSD License'
