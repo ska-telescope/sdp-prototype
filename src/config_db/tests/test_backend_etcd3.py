@@ -22,6 +22,10 @@ def etcd3():
 
 
 def test_valid(etcd3):
+    with pytest.raises(ValueError, match="must start"):
+        etcd3.create("", "")
+    with pytest.raises(ValueError, match="must start"):
+        etcd3.create("foo", "")
     with pytest.raises(ValueError, match="trailing"):
         etcd3.create(PREFIX + "/", "")
     with pytest.raises(ValueError, match="trailing"):

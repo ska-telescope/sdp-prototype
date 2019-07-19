@@ -21,7 +21,7 @@ import etcd3
 def _tag_depth(path, depth=None):
     """Add depth tag to path."""
     # All paths must start at the root
-    if path[0] != '/':
+    if not path or path[0] != '/':
         raise ValueError("Path must start with /!")
     if depth is None:
         depth = path.count('/')
@@ -78,7 +78,7 @@ class Etcd3():
         :returns: (value, revision). value is None if it doesn't exist
         """
         # Check/prepare parameters
-        if path[-1] == '/':
+        if path and path[-1] == '/':
             raise ValueError("Path should not have a trailing '/'!")
         tagged_path = _tag_depth(path)
         rev = (None if revision is None else revision.revision)
@@ -110,7 +110,7 @@ class Etcd3():
         :returns: `Etcd3Watcher` object for watch request
         """
         # Check/prepare parameters
-        if path[-1] == '/' and not prefix:
+        if not prefix and path and path[-1] == '/':
             raise ValueError("Path should not have a trailing '/'!")
         tagged_path = _tag_depth(path)
         rev = (None if revision is None else revision.revision)
@@ -163,7 +163,7 @@ class Etcd3():
         :raises: Collision
         """
         # Prepare parameters
-        if path[-1] == '/':
+        if path and path[-1] == '/':
             raise ValueError("Path should not have a trailing '/'!")
         tagged_path = _tag_depth(path)
         lease_id = (0 if lease is None else lease.ID)
@@ -188,7 +188,7 @@ class Etcd3():
         :raises: Vanished
         """
         # Validate parameters
-        if path[-1] == '/':
+        if path and path[-1] == '/':
             raise ValueError("Path should not have a trailing '/'!")
         tagged_path = _tag_depth(path)
         value = str(value).encode('utf-8')
