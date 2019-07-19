@@ -19,7 +19,7 @@ stages:
   image: nexus.engageska-portugal.pt/sdp-prototype/pytango_ska_dev:latest
 
 # Test the SDPSubarray device
-test_subarray_device:
+subarray_device_tests:
   extends: .tango_tests
   script:
     - ./scripts/run_test.sh
@@ -35,7 +35,7 @@ test_subarray_device:
     expire_in: 1 week
 
 # Test the SDPMaster device.
-test_master_device:
+master_device_tests:
   extends: .tango_tests
   script:
     - ./scripts/run_test.sh src/tango_sdp_master
@@ -201,7 +201,7 @@ build:tangods_sdp_subarray:
 # ============================================================================
 
 .push_docker:
-  stage: docker_push
+  stage: docker_build
   when: manual
   variables:
     DOCKER_REGISTRY_HOST: $NEXUS_HOST
