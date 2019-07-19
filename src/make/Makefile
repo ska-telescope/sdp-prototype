@@ -5,17 +5,23 @@ LINE:=$(shell printf '=%.0s' {1..70})
 
 # Set default docker registry user.
 ifeq ($(strip $(DOCKER_REGISTRY_USER)),)
-  DOCKER_REGISTRY_USER:=skaorca
+	DOCKER_REGISTRY_USER:=sdp-prototype
+#  	DOCKER_REGISTRY_USER:=skaorca
 endif
+
+ifeq ($(strip $(DOCKER_REGISTRY_HOST)),)
+	DOCKER_REGISTRY_HOST:=nexus.engageska-portugal.pt
+#	DOCKER_REGISTRY_HOST=index.docker.io
+endif
+
+IMAGE=$(DOCKER_REGISTRY_HOST)/$(DOCKER_REGISTRY_USER)/$(NAME)
+BASE_IMAGE:=$(DOCKER_REGISTRY_HOST)/$(DOCKER_REGISTRY_USER)/pytango_ska_base:latest
+DEV_IMAGE:=$(DOCKER_REGISTRY_HOST)/$(DOCKER_REGISTRY_USER)/pytango_ska_dev:latest
+
 ifeq ($(strip $(GIT_VERSION)),)
 	GIT_VERSION=$(shell git rev-parse --verify --short=8 HEAD)
 endif
-ifeq ($(strip $(DOCKER_REGISTRY_HOST)),)
-	IMAGE=$(DOCKER_REGISTRY_USER)/$(NAME)
-	DOCKER_REGISTRY_HOST=index.docker.io
-else
-	IMAGE=$(DOCKER_REGISTRY_HOST)/$(DOCKER_REGISTRY_USER)/$(NAME)
-endif
+
 DEFAULT_TAG=$(IMAGE):$(VERSION)-$(GIT_VERSION)
 
 .DEFAULT_GOAL := help
@@ -63,6 +69,7 @@ push_version: tag_version  ## Push the image tagged as :$(VERSION) (without the 
 	@docker push $(IMAGE):$(VERSION)
 
 pull: ## Fetch the latest image
+	@echo "$(IMAGE)"
 	@docker pull $(IMAGE):latest
 
 pull_default: ## Fetch the default Git versioned image
