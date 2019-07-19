@@ -249,28 +249,39 @@ push:pytango_ska_dev:
   variables:
     BUILD_PATH: docker/pytango_ska_dev
 
-push:tangods_sdp_master:
+.tangods_master_template:
   extends: .push_docker
   when: always
-  only:
-    refs:
-      - master
   dependencies:
     - build:tangods_sdp_master
   variables:
     BUILD_PATH: src/tango_sdp_master
 
-push:tangods_sdp_subarray:
+push:tangods_sdp_master:
+  extends: .tangods_master_template
+  only: [master]
+
+push:tangods_sdp_master-manual:
+  extends: .tangods_master_template
+  when: manual
+  except: [master]
+
+.tangods_subarray_template:
   extends: .push_docker
   when: always
-  only:
-    refs:
-      - master
   dependencies:
     - build:tangods_sdp_subarray
   variables:
     BUILD_PATH: src/tango_sdp_subarray
 
+push:tangods_sdp_subarray:
+  extends: .tangods_subarray_template
+  only: [master]
+
+push:tangods_sdp_subarray-manual:
+  extends: .tangods_subarray_template
+  when: manual
+  except: [master]
 
 # ============================================================================
 # Publish reports
