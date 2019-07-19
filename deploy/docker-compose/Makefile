@@ -13,14 +13,6 @@ ifeq (start,$(firstword $(MAKECMDGOALS)))
   SERVICE_TARGET = true
 else ifeq (stop,$(firstword $(MAKECMDGOALS)))
   SERVICE_TARGET = true
-else ifeq (attach,$(firstword $(MAKECMDGOALS)))
-  SERVICE_TARGET = true
-ifndef NETWORK_MODE
-$(error NETWORK_MODE must specify the network to attach to, e.g., make NETWORK_MODE=tangonet-powersupply ...)
-endif
-ifndef TANGO_HOST
-$(error TANGO_HOST must specify the Tango database device, e.g., make TANGO_HOST=powersupply-databaseds:100000 ...)
-endif
 endif
 ifdef SERVICE_TARGET
   # .. then use the rest as arguments for the make target
@@ -28,6 +20,9 @@ ifdef SERVICE_TARGET
   # ...and turn them into do-nothing targets
   $(eval $(SERVICE):;@:)
 endif
+
+.DEFAULT_GOAL := help
+
 
 #
 # Never use the network=host mode when running CI jobs, and add extra
@@ -78,10 +73,12 @@ DOCKER_COMPOSE_ARGS := MYSQL_HOST=$(MYSQL_HOST) \
 	NETWORK_MODE=$(NETWORK_MODE)
 
 minimal:  ## start the base tango system
-	@echo "network mode = $(NETWORK_MODE)"
+ifneq ($(NETWORK_MODE),host)
+	docker network inspect $(NETWORK_MODE) &> /dev/null || ([ $$? -ne 0 ] && docker network create $(NETWORK_MODE))
+endif
 	$(DOCKER_COMPOSE_ARGS) docker-compose -f tango_facility.yml up -d
 
-up: minimal
+up: minimal  ## start the base TANGO system and prepare all services
 	$(DOCKER_COMPOSE_ARGS) docker-compose $(COMPOSE_FILE_ARGS) up --no-start
 
 down:  ## stop all services and tear down the system
@@ -105,4 +102,4 @@ clean:  ## Clean all tangodb entries
 .PHONY: up down minimal start stop status clean pull help itango
 
 help:   ## Show this help.
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'

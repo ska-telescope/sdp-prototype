@@ -5,7 +5,9 @@ verify_ssl = true
 
 [packages]
 pytango = {version="*", index="pypi"}
-lmcbaseclasses = {git = "https://github.com/ska-telescope/lmc-base-classes.git",editable = true}
+# ---- Inherited from base class, not installed again because of git dep ------
+# lmcbaseclasses = {git = "https://github.com/ska-telescope/lmc-base-classes.git", editable = true}
+
 
 [dev-packages]
 

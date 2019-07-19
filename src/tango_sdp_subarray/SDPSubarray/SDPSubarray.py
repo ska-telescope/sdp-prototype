@@ -1,18 +1,17 @@
 # -*- coding: utf-8 -*-
 """Tango SDPSubarray device module."""
-
 # pylint: disable=invalid-name
 
-from os.path import dirname, join
-
+import json
 from enum import IntEnum
 from inspect import currentframe, getframeinfo
+from os.path import dirname, join
 
-import json
 from jsonschema import validate
-
 from tango import AttrWriteType, DebugIt, DevState, Except
 from tango.server import Device, DeviceMeta, attribute, command, run
+
+
 # from skabase.SKASubarray import SKASubarray
 
 
@@ -207,7 +206,7 @@ class SDPSubarray(Device):
         Provides PB configuration and parameters needed to execute the first
         scan in the form of a JSON string.
 
-        :param pb_config: JSON Processing Block configuration.
+        :param pb_config: JSON string wth Processing Block configuration.
         :param schema_path: Path to the PB config schema (optional).
         """
         # pylint: disable=unused-argument
@@ -279,6 +278,20 @@ class SDPSubarray(Device):
 
 def main(args=None, **kwargs):
     """Run server."""
+    # Register a subarray device in the tango db using device server name
+    # 'SDPSubarray/1', if the devices have not already been registered.
+    from register import (register_subarray_devices,
+                          registered_subarray_devices)
+    from tango import ConnectionFailed
+    try:
+        server_name = 'SDPSubarray/1'
+        class_name = 'SDPSubarray'
+        devices = registered_subarray_devices(server_name, class_name)
+        if not devices:
+            print('Registering devices:')
+            register_subarray_devices(server_name, class_name, num_devices=1)
+    except ConnectionFailed:
+        pass
     return run((SDPSubarray,), args=args, **kwargs)
 
 

@@ -1,11 +1,11 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "84d70dcc98b8ff9a2a2c47dc1791f50695349c81b5a8db9f3a252995988017e6"
+            "sha256": "8169cfd7ed65900cc084bb06b0d9b78046a401ae8e23fe3e884fe9379f7b08ae"
         },
         "pipfile-spec": 6,
         "requires": {
-            "python_version": "3.5"
+            "python_version": "3.7"
         },
         "sources": [
             {
@@ -42,6 +42,20 @@
             "editable": true,
             "git": "https://github.com/ska-telescope/lmc-base-classes.git",
             "ref": "163bf05797d56fd24f21c336d7bc65542aef39c3"
+        },
+        "pytango": {
+            "hashes": [
+                "sha256:fb12b25eff490cab48667f66af7fdfa2200bb71ea4d12f39455062eeac4ac9a1"
+            ],
+            "index": "pypi",
+            "version": "==9.3.0"
+        },
+        "six": {
+            "hashes": [
+                "sha256:3350809f0555b11f552448330d0b52d5f24c91a322ea4a15ef22629740f3761c",
+                "sha256:d16a0141ec1a18405cd4ce8b4613101da75da0e9a7aec5bdd4fa804d0e0eba73"
+            ],
+            "version": "==1.12.0"
         }
     },
     "develop": {}

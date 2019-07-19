@@ -20,7 +20,7 @@
 
 # autodoc_mock_imports = ['PyTango', 'tango', 'tango.server', 'run',
 #                         'DeviceMeta', 'command']
-autodoc_mock_imports = ['PyTango', 'tango', 'skabase']
+autodoc_mock_imports = ['PyTango', 'tango', 'skabase', 'etcd3', 'jsonschema']
 
 import os
 import sys
@@ -35,7 +35,9 @@ sys.path.insert(0, os.path.abspath(
 sys.path.insert(0, os.path.abspath(
     os.path.join('..', '..', 'src', 'tango_sdp_master', 'SDPMaster')
 ))
-
+sys.path.insert(0, os.path.abspath(
+    os.path.join('..', '..', 'src', 'config_db')
+))
 
 
 def setup(app):

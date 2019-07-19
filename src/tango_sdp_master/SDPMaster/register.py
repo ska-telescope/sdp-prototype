@@ -4,6 +4,15 @@ import argparse
 from tango import Database, DbDevInfo
 
 
+def is_registered(server_name: str) -> bool:
+    """Check if the device is registered.
+
+    :param server_name: The Tango device server name
+    :return: True, if device is registered, else False.
+    """
+    return server_name in Database().get_server_list(server_name)
+
+
 def delete_server(server_name):
     """Delete the specified device server."""
     tango_db = Database()
