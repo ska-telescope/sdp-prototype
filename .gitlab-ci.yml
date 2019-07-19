@@ -201,7 +201,7 @@ build:tangods_sdp_subarray:
 # ============================================================================
 
 .push_docker:
-  stage: docker_build
+  stage: docker_push
   when: manual
   variables:
     DOCKER_REGISTRY_HOST: $NEXUS_HOST
