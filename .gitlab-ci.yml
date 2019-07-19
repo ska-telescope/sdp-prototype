@@ -289,6 +289,6 @@ pages:
   only: [master]
   image: python:latest
   script:
-    - cp -R htmlcov public/$CI_COMMIT_REF_NAME
+    - cp -R htmlcov public
   artifacts:
     paths: [public/]
