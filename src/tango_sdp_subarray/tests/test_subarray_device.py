@@ -4,7 +4,6 @@
 
 from random import randint
 
-# import json
 from os.path import dirname, join
 
 import pytest
