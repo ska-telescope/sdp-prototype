@@ -138,9 +138,6 @@ xray_report:
   image: docker:stable
   services:
     - docker:dind
-  only:
-    changes:
-      - $(BUILD_PATH)/*
   before_script:
     - apk add make git
     - docker login -u $NEXUS_USER -p $NEXUS_PASS $NEXUS_HOST
@@ -149,8 +146,6 @@ xray_report:
     - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME pull
     - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME build
     - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push
-#    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push_version
-#    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push_latest
   retry: 2
 
 # Build and push the `pytango_build` image.
@@ -159,6 +154,9 @@ build_pytango_build:
   stage: docker_build
   variables:
     BUILD_PATH: docker/pytango_build
+  only:
+    changes:
+      - $(BUILD_PATH)/*
 
 # Build and push the `pytango_base` image.
 build_pytango_base:
@@ -166,6 +164,9 @@ build_pytango_base:
   stage: docker_build
   variables:
     BUILD_PATH: docker/pytango_base
+  only:
+    changes:
+      - $(BUILD_PATH)/*
 
 # Build and push the `pytango_ska_base` image.
 # Only build when there is a change.
@@ -174,6 +175,9 @@ build_pytango_ska_base:
   stage: docker_build
   variables:
     BUILD_PATH: docker/pytango_ska_base
+  only:
+    changes:
+      - $(BUILD_PATH)/*
 
 # Build and push the `pytango_ska_dev` image.
 # Only build when there is a change.
@@ -214,8 +218,6 @@ build_tangods_sdp_subarray:
   only:
     refs:
     - master
-    changes:
-      - $(BUILD_PATH)/*
   services:
     - docker:dind
   before_script:
@@ -232,16 +234,25 @@ push_pytango_build:
   extends: .push_docker
   variables:
     BUILD_PATH: docker/pytango_build
+  only:
+    changes:
+      - $(BUILD_PATH)/*
 
 push_pytango_base:
   extends: .push_docker
   variables:
     BUILD_PATH: docker/pytango_base
+  only:
+    changes:
+      - $(BUILD_PATH)/*
 
 push_pytango_ska_base:
   extends: .push_docker
   variables:
     BUILD_PATH: docker/pytango_ska_base
+  only:
+    changes:
+      - $(BUILD_PATH)/*
 
 push_pytango_ska_dev:
   extends: .push_docker
