@@ -7,7 +7,7 @@ from setuptools import setup
 
 setup_dir = os.path.dirname(os.path.abspath(__file__))
 
-release_filename = os.path.join(setup_dir, 'SDPSubarray', 'release.py')
+release_filename = os.path.join(setup_dir, 'ska_sdp_subarray', 'release.py')
 exec(open(release_filename).read())
 
 with open('README.md', 'r') as file:
@@ -22,15 +22,14 @@ setup(
     author=AUTHOR,
     url='https://github.com/ska-telescope/sdp-prototype/src/'
         'tango_sdp_subarray',
-    install_requires=['pytango==9.2.5',
-                      'mock',
-                      'jsonschema',],
+    install_requires=['mock',
+                      'jsonschema'],
     classifiers=[
         "Programming Language :: Python :: 3 :: Only",
         "Development Status :: 1 - Planning",
     ],
     license=LICENSE,
-    packages=['SDPSubarray'],
+    packages=['ska_sdp_subarray'],
     test_suite='tests',
     tests_require=['pytest'],
     zip_safe=False
