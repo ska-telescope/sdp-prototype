@@ -176,11 +176,9 @@ build:pytango_ska_base:
 build:pytango_ska_dev:
   extends: .build_docker
   stage: docker_build
+  when: manual
   variables:
     BUILD_PATH: docker/pytango_ska_dev
-#  only:
-#    changes:
-#      - $(BUILD_PATH)/*
 
 # Build and push `tangods_sdp_master` image.
 build:tangods_sdp_master:
@@ -202,7 +200,6 @@ build:tangods_sdp_subarray:
 
 .push_docker:
   stage: docker_push
-  when: manual
   variables:
     DOCKER_REGISTRY_HOST: $NEXUS_HOST
     DOCKER_REGISTRY_USER: $CI_PROJECT_NAME
@@ -210,6 +207,7 @@ build:tangods_sdp_subarray:
   tags:
     - docker
     - engageska
+  when: manual
   image: docker:stable
   services:
     - docker:dind
@@ -253,6 +251,10 @@ push:pytango_ska_dev:
 
 push:tangods_sdp_master:
   extends: .push_docker
+  when: always
+  only:
+    refs:
+      - master
   dependencies:
     - build:tangods_sdp_master
   variables:
@@ -260,6 +262,10 @@ push:tangods_sdp_master:
 
 push:tangods_sdp_subarray:
   extends: .push_docker
+  when: always
+  only:
+    refs:
+      - master
   dependencies:
     - build:tangods_sdp_subarray
   variables:
