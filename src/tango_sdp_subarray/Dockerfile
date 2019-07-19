@@ -1,7 +1,9 @@
-FROM skaorca/pytango_ska_base:latest
+ARG DOCKER_REGISTRY_USER
+ARG DOCKER_REGISTRY_HOST
+FROM ${DOCKER_REGISTRY_HOST}/${DOCKER_REGISTRY_USER}/pytango_ska_base:latest
 
 WORKDIR /app
 COPY . /app
 
-ENTRYPOINT ["python", "SDPSubaray"]
+ENTRYPOINT ["python", "SDPSubarray"]
 CMD ["1", "-v4"]

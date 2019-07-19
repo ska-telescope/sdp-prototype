@@ -2,7 +2,9 @@
 [![Documentation Status](https://readthedocs.org/projects/sdp-prototype/badge/?version=latest)](https://sdp-prototype.readthedocs.io/en/latest/?badge=latest)
 [![coverage report](https://gitlab.com/ska-telescope/sdp-prototype/badges/master/coverage.svg)](https://ska-telescope.gitlab.io/sdp-prototype/)
 
-# SDP Evolutionary Prototype
+# SDP Prototype
 
 Prototype of minimal SDP components required for configuration and execution of
-a simple receive workflow. This is part of the SKA Evolutionary prototype.
+a simple receive workflow. 
+
+This work is part of the SKA Evolutionary prototype.

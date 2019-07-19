@@ -1,58 +1,58 @@
-image: "python:latest"
-
+#
 # Note: Tests can be run locally with
-#   gitlab-runner exec <executor, eg. docker> <stage name>
-
+#   gitlab-runner exec <executor, eg. docker> <job name>
+#
 stages:
   - test
   - post_test
+  - docker_build
+  - docker_push
   - deploy
 
-# Set up caching as suggested by GitLab's Python template
-variables:
-  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-cache:
-    paths: [.cache/pip]
+# ============================================================================
+# Run linters & tests
+# ============================================================================
+
+.tango_tests:
+  stage: test
+  tags: [docker]
+  image: nexus.engageska-portugal.pt/sdp-prototype/pytango_ska_dev:latest
 
 # Test the SDPSubarray device
-subarray_tests:
-    stage: test
-    image: skaorca/pytango_ska_dev:latest
-    before_script:
-      - pipenv install jsonschema
-    script:
-      - ./scripts/run_test.sh
-          src/tango_sdp_subarray
-          --gherkin-terminal-reporter
-          -vv
-          --cucumber-json=cucumber.json
-      - mv .coverage $CI_JOB_NAME.coverage
-    artifacts:
-      paths:
-      - cucumber.json
-      - $CI_JOB_NAME.coverage
-      expire_in: 1 week
+test_subarray_device:
+  extends: .tango_tests
+  script:
+    - ./scripts/run_test.sh
+        src/tango_sdp_subarray
+        --gherkin-terminal-reporter
+        -vv
+        --cucumber-json=cucumber.json
+    - mv .coverage $CI_JOB_NAME.coverage
+  artifacts:
+    paths:
+    - cucumber.json
+    - $CI_JOB_NAME.coverage
+    expire_in: 1 week
 
 # Test the SDPMaster device.
-master_tests:
-    stage: test
-    image: skaorca/pytango_ska_dev:latest
-    script:
-      - ./scripts/run_test.sh src/tango_sdp_master
-      - mv .coverage $CI_JOB_NAME.coverage
-    artifacts:
-      paths:
-        - $CI_JOB_NAME.coverage
+test_master_device:
+  extends: .tango_tests
+  script:
+    - ./scripts/run_test.sh src/tango_sdp_master
+    - mv .coverage $CI_JOB_NAME.coverage
+  artifacts:
+    paths:
+      - $CI_JOB_NAME.coverage
 
 # Test the configuration database
 config_db_tests:
     stage: test
-    image: skaorca/pytango_ska_dev:latest
+    image: nexus.engageska-portugal.pt/sdp-prototype/pytango_ska_dev:latest
     services:
       - name: quay.io/coreos/etcd:latest
         alias: etcd
         command:
-          - /usr/local/bin/etcd 
+          - /usr/local/bin/etcd
           - "--advertise-client-urls=http://0.0.0.0:2379"
           - "--listen-client-urls=http://0.0.0.0:2379"
           - "--initial-advertise-peer-urls=http://0.0.0.0:2380"
@@ -80,9 +80,15 @@ build_docs:
     paths: [docs/build/html/]
     expire_in: 1 day
 
+# ============================================================================
+# Generate test reports
+# ============================================================================
+
 # Generate combined test coverage report
 coverage_report:
   stage: post_test
+  tags: [docker]
+  image: python:latest
   before_script:
     - pip install coverage
   script:
@@ -95,8 +101,10 @@ coverage_report:
     expire_in: 1 week
 
 # Update XRay links in JIRA. This is done only for the master
-xray:
+xray_report:
   stage: post_test
+  tags: [docker]
+  image: python:latest
   only: [master]
   script:
     - 'curl -X POST -H "Content-Type: application/json"
@@ -105,12 +113,174 @@ xray:
          https://jira.skatelescope.org/rest/raven/1.0/import/execution/cucumber'
   retry: 2 # In case JIRA doesn't work first time
 
-# Generate gitlab pages. This is done only for the master.
+# ============================================================================
+# Build docker images
+# Note(1): There are some optimisations to make to this section but that will
+#          also involve updating the Dockerfiles to be more friendly to caching
+#          https://blog.callr.tech/building-docker-images-with-gitlab-ci-best-practices/
+#          https://andrewlock.net/caching-docker-layers-on-serverless-build-hosts-with-multi-stage-builds---target,-and---cache-from/
+# Note(2): Images should be rebuild for each CI job which should be fast
+#          due to build caching. This allows avoid us having to have
+#          dependencies between build stages.
+#          This also means that a each a PR should only update 1
+#          image in a build dependency chain.
+# ============================================================================
+
+# *** Common settings for building docker images
+.build_docker:
+  variables:
+    DOCKER_REGISTRY_HOST: $NEXUS_HOST
+    DOCKER_REGISTRY_USER: $CI_PROJECT_NAME
+    GIT_VERSION: ${CI_COMMIT_SHA:0:8}
+  tags:
+    - docker
+    - engageska
+  image: docker:stable
+  services:
+    - docker:dind
+  before_script:
+    - apk add make git
+    - docker login -u $NEXUS_USER -p $NEXUS_PASS $NEXUS_HOST
+  script:
+    - cd $BUILD_PATH
+    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME pull
+    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME build
+    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push
+  retry: 2
+
+# Build and push the `pytango_build` image.
+build_pytango_build:
+  extends: .build_docker
+  stage: docker_build
+  variables:
+    BUILD_PATH: docker/pytango_build
+  only:
+    changes:
+      - $(BUILD_PATH)/*
+
+# Build and push the `pytango_base` image.
+build_pytango_base:
+  extends: .build_docker
+  stage: docker_build
+  variables:
+    BUILD_PATH: docker/pytango_base
+  only:
+    changes:
+      - $(BUILD_PATH)/*
+
+# Build and push the `pytango_ska_base` image.
+# Only build when there is a change.
+build_pytango_ska_base:
+  extends: .build_docker
+  stage: docker_build
+  variables:
+    BUILD_PATH: docker/pytango_ska_base
+  only:
+    changes:
+      - $(BUILD_PATH)/*
+
+# Build and push the `pytango_ska_dev` image.
+# Only build when there is a change.
+build_pytango_ska_dev:
+  extends: .build_docker
+  stage: docker_build
+  variables:
+    BUILD_PATH: docker/pytango_ska_dev
+
+# Build and push `tangods_sdp_master` image.
+build_tangods_sdp_master:
+  extends: .build_docker
+  stage: docker_build
+  variables:
+    BUILD_PATH: src/tango_sdp_master
+
+# Build and push `tangods_sdp_subarray` image.
+build_tangods_sdp_subarray:
+  extends: .build_docker
+  stage: docker_build
+  variables:
+    BUILD_PATH: src/tango_sdp_subarray
+
+# ============================================================================
+# Push versioned docker images (only from master & if change)
+# ============================================================================
+
+.push_docker:
+  stage: docker_push
+  variables:
+    DOCKER_REGISTRY_HOST: $NEXUS_HOST
+    DOCKER_REGISTRY_USER: $CI_PROJECT_NAME
+    GIT_VERSION: ${CI_COMMIT_SHA:0:8}
+  tags:
+    - docker
+    - engageska
+  image: docker:stable
+  only:
+    refs:
+    - master
+  services:
+    - docker:dind
+  before_script:
+    - apk add make git
+    - docker login -u $NEXUS_USER -p $NEXUS_PASS $NEXUS_HOST
+  script:
+    - cd $BUILD_PATH
+    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME pull
+    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push_version
+    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push_latest
+  retry: 2
+
+push_pytango_build:
+  extends: .push_docker
+  variables:
+    BUILD_PATH: docker/pytango_build
+  only:
+    changes:
+      - $(BUILD_PATH)/*
+
+push_pytango_base:
+  extends: .push_docker
+  variables:
+    BUILD_PATH: docker/pytango_base
+  only:
+    changes:
+      - $(BUILD_PATH)/*
+
+push_pytango_ska_base:
+  extends: .push_docker
+  variables:
+    BUILD_PATH: docker/pytango_ska_base
+  only:
+    changes:
+      - $(BUILD_PATH)/*
+
+push_pytango_ska_dev:
+  extends: .push_docker
+  variables:
+    BUILD_PATH: docker/pytango_ska_dev
+
+push_tangods_sdp_master:
+  extends: .push_docker
+  variables:
+    BUILD_PATH: src/tango_sdp_master
+
+push_tangods_sdp_subarray:
+  extends: .push_docker
+  variables:
+    BUILD_PATH: src/tango_sdp_subarray
+
+
+# ============================================================================
+# Publish reports
+# ============================================================================
+
+# Generate gitlab pages.
 pages:
   stage: deploy
+  tags: [docker]
   only: [master]
+  image: python:latest
   script:
-    - cp -R htmlcov public/
+    - cp -R htmlcov public/$CI_COMMIT_REF_NAME
   artifacts:
     paths: [public/]
-    expire_in: 1 week

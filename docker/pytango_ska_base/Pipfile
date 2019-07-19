@@ -4,7 +4,7 @@ name = "pypi"
 verify_ssl = true
 
 [packages]
-# Not using the SKA nexus repo as it is Python 3.5 only.
+pytango = "*" # <- copied from base layer
 lmcbaseclasses = {git = "https://github.com/ska-telescope/lmc-base-classes.git",editable = true}
 
 [requires]
