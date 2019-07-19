@@ -5,8 +5,8 @@
 stages:
   - test
   - post_test
-  - docker_build
-  - docker_push
+  - build
+  - stage
   - deploy
 
 # ============================================================================
@@ -128,6 +128,7 @@ xray_report:
 
 # *** Common settings for building docker images
 .build_docker:
+  stage: build
   variables:
     DOCKER_REGISTRY_HOST: $NEXUS_HOST
     DOCKER_REGISTRY_USER: $CI_PROJECT_NAME
@@ -151,7 +152,6 @@ xray_report:
 # Build and push the `pytango_build` image.
 build:pytango_build:
   extends: .build_docker
-  stage: docker_build
   when: manual
   variables:
     BUILD_PATH: docker/pytango_build
@@ -159,7 +159,6 @@ build:pytango_build:
 # Build and push the `pytango_base` image.
 build:pytango_base:
   extends: .build_docker
-  stage: docker_build
   when: manual
   variables:
     BUILD_PATH: docker/pytango_base
@@ -167,7 +166,6 @@ build:pytango_base:
 # Build and push the `pytango_ska_base` image.
 build:pytango_ska_base:
   extends: .build_docker
-  stage: docker_build
   when: manual
   variables:
     BUILD_PATH: docker/pytango_ska_base
@@ -175,7 +173,6 @@ build:pytango_ska_base:
 # Build and push the `pytango_ska_dev` image.
 build:pytango_ska_dev:
   extends: .build_docker
-  stage: docker_build
   when: manual
   variables:
     BUILD_PATH: docker/pytango_ska_dev
@@ -183,23 +180,21 @@ build:pytango_ska_dev:
 # Build and push `tangods_sdp_master` image.
 build:tangods_sdp_master:
   extends: .build_docker
-  stage: docker_build
   variables:
     BUILD_PATH: src/tango_sdp_master
 
 # Build and push `tangods_sdp_subarray` image.
 build:tangods_sdp_subarray:
   extends: .build_docker
-  stage: docker_build
   variables:
     BUILD_PATH: src/tango_sdp_subarray
 
 # ============================================================================
-# Push versioned docker images (only from master & if change)
+# Push versioned docker images
 # ============================================================================
 
 .push_docker:
-  stage: docker_push
+  stage: deploy
   variables:
     DOCKER_REGISTRY_HOST: $NEXUS_HOST
     DOCKER_REGISTRY_USER: $CI_PROJECT_NAME
