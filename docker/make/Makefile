@@ -71,6 +71,9 @@ push_all: push push_latest push_version ## Push all tags
 pull: ## Fetch the latest image
 	@docker pull $(IMAGE):latest || true
 
+pull_default: ## Fetch the default Git versioned image
+	@docker pull $(DEFAULT_TAG) || true
+
 ls:  ## List images built from this folder
 	@echo "$(CBLUE)Images matching:$(CEND) $(IMAGE):*"
 	@docker image ls --filter=reference="$(IMAGE):*"

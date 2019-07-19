@@ -5,8 +5,8 @@
 stages:
   - test
   - post_test
-  - docker_build
-  - docker_push
+  - build
+  - stage
   - deploy
 
 # ============================================================================
@@ -19,7 +19,7 @@ stages:
   image: nexus.engageska-portugal.pt/sdp-prototype/pytango_ska_dev:latest
 
 # Test the SDPSubarray device
-test_subarray_device:
+subarray_device_tests:
   extends: .tango_tests
   script:
     - ./scripts/run_test.sh
@@ -35,7 +35,7 @@ test_subarray_device:
     expire_in: 1 week
 
 # Test the SDPMaster device.
-test_master_device:
+master_device_tests:
   extends: .tango_tests
   script:
     - ./scripts/run_test.sh src/tango_sdp_master
@@ -128,6 +128,7 @@ xray_report:
 
 # *** Common settings for building docker images
 .build_docker:
+  stage: build
   variables:
     DOCKER_REGISTRY_HOST: $NEXUS_HOST
     DOCKER_REGISTRY_USER: $CI_PROJECT_NAME
@@ -149,64 +150,51 @@ xray_report:
   retry: 2
 
 # Build and push the `pytango_build` image.
-build_pytango_build:
+build:pytango_build:
   extends: .build_docker
-  stage: docker_build
+  when: manual
   variables:
     BUILD_PATH: docker/pytango_build
-  only:
-    changes:
-      - $(BUILD_PATH)/*
 
 # Build and push the `pytango_base` image.
-build_pytango_base:
+build:pytango_base:
   extends: .build_docker
-  stage: docker_build
+  when: manual
   variables:
     BUILD_PATH: docker/pytango_base
-  only:
-    changes:
-      - $(BUILD_PATH)/*
 
 # Build and push the `pytango_ska_base` image.
-# Only build when there is a change.
-build_pytango_ska_base:
+build:pytango_ska_base:
   extends: .build_docker
-  stage: docker_build
+  when: manual
   variables:
     BUILD_PATH: docker/pytango_ska_base
-  only:
-    changes:
-      - $(BUILD_PATH)/*
 
 # Build and push the `pytango_ska_dev` image.
-# Only build when there is a change.
-build_pytango_ska_dev:
+build:pytango_ska_dev:
   extends: .build_docker
-  stage: docker_build
+  when: manual
   variables:
     BUILD_PATH: docker/pytango_ska_dev
 
 # Build and push `tangods_sdp_master` image.
-build_tangods_sdp_master:
+build:tangods_sdp_master:
   extends: .build_docker
-  stage: docker_build
   variables:
     BUILD_PATH: src/tango_sdp_master
 
 # Build and push `tangods_sdp_subarray` image.
-build_tangods_sdp_subarray:
+build:tangods_sdp_subarray:
   extends: .build_docker
-  stage: docker_build
   variables:
     BUILD_PATH: src/tango_sdp_subarray
 
 # ============================================================================
-# Push versioned docker images (only from master & if change)
+# Push versioned docker images
 # ============================================================================
 
 .push_docker:
-  stage: docker_push
+  stage: deploy
   variables:
     DOCKER_REGISTRY_HOST: $NEXUS_HOST
     DOCKER_REGISTRY_USER: $CI_PROJECT_NAME
@@ -214,10 +202,8 @@ build_tangods_sdp_subarray:
   tags:
     - docker
     - engageska
+  when: manual
   image: docker:stable
-  only:
-    refs:
-    - master
   services:
     - docker:dind
   before_script:
@@ -225,50 +211,72 @@ build_tangods_sdp_subarray:
     - docker login -u $NEXUS_USER -p $NEXUS_PASS $NEXUS_HOST
   script:
     - cd $BUILD_PATH
-    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME pull
+    - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME pull_default
     - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push_version
     - make DOCKER_REGISTRY_HOST=$NEXUS_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push_latest
   retry: 2
 
-push_pytango_build:
+push:pytango_build:
   extends: .push_docker
+  dependencies:
+    - build:pytango_build
   variables:
     BUILD_PATH: docker/pytango_build
-  only:
-    changes:
-      - $(BUILD_PATH)/*
 
-push_pytango_base:
+push:pytango_base:
   extends: .push_docker
+  dependencies:
+    - build:pytango_base
   variables:
     BUILD_PATH: docker/pytango_base
-  only:
-    changes:
-      - $(BUILD_PATH)/*
 
-push_pytango_ska_base:
+push:pytango_ska_base:
   extends: .push_docker
+  dependencies:
+    - build:pytango_ska_base
   variables:
     BUILD_PATH: docker/pytango_ska_base
-  only:
-    changes:
-      - $(BUILD_PATH)/*
 
-push_pytango_ska_dev:
+push:pytango_ska_dev:
   extends: .push_docker
+  dependencies:
+    - build:pytango_ska_dev
   variables:
     BUILD_PATH: docker/pytango_ska_dev
 
-push_tangods_sdp_master:
+.tangods_master_template:
   extends: .push_docker
+  when: always
+  dependencies:
+    - build:tangods_sdp_master
   variables:
     BUILD_PATH: src/tango_sdp_master
 
-push_tangods_sdp_subarray:
+push:tangods_sdp_master:
+  extends: .tangods_master_template
+  only: [master]
+
+push:tangods_sdp_master-manual:
+  extends: .tangods_master_template
+  when: manual
+  except: [master]
+
+.tangods_subarray_template:
   extends: .push_docker
+  when: always
+  dependencies:
+    - build:tangods_sdp_subarray
   variables:
     BUILD_PATH: src/tango_sdp_subarray
 
+push:tangods_sdp_subarray:
+  extends: .tangods_subarray_template
+  only: [master]
+
+push:tangods_sdp_subarray-manual:
+  extends: .tangods_subarray_template
+  when: manual
+  except: [master]
 
 # ============================================================================
 # Publish reports
