@@ -152,32 +152,26 @@ xray_report:
 build_pytango_build:
   extends: .build_docker
   stage: docker_build
+  when: manual
   variables:
     BUILD_PATH: docker/pytango_build
-  only:
-    changes:
-      - $(BUILD_PATH)/*
 
 # Build and push the `pytango_base` image.
 build_pytango_base:
   extends: .build_docker
   stage: docker_build
+  when: manual
   variables:
     BUILD_PATH: docker/pytango_base
-  only:
-    changes:
-      - $(BUILD_PATH)/*
 
 # Build and push the `pytango_ska_base` image.
 # Only build when there is a change.
 build_pytango_ska_base:
   extends: .build_docker
   stage: docker_build
+  when: manual
   variables:
     BUILD_PATH: docker/pytango_ska_base
-  only:
-    changes:
-      - $(BUILD_PATH)/*
 
 # Build and push the `pytango_ska_dev` image.
 # Only build when there is a change.
@@ -186,6 +180,9 @@ build_pytango_ska_dev:
   stage: docker_build
   variables:
     BUILD_PATH: docker/pytango_ska_dev
+  only:
+    changes:
+      - $(BUILD_PATH)/*
 
 # Build and push `tangods_sdp_master` image.
 build_tangods_sdp_master:
@@ -207,6 +204,7 @@ build_tangods_sdp_subarray:
 
 .push_docker:
   stage: docker_push
+  when: manual
   variables:
     DOCKER_REGISTRY_HOST: $NEXUS_HOST
     DOCKER_REGISTRY_USER: $CI_PROJECT_NAME
@@ -215,9 +213,6 @@ build_tangods_sdp_subarray:
     - docker
     - engageska
   image: docker:stable
-  only:
-    refs:
-    - master
   services:
     - docker:dind
   before_script:
@@ -232,40 +227,37 @@ build_tangods_sdp_subarray:
 
 push_pytango_build:
   extends: .push_docker
+  dependencies: [build_pytango_build]
   variables:
     BUILD_PATH: docker/pytango_build
-  only:
-    changes:
-      - $(BUILD_PATH)/*
 
 push_pytango_base:
   extends: .push_docker
+  dependencies: [build_pytango_base]
   variables:
     BUILD_PATH: docker/pytango_base
-  only:
-    changes:
-      - $(BUILD_PATH)/*
 
 push_pytango_ska_base:
   extends: .push_docker
+  dependencies: [build_pytango_ska_base]
   variables:
     BUILD_PATH: docker/pytango_ska_base
-  only:
-    changes:
-      - $(BUILD_PATH)/*
 
 push_pytango_ska_dev:
   extends: .push_docker
+  dependencies: [build_pytango_ska_dev]
   variables:
     BUILD_PATH: docker/pytango_ska_dev
 
 push_tangods_sdp_master:
   extends: .push_docker
+  dependencies: [build_pytangods_sdp_master]
   variables:
     BUILD_PATH: src/tango_sdp_master
 
 push_tangods_sdp_subarray:
   extends: .push_docker
+  dependencies: [build_pytangods_sdp_subarray]
   variables:
     BUILD_PATH: src/tango_sdp_subarray
 
