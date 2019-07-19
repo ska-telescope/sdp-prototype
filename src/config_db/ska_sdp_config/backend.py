@@ -98,7 +98,7 @@ class Etcd3():
         # Return value together with revision
         return (result, Etcd3Revision(response.header.revision, mod_revision))
 
-    def watch(self, path, prefix=False, revision=None):
+    def watch(self, path, prefix=False, revision=None, depth=None):
         """Watch key or key range.
 
         Use a path ending with `'/'` in combination with `prefix` to
@@ -112,7 +112,7 @@ class Etcd3():
         # Check/prepare parameters
         if not prefix and path and path[-1] == '/':
             raise ValueError("Path should not have a trailing '/'!")
-        tagged_path = _tag_depth(path)
+        tagged_path = _tag_depth(path, depth)
         rev = (None if revision is None else revision.revision)
 
         # Set up watcher
@@ -120,34 +120,48 @@ class Etcd3():
             tagged_path, start_revision=rev, prev_kv=True, prefix=prefix)
         return Etc3Watcher(watcher, self)
 
-    def list_keys(self, path, revision=None):
+    def list_keys(self, path, recurse=0, revision=None):
         """
         List keys under given path.
 
         :param path: Prefix of keys to query. Append '/' to list
            child paths.
-        :param revision: Database revision for which to list
-        :returns: (sorted key list, revision)
+        :param recurse: Maximum recursion level to query. If iterable,
+           cover exactly the recursion levels specified.
+        :param revision: Database revision for which to list :returns:
+            (sorted key list, revision)
         """
         # Prepare parameters
-        tagged_path = _tag_depth(path)
+        path_depth = path.count('/')
         rev = None
         if revision is not None:
             rev = revision.revision
 
-        # Query range
-        response = self._client.range(
-            tagged_path, prefix=True, keys_only=True, revision=rev)
+        # Make transaction to collect keys from all levels
+        keys = []
+        txn = self._client.Txn()
+        try:
+            depth_iter = iter(recurse)
+        except TypeError:
+            depth_iter = range(recurse+1)
+        for depth in depth_iter:
+            tagged_path = _tag_depth(path, depth+path_depth)
+            txn.success(txn.range(
+                tagged_path, prefix=True, keys_only=True, revision=rev))
+        response = txn.commit()
 
         # We do not return a mod revision here - this would not be
         # very useful anyway as we are not returning values
         revision = Etcd3Revision(response.header.revision, None)
-
-        if response.kvs is None:
+        if response.responses is None:
             return ([], revision)
+
+        # Collect and sort keys
         sorted_keys = sorted([
             _untag_depth(kv.key.decode('utf-8'))
-            for kv in response.kvs
+            for res in response.responses
+            if res.response_range.kvs is not None
+            for kv in res.response_range.kvs
         ])
         return (sorted_keys, revision)
 
@@ -439,43 +453,57 @@ class Etcd3Transaction():
             self._revision = rev
         return val
 
-    def list_keys(self, path):
+    def list_keys(self, path, recurse=0):
         """
         List keys under given path.
 
         :param path: Prefix of keys to query. Append '/' to list
            child paths.
+        :param recurse: Children depths to include in search
         :returns: sorted key list
         """
         self._ensure_uncommitted()
+        path_depth = path.count('/')
 
-        # We might have created or deleted an uncommitted key that
-        # falls into the range - add to list
-        tagged_path = _tag_depth(path)
-        matching_vals = [
-            kv for kv in self._updates.items()
-            if _tag_depth(kv[0]).startswith(tagged_path)
-        ]
-        added_keys = {
-            key for key, val in matching_vals if val is not None
-        }
-        removed_keys = {
-            key for key, val in matching_vals if val is None
-        }
+        # Walk through depths, collecting known keys
+        txn = self._client.Txn()
+        try:
+            depth_iter = iter(recurse)
+        except TypeError:
+            depth_iter = range(recurse+1)
+        keys = []
+        for depth in depth_iter:
 
-        # Check whether we already have the request response
-        if path in self._list_queries:
-            return sorted(set(self._list_queries[path][0])
-                          - removed_keys | added_keys)
+            # We might have created or deleted an uncommitted key that
+            # falls into the range - add to list
+            tagged_path = _tag_depth(path, path_depth+depth)
+            matching_vals = [
+                kv for kv in self._updates.items()
+                if _tag_depth(kv[0]).startswith(tagged_path)
+            ]
+            added_keys = {
+                key for key, val in matching_vals if val is not None
+            }
+            removed_keys = {
+                key for key, val in matching_vals if val is None
+            }
 
-        # Perform request
-        keys, rev = self._list_queries[path] = self._backend.list_keys(
-            path, revision=self._revision)
+            # Check whether we need to perform the request
+            query = (path, depth+path_depth)
+            if query not in self._list_queries:
+                self._list_queries[query] = self._backend.list_keys(
+                    path, recurse=(depth,), revision=self._revision)
 
-        # Set revision, return
-        if self._revision is None:
-            self._revision = rev
-        return sorted(set(keys) - removed_keys | added_keys)
+            # Add to key set
+            result, rev = self._list_queries[query]
+            keys.extend(set(result) - removed_keys | added_keys)
+
+            # Bake in revision if not already done so
+            if self._revision is None:
+                self._revision = rev
+
+        # Sort
+        return sorted(keys)
 
     def create(self, path, value, lease=None):
         """Create a key and initialise it with the value.
@@ -571,8 +599,8 @@ class Etcd3Transaction():
                 txn.compare(txn.key(tagged_path).mod == rev.mod_revision)
 
         # Verify list_keys() calls from the query log
-        for path, (result, rev) in self._list_queries.items():
-            tagged_path = _tag_depth(path)
+        for (path, depth), (result, rev) in self._list_queries.items():
+            tagged_path = _tag_depth(path, depth)
 
             # Make sure that all returned keys still exist
             for res_path in result:
@@ -692,15 +720,15 @@ class Etcd3Transaction():
         # on key updates, we will filter that below.
         prefixes = []
         active_watchers = set()
-        for path in self._list_queries:
-            query = ('list', path)
+        for path, depth in self._list_queries:
+            query = ('list', path, depth)
             # Add tagged prefixes so we can check for key overlap later
-            prefixes.append(_tag_depth(path))
+            prefixes.append(_tag_depth(path, depth))
             active_watchers.add(query)
             # Start a watcher, if required
             if self._watchers.get(query) is None:
                 self._watchers[query] = self._backend.watch(
-                    path, revision=self._revision, prefix=True)
+                    path, revision=self._revision, prefix=True, depth=depth)
                 self._watchers[query].start(self._watch_queue)
 
         # Watch any individual key we read
@@ -771,8 +799,8 @@ class Etcd3Transaction():
                 # Are we getting this because of one of the list queries?
                 tagged_path = _tag_depth(path)
                 found_match = False
-                for lpath, (result, _) in self._list_queries.items():
-                    if tagged_path.startswith(_tag_depth(lpath)):
+                for (lpath, depth), (result, _) in self._list_queries.items():
+                    if tagged_path.startswith(_tag_depth(lpath, depth)):
 
                         # We should not notify for a value change,
                         # only if a key was added / removed. Good

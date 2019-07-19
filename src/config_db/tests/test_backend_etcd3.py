@@ -105,6 +105,34 @@ def test_list(etcd3):
     assert etcd3.list_keys(key+"/ab")[0] == [
         key+"/ab"]
 
+    # Try listing recursively
+    assert etcd3.list_keys(key, recurse=1)[0] == [
+        key+"/a", key+"/ab", key+"/ax", key+"/b"]
+    assert etcd3.list_keys(key, recurse=(1,))[0] == [
+        key+"/a", key+"/ab", key+"/ax", key+"/b"]
+    assert etcd3.list_keys(key, recurse=2)[0] == [
+        key+"/a", key+"/a/d", key+"/ab", key+"/ab/c",
+        key+"/ax", key+"/b"]
+    assert etcd3.list_keys(key, recurse=(2,))[0] == [
+        key+"/a/d", key+"/ab/c"]
+    assert etcd3.list_keys(key+"/", recurse=1)[0] == [
+        key+"/a", key+"/a/d", key+"/ab", key+"/ab/c",
+        key+"/ax", key+"/b"]
+    assert etcd3.list_keys(key, recurse=3)[0] == [
+        key+"/a", key+"/a/d", key+"/a/d/x",
+        key+"/ab", key+"/ab/c", key+"/ax", key+"/b"]
+    assert etcd3.list_keys(key, recurse=[3,2,1])[0] == [
+        key+"/a", key+"/a/d", key+"/a/d/x",
+        key+"/ab", key+"/ab/c", key+"/ax", key+"/b"]
+    assert etcd3.list_keys(key+"/a", recurse=2)[0] == [
+        key+"/a", key+"/a/d", key+"/a/d/x",
+        key+"/ab", key+"/ab/c", key+"/ax"]
+    assert etcd3.list_keys(key+"/a/", recurse=1)[0] == [
+        key+"/a/d", key+"/a/d/x"]
+    assert set(etcd3.list_keys("/", recurse=32)[0]) >= set([
+        key+"/a", key+"/a/d", key+"/a/d/x",
+        key+"/ab", key+"/ab/c", key+"/ax"])
+
     # Remove
     etcd3.delete(key, must_exist=False, recursive=True)
 
@@ -388,30 +416,38 @@ def test_transaction_list(etcd3):
 
     key = PREFIX + "/test_txn_list"
     keys = [key+"/"+str(i) for i in range(5)]
-    for k in keys:
-        etcd3.create(k, k)
+    keys_sub = [key+"/sub" for key in keys]
+    for txn in etcd3.txn():
+        for k in keys:
+            txn.create(k, k)
+            txn.create(k+"/sub", k+"/sub")
 
     # Ensure that we can list the keys
-    assert set(etcd3.list_keys(key+'/')[0]) == set(keys)
+    assert etcd3.list_keys(key+'/')[0] == keys
     for txn in etcd3.txn():
-        assert set(txn.list_keys(key+'/')) == set(keys)
+        assert txn.list_keys(key+'/') == keys
+        assert txn.list_keys(key+'/',recurse=1) == sorted(keys + keys_sub)
+        assert txn.list_keys(key+'/',recurse=(1,)) == keys_sub
+    for txn in etcd3.txn():
+        assert txn.list_keys(key+'/',recurse=(1,)) == keys_sub
 
     # Ensure that we can add another key into the range and have it
     # appear to the transaction *before* we commit
     keys.append(key+"/xxx")
-    assert set(etcd3.list_keys(key+'/')[0]) == set(keys[:-1])
+    assert etcd3.list_keys(key+'/')[0] == keys[:-1]
     for txn in etcd3.txn():
-        assert set(txn.list_keys(key+'/')) == set(keys[:-1])
+        assert txn.list_keys(key+'/') == keys[:-1]
         txn.create(key+"/xxx", "xxx")
-        assert set(txn.list_keys(key+'/')) == set(keys)
-        assert set(etcd3.list_keys(key+'/')[0]) == set(keys[:-1])
-    assert set(etcd3.list_keys(key+'/')[0]) == set(keys)
+        assert txn.list_keys(key+'/', recurse=3) == sorted(keys + keys_sub)
+        assert txn.list_keys(key+'/') == keys
+        assert etcd3.list_keys(key+'/')[0] == keys[:-1]
+    assert etcd3.list_keys(key+'/')[0] == keys
 
     # Test iteratively building up
     etcd3.delete(key, recursive=True, must_exist=False)
     for i, k in enumerate(keys):
         for txn in etcd3.txn():
-            assert set(txn.list_keys(key+'/')) == set(keys[:i])
+            assert txn.list_keys(key+'/') == keys[:i]
             txn.create(k, k)
 
     # Removing keys causes a re-run, but a value update does not.

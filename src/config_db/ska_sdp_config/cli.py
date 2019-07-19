@@ -3,7 +3,7 @@ Command line utility for accessing SKA SDP configuration.
 
 Usage:
   sdpcfg [options] (get|watch) <path>
-  sdpcfg [options] [watch] (ls|list) [values] <path>
+  sdpcfg [options] [watch] (ls|list) [values] [-R] <path>
   sdpcfg [options] delete <path>
   sdpcfg [options] (create|update) <path> <value>
   sdpcfg [options] create_pb <workflow>
@@ -41,7 +41,8 @@ def cmd_get(txn, path, args):
 
 def cmd_list(txn, path, args):
     """List raw keys/values from database."""
-    keys = txn.raw.list_keys(path)
+    recurse = (8 if args['-R'] else 0)
+    keys = txn.raw.list_keys(path, recurse=recurse)
     if args['--quiet']:
         if args['values']:
             values = [txn.raw.get(key) for key in keys]
