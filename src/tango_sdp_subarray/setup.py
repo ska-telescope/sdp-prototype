@@ -22,6 +22,9 @@ setup(
     author=AUTHOR,
     url='https://github.com/ska-telescope/sdp-prototype/src/'
         'tango_sdp_subarray',
+    install_requires=['pytango==9.2.5',
+                      'mock',
+                      'jsonschema',],
     classifiers=[
         "Programming Language :: Python :: 3 :: Only",
         "Development Status :: 1 - Planning",
