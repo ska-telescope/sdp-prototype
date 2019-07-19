@@ -90,7 +90,7 @@ test:  ## Run tests for the device
 lint:  ## Run test and linter
 	@docker run --rm -t \
 		-v $(PWD):/app \
-		$(DEV_IMAGE) \ \
+		$(DEV_IMAGE) \
 		python -m pytest \
 		--pylint \
 		--pylint-rcfile=../../scripts/.pylintrc \

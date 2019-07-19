@@ -55,6 +55,7 @@ class SDPSubarray(Device):
         This should eventually inherit from SKASubarray but these need
         some work before doing so would add any value to this device.
     """
+
     # pylint: disable=attribute-defined-outside-init
 
     __metaclass__ = DeviceMeta
