@@ -285,9 +285,9 @@ def main(args=None, **kwargs):
         server_name = 'SDPSubarray/1'
         class_name = 'SDPSubarray'
         devices = registered_subarray_devices(server_name, class_name)
-        if not len(devices):
+        if not devices:
             print('Registering devices:')
-            register_subarray_devices(server_name, class_name, 16)
+            register_subarray_devices(server_name, class_name, num_devices=1)
     except ConnectionFailed:
         pass
     return run((SDPSubarray,), args=args, **kwargs)
