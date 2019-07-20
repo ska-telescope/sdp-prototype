@@ -12,7 +12,7 @@ from pytest_bdd import (given, parsers, scenarios, then, when)
 import tango
 from tango import DevState
 
-from ska_sdp_subarray import AdminMode, ObsState
+from SDPSubarray import AdminMode, ObsState
 
 
 # -----------------------------------------------------------------------------

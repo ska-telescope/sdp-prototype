@@ -4,7 +4,7 @@
 import pytest
 from tango.test_context import DeviceTestContext
 
-from ska_sdp_subarray import SDPSubarray
+from SDPSubarray import SDPSubarray
 
 
 @pytest.fixture(scope='session', autouse=True)

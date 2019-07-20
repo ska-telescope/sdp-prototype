@@ -2,17 +2,23 @@
 """Tango SDPSubarray device module."""
 # pylint: disable=invalid-name
 
+import sys
 import json
 from enum import IntEnum
 from inspect import currentframe, getframeinfo
 from os.path import dirname, join
+import logging
 
 from jsonschema import validate
 from tango import AttrWriteType, DebugIt, DevState, Except
 from tango.server import Device, DeviceMeta, attribute, command, run
+from tango import Database, DbDevInfo, ConnectionFailed
 
+# from .register import register_subarray_devices, registered_subarray_devices
 
 # from skabase.SKASubarray import SKASubarray
+
+LOG = logging.getLogger('ska.sdp.subarrayds')
 
 
 # https://pytango.readthedocs.io/en/stable/data_types.html#devenum-pythonic-usage
@@ -131,19 +137,6 @@ class SDPSubarray(Device):
         http://bit.ly/2Gad55Q
 
         :return: List of receive addresses
-
-        :Example:
-
-        .. code-block:: javascript
-
-            {
-                "<phase_bin>": {
-                    "<channel_id>": ["<ip>", <port>],
-                    "<channel_id>": ["<ip>", <port>],
-                    ...
-                }
-            }
-
         """
         return self.receive_addresses
 
@@ -276,22 +269,82 @@ class SDPSubarray(Device):
         self.obs_state = ObsState.READY
 
 
-def main(args=None, **kwargs):
-    """Run server."""
-    # Register a subarray device in the tango db using device server name
-    # 'SDPSubarray/1', if the devices have not already been registered.
-    from register import (register_subarray_devices,
-                          registered_subarray_devices)
-    from tango import ConnectionFailed
+def delete_device_server(instance_name: str = "*"):
+    """Delete (unregister) SDPSubarray device server instance(s).
+
+    :param instance_name: Optional, name of the device server instance to
+                          remove. If not specified all service instances will
+                          be removed.
+    """
     try:
-        server_name = 'SDPSubarray/1'
+        tango_db = Database()
         class_name = 'SDPSubarray'
-        devices = registered_subarray_devices(server_name, class_name)
-        if not devices:
-            print('Registering devices:')
-            register_subarray_devices(server_name, class_name, num_devices=1)
+        server_name = '{}/{}'.format(class_name, instance_name)
+        for server_name in list(tango_db.get_server_list(server_name)):
+            LOG.info('Removing device server: %s', server_name)
+            tango_db.delete_server(server_name)
     except ConnectionFailed:
         pass
+
+
+def register(instance_name: str, *device_names: str):
+    """Register device with a SDPSubarray device server instance.
+
+    If the device is already registered, do nothing.
+
+    :param instance_name: Instance name SDPSubarray device server
+    :param device_names: Subarray device names to register
+    """
+    try:
+        tango_db = Database()
+        class_name = 'SDPSubarray'
+        server_name = '{}/{}'.format(class_name, instance_name)
+        devices = list(tango_db.get_device_name(server_name, class_name))
+        device_info = DbDevInfo()
+        # pylint: disable=protected-access
+        device_info._class = class_name
+        device_info.server = server_name
+        for device_name in device_names:
+            device_info.name = device_name
+            if device_name in devices:
+                LOG.debug("Device '%s' already registered", device_name)
+                continue
+            LOG.info('Registering device: %s (server: %s, class: %s)',
+                     device_info.name, server_name, class_name)
+            tango_db.add_device(device_info)
+    except ConnectionFailed:
+        pass
+
+
+def init_logger(level: str = 'DEBUG', name: str = 'ska.sdp'):
+    """Initialise stdout logger for the ska.sdp logger.
+
+    :param level: Logging level, default: 'DEBUG'
+    :param name: Logger name to initialise. default: 'ska.sdp'.
+    """
+    log = logging.getLogger(name)
+    log.propagate = False
+    # make sure there are no duplicate handlers.
+    for handler in log.handlers:
+        log.removeHandler(handler)
+    formatter = logging.Formatter(
+        '%(asctime)s | %(levelname)-6s | %(message)s')
+    handler = logging.StreamHandler(stream=sys.stdout)
+    handler.setFormatter(formatter)
+    log.addHandler(handler)
+    log.setLevel(level)
+
+
+def main(args=None, **kwargs):
+    """Run server."""
+    log_level = 'INFO'
+    if len(sys.argv) > 2 and '-v' in sys.argv[2]:
+        log_level = 'DEBUG'
+    init_logger(log_level)
+    if len(sys.argv) > 1:
+        # delete_device_server("*")
+        devices = ['sdp_mid/elt/subarray_{:02d}'.format(i) for i in range(1)]
+        register(sys.argv[1], *devices)
     return run((SDPSubarray,), args=args, **kwargs)
 
 

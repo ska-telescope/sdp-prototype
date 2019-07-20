@@ -1,36 +1,59 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """PIP setup script for the SDP Subarray Device package."""
-import os
-from setuptools import setup
 # pylint: disable=invalid-name, exec-used, undefined-variable
+
+import os
+
+from setuptools import setup
+
+release_info = {}
+release_path = os.path.join('SDPSubarray', 'release.py')
+exec(open(release_path).read(), release_info)
 
 setup_dir = os.path.dirname(os.path.abspath(__file__))
 
-release_filename = os.path.join(setup_dir, 'ska_sdp_subarray', 'release.py')
-exec(open(release_filename).read())
-
-with open('README.md', 'r') as file:
+with open('README.pypi.md', 'r') as file:
     LONG_DESCRIPTION = file.read()
 
+
 setup(
-    name=NAME,
-    version=VERSION,
-    description='SKA SDP Subarray',
+    name=release_info['NAME'],
+    version=release_info['VERSION'],
+    description='SKA SDP Subarray device package',
+    author=release_info['AUTHOR'],
+    license=release_info['LICENSE'],
     long_description=LONG_DESCRIPTION,
     long_description_content_type='text/markdown',
-    author=AUTHOR,
     url='https://github.com/ska-telescope/sdp-prototype/src/'
         'tango_sdp_subarray',
-    install_requires=['mock',
-                      'jsonschema'],
-    classifiers=[
-        "Programming Language :: Python :: 3 :: Only",
-        "Development Status :: 1 - Planning",
+    packages=[
+        'SDPSubarray'
     ],
-    license=LICENSE,
-    packages=['ska_sdp_subarray'],
-    test_suite='tests',
-    tests_require=['pytest'],
-    zip_safe=False
+    install_requires=[
+        'pytango',
+        'jsonschema'
+    ],
+    entry_points={
+        'console_scripts': ['SDPSubarray = SDPSubarray:main']
+    },
+    setup_requires=['pytest-runner'],
+    tests_require=[
+        'pytest',
+        'pytest-pylint',
+        'pytest-codestyle',
+        'pytest-pydocstyle',
+        'pytest_bdd',
+        'pyassert'
+    ],
+    zip_safe=False,
+    classifiers=[
+        "Development Status :: 3 - Alpha",
+        "Environment :: Console",
+        "Intended Audience :: Science/Research",
+        "Topic :: Scientific/Engineering :: Astronomy",
+        "Operating System :: POSIX :: Linux",
+        "Programming Language :: Python :: 3 :: Only",
+        "License :: OSI Approved :: BSD License"
+    ]
 )

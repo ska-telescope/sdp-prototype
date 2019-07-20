@@ -83,19 +83,12 @@ test:  ## Run tests for the device
 		-v $(PWD):/app \
 		$(DEV_IMAGE) \
 		python -m pytest \
-		-vv \
-		--gherkin-terminal-reporter \
-		.
-
-lint:  ## Run test and linter
-	@docker run --rm -t \
-		-v $(PWD):/app \
-		$(DEV_IMAGE) \
-		python -m pytest \
 		--pylint \
-		--pylint-rcfile=../../scripts/.pylintrc \
 		--codestyle \
 		--docstyle \
+		--cov=SDPSubarray \
+	    --cov-report=term \
+    	--cov-config=./setup.cfg \
 		-vv \
 		--gherkin-terminal-reporter \
 		.
@@ -103,5 +96,17 @@ lint:  ## Run test and linter
 test_shell:  ## Provide a test shell with the current code
 	@docker run --rm -it \
 		-v $(PWD):/app \
+		--network=container:databaseds \
+		-e TANGO_HOST=localhost:10000 \
 		--entrypoint=/bin/bash \
 		$(DEV_IMAGE)
+
+empty_test_shell:
+	@docker run --rm -it \
+		--network=container:databaseds \
+		-e TANGO_HOST=localhost:10000 \
+		--entrypoint=/bin/bash \
+		$(DEV_IMAGE)
+
+build_package:  ## Build the python package
+	@python setup.py sdist bdist_wheel
