@@ -97,7 +97,7 @@ class SDPSubarray(Device):
         self.set_state(DevState.OFF)
         self._obs_state = ObsState.IDLE
         self._admin_mode = AdminMode.OFFLINE
-        self._health_state = HealthState.ON
+        self._health_state = HealthState.OK
 
     def always_executed_hook(self):
         """Run for on each call."""
