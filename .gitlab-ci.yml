@@ -6,8 +6,8 @@ stages:
   - test
   - post_test
   - build
-  - stage
-  - deploy
+  - publish
+  - pages
 
 # ============================================================================
 # Run linters & tests
@@ -124,6 +124,48 @@ xray_report-manual:
   when: manual
   except: [master]
 
+# ============================================================================
+# Build python packages
+# ============================================================================
+
+.build_python:
+  stage: build
+  image: nexus.engageska-portugal.pt/sdp-prototype/pytango_ska_dev:latest
+  tags:
+    - docker
+    - engageska
+  script:
+    - cd $BUILD_DIR
+    - python setup.py egg_info -b+$CI_COMMIT_SHORT_SHA sdist bdist_wheel
+  artifacts:
+    paths:
+      - ./dist/
+
+build:ska-sdp-master:
+  extends: .build_python
+  variables:
+    BUILD_PATH: src/tango_sdp_master
+
+build:ska-sdp-subarray:
+  extends: .build_python
+  variables:
+    BUILD_PATH: src/tango_sdp_subarray
+
+# ============================================================================
+# Publish python packages
+# ============================================================================
+
+#publish_to_nexus:
+#  stage: publish
+#  image: nexus.engageska-portugal.pt/sdp-prototype/pytango_ska_dev:latest
+#  tags:
+#    - docker
+#    - engageska
+#  before_script:
+#    - pip install twine
+#  script:
+#    - python setup.py sdist bdist_wheel
+#    - twine upload dist/*
 
 # ============================================================================
 # Build docker images
@@ -206,7 +248,7 @@ build:tangods_sdp_subarray:
 # ============================================================================
 
 .push_docker:
-  stage: deploy
+  stage: publish
   variables:
     DOCKER_REGISTRY_HOST: $DOCKER_REGISTRY_HOST
     DOCKER_REGISTRY_USER: $CI_PROJECT_NAME
@@ -296,7 +338,7 @@ push:tangods_sdp_subarray-manual:
 
 # Generate gitlab pages.
 pages:
-  stage: deploy
+  stage: pages
   tags: [docker]
   only: [master]
   image: python:latest
