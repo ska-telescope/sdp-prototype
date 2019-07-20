@@ -343,7 +343,7 @@ def main(args=None, **kwargs):
     init_logger(log_level)
     if len(sys.argv) > 1:
         # delete_device_server("*")
-        devices = ['sdp_mid/elt/subarray_{:02d}'.format(i) for i in range(1)]
+        devices = ['sdp_mid/elt/subarray_{:d}'.format(i+1) for i in range(1)]
         register(sys.argv[1], *devices)
     return run((SDPSubarray,), args=args, **kwargs)
 
