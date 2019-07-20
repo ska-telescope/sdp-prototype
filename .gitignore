@@ -45,6 +45,8 @@ test_reports.xml
 
 **/build/
 **/dist/
-=======
+
 **/cucumber.json
 **/.pytest_cache
+
+**/.eggs

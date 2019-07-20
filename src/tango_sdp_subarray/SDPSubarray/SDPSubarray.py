@@ -14,11 +14,10 @@ from tango import AttrWriteType, DebugIt, DevState, Except
 from tango.server import Device, DeviceMeta, attribute, command, run
 from tango import Database, DbDevInfo, ConnectionFailed
 
-# from .register import register_subarray_devices, registered_subarray_devices
-
 # from skabase.SKASubarray import SKASubarray
 
-LOG = logging.getLogger('ska.sdp.subarrayds')
+
+LOG = logging.getLogger('ska.sdp.subarray_ds')
 
 
 # https://pytango.readthedocs.io/en/stable/data_types.html#devenum-pythonic-usage
@@ -78,6 +77,13 @@ class SDPSubarray(Device):
 
     adminMode = attribute(dtype=AdminMode, access=AttrWriteType.READ_WRITE)
 
+    healthState = attribute(dtype=HealthState,
+                            doc='The health state reported for this device. '
+                                'It interprets the current device condition '
+                                'and condition of all managed devices to set '
+                                'this. Most possibly an aggregate attribute.',
+                            access=AttrWriteType.READ)
+
     receiveAddresses = attribute(dtype=str, access=AttrWriteType.READ)
 
     # ---------------
@@ -89,8 +95,9 @@ class SDPSubarray(Device):
         # SKASubarray.init_device(self)
         Device.init_device(self)
         self.set_state(DevState.OFF)
-        self.obs_state = ObsState.IDLE
-        self.admin_mode = AdminMode.OFFLINE
+        self._obs_state = ObsState.IDLE
+        self._admin_mode = AdminMode.OFFLINE
+        self._health_state = 0
 
     def always_executed_hook(self):
         """Run for on each call."""
@@ -107,28 +114,28 @@ class SDPSubarray(Device):
 
         :param obs_state: An observation state enum value.
         """
-        self.obs_state = obs_state
+        self._obs_state = obs_state
 
     def read_obsState(self) -> ObsState:
         """Get the obsState attribute.
 
         :returns: The current obsState attribute value.
         """
-        return self.obs_state
+        return self._obs_state
 
     def write_adminMode(self, admin_mode: AdminMode):
         """Set the adminMode attribute.
 
         :param admin_mode: An admin mode enum value.
         """
-        self.admin_mode = admin_mode
+        self._admin_mode = admin_mode
 
     def read_adminMode(self) -> AdminMode:
         """Get the adminMode attribute.
 
         :return: The current adminMode attribute value.
         """
-        return self.admin_mode
+        return self._admin_mode
 
     def read_receiveAddresses(self) -> str:
         """Get the list of receive addresses encoded as a JSON string.
@@ -138,7 +145,14 @@ class SDPSubarray(Device):
 
         :return: List of receive addresses
         """
-        return self.receive_addresses
+        return self._receive_addresses
+
+    def read_healthState(self):
+        """Read Health State of the device.
+
+        :return: Health State of the device
+        """
+        return self._health_state
 
     # --------
     # Commands
@@ -159,7 +173,7 @@ class SDPSubarray(Device):
         :param config: Resource specification (currently ignored)
         """
         # pylint: disable=unused-argument
-        if self.obs_state != ObsState.IDLE:
+        if self._obs_state != ObsState.IDLE:
             frame_info = getframeinfo(currentframe())
             Except.throw_exception('Command: AssignReources failed',
                                    'AssignResources requires obsState == IDLE',
@@ -181,7 +195,7 @@ class SDPSubarray(Device):
         :param config: Resource specification (currently ignored).
         """
         # pylint: disable=unused-argument
-        if self.obs_state != ObsState.IDLE:
+        if self._obs_state != ObsState.IDLE:
             frame_info = getframeinfo(currentframe())
             Except.throw_exception('Command: ReleaseResources failed',
                                    'ReleaseResources requires '
@@ -203,7 +217,7 @@ class SDPSubarray(Device):
         :param schema_path: Path to the PB config schema (optional).
         """
         # pylint: disable=unused-argument
-        self.obs_state = ObsState.CONFIGURING
+        self._obs_state = ObsState.CONFIGURING
         # time.sleep(1)
 
         # Validate the SBI config schema
@@ -216,7 +230,7 @@ class SDPSubarray(Device):
 
         pb_config = json.loads(pb_config)
         validate(pb_config, schema)
-        self.obs_state = ObsState.READY
+        self._obs_state = ObsState.READY
 
     @command(dtype_in=str)
     @DebugIt()
@@ -230,7 +244,7 @@ class SDPSubarray(Device):
         :param schema_path: Path to the Scan config schema (optional).
         """
         # pylint: disable=unused-argument
-        self.obs_state = ObsState.CONFIGURING
+        self._obs_state = ObsState.CONFIGURING
         # # time.sleep(0.5)
 
         # # Validate the SBI config schema
@@ -241,32 +255,32 @@ class SDPSubarray(Device):
             schema = json.loads(file.read())
         pb_config = json.loads(scan_config)
         validate(pb_config, schema)
-        self.obs_state = ObsState.READY
+        self._obs_state = ObsState.READY
 
     @command
     @DebugIt()
     def Scan(self):
         """Command issued when a scan is started."""
-        self.obs_state = ObsState.SCANNING
+        self._obs_state = ObsState.SCANNING
 
     @command
     @DebugIt()
     def EndScan(self):
         """Command issued when the scan is ended."""
-        self.obs_state = ObsState.READY
+        self._obs_state = ObsState.READY
 
     @command
     @DebugIt()
     def EndSB(self):
         """Command issued to end the scheduling block."""
-        self.obs_state = ObsState.IDLE
+        self._obs_state = ObsState.IDLE
 
     def _scan_complete(self):
         """Update the obsState to READY when a scan is complete.
 
         Internal state transition.
         """
-        self.obs_state = ObsState.READY
+        self._obs_state = ObsState.READY
 
 
 def delete_device_server(instance_name: str = "*"):
@@ -343,7 +357,7 @@ def main(args=None, **kwargs):
     init_logger(log_level)
     if len(sys.argv) > 1:
         # delete_device_server("*")
-        devices = ['sdp_mid/elt/subarray_{:02d}'.format(i) for i in range(1)]
+        devices = ['sdp_mid/elt/subarray_{:d}'.format(i+1) for i in range(1)]
         register(sys.argv[1], *devices)
     return run((SDPSubarray,), args=args, **kwargs)
 
