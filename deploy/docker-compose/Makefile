@@ -72,11 +72,14 @@ DOCKER_COMPOSE_ARGS := MYSQL_HOST=$(MYSQL_HOST) \
 	CONTAINER_NAME_PREFIX=$(CONTAINER_NAME_PREFIX) \
 	NETWORK_MODE=$(NETWORK_MODE)
 
-minimal:  ## start the base tango system
+minimal: pull ## start the base tango system
 ifneq ($(NETWORK_MODE),host)
 	docker network inspect $(NETWORK_MODE) &> /dev/null || ([ $$? -ne 0 ] && docker network create $(NETWORK_MODE))
 endif
 	$(DOCKER_COMPOSE_ARGS) docker-compose -f tango_facility.yml up -d
+
+pull:  ## Pull latest images defined in the compose files.
+	$(DOCKER_COMPOSE_ARGS) docker-compose $(COMPOSE_FILE_ARGS) pull
 
 up: minimal  ## start the base TANGO system and prepare all services
 	$(DOCKER_COMPOSE_ARGS) docker-compose $(COMPOSE_FILE_ARGS) up --no-start
