@@ -1,15 +1,11 @@
 # -*- coding: utf-8 -*-
-
-"""This file is part of the SDPMaster project.
-
-Distributed under the terms of the GPL license.
-See LICENSE.txt for more info.
-"""
+"""SDP Master device package."""
 # pylint: disable=invalid-name
 
 from . import release
-from .SDPMaster import SDPMaster, main
+from .SDPMaster import SDPMaster, HealthState, main
+
+__all__ = ["SDPMaster", "HealthState", "main", "release"]
 
 __version__ = release.VERSION
 __version_info__ = release.VERSION_INFO
-__author__ = release.AUTHOR

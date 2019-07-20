@@ -1,18 +1,25 @@
 # -*- coding: utf-8 -*-
-
 """Tango SDP Master device module."""
 # pylint: disable=invalid-name, import-error, no-name-in-module
 
-# PyTango imports
-from PyTango import DebugIt
-from PyTango.server import run
-from PyTango.server import Device, DeviceMeta
-from PyTango.server import attribute, command
-from PyTango import DevState
-from PyTango import AttrWriteType
+import logging
+import sys
+from enum import IntEnum
+
+from tango import (AttrWriteType, ConnectionFailed,
+                   Database, DbDevInfo, DebugIt, DevState)
+from tango.server import Device, DeviceMeta, attribute, command, run
+
+LOG = logging.getLogger('ska.sdp.subarray_ds')
 
 
-__all__ = ["SDPMaster", "main"]
+class HealthState(IntEnum):
+    """HealthState enum."""
+
+    OK = 0
+    DEGRADED = 1
+    FAILED = 2
+    UNKNOWN = 3
 
 
 class SDPMaster(Device):
@@ -39,6 +46,13 @@ class SDPMaster(Device):
         access=AttrWriteType.READ
     )
 
+    healthState = attribute(dtype=HealthState,
+                            doc='The health state reported for this device. '
+                                'It interprets the current device condition '
+                                'and condition of all managed devices to set '
+                                'this. Most possibly an aggregate attribute.',
+                            access=AttrWriteType.READ)
+
     # ---------------
     # General methods
     # ---------------
@@ -50,7 +64,7 @@ class SDPMaster(Device):
         # Initialise Attributes
         self._operating_state = 0
         self.set_state(DevState.ON)
-
+        self._health_state = HealthState.OK
         # PROTECTED REGION END #    //  SDPMaster.init_device
 
     def always_executed_hook(self):
@@ -73,12 +87,18 @@ class SDPMaster(Device):
         return self._operating_state
         # PROTECTED REGION END #    //  SDPMaster.OperatingState_read
 
+    def read_healthState(self):
+        """Read Health State of the device.
+
+        :return: Health State of the device
+        """
+        return self._health_state
+
     # --------
     # Commands
     # --------
 
-    @command(
-    )
+    @command()
     @DebugIt()
     def on(self):
         """SDP if fully operational and will accept commands."""
@@ -86,8 +106,7 @@ class SDPMaster(Device):
         self._operating_state = 1
         # PROTECTED REGION END #    //  SDPMaster.on
 
-    @command(
-    )
+    @command()
     @DebugIt()
     def disable(self):
         """SDP is in a drain state with respect to processing.."""
@@ -95,8 +114,7 @@ class SDPMaster(Device):
         self._operating_state = 2
         # PROTECTED REGION END #    //  SDPMaster.disable
 
-    @command(
-    )
+    @command()
     @DebugIt()
     def standby(self):
         """SDP is in low-power mode."""
@@ -104,14 +122,79 @@ class SDPMaster(Device):
         self._operating_state = 3
         # PROTECTED REGION END #    //  SDPMaster.standby
 
-    @command(
-    )
+    @command()
     @DebugIt()
     def off(self):
         """Only SDP Master device running but rest powered off."""
         # PROTECTED REGION ID(SDPMaster.off) ENABLED START #
         self._operating_state = 6
         # PROTECTED REGION END #    //  SDPMaster.off
+
+
+def delete_device_server(instance_name: str = "*"):
+    """Delete (unregister) SDPMaster device server instance(s).
+
+    :param instance_name: Optional, name of the device server instance to
+                          remove. If not specified all service instances will
+                          be removed.
+    """
+    try:
+        tango_db = Database()
+        class_name = 'SDPMaster'
+        server_name = '{}/{}'.format(class_name, instance_name)
+        for server_name in list(tango_db.get_server_list(server_name)):
+            LOG.info('Removing device server: %s', server_name)
+            tango_db.delete_server(server_name)
+    except ConnectionFailed:
+        pass
+
+
+def register(instance_name: str, device_name: str):
+    """Register device with a SDP Master device server instance.
+
+    If the device is already registered, do nothing.
+
+    :param instance_name: Instance name SDPMaster device server
+    :param device_name: Master device name to register
+    """
+    try:
+        tango_db = Database()
+        class_name = 'SDPMaster'
+        server_name = '{}/{}'.format(class_name, instance_name)
+        devices = list(tango_db.get_device_name(server_name, class_name))
+        device_info = DbDevInfo()
+        # pylint: disable=protected-access
+        device_info._class = class_name
+        device_info.server = server_name
+        device_info.name = device_name
+        if device_name in devices:
+            LOG.debug("Device '%s' already registered", device_name)
+            return
+        LOG.info('Registering device: %s (server: %s, class: %s)',
+                 device_info.name, server_name, class_name)
+        tango_db.add_device(device_info)
+    except ConnectionFailed:
+        pass
+
+
+def init_logger(level: str = 'DEBUG', name: str = 'ska.sdp'):
+    """Initialise stdout logger for the ska.sdp logger.
+
+    :param level: Logging level, default: 'DEBUG'
+    :param name: Logger name to initialise. default: 'ska.sdp'.
+    """
+    log = logging.getLogger(name)
+    log.propagate = False
+    # make sure there are no duplicate handlers.
+    for handler in log.handlers:
+        log.removeHandler(handler)
+    formatter = logging.Formatter(
+        '%(asctime)s | %(levelname)-6s | %(message)s')
+    handler = logging.StreamHandler(stream=sys.stdout)
+    handler.setFormatter(formatter)
+    log.addHandler(handler)
+    log.setLevel(level)
+
 
 # ----------
 # Run server
@@ -121,18 +204,15 @@ class SDPMaster(Device):
 def main(args=None, **kwargs):
     """Run server."""
     # PROTECTED REGION ID(SDPMaster.main) ENABLED START #
-    from register import is_registered, register_master
-    from tango import ConnectionFailed
-    try:
-        server_name = 'SDPMaster/1'
-        class_name = 'SDPMaster'
-        if not is_registered(server_name):
-            print('Registering devices:')
-            register_master(server_name, class_name)
-    except ConnectionFailed:
-        pass
+    log_level = 'INFO'
+    if len(sys.argv) > 2 and '-v' in sys.argv[2]:
+        log_level = 'DEBUG'
+    init_logger(log_level)
+    if len(sys.argv) > 1:
+        # delete_device_server("*")
+        register(sys.argv[1], 'mid_sdp/elt/master')
     return run((SDPMaster,), args=args, **kwargs)
-    # PROTECTED REGION END #    //  SDPMaster.main
+# PROTECTED REGION END #    //  SDPMaster.main
 
 
 if __name__ == '__main__':
