@@ -28,8 +28,7 @@ setup(
         'SDPMaster'
     ],
     install_requires=[
-        'pytango',
-        'jsonschema'
+        'pytango'
     ],
     entry_points={
         'console_scripts': ['SDPMaster = SDPMaster:main']
