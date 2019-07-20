@@ -4,6 +4,7 @@ from setuptools import setup
 
 with open('README.md', 'r') as file:
     LONG_DESCRIPTION = file.read()
+REPOS_URL = 'http://github.com/ska-telescope/sdp-prototype'
 
 setup(
     name='ska-sdp-config',
@@ -12,8 +13,8 @@ setup(
     long_description=LONG_DESCRIPTION,
     long_description_content_type='text/markdown',
     author='Benjamin Mort, Nijn Thykkathu, Peter Wortmann',
-    url='https://github.com/ska-telescope/sdp-prototype/tree/master/src/config_db',
-    install_requires = [
+    url=REPOS_URL+'/tree/master/src/config_db',
+    install_requires=[
         'etcd3-py', 'docopt-ng'
     ],
     classifiers=[
