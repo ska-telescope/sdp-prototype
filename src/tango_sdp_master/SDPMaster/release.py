@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
-
 """Release information for Python Package."""
 
-NAME = """tangods-sdpmaster"""
+NAME = "ska-sdp-master"
+# For version names see: https://www.python.org/dev/peps/pep-0440/
 VERSION = "0.2.0"
 VERSION_INFO = VERSION.split(".")
-DESCRIPTION = """"""
 AUTHOR = "ORCA Team"
-LICENSE = """GPL"""
-COPYRIGHT = ""
+LICENSE = 'License :: OSI Approved :: BSD License'
+COPYRIGHT = "BSD-3-Clause"
