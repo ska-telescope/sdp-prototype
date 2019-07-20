@@ -1,13 +1,10 @@
 #
-# Makefile for building and publishing the `tangods_sdp_subarray` image.
+#  Makefile utility functions for the SDP Subarray Tango device
 #
 
 NAME=tangods_sdp_subarray
 CLASS=SDPSubarray
-VERSION=$(shell python3 -c "import os; \
-	release = {}; \
-	exec(open(os.path.join('$(CLASS)', 'release.py')).read(), release); \
-	print(release['VERSION'])")
+VERSION=$(shell awk -F= '/^VERSION =/{print $$2}' $(CLASS)/release.py)
 
 include ../make/Makefile
 

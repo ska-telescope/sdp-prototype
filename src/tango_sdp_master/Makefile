@@ -1,13 +1,10 @@
 #
-# Makefile fuctions for the SDP Master Tango device
+# Makefile utility functions for the SDP Master Tango device
 #
 
 NAME=tangods_sdp_master
 CLASS=SDPMaster
-VERSION=$(shell python3 -c "import os; \
-	release = {}; \
-	exec(open(os.path.join('$(CLASS)', 'release.py')).read(), release); \
-	print(release['VERSION'])")
+VERSION=$(shell awk -F= '/^VERSION =/{print $$2}' $(CLASS)/release.py)
 
 include ../make/Makefile
 
