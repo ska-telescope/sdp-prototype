@@ -126,13 +126,13 @@ make test
 - The Subarray device can be tested interactively using an iTango shell.
 - First, obtain a handle to the device with: 
   ```python
-  d = DeviceProxy('mid_sdp/elt/subarray_00')
+  d = DeviceProxy('mid_sdp/elt/subarray_1')
   ```
 - Then query the state of the device with: 
   ```python
   d.state()
   ```
-  When first intialised the device will report `'The device is in OFF state.'`
+  When first initialised the device will report `'The device is in OFF state.'`
 - To query the obsState attribute: 
   ```python
   d.obsState

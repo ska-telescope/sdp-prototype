@@ -11,11 +11,8 @@ release_info = {}
 release_path = os.path.join('SDPSubarray', 'release.py')
 exec(open(release_path).read(), release_info)
 
-setup_dir = os.path.dirname(os.path.abspath(__file__))
-
 with open('README.pypi.md', 'r') as file:
     LONG_DESCRIPTION = file.read()
-
 
 setup(
     name=release_info['NAME'],
