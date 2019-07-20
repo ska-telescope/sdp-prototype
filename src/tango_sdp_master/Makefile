@@ -4,7 +4,7 @@
 
 NAME=tangods_sdp_master
 CLASS=SDPMaster
-VERSION=$(shell awk -F= '/^VERSION =/{print $$2}' $(CLASS)/release.py)
+VERSION=$(strip $(shell awk -F= '/^VERSION = ".*"/{print $$2}' $(CLASS)/release.py))
 
 include ../make/Makefile
 
