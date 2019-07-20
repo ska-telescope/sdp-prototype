@@ -5,18 +5,24 @@ LINE:=$(shell printf '=%.0s' {1..70})
 
 # Set default docker registry user.
 ifeq ($(strip $(DOCKER_REGISTRY_USER)),)
-	DOCKER_REGISTRY_USER:=sdp-prototype
+	DOCKER_REGISTRY_USER=sdp-prototype
 #  	DOCKER_REGISTRY_USER:=skaorca
 endif
 
 ifeq ($(strip $(DOCKER_REGISTRY_HOST)),)
-	DOCKER_REGISTRY_HOST:=nexus.engageska-portugal.pt
+	DOCKER_REGISTRY_HOST=nexus.engageska-portugal.pt
 #	DOCKER_REGISTRY_HOST=index.docker.io
 endif
 
-IMAGE=$(DOCKER_REGISTRY_HOST)/$(DOCKER_REGISTRY_USER)/$(NAME)
-BASE_IMAGE:=$(DOCKER_REGISTRY_HOST)/$(DOCKER_REGISTRY_USER)/pytango_ska_base:latest
-DEV_IMAGE:=$(DOCKER_REGISTRY_HOST)/$(DOCKER_REGISTRY_USER)/pytango_ska_dev:latest
+ifeq ($(DOCKER_REGISTRY_HOST),index.docker.io)
+	IMAGE_PREFIX:=$(DOCKER_REGISTRY_USER)
+else
+	IMAGE_PREFIX:=$(DOCKER_REGISTRY_HOST)/$(DOCKER_REGISTRY_USER)
+endif
+
+IMAGE=$(IMAGE_PREFIX)/$(NAME)
+BASE_IMAGE:=$(IMAGE_PREFIX)/pytango_ska_base:latest
+DEV_IMAGE:=$(IMAGE_PREFIX)/pytango_ska_dev:latest
 
 ifeq ($(strip $(GIT_VERSION)),)
 	GIT_VERSION=$(shell git rev-parse --verify --short=8 HEAD)
