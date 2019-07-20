@@ -4,7 +4,7 @@
 
 NAME=tangods_sdp_subarray
 CLASS=SDPSubarray
-VERSION=$(strip $(shell awk -F= '/^VERSION = ".*"/{print $$2}' $(CLASS)/release.py))
+VERSION=$(patsubst "%",%, $(shell awk -F= '/^VERSION = ".*"/{print $$2}' $(CLASS)/release.py))
 
 include ../make/Makefile
 
