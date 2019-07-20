@@ -4,9 +4,9 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [packages]
-pytango = version = "*"
+pytango = "*"
 jsonschema = "*"
-# ---- Inherited from base class, not installed again because of git dep ------
+# ---- Inherited from base class, not installed again here as depends on git ------
 # lmcbaseclasses = {git = "https://github.com/ska-telescope/lmc-base-classes.git", editable = true}
 
 [dev-packages]
