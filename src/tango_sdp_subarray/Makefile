@@ -4,7 +4,10 @@
 
 NAME=tangods_sdp_subarray
 CLASS=SDPSubarray
-VERSION=0.2.0
+VERSION=$(shell python3 -c "import os; \
+	release = {}; \
+	exec(open(os.path.join('$(CLASS)', 'release.py')).read(), release); \
+	print(release['VERSION'])")
 
 include ../make/Makefile
 
