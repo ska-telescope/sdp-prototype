@@ -45,6 +45,18 @@ for txn in config.txn():
 To read a list of currently active processing blocks with their
 associated workflows.
 
+Command line
+------------
+
+This package also comes with a command line utility for easy access to
+configuration data. For instance run:
+
+```bash
+sdpcfg list values /pb/
+```
+
+To query all processing blocks.
+
 Documentation
 -------------
 
