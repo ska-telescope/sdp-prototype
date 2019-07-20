@@ -97,7 +97,7 @@ class SDPSubarray(Device):
         self.set_state(DevState.OFF)
         self._obs_state = ObsState.IDLE
         self._admin_mode = AdminMode.OFFLINE
-        self._health_state = 0
+        self._health_state = HealthState.OK
 
     def always_executed_hook(self):
         """Run for on each call."""
@@ -357,7 +357,7 @@ def main(args=None, **kwargs):
     init_logger(log_level)
     if len(sys.argv) > 1:
         # delete_device_server("*")
-        devices = ['sdp_mid/elt/subarray_{:d}'.format(i+1) for i in range(1)]
+        devices = ['mid_sdp/elt/subarray_{:d}'.format(i+1) for i in range(1)]
         register(sys.argv[1], *devices)
     return run((SDPSubarray,), args=args, **kwargs)
 
