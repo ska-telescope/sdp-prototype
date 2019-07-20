@@ -101,11 +101,9 @@ test_shell:  ## Provide a test shell with the current code
 		--entrypoint=/bin/bash \
 		$(DEV_IMAGE)
 
-empty_test_shell:
+dev_shell:  ## Provide a development shell with the current code
 	@docker run --rm -it \
-		--network=container:databaseds \
-		-e TANGO_HOST=localhost:10000 \
-		--entrypoint=/bin/bash \
+		-v $(PWD):/app \
 		$(DEV_IMAGE)
 
 build_package:  ## Build the python package
