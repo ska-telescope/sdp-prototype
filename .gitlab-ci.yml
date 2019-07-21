@@ -137,6 +137,7 @@ xray_report-manual:
   script:
     - cd $BUILD_PATH
     - python setup.py egg_info -b+$CI_COMMIT_SHORT_SHA sdist bdist_wheel
+    - ls
   artifacts:
     paths:
       - ./dist/
@@ -144,7 +145,7 @@ xray_report-manual:
 build:ska-sdp-master:
   extends: .build_python
   variables:
-    BUILD_PATH: docker/pytango_base
+    BUILD_PATH: src/tango_sdp_master
 
 build:ska-sdp-subarray:
   extends: .build_python
