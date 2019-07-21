@@ -195,7 +195,7 @@ build:ska-sdp-subarray:
     - twine upload --repository-url $PYPI_REPOSITORY_URL dist/*
 
 .publish_python_master:
-  extends: .build_python
+  extends: .publish_python
   variables:
     BUILD_PATH: src/tango_sdp_master
 
@@ -209,7 +209,7 @@ publish:ska-sdp-master:
   only: [master]
 
 .publish_python_subarray:
-  extends: .build_python
+  extends: .publish_python
   variables:
     BUILD_PATH: src/tango_sdp_subarray
 
