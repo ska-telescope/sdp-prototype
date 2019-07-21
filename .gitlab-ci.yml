@@ -191,8 +191,8 @@ build:ska-sdp-subarray:
     - pip install twine
   script:
     - cd $BUILD_PATH
-    - ls
-    - twine upload --repository-url $PYPI_REPOSITORY_URL dist/*
+    - twine upload --repository-url $PYPI_REPOSITORY_URL dist/* || true
+    - twine upload --skip-existing -u $PYPI_USER -p $PYPI_PASS dist/*
 
 .publish_python_master:
   extends: .publish_python
