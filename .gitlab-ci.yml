@@ -138,9 +138,10 @@ xray_report-manual:
     - cd $BUILD_PATH
     - python setup.py egg_info -b+$CI_COMMIT_SHORT_SHA sdist bdist_wheel
     - ls
+    - ls dist/
   artifacts:
     paths:
-      - ./dist/
+      - ./$BUILD_PATH/dist/
 
 build:ska-sdp-master:
   extends: .build_python
