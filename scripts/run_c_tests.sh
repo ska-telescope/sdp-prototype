@@ -3,7 +3,7 @@
 bold=$(tput bold)
 normal=$(tput sgr0)
 
-cd sdp-prototype/src/vis_receive
+cd src/vis_receive
 [[ -e ./build ]] && printf "\n**** removing old build directory ****\n" && rm -rf ./build
 echo -e "\n ${bold}*** Running Cpp Check *** ${normal} \n"
 cppcheck ./ -i extern/gtest/ --enable=warning,portability,style
