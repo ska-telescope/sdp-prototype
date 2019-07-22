@@ -2,10 +2,11 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-image:
-  repository: nginx
-  tag: stable
-  pullPolicy: IfNotPresent
+replicaCount: 3
+
+etcd:
+  version: "3.3"
+  replicas: 3
 
 imagePullSecrets: []
 nameOverride: ""

@@ -5,8 +5,8 @@ metadata:
   labels:
 {{ include "dummy-workflow.labels" . | indent 4 }}
 spec:
-  size: 1
-  version: "3.3"
+  size: {{ .Values.etcd.replicas }}
+  version: "{{ .Values.etcd.version }}"
   pod:
     antiAffinity: false
     nodeSelector: {}
