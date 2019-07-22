@@ -77,14 +77,13 @@ vis_receive:
     - apt install -y --no-install-recommends cppcheck=1.82-1
     - apt install -y cmake
     - apt install -y python3-pip
-  install:
-      - pip install urllib3==1.21.1
-      - pip install cpp-coveralls==0.4.2
-    script:
-      ./scripts/run_c_tests.sh
-    artifacts:
-      paths:
-        - $CI_JOB_NAME.coverage
+    - pip install urllib3==1.21.1
+    - pip install cpp-coveralls==0.4.2
+  script:
+    - ./scripts/run_c_tests.sh
+  artifacts:
+    paths:
+      - $CI_JOB_NAME.coverage
 
 # Build documentation
 build_docs:
