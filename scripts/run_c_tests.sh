@@ -43,8 +43,8 @@ then
    make
    make coveralls
 
-   echo -e "\n ${bold}*** Running Valgrind using Ctest testing tool *** ${normal} \n"
-   ctest -T memcheck
+   # echo -e "\n ${bold}*** Running Valgrind using Ctest testing tool *** ${normal} \n"
+   # ctest -T memcheck
 else
    echo -e "\n ${bold}*** Unable to run Coveralls or Valgrind *** ${normal} \n"
 fi
