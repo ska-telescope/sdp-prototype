@@ -81,10 +81,10 @@ vis_receive:
     - pip3 install cpp-coveralls==0.4.2
   script:
     - ./scripts/run_c_tests.sh
-    - mv ./src/vis_receive/build/coveralls.json /builds/ska-telescope/sdp-prototype/$CI_JOB_NAME.coverage
+    - mv ./src/vis_receive/build/coveralls.json $CI_JOB_NAME.coverage
   artifacts:
     paths:
-      - $CI_JOB_NAME.coverage
+      - /src/vis_receive/build/$CI_JOB_NAME.coverage
 
 # Build documentation
 build_docs:
