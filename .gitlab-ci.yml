@@ -81,7 +81,7 @@ vis_receive:
     - pip3 install cpp-coveralls==0.4.2
   script:
     - ./scripts/run_c_tests.sh
-    - mv ./src/vis_receive/build/coveralls.json $CI_JOB_NAME.coverage
+    - mv ./src/vis_receive/build/coveralls.json /src/vis_receive/build/$CI_JOB_NAME.coverage
   artifacts:
     paths:
       - /src/vis_receive/build/$CI_JOB_NAME.coverage
