@@ -10,18 +10,6 @@ cppcheck ./ -i extern/gtest/ --enable=warning,portability,style
 mkdir ./build
 cd ./build
 
-echo -e "\n ${bold}*** Running Coveralls *** ${normal} \n"
-if cmake -DCOVERALLS=ON -DCMAKE_BUILD_TYPE=Debug .. 
-then
-   make
-   make coveralls
-
-   echo -e "\n ${bold}*** Running Valgrind using Ctest testing tool *** ${normal} \n"
-   ctest -T memcheck
-else
-   echo -e "\n ${bold}*** Unable to run Coveralls or Valgrind *** ${normal} \n"
-fi
-
 echo -e "\n ${bold}*** Running Undefined Behaviour Sanitizer *** ${normal} \n"
 #cd .. && rm -r -f build && mkdir build && cd build
 rm -rf *
@@ -43,3 +31,17 @@ cmake -DENABLE_ASAN=ON ..
 make
 ./tests/recv_test
 
+rm -rf *
+cmake -DCOVERALLS=ON -DCMAKE_BUILD_TYPE=Debug ..
+
+echo -e "\n ${bold}*** Running Coveralls *** ${normal} \n"
+if cmake -DCOVERALLS=ON -DCMAKE_BUILD_TYPE=Debug ..
+then
+   make
+   make coveralls
+
+   echo -e "\n ${bold}*** Running Valgrind using Ctest testing tool *** ${normal} \n"
+   ctest -T memcheck
+else
+   echo -e "\n ${bold}*** Unable to run Coveralls or Valgrind *** ${normal} \n"
+fi

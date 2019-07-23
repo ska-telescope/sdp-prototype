@@ -75,12 +75,14 @@ vis_receive:
   before_script:
     - apt update
     - apt install -y --no-install-recommends cppcheck=1.82-1
-    - apt install -y cmake
+    - apt install -y cmake curl
     - apt install -y python3-pip
-    - pip install urllib3==1.21.1
-    - pip install cpp-coveralls==0.4.2
+    - pip3 install urllib3==1.21.1
+    - pip3 install cpp-coveralls==0.4.2
   script:
+    - cd app
     - ./scripts/run_c_tests.sh
+    - mv .coverage $CI_JOB_NAME.coverage
   artifacts:
     paths:
       - $CI_JOB_NAME.coverage

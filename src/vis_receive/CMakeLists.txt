@@ -23,7 +23,7 @@ set(recv_SRC
 # -----------------------------------------------------------------------------
 
 option(COVERALLS "Turn on coveralls support" OFF)
-option(COVERALLS_UPLOAD "Upload the generated coveralls json" ON)
+option(COVERALLS_UPLOAD "Upload the generated coveralls json" OFF)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
 	${PROJECT_SOURCE_DIR}/coveralls-cmake/cmake)
