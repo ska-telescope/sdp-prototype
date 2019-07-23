@@ -80,7 +80,6 @@ vis_receive:
     - pip3 install urllib3==1.21.1
     - pip3 install cpp-coveralls==0.4.2
   script:
-    - cd app
     - ./scripts/run_c_tests.sh
     - mv .coverage $CI_JOB_NAME.coverage
   artifacts:

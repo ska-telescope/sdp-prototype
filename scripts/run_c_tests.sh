@@ -3,6 +3,9 @@
 bold=$(tput bold)
 normal=$(tput sgr0)
 
+#temp hack
+cd app
+
 cd src/vis_receive
 [[ -e ./build ]] && printf "\n**** removing old build directory ****\n" && rm -rf ./build
 echo -e "\n ${bold}*** Running Cpp Check *** ${normal} \n"
