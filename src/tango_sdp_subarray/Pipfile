@@ -3,14 +3,11 @@ name = "pypi"
 url = "https://pypi.org/simple"
 verify_ssl = true
 
-#[[source]]
-#url = "https://nexus.engageska-portugal.pt/repository/pypi/simple"
-#name = "nexus"
-#verify_ssl = true
-
 [packages]
-pytango = {version="*", index="pypi"}
-lmcbaseclasses = {git = "https://github.com/ska-telescope/lmc-base-classes.git",editable = true}
+pytango = "*"
+jsonschema = "*"
+# ---- Inherited from base class, not installed again here as depends on git ------
+# lmcbaseclasses = {git = "https://github.com/ska-telescope/lmc-base-classes.git", editable = true}
 
 [dev-packages]
 

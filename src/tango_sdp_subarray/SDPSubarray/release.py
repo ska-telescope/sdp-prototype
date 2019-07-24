@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 """Release information for Python Package."""
 
-NAME = "tangods-sdpsubarray"
-VERSION = "0.2.0"
+# Consider change to: ska-tangods-sdpsubarray ?
+NAME = "ska-sdp-subarray"
+# For version names see: https://www.python.org/dev/peps/pep-0440/
+VERSION = "0.2.1"
 VERSION_INFO = VERSION.split(".")
-DESCRIPTION = ""
-AUTHOR = "ORCA Team"
-LICENSE = "BSD-3-clause"
-COPYRIGHT = ""
+AUTHOR = "ORCA team"
+LICENSE = 'License :: OSI Approved :: BSD License'
+COPYRIGHT = "BSD-3-Clause"

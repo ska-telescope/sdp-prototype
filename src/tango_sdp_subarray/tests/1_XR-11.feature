@@ -10,7 +10,7 @@ Feature: SDPSubarray device
 		Then State == OFF
 		And obsState == IDLE
 		And adminMode == OFFLINE
-
+		And healthState == OK
 
 
 	@XTP-120 @XTP-118
@@ -23,13 +23,11 @@ Feature: SDPSubarray device
 		And adminMode == ONLINE
 
 
-
 	@XTP-121 @XTP-118
 	Scenario: Assign Resources fails when ObsState != IDLE
 		Given I have a SDPSubarray device
 		When The obsState != IDLE
 		Then Calling AssignResources raises tango.DevFailed
-
 
 
 	@XTP-122 @XTP-118
@@ -42,10 +40,17 @@ Feature: SDPSubarray device
 		And adminMode either ONLINE or MAINTENANCE
 
 
-
 	@XTP-123 @XTP-118
-	Scenario: Configure command successfully
+	Scenario: Configure command successful
 		Given I have a SDPSubarray device
 		When obsState == IDLE
 		And I call Configure
+		Then obsState == READY
+
+
+	@XTP-176 @XTP-118
+	Scenario: ConfigureScan command successful
+		Given I have a SDPSubarray device
+		When obsState == IDLE
+		And I call ConfigureScan
 		Then obsState == READY

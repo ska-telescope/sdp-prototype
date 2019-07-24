@@ -1,37 +1,59 @@
+"""
+Backend database modules for SKA SDP configuration information.
 
-import etcd3
+At the moment we only support etcd3.
+"""
+
+import time
 import queue as queue_m
 
-class Etcd3(object):
+import etcd3
+
+
+# Some utilities for handling tagging paths.
+#
+# The idea here is that etcd3 only supports straight-up prefix
+# searches, but we do not want to get "/a/b/c" when listing "/a/"
+# (just "/a/b"). Therefore we prepend all paths with the number of
+# slashes they contain, making standard prefix search non-recursive as
+# suggested by etcd's documentation. The recursive behaviour can
+# always be restored by doing separate searches per recursion level.
+def _tag_depth(path, depth=None):
+    """Add depth tag to path."""
+    # All paths must start at the root
+    if path[0] != '/':
+        raise ValueError("Path must start with /!")
+    if depth is None:
+        depth = path.count('/')
+    return "{}{}".format(depth, path).encode('utf-8')
+
+
+def _untag_depth(path):
+    """Remove depth from path."""
+    # Cut from first '/'
+    slash_ix = path.index('/')
+    if slash_ix is None:
+        return path
+    return path[slash_ix:]
+
+
+class Etcd3():
+    """
+    Highly consistent database backend store.
+
+    See https://github.com/etcd-io/etcd
+    """
 
     def __init__(self, *args, **kw_args):
+        """Instantiate the database client.
+
+        All parameters will be passed on
+        to pmeth:`etcd3.Client`.
+        """
         self._client = etcd3.Client(*args, **kw_args)
 
-    def _tag_depth(self, path, depth=None):
-        """
-        Add depth tag to path. This is to allow us to use recursive
-        "directories" on top of etcd3.
-        """
-        # All paths must start at the root
-        if path[0] != '/':
-            raise ValueError("Path must start with /!")
-        if depth is None:
-            depth = path.count('/')
-        return "{}{}".format(depth, path).encode('utf-8')
-
-    def _untag_depth(self, path):
-        """
-        Remove depth from path
-        """
-        # Cut from first '/'
-        slash_ix = path.index('/')
-        if slash_ix is None:
-            return path
-        else:
-            return path[slash_ix:]
-
     def lease(self, ttl=10):
-        """Generates a new lease.
+        """Generate a new lease.
 
         Once entered can be associated with keys, which will be kept
         alive until the end of the lease. Note that this involves
@@ -41,27 +63,24 @@ class Etcd3(object):
         :param ttl: Time to live for lease
         :returns: lease object
         """
-
         return self._client.Lease(ttl=ttl)
 
     def txn(self, max_retries=64):
-        """ Creates a new (STM) transaction
-        """
-        return Etcd3Transaction(self, max_retries)
+        """Create a new transaction."""
+        return Etcd3Transaction(self, self._client, max_retries)
 
-    def get(self, path, revision=None, watch=False):
+    def get(self, path, revision=None):
         """
-        Get value of a key
+        Get value of a key.
 
         :param path: Path of key to query
         :param revision: Database revision for which to read key
-        :returns: (value, revision). value is None if it doesn't exit
+        :returns: (value, revision). value is None if it doesn't exist
         """
-
         # Check/prepare parameters
         if path[-1] == '/':
             raise ValueError("Path should not have a trailing '/'!")
-        tagged_path = self._tag_depth(path)
+        tagged_path = _tag_depth(path)
         rev = (None if revision is None else revision.revision)
 
         # Query range
@@ -69,46 +88,49 @@ class Etcd3(object):
 
         # Get value returned
         result = response.kvs
-        modRevision = None
+        mod_revision = None
         if result is not None:
-            assert len(response.kvs) == 1, "Requesting '{}' yielded more "+ \
-                "than one match!".format(tagged_path)
-            modRevision = result[0].mod_revision
+            assert len(response.kvs) == 1, \
+                "Requesting '{}' yielded more than one match!".format(path)
+            mod_revision = result[0].mod_revision
             result = result[0].value.decode('utf-8')
 
         # Return value together with revision
-        return (result, Etcd3Revision(response.header.revision, modRevision))
+        return (result, Etcd3Revision(response.header.revision, mod_revision))
 
-    def watch(self, path, revision=None, watch=False):
-        """
-        Watch value of a key
+    def watch(self, path, prefix=False, revision=None):
+        """Watch key or key range.
 
-        :param path: Path of key to query
+        Use a path ending with `'/'` in combination with `prefix` to
+        watch all child keys.
+
+        :param path: Path of key to query, or prefix of keys.
+        :param prefix: Watch for keys with given prefix if set
         :param revision: Database revision from which to watch
-        :returns: (value, revision). value is None if it doesn't exit
+        :returns: `Etcd3Watcher` object for watch request
         """
-
-        if path[-1] == '/':
+        # Check/prepare parameters
+        if path[-1] == '/' and not prefix:
             raise ValueError("Path should not have a trailing '/'!")
-        tagged_path = self._tag_depth(path)
+        tagged_path = _tag_depth(path)
         rev = (None if revision is None else revision.revision)
 
         # Set up watcher
-        watcher = self._client.Watcher(tagged_path, start_revision=rev, prev_kv=True)
-        return Etc3Watcher(watcher, path)
+        watcher = self._client.Watcher(
+            tagged_path, start_revision=rev, prev_kv=True, prefix=prefix)
+        return Etc3Watcher(watcher, self)
 
-    def list_keys(self, path, prefix=False, revision=None):
+    def list_keys(self, path, revision=None):
         """
-        List keys under current path
+        List keys under given path.
 
         :param path: Prefix of keys to query. Append '/' to list
-           child paths
+           child paths.
         :param revision: Database revision for which to list
-        :returns: (key list, revision)
+        :returns: (sorted key list, revision)
         """
-
         # Prepare parameters
-        tagged_path = self._tag_depth(path)
+        tagged_path = _tag_depth(path)
         rev = None
         if revision is not None:
             rev = revision.revision
@@ -123,24 +145,27 @@ class Etcd3(object):
 
         if response.kvs is None:
             return ([], revision)
-        else:
-            return ([ self._untag_depth(kv.key.decode('utf-8'))
-                      for kv in response.kvs ],
-                    revision)
+        sorted_keys = sorted([
+            _untag_depth(kv.key.decode('utf-8'))
+            for kv in response.kvs
+        ])
+        return (sorted_keys, revision)
 
     def create(self, path, value, lease=None):
-        """
-        Create a key at the path in question and initialises it with the
-        value. Fails if the value already exists.
+        """Create a key and initialise it with the value.
+
+        Fails if the key already exists. If a lease is given, the key will
+        automatically get deleted once it expires.
 
         :param path: Path to create
         :param value: Value to set
         :param lease: Lease to associate
-        :returns: Whether creation succeeded
+        :raises: Collision
         """
-
         # Prepare parameters
-        tagged_path = self._tag_depth(path)
+        if path[-1] == '/':
+            raise ValueError("Path should not have a trailing '/'!")
+        tagged_path = _tag_depth(path)
         lease_id = (0 if lease is None else lease.ID)
         value = str(value).encode('utf-8')
 
@@ -149,37 +174,41 @@ class Etcd3(object):
         txn.compare(txn.key(tagged_path).version == 0)
         txn.success(txn.put(tagged_path, value, lease_id))
         if not txn.commit().succeeded:
-            raise Collision(path, "Cannot create {}, as it already exists!".format(path))
+            raise Collision(
+                path, "Cannot create {}, as it already exists!".format(path))
 
     def update(self, path, value, must_be_rev=None):
-        """ Updates an existing key. Fails if the key does not exist.
+        """
+        Update an existing key. Fails if the key does not exist.
 
         :param path: Path to update
         :param value: Value to set
-        :param from_revision: Fail if found value does not match given
+        :param must_be_rev: Fail if found value does not match given
             revision (atomic update)
-        :returns: Whether transaction was successful
-
+        :raises: Vanished
         """
-
-        tagged_path = self._tag_depth(path)
+        # Validate parameters
+        if path[-1] == '/':
+            raise ValueError("Path should not have a trailing '/'!")
+        tagged_path = _tag_depth(path)
         value = str(value).encode('utf-8')
         # Put value if version is *not* zero (i.e. it exists)
         txn = self._client.Txn()
         txn.compare(txn.key(tagged_path).version != 0)
         if must_be_rev is not None:
-            if must_be_rev.modRevision is None:
-                raise ValueError("Did not pass a valid modRevision!")
-            txn.compare(txn.key(tagged_path).mod == must_be_rev.modRevision)
+            if must_be_rev.mod_revision is None:
+                raise ValueError("Did not pass a valid mod_revision!")
+            txn.compare(txn.key(tagged_path).mod == must_be_rev.mod_revision)
         txn.success(txn.put(tagged_path, value))
         if not txn.commit().succeeded:
-            raise Vanished(path, "Cannot update {}, as it does not exist!".format(path))
+            raise Vanished(
+                path, "Cannot update {}, as it does not exist!".format(path))
 
     def delete(self, path,
-               must_exist = True, recursive = False, prefix = False,
-               max_depth = 16):
+               must_exist=True, recursive=False, prefix=False,
+               max_depth=16):
         """
-        Deletes the given key or key range
+        Delete the given key or key range.
 
         :param path: Path (prefix) of keys to remove
         :param must_exist: Fail if path does not exist?
@@ -187,8 +216,8 @@ class Etcd3(object):
         :param prefix: Delete all keys at given level with prefix
         :returns: Whether transaction was successful
         """
-
-        tagged_path = self._tag_depth(path)
+        # Prepare parameters
+        tagged_path = _tag_depth(path)
 
         # Determine start recursion level
         txn = self._client.Txn()
@@ -200,122 +229,180 @@ class Etcd3(object):
         # levels that have the path as a prefix
         if recursive:
             depth = path.count('/')
-            for d in range(depth+1, depth+max_depth):
-                dpath = self._tag_depth(path if prefix else path+'/', d)
+            for lvl in range(depth+1, depth+max_depth):
+                dpath = _tag_depth(path if prefix else path+'/', lvl)
                 txn.success(txn.delete(dpath, prefix=True))
 
         # Execute
         if not txn.commit().succeeded:
-            raise Vanished(path, "Cannot delete {}, as it does not exist!".format(path))
+            raise Vanished(
+                path, "Cannot delete {}, as it does not exist!".format(path))
 
     def close(self):
-        """ Closes the client connection """
+        """Close the client connection."""
         self._client.close()
 
     def __enter__(self):
+        """Use for scoping client connection to a block."""
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        """Use for scoping client connection to a block."""
         self.close()
         return False
 
+
 class Collision(RuntimeError):
+    """Exception generated if key to create already exists."""
 
     def __init__(self, path, message):
+        """Instantiate the exception."""
         self.path = path
         super().__init__(message)
 
-    def __str__(self):
-        return super(self).__str__()
-
-    def __repr__(self):
-        return super().__repr__()
 
 class Vanished(RuntimeError):
+    """Exception generated if key to update that does not exist."""
 
     def __init__(self, path, message):
+        """Instantiate the exception."""
         self.path = path
         super().__init__(message)
 
-    def __str__(self):
-        return super().__str__()
 
-    def __repr__(self):
-        return super().__repr__()
-
-class Etcd3Revision(object):
-    """Identifies the revision of the database (+ a key)
+class Etcd3Revision():
+    """Identifies the revision of the database.
 
     This has two parts:
 
-    * `revision` is the database revision. Used for looking up
-      specific revisions in the database, for instance for querying a
-      consistent snapshot.
+    * `revision` is the database revision at the point in time when
+      the query was made. Can be used for querying a consistent
+      snapshot.
 
-    * `modRevision` identifies how often a given key has been modified
-      total. This can be used for checking whether a given key has
+    * `mod_revision` given the revision when a key was last
+      modified. This can be used for checking whether a key has
       changed, for instance to implement an atomic update.
     """
 
-    def __init__(self, revision, modRevision):
+    def __init__(self, revision, mod_revision):
+        """Instantiate the revision."""
         self.revision = revision
-        self.modRevision = modRevision
+        self.mod_revision = mod_revision
 
     def __repr__(self):
-        return "Etc3Revision({},{})".format(self.revision, self.modRevision)
+        """Build string representation."""
+        return "Etc3Revision({},{})".format(self.revision, self.mod_revision)
 
-class Etc3Watcher(object):
+
+class Etc3Watcher():
     """Wrapper for etc3 watch requests.
 
-    Enter to start watching the key, at which point 
+    Entering the watcher using a `with` block yields a queue of `(key,
+    val, rev)` triples.
     """
 
-    def __init__(self, watcher, path):
+    def __init__(self, watcher, backend):
+        """Initialise watcher."""
         self._watcher = watcher
-        self.path = path
+        self._backend = backend
         self.queue = None
 
     def start(self, queue=None):
-        """ Activates the watcher, yielding a queue for updates """
-
+        """Activates the watcher, yielding a queue for updates."""
         if queue is None:
             self.queue = queue = queue_m.Queue()
+
         def on_event(event):
+            key = _untag_depth(event.key.decode('utf-8'))
             if event.type == etcd3.EventType.PUT:
-                queue.put((self.path, event.value.decode('utf-8'),
-                           Etcd3Revision(event.mod_revision, event.mod_revision)))
+                val = event.value.decode('utf-8')
+                rev = Etcd3Revision(event.mod_revision, event.mod_revision)
             else:
-                queue.put((self.path, None, Etcd3Revision(event.mod_revision, None)))
+                val = None
+                rev = Etcd3Revision(event.mod_revision, event.mod_revision)
+            queue.put((key, val, rev))
 
         self._watcher.onEvent(on_event)
         self._watcher.runDaemon()
 
     def stop(self):
-        """ Deactivates the watcher """
+        """Deactivates the watcher."""
         self._watcher.clear_callbacks()
         self._watcher.stop()
         self.queue = None
 
     def __enter__(self):
+        """Use for scoping watcher to a block."""
         self.start()
         return self.queue
 
     def __exit__(self, *args):
+        """Use for scoping watcher to a block."""
         self.stop()
 
-class Etcd3Transaction(object):
 
-    def __init__(self, backend, max_retries=64):
+# pylint: disable=R0902
+class Etcd3Transaction():
+    """A series of queries and updates to be executed atomically.
+
+    Note that this uses an optimistic STM-style implementation, which
+    cannot guarantee that a transaction runs through successfully. If
+    it fails, the application might want to simply re-run it until it
+    succeeds. The easiest way is to use transactions as an iterator,
+    which implements the appropriate logic:
+
+    .. code-block:: python
+
+        for txn in etcd3.txn():
+             # ... transaction steps ...
+
+    This can also be used to loop a transaction manually, possibly
+    waiting for read values to change (see :meth:`Etcd3Transaction.loop`).
+    """
+
+    # Ideas:
+    #
+    # Ranged deletes - in contrast to the main backend we cannot
+    # release a range of keys (especially recursively) in a
+    # transaction yet. The tricky bit is to make this consistent with
+    # the rest of the transaction machinery and properly
+    # atomic. Easiest solution might just be to simply use a bunch of
+    # list_key and single delete calls to get the same effect. Would
+    # be slightly inefficient, but would get the job done.
+    #
+    # Caching - especially when looping a transaction most of the
+    # queried data from the database might still be valid. So after a
+    # loop we could just migrate the known information to a _cache
+    # (plus any further information we got from watches). Then once
+    # the "new" database revision has been determined we might just
+    # send one cheap query to the database to figure out which bits of
+    # it are still current.
+    #
+    # Cheaper update/create checks - right now we query the old value
+    # of the key on every update/create call, even though we are only
+    # interested in whether or not the key exists. We could instead
+    # query this along the same lines as list_keys. Not entirely sure
+    # this is worthwhile though, given that it is quite typical to
+    # "get" a key before "updating" it anyway, and collisions on
+    # "create" should be quite rare.
+
+    def __init__(self, backend, client, max_retries=64):
+        """Initialise transaction."""
         self._backend = backend
-        self._revision = None
-        self._queries = {}
-        self._updates = {}
-        # TODO: deletes? Might get tricky mixing ranged deletes with
-        # create...
+        self._client = client
         self._max_retries = max_retries
+
+        self._revision = None  # Revision backed in after first read
+        self._get_queries = {}  # Query log
+        self._list_queries = {}  # Query log
+        self._updates = {}  # Delayed updates
+
         self._committed = False
         self._loop = False
         self._watch = False
+        self._watch_timeout = None
+        self._got_timeout = False  # For test cases
+        self._retries = 0
 
         self._watchers = {}
         self._watch_queue = queue_m.Queue()
@@ -325,7 +412,12 @@ class Etcd3Transaction(object):
             raise RuntimeError("Attempted to modify committed transaction!")
 
     def get(self, path):
+        """
+        Get value of a key.
 
+        :param path: Path of key to query
+        :returns: Key value. None if it doesn't exist.
+        """
         self._ensure_uncommitted()
 
         # Check whether it was written as part of this transaction
@@ -333,177 +425,231 @@ class Etcd3Transaction(object):
             return self._updates[path][0]
 
         # Check whether we already have the request response
-        query = ("get", path)
-        if query in self._queries:
-            return self._queries[query][0]
+        if path in self._get_queries:
+            return self._get_queries[path][0]
 
         # Perform get request
-        v, rev = self._queries[query] = self._backend.get(path, revision=self._revision)
+        val, rev = self._get_queries[path] = \
+            self._backend.get(path, revision=self._revision)
 
         # Set revision, if not already done so
         if self._revision is None:
             self._revision = rev
-        return v
+        return val
 
     def list_keys(self, path):
+        """
+        List keys under given path.
 
+        :param path: Prefix of keys to query. Append '/' to list
+           child paths.
+        :returns: sorted key list
+        """
         self._ensure_uncommitted()
 
-        # Check whether any written keys match the description
-        updated_keys = [ key for key in self._updates.keys()
-                         if key.startswith(path) ]
+        # We might have created or deleted an uncommitted key that
+        # falls into the range - add to list
+        tagged_path = _tag_depth(path)
+        matching_vals = [
+            kv for kv in self._updates.items()
+            if _tag_depth(kv[0]).startswith(tagged_path)
+        ]
+        added_keys = {
+            key for key, val in matching_vals if val is not None
+        }
+        removed_keys = {
+            key for key, val in matching_vals if val is None
+        }
 
         # Check whether we already have the request response
-        query = ("list_keys", path)
-        if query in self._queries:
-            return self._queries[query][0]
+        if path in self._list_queries:
+            return sorted(set(self._list_queries[path][0])
+                          - removed_keys | added_keys)
 
         # Perform request
-        v, rev = self._queries[query] = self._backend.list_keys(
+        keys, rev = self._list_queries[path] = self._backend.list_keys(
             path, revision=self._revision)
 
         # Set revision, return
         if self._revision is None:
             self._revision = rev
-        return v
+        return sorted(set(keys) - removed_keys | added_keys)
 
     def create(self, path, value, lease=None):
+        """Create a key and initialise it with the value.
 
+        Fails if the key already exists. If a lease is given, the key will
+        automatically get deleted once it expires.
+
+        :param path: Path to create
+        :param value: Value to set
+        :param lease: Lease to associate
+        :raises: Collision
+        """
         self._ensure_uncommitted()
 
         # Attempt to get the value - mainly to check whether it exists
         # and put it into the query log
         result = self.get(path)
         if result is not None:
-            raise Collision(path, "Cannot create {}, as it already exists!".format(path))
+            raise Collision(
+                path, "Cannot create {}, as it already exists!".format(path))
 
         # Add update request
         self._updates[path] = (value, lease)
 
     def update(self, path, value):
+        """
+        Update an existing key. Fails if the key does not exist.
 
+        :param path: Path to update
+        :param value: Value to set
+        :raises: Vanished
+        """
         self._ensure_uncommitted()
 
         # As with "update"
         result = self.get(path)
         if result is None:
-            raise Collision(path, "Cannot update {}, as it does not exist!".format(path))
+            raise Vanished(
+                path, "Cannot update {}, as it does not exist!".format(path))
 
         # Add update request
         self._updates[path] = (value, None)
-        return True
+
+    def delete(self, path, must_exist=True):
+        """
+        Delete the given key.
+
+        :param path: Path of key to remove
+        :param must_exist: Fail if path does not exist?
+        """
+        if must_exist:
+            # As with "update"
+            result = self.get(path)
+            if result is None:
+                raise Vanished(
+                    path, "Cannot delete {}, it does not exist!".format(path))
+
+        # Add delete request
+        self._updates[path] = (None, None)
 
     def commit(self):
+        """
+        Commit the transaction to the database.
 
+        This can fail, in which case the transaction must get `reset`
+        and built again.
+
+        :returns: Whether the commit succeeded
+        """
         self._ensure_uncommitted()
 
         # If we have made no updates, we don't need to verify the log
-        if len(self._updates) == 0:
+        if not self._updates:
             self._committed = True
             return True
 
         # Create transaction
-        txn = self._backend._client.Txn()
+        txn = self._client.Txn()
 
-        # Verify the query log
-        for query, result in self._queries.items():
+        # Verify get() calls from the query log
+        for path, (_, rev) in self._get_queries.items():
+            tagged_path = _tag_depth(path)
 
-            if query[0] == 'get':
-                tagged_path = self._backend._tag_depth(query[1])
-                rev = result[1]
-
-                if rev.modRevision is None:
-                    # Did not exist? Verify continued non-existance. Note
-                    # that it is not possible for the key to have been
-                    # created, then deleted again in the meantime.
-                    txn.compare(txn.key(tagged_path).version == 0)
-                else:
-                    # Otherwise check matching modRevision. This
-                    # actually guarantees that the key has not been
-                    # touched since we read it.
-                    txn.compare(txn.key(tagged_path).mod == rev.modRevision)
-
-            elif query[0] == 'list_keys':
-                tagged_path = self._backend._tag_depth(query[1])
-                rev = result[1]
-
-                # Make sure that all returned keys still exist
-                for res_path in result[0]:
-                    tagged_res_path = self._backend._tag_depth(res_path)
-                    txn.compare(txn.key(tagged_res_path).version > 0)
-
-                # Also check that no new keys have entered the range
-                # (by checking whether the request would contain any
-                # keys with a newer create revision than our request)
-                txn.compare(txn.key(tagged_path, prefix=True).create
-                            < self._revision.revision+1)
-
+            if rev.mod_revision is None:
+                # Did not exist? Verify continued non-existance. Note
+                # that it is possible for the key to have been
+                # created, then deleted again in the meantime.
+                txn.compare(txn.key(tagged_path).version == 0)
             else:
-                assert False
+                # Otherwise check matching mod_revision. This
+                # actually guarantees that the key has not been
+                # touched since we read it.
+                txn.compare(txn.key(tagged_path).mod == rev.mod_revision)
+
+        # Verify list_keys() calls from the query log
+        for path, (result, rev) in self._list_queries.items():
+            tagged_path = _tag_depth(path)
+
+            # Make sure that all returned keys still exist
+            for res_path in result:
+                tagged_res_path = _tag_depth(res_path)
+                txn.compare(txn.key(tagged_res_path).version > 0)
+
+            # Also check that no new keys have entered the range
+            # (by checking whether the request would contain any
+            # keys with a newer create revision than our request)
+            txn.compare(txn.key(tagged_path, prefix=True).create
+                        < self._revision.revision+1)
 
         # Commit changes. Note that the dictionary guarantees that we
         # only update any key at most once.
         for path, (value, lease) in self._updates.items():
-            tagged_path = self._backend._tag_depth(path)
-            txn.success(txn.put(tagged_path, value, lease))
+            tagged_path = _tag_depth(path)
+            lease_id = (None if lease is None else lease.ID)
+            if value is None:
+                txn.success(txn.delete(tagged_path, value, lease_id))
+            else:
+                txn.success(txn.put(tagged_path, value, lease_id))
 
         # Done
         self._committed = True
         return txn.commit().succeeded
 
     def reset(self, revision=None):
-        """
-        After a call to commit(), resets the transaction so it can be restarted.
-        """
-
+        """Reset the transaction so it can be restarted after commit()."""
         if not self._committed:
             raise RuntimeError("Called reset on an uncomitted transaction!")
 
         # Reset
         self._revision = revision
-        self._queries = {}
+        self._get_queries = {}
+        self._list_queries = {}
         self._updates = {}
         self._committed = False
         self._loop = False
         self._watch = False
+        self._watch_timeout = None
 
-    def loop(self, watch=False):
-        """Always repeat transaction execution, even if it succeeds
+    def loop(self, watch=False, watch_timeout=None):
+        """Repeat transaction execution, even if it succeeds.
 
-        :param watch: Wait with repeat until one of the values read in the
-        transaction changed
+        :param watch: Once the transaction succeeds, block until one of
+           the values read changes, then loop the transaction
         """
-
         if self._loop:
             # If called multiple times, looping immediately takes precedence
             self._watch = (self._watch and watch)
         else:
             self._loop = True
             self._watch = watch
+        if watch and watch_timeout is not None:
+            self._watch_timeout = watch_timeout
 
     def __iter__(self):
-
+        """Iterate transaction as requested by loop(), or until it succeeds."""
         try:
 
-            for _ in range(self._max_retries):
+            while self._retries <= self._max_retries:
 
                 # Should build up a transaction
                 yield self
 
-                # Try to commit, done if succeeded
-                if self.commit():
+                # Try to commit, count how many times we have tried
+                if not self.commit():
+                    self._retries += 1
+                else:
+                    self._retries = 0
 
                     # No further loop?
                     if not self._loop:
                         return
 
-                    # Set watches?
+                    # Use watches? Then wait for something to happen
+                    # before looping.
                     if self._watch:
-                        # Wait for something to happen
-                        rev = self.watch()
-                        # Reset setting new revision
-                        self.reset(rev)
-                        continue
+                        self.watch()
 
                 # Repeat after reset otherwise
                 self.reset()
@@ -513,40 +659,118 @@ class Etcd3Transaction(object):
 
         # Ran out of repeats? Fail
         raise RuntimeError("Transaction did not succeed after {} retries!"
-                           .format(self.max_retries))
+                           .format(self._max_retries))
 
     def clear_watch(self):
-
+        """Stop all currently active watchers."""
         # Remove watchers
         for watcher in self._watchers.values():
             watcher.stop()
         self._watchers = {}
 
+    def _update_watchers(self):
+
+        # Watch any ranges we listed. Note that this will trigger also
+        # on key updates, we will filter that below.
+        prefixes = []
+        active_watchers = set()
+        for path in self._list_queries:
+            query = ('list', path)
+            # Add tagged prefixes so we can check for key overlap later
+            prefixes.append(_tag_depth(path))
+            active_watchers.add(query)
+            # Start a watcher, if required
+            if self._watchers.get(query) is None:
+                self._watchers[query] = self._backend.watch(
+                    path, revision=self._revision, prefix=True)
+                self._watchers[query].start(self._watch_queue)
+
+        # Watch any individual key we read
+        for path in self._get_queries:
+            query = ('get', path)
+
+            # Check that we are not already watching this key as
+            # part of a range. This is basically using the
+            # above-mentioned property of range watches to our
+            # advantage. This is actually a fairly important
+            # optimisation, as it means that listing keys followed
+            # by iterating over the values won't create extra
+            # watches here!
+            tagged_path = _tag_depth(path)
+            if not any([tagged_path.startswith(pre) for pre in prefixes]):
+                active_watchers.add(query)
+                # Start individual watcher, if required
+                if self._watchers.get(query) is None:
+                    self._watchers[query] = self._backend.watch(
+                        path, revision=self._revision)
+                    self._watchers[query].start(self._watch_queue)
+
+        # Remove any watchers that we are not currently using. Note
+        # that we only do this on the next watch() call, so watchers
+        # will be kept alive through transaction failures *and*
+        # non-waiting loops. So as long as the set of keys waited on
+        # is relatively constant (and ideally forms ranges), we will
+        # not generate much churn here.
+        for query, watcher in list(self._watchers.items()):
+            if query not in active_watchers:
+                watcher.stop()
+                del self._watchers[query]
+
     def watch(self):
-        """Wait for a change on one of the values read. Returns the revision
-        at which a change was detected."""
+        """Wait for a change on one of the values read.
 
-        # Make sure we have a watcher on every key read
-        # (TODO: lists)
-        for typ, key in self._queries:
-            if typ == 'get' and self._watchers.get(key) is None:
-                self._watchers[key] = self._backend.watch(key, revision=self._revision)
-                self._watchers[key].start(self._watch_queue)
+        :returns: The revision at which a change was detected.
+        """
+        # Make sure the watchers we have in place match what we read
+        self._update_watchers()
 
-        # TODO: remove watches that are not used any more?
-
+        # Wait for updates from the watcher queue
+        block = True
+        revision = self._revision
+        start_time = time.time()
         while True:
 
+            # Determine timeout
+            timeout = None
+            if self._watch_timeout is not None:
+                timeout = max(
+                    0, start_time + self._watch_timeout - time.time())
+
             # Wait for something to get pushed on the queue
-            path, value, rev = self._watch_queue.get()
+            try:
+                path, value, rev = self._watch_queue.get(block, timeout)
+            except queue_m.Empty:
+                self._got_timeout = block
+                return revision
 
             # Check that revision is newer (prevent duplicated updates)
-            if rev.revision <= self._revision.revision:
+            if rev.revision <= revision.revision:
                 continue
 
-            # Check that it is actually something we are waiting on
-            if ('get', path) not in self._queries:
-                continue
+            # Are we waiting on a value change of this one?
+            if path not in self._get_queries:
 
-            # Alright, finished waiting
-            return rev
+                # Are we getting this because of one of the list queries?
+                tagged_path = _tag_depth(path)
+                found_match = False
+                for lpath, (result, _) in self._list_queries.items():
+                    if tagged_path.startswith(_tag_depth(lpath)):
+
+                        # We should not notify for a value change,
+                        # only if a key was added / removed. Good
+                        # thing we can check that using the log.
+                        if value is None or path not in result:
+                            found_match = True
+                            break
+
+                # Otherwise this is either a misfire from an old
+                # watcher, or a value update from a list watcher (see
+                # above). Ignore.
+                if not found_match:
+                    continue
+
+            # Alright, we can stop waiting. However, we will attempt
+            # to clear the queue before we do so, as we might get a
+            # lot of updates in batch
+            revision = rev
+            block = False

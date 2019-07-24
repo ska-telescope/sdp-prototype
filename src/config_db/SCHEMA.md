@@ -33,7 +33,7 @@ Contents:
         "tag": "0.1.0",
     }
     "parameters": { ... }
-    "scanParameters:
+    "scanParameters":
     { "12345": { ... },
       "12346": { ... },
     }
@@ -58,12 +58,22 @@ Contents:
     "state": "executing",
     "subarray": "ON",
     "obsState": "SCANNING",
+    "receiveAddresses": {
+        "<phase_bin>": {
+            "<channel_id>": ["<ip>", <port>],
+            ...
+        }
+    }
 }
 ```
 
 Tracks the current state of the Processing Block. This covers both the
-internal state as well as the subarray state to report via Tango. At
-some point we might include
+SDP-internal state (as defined by the Execution Control Data Model) as
+well as the subarray state to report via Tango for real-time
+processing blocks (as defined by SDP-to-TM ICD).
+
+This is also where further attributes to publish via Tango are going
+to get populated, such as receiver addresses for ingest.
 
 ### Processing Block Owner
 
@@ -86,7 +96,10 @@ Contents:
 ```javascript
 {
     "adminState": "ONLINE",
+    "command": "Scan",
     "currentPb": "[pb_id]",
 }
 ```
 
+The command is the last command given by the TANGO interface. This
+might cause a state change of the associated processing block.

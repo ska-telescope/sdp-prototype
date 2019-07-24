@@ -20,7 +20,8 @@ This work is being been carried out in PI#3 for
   Getting Started<getting_started>
   SDP Master Device<sdp_master>
   SDP Subarray Device<sdp_subarray>
-  Configuration Database Schema<config_db_schema>
+  SDP Configuration Database<config_db>
+  SDP Configuration Database Schema<config_db_schema>
   Visibility Receive Workflow<vis_receive_workflow>
 
 Indices and tables

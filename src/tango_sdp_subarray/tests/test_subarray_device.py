@@ -2,6 +2,7 @@
 """SDP Subarray device tests."""
 # pylint: disable=redefined-outer-name
 
+from os.path import dirname, join
 from random import randint
 
 import pytest
@@ -10,7 +11,7 @@ from pytest_bdd import (given, parsers, scenarios, then, when)
 import tango
 from tango import DevState
 
-from SDPSubarray import AdminMode, ObsState
+from SDPSubarray import AdminMode, HealthState, ObsState
 
 # -----------------------------------------------------------------------------
 # Scenarios : Specify what we want the software to do
@@ -113,7 +114,26 @@ def command_configure(subarray_device):
 
     :param subarray_device: An SDPSubarray device.
     """
-    subarray_device.Configure('')
+
+    pb_config_path = join(dirname(__file__), 'data',
+                          'pb_config.json')
+    with open(pb_config_path, 'r') as file:
+        pb_config = file.read()
+    subarray_device.Configure(pb_config)
+
+
+@when('I call ConfigureScan')
+def command_configure_scan(subarray_device):
+    """Call the Configure Scan command.
+
+    :param subarray_device: An SDPSubarray device.
+    # """
+
+    scan_config_path = join(dirname(__file__), 'data',
+                            'scan_config.json')
+    with open(scan_config_path, 'r') as file:
+        scan_config = file.read()
+    subarray_device.ConfigureScan(scan_config)
 
 
 # -----------------------------------------------------------------------------
@@ -159,6 +179,18 @@ def admin_mode_online_or_maintenance(subarray_device):
     """
     assert subarray_device.adminMode in (AdminMode.ONLINE,
                                          AdminMode.MAINTENANCE)
+
+
+@then(parsers.parse('healthState == {expected}'))
+def health_state_equals(subarray_device, expected):
+    """Check the Subarray healthState value.
+
+    :param subarray_device: An SDPSubarray device.
+    :param expected: The expected heathState.
+    """
+    assert subarray_device.healthState == HealthState[expected]
+    if expected == 'OK':
+        assert subarray_device.healthState == 0
 
 
 @then('Calling AssignResources raises tango.DevFailed')

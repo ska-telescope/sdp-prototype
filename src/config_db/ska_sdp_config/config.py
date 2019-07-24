@@ -1,52 +1,73 @@
+"""High-level API for SKA SDP configuration."""
+
+import os
+import sys
+from datetime import date
+import json
+from socket import gethostname
 
 from . import backend as backend_mod, entity
 
-from datetime import date
-import re
-import os
-import json
 
-# Permit identifiers up to 64 bytes in length
-_id_re = re.compile("[_A-Za-z0-9]{1,64}")
+class Config():
+    """Connection to SKA SDP configuration."""
 
-class Config(object):
-
-    def __init__(self, backend=None, global_prefix='', **client_args):
+    def __init__(self, backend=None, global_prefix='', owner=None,
+                 **cargs):
         """
-        Connects to the configuration database using the given backend
+        Connect to configuration using the given backend.
 
-        :param backend: Backend to use. Defaults to environment or etcd3 if not set.
+        :param backend: Backend to use. Defaults to environment or etcd3 if
+            not set.
+        :param global_prefix: Prefix to use within the database
+        :param owner: Dictionary used for identifying the process when claiming
+            ownership.
+        :param cargs: Backend client arguments
         """
-
         # Determine backend
         backend = os.getenv('SDP_CONFIG_BACKEND', 'etcd3')
 
         # Instantiate backend, reading configuration from environment/dotenv
         if backend == 'etcd3':
-            if 'host' not in client_args:
-                client_args['host'] = os.getenv('SDP_CONFIG_HOST', '127.0.0.1')
-            if 'port' not in client_args:
-                client_args['port'] = int(os.getenv('SDP_CONFIG_HOST', 2379))
-            if 'protocol' not in client_args:
-                client_args['protocol'] = os.getenv('SDP_CONFIG_PROTOCOL', 'http')
-            if 'cert' not in client_args:
-                client_args['cert'] = os.getenv('SDP_CONFIG_CERT', ())
-            if 'username' not in client_args:
-                client_args['username'] = os.getenv('SDP_CONFIG_USERNAME', None)
-            if 'password' not in client_args:
-                client_args['password'] = os.getenv('SDP_CONFIG_PASSWORD', None)
+            if 'host' not in cargs:
+                cargs['host'] = os.getenv('SDP_CONFIG_HOST', '127.0.0.1')
+            if 'port' not in cargs:
+                cargs['port'] = int(os.getenv('SDP_CONFIG_PORT', '2379'))
+            if 'protocol' not in cargs:
+                cargs['protocol'] = os.getenv('SDP_CONFIG_PROTOCOL', 'http')
+            if 'cert' not in cargs:
+                cargs['cert'] = os.getenv('SDP_CONFIG_CERT', None)
+            if 'username' not in cargs:
+                cargs['username'] = os.getenv('SDP_CONFIG_USERNAME', None)
+            if 'password' not in cargs:
+                cargs['password'] = os.getenv('SDP_CONFIG_PASSWORD', None)
 
-            self._backend = backend_mod.Etcd3(**client_args)
+            self._backend = backend_mod.Etcd3(**cargs)
         else:
-            raise ValueError("Unknown configuration backend {}!".format(backend))
+            raise ValueError(
+                "Unknown configuration backend {}!".format(backend))
+
+        # Owner dictionary
+        if owner is None:
+            owner = {
+                'pid': os.getpid(),
+                'hostname': gethostname(),
+                'command': sys.argv
+            }
+        self.owner = dict(owner)
 
         # Prefixes
         assert global_prefix == '' or global_prefix[0] == '/'
-        self._pb_path = global_prefix+"/pb/"
+        self.pb_path = global_prefix+"/pb/"
+
+        # Lease associated with client
+        self._client_lease = None
 
     def lease(self, ttl=10):
         """
-        Generates a new lease. Once entered can be associated with keys,
+        Generate a new lease.
+
+        Once entered can be associated with keys,
         which will be kept alive until the end of the lease. At that
         point a daemon thread will be started automatically to refresh
         the lease periodically (default seems to be TTL/4).
@@ -54,68 +75,242 @@ class Config(object):
         :param ttl: Time to live for lease
         :returns: lease object
         """
-
         return self._backend.lease(ttl)
 
-    def create_pb(self, workflow, parameters={}, scan_parameters={},
-                  pb_id=None, sbi_id=None):
+    @property
+    def client_lease(self):
+        """Return the lease associated with the client.
+
+        It will be kept alive until the client gets closed.
         """
-        Creates a new processing block
+        if self._client_lease is None:
+            self._client_lease = self.lease()
+            self._client_lease.__enter__()
 
-        :param workflow: Workflow description (JSON for now)
-        :param parameters: Workflow parameters
-        :param scan_parameters: Scan parameters (unneded for batch processing)
-        :param pb_id: Processing block ID.
-        :param sbi_id: Scheduling block ID, if it exists.
-        :returns: ProcessingBlock object
+        return self._client_lease
+
+    def txn(self, max_retries=64):
+        """Create a :class:`Transaction` for atomic configuration query/change.
+
+        As we do not use locks, transactions might have to be repeated in
+        order to guarantee atomicity. Suggested usage is as follows:
+
+        .. code-block:: python
+
+            for txn in config.txn():
+                # Use txn to read+write configuration
+                # [Possibly call txn.loop()]
+
+        As the `for` loop suggests, the code might get run multiple
+        times even if not forced by calling
+        :meth:`Transaction.loop`. Any writes using the transaction
+        will be discarded if the transaction fails, but the
+        application must make sure that the loop body has no other
+        observable side effects.
+
+        :param max_retries: Number of transaction retries before a
+            :class:`RuntimeError` gets raised.
         """
+        return TransactionFactory(
+            self, self._backend.txn(max_retries=max_retries))
 
-        # Make sure workflow JSON is valid (TODO: move)
-        if set(workflow.keys()) != set(['name', 'type', 'version']):
-            raise ValueError("Workflow must specify exactly name, type and version!")
-        parameters = dict(parameters)
-        scan_parameters = dict(scan_parameters)
-        if pb_id is not None:
-            pb_id = str(pb_id)
-        if sbi_id is not None:
-            sbi_id = str(sbi_id)
+    def close(self):
+        """Close the client connection."""
+        if self._client_lease:
+            self._client_lease.__exit__(None, None, None)
+            self._client_lease = None
+        self._backend.close()
 
-        # Might need to retry if multiple processing blocks are
-        # getting created concurrently
-        for retry in range(10):
+    def __enter__(self):
+        """Scope the client connection."""
+        return self
 
-            # Choose new processing block ID
-            if pb_id is not None:
-                set_pb_id = pb_id
-            else:
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Scope the client connection."""
+        self.close()
+        return False
 
-                # Find existing processing blocks with same prefix
-                pb_id_prefix = "{}-{}-".format(
-                        workflow['type'],
-                        date.today().strftime('%Y%m%d'))
-                existing_keys, _ = self._backend.list_keys(
-                    self._pb_path+pb_id_prefix, prefix=True)
-                print(existing_keys)
 
-                # Choose ID that doesn't exist
-                for pb_ix in range(999999):
-                    set_pb_id = pb_id_prefix + "{:03}".format(pb_ix)
-                    if self._pb_path+set_pb_id not in existing_keys:
-                        break
+class TransactionFactory():
+    """Helper object for making transactions."""
 
-            # Make dictionary describing processing block
-            pb = {
-                'pb_id': set_pb_id,
-                'sbi_id': sbi_id,
-                'workflow': workflow,
-                'parameters': parameters,
-                'scan_parameters': scan_parameters
-            }
-            pb_path = self._pb_path+set_pb_id
+    def __init__(self, config, txn):
+        """Create transaction factory."""
+        self._config = config
+        self._txn = txn
 
-            # Attempt to create processing block
-            self._backend.create(pb_path, json.dumps(pb))
-            return entity.ProcessingBlock(pb, pb_path)
+    def __iter__(self):
+        """Create new transaction objects."""
+        for txn in self._txn:
+            yield Transaction(self._config, txn)
 
-        raise RuntimeError("Exhausted retries while trying to create processing block!")
 
+def _to_json(obj):
+    # We only write dictionaries (JSON objects) at the moment
+    assert isinstance(obj, dict)
+    # Export to JSON. No need to convert to ASCII, as the backend
+    # should handle unicode. Otherwise we optimise for legibility
+    # over compactness.
+    return json.dumps(
+        obj, ensure_ascii=False,
+        indent=2, separators=(',', ': '), sort_keys=True)
+
+
+class Transaction():
+    """High-level configuration queries and updates to execute atomically."""
+
+    def __init__(self, config, txn):
+        """Instantiate transaction."""
+        self._cfg = config
+        self._txn = txn
+        self._pb_path = config.pb_path
+
+    @property
+    def raw(self):
+        """Return transaction object for accessing database directly."""
+        return self._txn
+
+    def _get(self, path):
+        """Get a JSON object from the database."""
+        txt = self._txn.get(path)
+        if txt is None:
+            return None
+        return json.loads(txt)
+
+    def _create(self, path, obj, lease=None):
+        """Set a new path in the database to a JSON object."""
+        self._txn.create(path, _to_json(obj), lease)
+
+    def _update(self, path, obj):
+        """Set a existing path in the database to a JSON object."""
+        self._txn.update(path, _to_json(obj))
+
+    def loop(self, wait=False):
+        """Repeat transaction regardless of whether commit succeeds.
+
+        :param wait: If transaction succeeded, wait for any read
+            values to change before repeating it.
+        """
+        return self._txn.loop(wait)
+
+    def list_processing_blocks(self, prefix=""):
+        """Query processing block IDs from the configuration.
+
+        :param prefix: If given, only search for processing block IDs
+           with the given prefix
+        :returns: Processing block ids, in lexographical order
+        """
+        # List keys
+        pb_path = self._pb_path
+        keys = self._txn.list_keys(pb_path + prefix)
+
+        # return list, stripping the prefix
+        assert all([key.startswith(pb_path) for key in keys])
+        return list([key[len(pb_path):] for key in keys])
+
+    def new_processing_block_id(self, workflow_type: str):
+        """Generate a new processing block ID that does not yet in use.
+
+        :param workflow_type: Type of workflow / processing block to create
+        :returns: Processing block id
+        """
+        # Find existing processing blocks with same prefix
+        pb_id_prefix = "{}-{}-".format(
+            workflow_type,
+            date.today().strftime('%Y%m%d'))
+        existing_ids = self.list_processing_blocks(pb_id_prefix)
+
+        # Choose ID that doesn't exist
+        for pb_ix in range(9999):
+            pb_id = pb_id_prefix + "{:04}".format(pb_ix)
+            if pb_id not in existing_ids:
+                break
+        if pb_ix >= 9999:
+            raise RuntimeError("Exceeded daily number of processing blocks!")
+        return pb_id
+
+    def get_processing_block(self, pb_id: str) -> entity.ProcessingBlock:
+        """
+        Look up processing block data.
+
+        :param pb_id: Processing block ID to look up
+        :returns: Processing block entity, or None if it doesn't exist
+        """
+        dct = self._get(self._pb_path + pb_id)
+        if dct is None:
+            return None
+        return entity.ProcessingBlock(**dct)
+
+    def create_processing_block(self, pb: entity.ProcessingBlock):
+        """
+        Add a new :class:`ProcessingBlock` to the configuration.
+
+        :param obj: Processing block to create
+        """
+        assert isinstance(pb, entity.ProcessingBlock)
+        self._create(self._pb_path + pb.pb_id, pb.to_dict())
+
+    def update_processing_block(self, pb: entity.ProcessingBlock):
+        """
+        Update a :class:`ProcessingBlock` in the configuration.
+
+        :param obj: Processing block to update
+        """
+        assert isinstance(pb, entity.ProcessingBlock)
+        self._update(self._pb_path + pb.pb_id, pb.to_dict())
+
+    def get_processing_block_owner(self, pb_id: str) -> dict:
+        """
+        Look up the current processing block owner.
+
+        :param pb_id: Processing block ID to look up
+        :returns: Processing block owner data, or None if not claimed
+        """
+        dct = self._get(self._pb_path + pb_id + "/owner")
+        if dct is None:
+            return None
+        return dct
+
+    def is_processing_block_owner(self, pb_id: str) -> bool:
+        """
+        Check whether this client is owner of the processing block.
+
+        :param pb_id: Processing block ID to look up
+        :returns: Whether processing block is owned
+        """
+        return self.get_processing_block_owner(pb_id) == self._cfg.owner
+
+    def take_processing_block(self, pb_id: str, lease):
+        """
+        Take ownership of the processing block.
+
+        :param pb_id: Processing block ID to take ownership of
+        :raises: backend.Collision
+        """
+        # Lease must be provided
+        assert lease is not None
+
+        # Provide information identifying this process
+        self._create(self._pb_path + pb_id + "/owner", self._cfg.owner, lease)
+
+    def take_processing_block_by_workflow(self, workflow: dict, lease):
+        """
+        Take ownership of unclaimed processing block matching a workflow.
+
+        :param pb_id: Workflow description. Must exactly match the
+            workflow description used to create the processing block.
+        :returns: Processing block, or None if no match was found
+        """
+        # Look for matching processing block
+        for pb_id in self.list_processing_blocks(workflow['type']):
+            pb = self.get_processing_block(pb_id)
+            if pb.workflow == workflow and \
+               self.get_processing_block_owner(pb_id) is None:
+
+                # Take ownership
+                self.take_processing_block(pb_id, lease)
+
+                # Return
+                return pb
+
+        return None
