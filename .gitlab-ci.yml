@@ -106,6 +106,7 @@ coverage_report:
   before_script:
     - pip install coverage
     - pip install cpp-coveralls==0.4.2
+    - pip install python-coveralls
   script:
     - coverage combine *.coverage
     - coverage report
