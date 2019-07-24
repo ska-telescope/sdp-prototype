@@ -79,6 +79,7 @@ vis_receive:
     - apt install -y python3-pip
     - pip3 install urllib3==1.21.1
     - pip3 install cpp-coveralls==0.4.2
+    - pip install pyyaml
   script:
     - ./scripts/run_c_tests.sh
   after_script:
