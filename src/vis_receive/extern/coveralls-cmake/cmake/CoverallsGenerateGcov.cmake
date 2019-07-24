@@ -71,42 +71,42 @@ if (NOT GCOV_EXECUTABLE)
 	message(FATAL_ERROR "gcov not found! Aborting...")
 endif()
 
-find_package(Git)
+#find_package(Git)
 
-# TODO: Add these git things to the coveralls json.
-if (GIT_FOUND)
-	# Branch.
-	execute_process(
-		COMMAND ${GIT_EXECUTABLE} rev-parse --abbrev-ref HEAD
-		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-		OUTPUT_VARIABLE GIT_BRANCH
-		OUTPUT_STRIP_TRAILING_WHITESPACE
-	)
-
-	macro (git_log_format FORMAT_CHARS VAR_NAME)
-		execute_process(
-			COMMAND ${GIT_EXECUTABLE} log -1 --pretty=format:%${FORMAT_CHARS}
-			WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-			OUTPUT_VARIABLE ${VAR_NAME}
-			OUTPUT_STRIP_TRAILING_WHITESPACE
-		)
-	endmacro()
-
-	git_log_format(an GIT_AUTHOR_EMAIL)
-	git_log_format(ae GIT_AUTHOR_EMAIL)
-	git_log_format(cn GIT_COMMITTER_NAME)
-	git_log_format(ce GIT_COMMITTER_EMAIL)
-	git_log_format(B GIT_COMMIT_MESSAGE)
-
-	message("Git exe: ${GIT_EXECUTABLE}")
-	message("Git branch: ${GIT_BRANCH}")
-	message("Git author: ${GIT_AUTHOR_NAME}")
-	message("Git e-mail: ${GIT_AUTHOR_EMAIL}")
-	message("Git commiter name: ${GIT_COMMITTER_NAME}")
-	message("Git commiter e-mail: ${GIT_COMMITTER_EMAIL}")
-	message("Git commit message: ${GIT_COMMIT_MESSAGE}")
-
-endif()
+## TODO: Add these git things to the coveralls json.
+#if (GIT_FOUND)
+#	# Branch.
+#	execute_process(
+#		COMMAND ${GIT_EXECUTABLE} rev-parse --abbrev-ref HEAD
+#		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+#		OUTPUT_VARIABLE GIT_BRANCH
+#		OUTPUT_STRIP_TRAILING_WHITESPACE
+#	)
+#
+#	macro (git_log_format FORMAT_CHARS VAR_NAME)
+#		execute_process(
+#			COMMAND ${GIT_EXECUTABLE} log -1 --pretty=format:%${FORMAT_CHARS}
+#			WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+#			OUTPUT_VARIABLE ${VAR_NAME}
+#			OUTPUT_STRIP_TRAILING_WHITESPACE
+#		)
+#	endmacro()
+#
+#	git_log_format(an GIT_AUTHOR_EMAIL)
+#	git_log_format(ae GIT_AUTHOR_EMAIL)
+#	git_log_format(cn GIT_COMMITTER_NAME)
+#	git_log_format(ce GIT_COMMITTER_EMAIL)
+#	git_log_format(B GIT_COMMIT_MESSAGE)
+#
+#	message("Git exe: ${GIT_EXECUTABLE}")
+#	message("Git branch: ${GIT_BRANCH}")
+#	message("Git author: ${GIT_AUTHOR_NAME}")
+#	message("Git e-mail: ${GIT_AUTHOR_EMAIL}")
+#	message("Git commiter name: ${GIT_COMMITTER_NAME}")
+#	message("Git commiter e-mail: ${GIT_COMMITTER_EMAIL}")
+#	message("Git commit message: ${GIT_COMMIT_MESSAGE}")
+#
+#endif()
 
 ############################# Macros #########################################
 
