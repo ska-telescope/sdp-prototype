@@ -209,38 +209,42 @@ build:ska-sdp-subarray:
     - engageska
   before_script:
     - pip install twine
+
+.publish_python_dev:
+  extends: .publish_python
+  when: manual
+  except: [master]
   script:
     - cd $BUILD_PATH
-    - ls
-    - twine upload --repository-url $PYPI_REPOSITORY_URL dist/*
+    - twine upload --repository-url $PYPI_REPOSITORY_URL dist/* || true
 
-.publish_python_master:
+.publish_python_relase:
   extends: .publish_python
+  only: [master]
+  script:
+    - cd $BUILD_PATH
+    - twine upload --repository-url $PYPI_REPOSITORY_URL dist/* || true
+    - twine upload --skip-existing -u $PYPI_USER -p $PYPI_PASS dist/* || true
+
+publish:ska-sdp-master-manual:
+  extends: .publish_python_dev
   variables:
     BUILD_PATH: src/tango_sdp_master
 
-publish:ska-sdp-master-manual:
-  extends: .publish_python_master
-  when: manual
-  except: [master]
-
 publish:ska-sdp-master:
-  extends: .publish_python_master
-  only: [master]
+  extends: .publish_python_relase
+  variables:
+    BUILD_PATH: src/tango_sdp_master
 
-.publish_python_subarray:
-  extends: .publish_python
+publish:ska-sdp-subarray-manual:
+  extends: .publish_python_dev
   variables:
     BUILD_PATH: src/tango_sdp_subarray
 
-publish:ska-sdp-subarray-manual:
-  extends: .publish_python_subarray
-  when: manual
-  except: [master]
-
 publish:ska-sdp-subarray:
-  extends: .publish_python_subarray
-  only: [master]
+  extends: .publish_python_relase
+  variables:
+    BUILD_PATH: src/tango_sdp_subarray
 
 # ============================================================================
 # Build docker images
