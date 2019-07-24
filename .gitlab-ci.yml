@@ -77,7 +77,7 @@ vis_receive:
     - apt install -y --no-install-recommends cppcheck=1.82-1
     - apt install -y cmake curl
     - apt install -y python3-pip
-    - sudo apt install git
+    - apt install -y git
     - pip3 install urllib3==1.21.1
     - pip3 install cpp-coveralls==0.4.2
     - pip3 install pyyaml
