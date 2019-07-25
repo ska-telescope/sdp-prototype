@@ -22,6 +22,7 @@ stages:
 subarray_device_tests:
   extends: .tango_tests
   script:
+    - apt update
     - apt install -y git
     - pip install pyyaml
     - ./scripts/run_test.sh
@@ -42,8 +43,9 @@ subarray_device_tests:
 master_device_tests:
   extends: .tango_tests
   script:
+    - apt update
     - apt install -y git
-    - pip install pyyaml
+    - pip3 install pyyaml
     - ./scripts/run_test.sh src/tango_sdp_master
 #    - mv .coverage $CI_JOB_NAME.coverage
   after_script:
@@ -69,8 +71,9 @@ config_db_tests:
     variables:
       SDP_TEST_HOST: etcd
     script:
+      - apt update
       - apt install -y git
-      - pip install pyyaml
+      - pipenv install pyyaml
       - pipenv install etcd3-py
       - ./scripts/run_test.sh src/config_db
 #      - mv .coverage $CI_JOB_NAME.coverage
