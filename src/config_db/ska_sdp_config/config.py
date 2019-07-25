@@ -2,11 +2,12 @@
 
 import os
 import sys
+import functools
 from datetime import date
 import json
 from socket import gethostname
 
-from . import backend as backend_mod, entity
+from . import backend as backend_mod, entity, deploy
 
 
 class Config():
@@ -59,6 +60,7 @@ class Config():
         # Prefixes
         assert global_prefix == '' or global_prefix[0] == '/'
         self.pb_path = global_prefix+"/pb/"
+        self.deploy_path = global_prefix+"/deploy/"
 
         # Lease associated with client
         self._client_lease = None
@@ -130,6 +132,20 @@ class Config():
         self.close()
         return False
 
+    def get_deployment_logs(self, dpl: entity.Deployment,
+                            max_lines: int = 500):
+        """
+        Retrieve logs (stdout) produced by a deployment.
+
+        Might not be supported by all deployment types, and not to all
+        processes (e.g. subprocess stdout is only available to the
+        spawning process).
+
+        :param dpl: Deployment to query for logs
+        :param max_lines: Maximum number of lines to return (log tail)
+        :returns: A list of the last log lines
+        """
+        return deploy.get_deployment_logs(dpl, max_lines)
 
 class TransactionFactory():
     """Helper object for making transactions."""
@@ -164,6 +180,7 @@ class Transaction():
         self._cfg = config
         self._txn = txn
         self._pb_path = config.pb_path
+        self._deploy_path = config.deploy_path
 
     @property
     def raw(self):
@@ -293,7 +310,8 @@ class Transaction():
         # Provide information identifying this process
         self._create(self._pb_path + pb_id + "/owner", self._cfg.owner, lease)
 
-    def take_processing_block_by_workflow(self, workflow: dict, lease):
+    def take_processing_block_by_workflow(self, workflow: dict, lease) \
+            -> entity.ProcessingBlock:
         """
         Take ownership of unclaimed processing block matching a workflow.
 
@@ -314,3 +332,43 @@ class Transaction():
                 return pb
 
         return None
+
+    def get_deployment(self, deploy_id: str) -> entity.Deployment:
+        """
+        Retrieve details about a cluster configuration change.
+
+        :param deploy_id: Name of the deployment
+        :returns: Deployment details
+        """
+        dct = self._get(self._deploy_path + deploy_id)
+        return entity.Deployment(**dct)
+
+    def create_deployment(self, dpl: entity.Deployment):
+        """
+        Request a change to cluster configuration.
+
+        :param dpl: Deployment to add to database
+        """
+        # Add to database
+        assert isinstance(dpl, entity.Deployment)
+        self._create(self._deploy_path + dpl.deploy_id,
+                     dpl.to_dict())
+
+        # Apply deployment on successful deployment (this should
+        # eventually be done by a separate controller process!)
+        self._txn.on_commit(functools.partial(deploy.apply_deployment, dpl))
+
+    def delete_deployment(self, dpl: entity.Deployment):
+        """
+        Undo a change to cluster configuration.
+
+        :param dpl: Deployment to remove
+        """
+        # Delete all data associated with deployment
+        deploy_path = self._deploy_path + dpl.deploy_id
+        for key in self._txn.list_keys(deploy_path, recurse=5):
+            self._txn.delete(key)
+
+        # Apply deployment on successful deployment (this should
+        # eventually be done by a separate controller process!)
+        self._txn.on_commit(functools.partial(deploy.undo_deployment, dpl))
