@@ -14,7 +14,8 @@ PREFIX = "/__test"
 @pytest.fixture(scope="session")
 def etcd3():
     host = os.getenv('SDP_TEST_HOST', '127.0.0.1')
-    with backend.Etcd3(host=host) as etcd3:
+    port = os.getenv('SDP_CONFIG_PORT', '2379')
+    with backend.Etcd3(host=host, port=port) as etcd3:
         etcd3.delete(PREFIX, must_exist=False, recursive=True)
         yield etcd3
         etcd3.delete(PREFIX, must_exist=False, recursive=True)
@@ -316,10 +317,15 @@ def test_transaction_conc(etcd3):
     key3 = key + "/3"
     key4 = key + "/4"
 
+    counter = { 'i': 0 }
+    def increase_counter():
+        counter['i'] += 1
+
     # Ensure reading is consistent
     etcd3.create(key, "1")
     etcd3.create(key2, "1")
     for i, txn in enumerate(etcd3.txn()):
+        txn.on_commit(increase_counter)
         # First "get" should bake in revision, so subsequent calls
         # return values from this point in time
         txn.get(key)
@@ -327,11 +333,13 @@ def test_transaction_conc(etcd3):
         assert txn.get(key2)[0] == "1"
     # As this transaction is not writing anything, it will not get repeated
     assert i == 0
+    assert counter['i'] == 0 # No commit happens
 
     # Now check the behaviour if we write something. This time we
     # might be writing an inconsistent value to the database, so the
     # transaction needs to be repeated (10 times!)
     for i, txn in enumerate(etcd3.txn()):
+        txn.on_commit(increase_counter)
         v2 = txn.get(key2)
         if i < 10:
             etcd3.update(key2, i)
@@ -339,19 +347,25 @@ def test_transaction_conc(etcd3):
     assert i == 10
     assert etcd3.get(key2)[0] == "9"
     assert etcd3.get(key3)[0] == "10"
+    assert counter['i'] == 1
+    counter['i'] = 0
 
     # Same experiment, but with a key that didn't exist yet
     for i, txn in enumerate(etcd3.txn()):
+        txn.on_commit(increase_counter)
         txn.get(key4)
         if i == 0:
             etcd3.create(key4, "1")
         txn.update(key3, int(i))
     assert i == 1
+    assert counter['i'] == 1
     etcd3.delete(key4)
+    counter['i'] = 0
 
     # This is especially important because it underpins the safety
     # check of create():
     for i, txn in enumerate(etcd3.txn()):
+        txn.on_commit(increase_counter)
         # "Succeeds" first time only to cause the transaction to get
         # re-run to find a failure the second time around
         if i == 0:
@@ -361,6 +375,7 @@ def test_transaction_conc(etcd3):
             with pytest.raises(backend.Collision):
                 txn.create(key4, "2")
     assert i == 1
+    assert counter['i'] == 0 # No commit
 
     etcd3.delete(key, recursive=True)
 

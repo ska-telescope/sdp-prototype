@@ -407,6 +407,8 @@ class Etcd3Transaction():
         self._watchers = {}
         self._watch_queue = queue_m.Queue()
 
+        self._commit_callbacks = []
+
     def _ensure_uncommitted(self):
         if self._committed:
             raise RuntimeError("Attempted to modify committed transaction!")
@@ -595,7 +597,23 @@ class Etcd3Transaction():
 
         # Done
         self._committed = True
-        return txn.commit().succeeded
+        response = txn.commit()
+        if response.succeeded:
+            for callback in self._commit_callbacks:
+                callback()
+        self._commit_callbacks = []
+        return response.succeeded
+
+    def on_commit(self, callback):
+        """Registers a callback to call when the transaction succeeds.
+
+        A bit of a hack, but occassionally useful to add additional
+        side-effects to a transaction that are guaranteed to not get
+        duplicated.
+
+        :param callback: Callback to call
+        """
+        self._commit_callbacks.append(callback)
 
     def reset(self, revision=None):
         """Reset the transaction so it can be restarted after commit()."""
