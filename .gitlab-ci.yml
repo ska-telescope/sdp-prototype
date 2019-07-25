@@ -27,13 +27,13 @@ subarray_device_tests:
         --gherkin-terminal-reporter
         -vv
         --cucumber-json=cucumber.json
-    - mv .coverage $CI_JOB_NAME.coverage
+#    - mv .coverage $CI_JOB_NAME.coverage
   after_script:
     - coveralls
   artifacts:
     paths:
     - cucumber.json
-    - $CI_JOB_NAME.coverage
+#    - $CI_JOB_NAME.coverage
     expire_in: 1 week
 
 # Test the SDPMaster device.
@@ -41,12 +41,12 @@ master_device_tests:
   extends: .tango_tests
   script:
     - ./scripts/run_test.sh src/tango_sdp_master
-    - mv .coverage $CI_JOB_NAME.coverage
+#    - mv .coverage $CI_JOB_NAME.coverage
   after_script:
     - coveralls
-  artifacts:
-    paths:
-      - $CI_JOB_NAME.coverage
+#  artifacts:
+#    paths:
+#      - $CI_JOB_NAME.coverage
 
 # Test the configuration database
 config_db_tests:
@@ -67,12 +67,12 @@ config_db_tests:
     script:
       - pipenv install etcd3-py
       - ./scripts/run_test.sh src/config_db
-      - mv .coverage $CI_JOB_NAME.coverage
+#      - mv .coverage $CI_JOB_NAME.coverage
     after_script:
       - coveralls
-    artifacts:
-      paths:
-        - $CI_JOB_NAME.coverage
+#    artifacts:
+#      paths:
+#        - $CI_JOB_NAME.coverage
 
 # Test the visibility receiver
 vis_receive:
@@ -108,24 +108,24 @@ build_docs:
 # Generate test reports
 # ============================================================================
 
-# Generate combined test coverage report
-coverage_report:
-  stage: post_test
-  tags: [docker]
-  image: python:latest
-  before_script:
-    - pip install coverage
-    - pip install python-coveralls
-  script:
-    - coverage combine *.coverage
-    - coverage report
-    - coverage html
-  coverage: '/TOTAL\s+\d+\s+\d+\s+\d+\s+\d+\s+(\d+\%)/'
-#  after_script:
-#    - coveralls
-  artifacts:
-    paths: [htmlcov/]
-    expire_in: 1 week
+## Generate combined test coverage report
+#coverage_report:
+#  stage: post_test
+#  tags: [docker]
+#  image: python:latest
+#  before_script:
+#    - pip install coverage
+#    - pip install python-coveralls
+#  script:
+#    - coverage combine *.coverage
+#    - coverage report
+#    - coverage html
+#  coverage: '/TOTAL\s+\d+\s+\d+\s+\d+\s+\d+\s+(\d+\%)/'
+##  after_script:
+##    - coveralls
+#  artifacts:
+#    paths: [htmlcov/]
+#    expire_in: 1 week
 
 # Create an XRay test execution report
 # (currently only for the SDPSubarray tests)
