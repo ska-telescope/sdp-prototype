@@ -297,7 +297,7 @@ class Transaction():
         """
         Take ownership of unclaimed processing block matching a workflow.
 
-        :param pb_id: Workflow description. Must exactly match the
+        :param workflow: Workflow description. Must exactly match the
             workflow description used to create the processing block.
         :returns: Processing block, or None if no match was found
         """

@@ -51,7 +51,7 @@ class ProcessingBlock:
                 self.pb_id))
 
     def to_dict(self):
-        """Return workflow scan parameters."""
+        """Return data as dictionary."""
         return self._dict
 
     @property
