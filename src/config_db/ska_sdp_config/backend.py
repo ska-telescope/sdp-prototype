@@ -138,7 +138,6 @@ class Etcd3():
             rev = revision.revision
 
         # Make transaction to collect keys from all levels
-        keys = []
         txn = self._client.Txn()
         try:
             depth_iter = iter(recurse)
@@ -466,7 +465,6 @@ class Etcd3Transaction():
         path_depth = path.count('/')
 
         # Walk through depths, collecting known keys
-        txn = self._client.Txn()
         try:
             depth_iter = iter(recurse)
         except TypeError:
@@ -633,7 +631,7 @@ class Etcd3Transaction():
         return response.succeeded
 
     def on_commit(self, callback):
-        """Registers a callback to call when the transaction succeeds.
+        """Register a callback to call when the transaction succeeds.
 
         A bit of a hack, but occassionally useful to add additional
         side-effects to a transaction that are guaranteed to not get

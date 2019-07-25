@@ -121,7 +121,7 @@ def test_list(etcd3):
     assert etcd3.list_keys(key, recurse=3)[0] == [
         key+"/a", key+"/a/d", key+"/a/d/x",
         key+"/ab", key+"/ab/c", key+"/ax", key+"/b"]
-    assert etcd3.list_keys(key, recurse=[3,2,1])[0] == [
+    assert etcd3.list_keys(key, recurse=[3, 2, 1])[0] == [
         key+"/a", key+"/a/d", key+"/a/d/x",
         key+"/ab", key+"/ab/c", key+"/ax", key+"/b"]
     assert etcd3.list_keys(key+"/a", recurse=2)[0] == [
@@ -349,7 +349,8 @@ def test_transaction_conc(etcd3):
     key3 = key + "/3"
     key4 = key + "/4"
 
-    counter = { 'i': 0 }
+    counter = {'i': 0}
+
     def increase_counter():
         counter['i'] += 1
 
@@ -365,7 +366,7 @@ def test_transaction_conc(etcd3):
         assert txn.get(key2)[0] == "1"
     # As this transaction is not writing anything, it will not get repeated
     assert i == 0
-    assert counter['i'] == 0 # No commit happens
+    assert counter['i'] == 0  # No commit happens
 
     # Now check the behaviour if we write something. This time we
     # might be writing an inconsistent value to the database, so the
@@ -407,7 +408,7 @@ def test_transaction_conc(etcd3):
             with pytest.raises(backend.Collision):
                 txn.create(key4, "2")
     assert i == 1
-    assert counter['i'] == 0 # No commit
+    assert counter['i'] == 0  # No commit
 
     etcd3.delete(key, recursive=True)
 
@@ -426,10 +427,10 @@ def test_transaction_list(etcd3):
     assert etcd3.list_keys(key+'/')[0] == keys
     for txn in etcd3.txn():
         assert txn.list_keys(key+'/') == keys
-        assert txn.list_keys(key+'/',recurse=1) == sorted(keys + keys_sub)
-        assert txn.list_keys(key+'/',recurse=(1,)) == keys_sub
+        assert txn.list_keys(key+'/', recurse=1) == sorted(keys + keys_sub)
+        assert txn.list_keys(key+'/', recurse=(1,)) == keys_sub
     for txn in etcd3.txn():
-        assert txn.list_keys(key+'/',recurse=(1,)) == keys_sub
+        assert txn.list_keys(key+'/', recurse=(1,)) == keys_sub
 
     # Ensure that we can add another key into the range and have it
     # appear to the transaction *before* we commit
@@ -525,7 +526,7 @@ def test_transaction_watchers(etcd3):
     # Test that watchers get cancelled as we read fewer values
     # pylint: disable=W0212
     def watcher_count(typ, txn):
-        return len([() for t, _ in txn._watchers if t == typ])
+        return len([() for wk in txn._watchers if wk[0] == typ])
     for i, txn in enumerate(etcd3.txn()):
         txn.get(key)
         if i == 0:
