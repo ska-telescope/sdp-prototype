@@ -259,7 +259,7 @@ class SDPSubarray(Device):
 
     @command
     @DebugIt()
-    def Scan(self):
+    def StartScan(self):
         """Command issued when a scan is started."""
         self._obs_state = ObsState.SCANNING
 
@@ -273,7 +273,7 @@ class SDPSubarray(Device):
     @DebugIt()
     def EndSB(self):
         """Command issued to end the scheduling block."""
-        self._obs_state = ObsState.IDLE
+        self._obs_state = ObsState.IDLEScan() and EddScan()
 
     def _scan_complete(self):
         """Update the obsState to READY when a scan is complete.
