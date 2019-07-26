@@ -83,8 +83,10 @@ vis_receive:
     - pip3 install pyyaml
   script:
     - ./scripts/run_c_tests.sh
-  after_script:
-    - coveralls
+    - mv src/vis_receive/build/coveralls.json ./coveralls.json
+  artifacts:
+    paths: [./coveralls.json]
+    expire_in: 1 day
 
 # Build documentation
 build_docs:
@@ -116,7 +118,8 @@ coverage_report:
     - coverage html
   coverage: '/TOTAL\s+\d+\s+\d+\s+\d+\s+\d+\s+(\d+\%)/'
   after_script:
-    - coveralls
+    - cat coveralls.json
+    - coveralls --merge=coveralls.json
   artifacts:
     paths: [htmlcov/]
     expire_in: 1 week
