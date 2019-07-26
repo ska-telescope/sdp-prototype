@@ -31,9 +31,15 @@ int main(int argc, char** argv)
 {
     int num_streams = 1, num_threads_recv = 1, num_threads_write = 8;
     int num_times_in_buffer = 8, num_buffers = 2, num_channels_per_file = 1;
+    int write_autocorr = 0, write_crosscorr = 1;
+    int num_stations = 3;
     unsigned short int port_start = 41000;
+    double ref_freq_hz = 100e6;
+    double freq_inc_hz = 100e3;
     const char* output_location = 0;
     const char* output_name = "ingest";
+    const char* oms_file_name = "test_ms";
+    oskar_MeasurementSet* ms;
     if (argc > 1) num_streams = atoi(argv[1]);
     if (argc > 2) num_threads_recv = atoi(argv[2]);
     if (argc > 3) num_threads_write = atoi(argv[3]);
@@ -76,11 +82,28 @@ int main(int argc, char** argv)
             num_streams, port_start, num_channels_per_file, output_root);
     receiver_start(receiver);
 #ifdef WITH_MS
+    ms = open_ms(oms_file_name);
+    /* Create the empty Measurement Set if it doesn't exist. */
+    if(ms == 0)
+    {
+        printf("MS file: %s doesn't exist, creating one instead.\n", oms_file_name);
+        ms = create_ms(oms_file_name, "C test main",
+                num_stations, 1, 4, ref_freq_hz, freq_inc_hz,
+                write_autocorr, write_crosscorr);
+        if(ms == 0)
+        {
+            printf("Error creating MS file: %s\n", oms_file_name);
+            return -1;
+        }
+    }	
     struct Buffer** buf = malloc(sizeof(struct Buffer)*num_buffers);
-		for (int i = 0; i<num_buffers; i++){
-				buf[i] = receiver->buffers[i];
-				write_ms("test_ms", 4, buf[i]->num_channels, buf[i]->num_times, buf[i]->num_baselines );
-		}
+    for (int i = 0; i<num_buffers; i++){
+        buf[i] = receiver->buffers[i];
+        buf[i]->vis_data = receiver->buffers[i]->vis_data;
+//        printf("%d %d\n",buf[i]->num_channels, receiver->buffers[i]->vis_data[1]->tci);
+        write_ms(ms, 4, buf[i]->num_channels, buf[i]->num_times, buf[i]->num_baselines, 8, buf[i]->vis_data );
+    }
+    close_ms(ms);
 #endif
     receiver_free(receiver);
     free(output_root);

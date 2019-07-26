@@ -17,6 +17,10 @@ set(recv_SRC
     ${PROJECT_SOURCE_DIR}/src/thread_pool.c
     ${PROJECT_SOURCE_DIR}/src/timer.c
 )
+if(DEBUG)
+		set(CMAKE_CXX_FLAGS "-g ")
+		set(CMAKE_C_FLAGS "-g ")
+endif(DEBUG)
 
 # -----------------------------------------------------------------------------
 # Measurement Set write support 

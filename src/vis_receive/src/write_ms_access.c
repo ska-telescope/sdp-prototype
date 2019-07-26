@@ -3,25 +3,50 @@
 #include <stdlib.h>
 
 #include <oskar_measurement_set.h>
+#include "buffer.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846264338327950288
 #endif
 
-int write_ms(const char* file_name,int num_pols, int num_channels, int num_times,int num_baselines)
+//*************************************************
+//* Open existing MS
+//* Return 0 if error 
+//*************************************************
+
+
+oskar_MeasurementSet* open_ms(const char* file_name)
+{
+    oskar_MeasurementSet* ms = oskar_ms_open(file_name);
+    return ms;
+}
+
+//*************************************************
+//* Create new MS
+//* Return 0 if error 
+//*************************************************
+
+oskar_MeasurementSet* create_ms(const char* oms_file_name, const char* app_name,
+  	          unsigned int num_stations, unsigned int num_channels,
+							unsigned int num_pols, double ref_freq_hz,
+							double freq_inc_hz, int write_autocorr, int write_crosscorr)
+{
+    oskar_MeasurementSet*	ms = oskar_ms_create(oms_file_name, app_name,
+                                               num_stations, num_channels,
+                                               num_pols, ref_freq_hz,
+                                               freq_inc_hz, write_autocorr,
+                                               write_crosscorr);
+    return ms;
+}
+int write_ms(oskar_MeasurementSet* ms,int num_pols, int num_channels, int num_times,int num_baselines, int8_t timestamp, struct DataType* vis_data)
 {
     /* Define data dimensions. */
-//    int num_pols = 4;
-//    int num_channels = 2;
     int num_stations = 3;
-//    int num_times = 4;
-//    int num_baselines = num_stations * (num_stations - 1) / 2;
     int t, b, c, p;
     double ref_freq_hz = 100e6;
     double freq_inc_hz = 100e3;
     double exposure_sec = 1.0;
     double interval_sec = 1.0;
-		oskar_MeasurementSet* ms;
 
     /* Data to write are stored in these arrays. */
     double* uu = (double*) calloc(num_baselines, sizeof(double));
@@ -30,12 +55,6 @@ int write_ms(const char* file_name,int num_pols, int num_channels, int num_times
     float* vis = (float*) calloc(
             num_times * num_channels * num_baselines * num_pols,
             2 * sizeof(float));
-		ms = oskar_ms_open(file_name);
-    /* Create the empty Measurement Set if it doesn't exist. */
-		if( ms == 0)
-	    ms = oskar_ms_create(file_name, "C test main",
-  	          num_stations, num_channels, num_pols, ref_freq_hz, freq_inc_hz,
-    	        0, 1);
 		
 
     /* Set phase centre. */
@@ -79,7 +98,6 @@ int write_ms(const char* file_name,int num_pols, int num_channels, int num_times
     }
 
     /* Clean up. */
-    oskar_ms_close(ms);
     free(uu);
     free(vv);
     free(ww);
@@ -87,3 +105,7 @@ int write_ms(const char* file_name,int num_pols, int num_channels, int num_times
     return 0;
 }
 
+void close_ms(oskar_MeasurementSet* ms)
+{
+    oskar_ms_close(ms);
+}
