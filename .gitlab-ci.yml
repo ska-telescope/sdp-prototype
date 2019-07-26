@@ -114,11 +114,11 @@ coverage_report:
     - pip install python-coveralls
   script:
     - coverage combine *.coverage
+    - cat .coverage
     - coverage report
     - coverage html
   coverage: '/TOTAL\s+\d+\s+\d+\s+\d+\s+\d+\s+(\d+\%)/'
   after_script:
-    - cat coveralls.json
     - coveralls --merge=coveralls.json
   artifacts:
     paths: [htmlcov/]
