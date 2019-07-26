@@ -110,13 +110,12 @@ coverage_report:
   tags: [docker]
   image: python:latest
   variables:
-    TRAVIS_JOB_ID: 14
+    TRAVIS_JOB_ID: $CI_PIPELINE_IID
   before_script:
     - pip install coverage
     - pip install python-coveralls
   script:
     - coverage combine *.coverage
-    - cat .coverage
     - coverage report
     - coverage html
   coverage: '/TOTAL\s+\d+\s+\d+\s+\d+\s+\d+\s+(\d+\%)/'
