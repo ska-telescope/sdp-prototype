@@ -108,10 +108,16 @@ build_docs:
 coverage_report:
   stage: post_test
   tags: [docker]
-  image: python:latest
+  image: ubuntu:bionic
   before_script:
-    - pip install coverage
-    - pip install python-coveralls
+    - apt update
+    - apt install -y --no-install-recommends cppcheck=1.82-1
+    - apt install -y cmake curl
+    - apt install -y python3-pip
+    - apt install -y git
+    - pip3 install coverage
+    - pip3 install python-coveralls
+    - pip3 install cpp-coveralls==0.4.2
   script:
     - coverage combine *.coverage
     - cat .coverage
