@@ -1,0 +1,68 @@
+.pytango-orca-dev-changes: &pytango-orca-dev-changes
+  only:
+    changes:
+      - docker/pytango-orca-dev/0.3.0/buster-slim/Dockerfile
+  except:
+    refs:
+      - tags
+
+.pytango-orca-dev-tag: &pytango-orca-dev-tag
+  only:
+    refs:
+      - tags
+    variables:
+      - $CI_COMMIT_TAG =~ /^(pytango-orca-dev-0.3.0)/
+
+# -----------------------------------------------------------------------------
+# Build
+# -----------------------------------------------------------------------------
+.pytango-orca-dev-0.3.0-buster-slim-build:
+  extends: .docker-two-stage-build
+  variables:
+    IMAGE_NAME: pytango-orca-dev-0.3.0
+    IMAGE_TAG: buster-slim
+    IMAGE_PATH: docker/pytango-orca-dev/0.3.0/buster-slim
+
+pytango-orca-dev-0.3.0:buster-slim build - changes:
+  extends: .pytango-orca-dev-0.3.0-buster-slim-build
+  <<: *pytango-orca-dev-changes
+
+pytango-orca-dev-0.3.0:buster-slim build - tag:
+  extends: .pytango-orca-dev-0.3.0-buster-slim-build
+  <<: *pytango-orca-dev-tag
+
+# -----------------------------------------------------------------------------
+# Test
+# -----------------------------------------------------------------------------
+.pytango-orca-dev-0.3.0:buster-slim test:
+  extends: .docker-test-image
+  variables:
+    IMAGE_NAME: pytango-orca-dev-0.3.0
+    IMAGE_TAG: buster-slim
+    IMAGE_PATH: docker/pytango-orca-dev/0.3.0/buster-slim
+  script:
+    - echo "$CI_COMMIT_TAG"
+    - echo "$CI_COMMIT_MESSAGE"
+    - echo "$IMAGE_NAME"
+    - cd $IMAGE_PATH
+    - pip list
+    - python3 -c "import tango; print(tango.__version__)"
+    # TODO Test this image!
+
+pytango-orca-dev-0.3.0:buster-slim test - changes:
+  extends: .pytango-orca-dev-0.3.0:buster-slim test
+  <<: *pytango-orca-dev-changes
+
+pytango-orca-dev-0.3.0:buster-slim test - tag:
+  extends: .pytango-orca-dev-0.3.0:buster-slim test
+  <<: *pytango-orca-dev-tag
+
+# -----------------------------------------------------------------------------
+# Publish / push
+# -----------------------------------------------------------------------------
+pytango-orca-dev-0.3.0:buster-slim publish:
+  extends: .docker-push-image
+  variables:
+    IMAGE_NAME: pytango-orca-dev-0.3.0
+    IMAGE_TAG: buster-slim
+  <<: *pytango-orca-dev-tag

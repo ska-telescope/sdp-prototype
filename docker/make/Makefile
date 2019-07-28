@@ -5,8 +5,14 @@ LINE:=$(shell printf '=%.0s' {1..70})
 
 # Set default docker registry user.
 ifeq ($(strip $(DOCKER_REGISTRY_USER)),)
-  DOCKER_REGISTRY_USER:=skaorca
+  DOCKER_REGISTRY_USER=skaorca
+#  DOCKER_REGISTRY_USER=sdp-prototype
 endif
+
+#ifeq ($(strip $(DOCKER_REGISTRY_HOST)),)
+##	DOCKER_REGISTRY_HOST=index.docker.io
+##	DOCKER_REGISTRY_HOST=nexus.engageska-portugal.pt
+#endif
 
 # Get image name and version from the release file
 NAME=$(shell awk -F= '/^name=/{print $$2}' release)
@@ -14,6 +20,7 @@ VERSION=$(shell awk -F= '/^release=/{print $$2}' release)
 ifeq ($(strip $(GIT_VERSION)),)
 	GIT_VERSION=$(shell git rev-parse --verify --short=8 HEAD)
 endif
+
 ifeq ($(strip $(DOCKER_REGISTRY_HOST)),)
 	IMAGE=$(DOCKER_REGISTRY_USER)/$(NAME)
 	DOCKER_REGISTRY_HOST=index.docker.io
@@ -39,11 +46,11 @@ build:  ## Build the image, tagged as :$(VERSION)-$(GIT_VERSION)
 	@echo "$(CRED)$(LINE)$(CEND)"
 	@echo "$(CBLUE)Building image:$(CEND) $(IMAGE):$(VERSION)-$(GIT_VERSION)"
 	@echo "$(CRED)$(LINE)$(CEND)"
+	docker pull $(IMAGE):latest || true
 	docker build \
-	--pull \
 	--build-arg DOCKER_REGISTRY_HOST=$(DOCKER_REGISTRY_HOST) \
 	--build-arg DOCKER_REGISTRY_USER=$(DOCKER_REGISTRY_USER) \
-	$(CACHE_FROM_ARG) \
+	--cache-from $(IMAGE):lastest \
 	-t $(DEFAULT_TAG) .
 
 push: ## Push default image (tagged as :$(VERSION)-(GIT_VERSION)
@@ -51,16 +58,14 @@ push: ## Push default image (tagged as :$(VERSION)-(GIT_VERSION)
 	docker push $(DEFAULT_TAG)
 
 tag_latest:
-	@echo "$(CBLUE)Tagging:$(CEND) $(DEFAULT_TAG) $(CRED)->$(CEND) $(IMAGE):latest"
-	@docker tag $(DEFAULT_TAG) $(IMAGE):latest
+	docker tag $(DEFAULT_TAG) $(IMAGE):latest
 
 push_latest: tag_latest ## Push the image tagged as :latest
 	@echo "$(CBLUE)Pushing:$(CEND) $(IMAGE):latest"
 	@docker push $(IMAGE):latest
 
 tag_version:
-	@echo "$(CBLUE)Tagging:$(CEND) $(DEFAULT_TAG) $(CRED)->$(CEND) $(IMAGE):$(VERSION)"
-	@docker tag $(DEFAULT_TAG) $(IMAGE):$(VERSION)
+	docker tag $(DEFAULT_TAG) $(IMAGE):$(VERSION)
 
 push_version: tag_version  ## Push the image tagged as :$(VERSION) (without the git sha)
 	@echo "$(CBLUE)Pushing:$(CEND) $(IMAGE):$(VERSION)"
@@ -75,8 +80,7 @@ pull_default: ## Fetch the default Git versioned image
 	@docker pull $(DEFAULT_TAG) || true
 
 ls:  ## List images built from this folder
-	@echo "$(CBLUE)Images matching:$(CEND) $(IMAGE):*"
-	@docker image ls --filter=reference="$(IMAGE):*"
+	docker image ls --filter=reference="$(IMAGE):*"
 
 rm:  ## Remove all images built from this folder
 	@echo "$(CBLUE)Removing images matching:$(CEND) $(IMAGE):*"

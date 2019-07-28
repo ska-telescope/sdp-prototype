@@ -1,0 +1,45 @@
+.build_python:
+  stage: build
+  image: nexus.engageska-portugal.pt/sdp-prototype/pytango_ska_dev:latest
+  tags:
+    - docker
+    - engageska
+  artifacts:
+    paths:
+      - ./$BUILD_PATH/dist/
+
+.build_python_dev:
+  extends: .build_python
+  script:
+    - cd $BUILD_PATH
+    - python setup.py egg_info -b+$CI_COMMIT_SHORT_SHA sdist bdist_wheel
+
+.build_python_release:
+  extends: .build_python
+  script:
+    - cd $BUILD_PATH
+    - python setup.py sdist bdist_wheel
+
+build:ska-sdp-master_dev:
+  extends: .build_python_dev
+  variables:
+    BUILD_PATH: src/tango_sdp_master
+  except: [master]
+
+build:ska-sdp-master:
+  extends: .build_python_release
+  variables:
+    BUILD_PATH: src/tango_sdp_master
+  only: [master]
+
+build:ska-sdp-subarray_dev:
+  extends: .build_python_dev
+  variables:
+    BUILD_PATH: src/tango_sdp_subarray
+  except: [master]
+
+build:ska-sdp-subarray:
+  extends: .build_python_release
+  variables:
+    BUILD_PATH: src/tango_sdp_subarray
+  only: [master]

@@ -6,7 +6,7 @@ LINE:=$(shell printf '=%.0s' {1..70})
 # Set default docker registry user.
 ifeq ($(strip $(DOCKER_REGISTRY_USER)),)
 	DOCKER_REGISTRY_USER=sdp-prototype
-#  	DOCKER_REGISTRY_USER:=skaorca
+#  	DOCKER_REGISTRY_USER=skaorca
 endif
 
 ifeq ($(strip $(DOCKER_REGISTRY_HOST)),)

@@ -1,9 +1,9 @@
-# =============================================================================
-# Build layer - Extend the PyTango SKA ska base image with dev packages
-# =============================================================================
 ARG DOCKER_REGISTRY_USER
 ARG DOCKER_REGISTRY_HOST
-FROM ${DOCKER_REGISTRY_HOST}/${DOCKER_REGISTRY_USER}/pytango_ska_base:latest as build
+# =============================================================================
+# Build stage
+# =============================================================================
+FROM ${DOCKER_REGISTRY_HOST}/${DOCKER_REGISTRY_USER}/pytango-9.3.0:buster-slim as buildenv
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -19,12 +19,17 @@ COPY Pipfile.lock Pipfile.lock
 RUN pipenv install --deploy --ignore-pipfile --dev
 
 # =============================================================================
-# Final layer - Copy venv from build layer without build deps
+# Final stage
 # =============================================================================
-FROM ${DOCKER_REGISTRY_HOST}/${DOCKER_REGISTRY_USER}/pytango_ska_base:latest
+FROM ${DOCKER_REGISTRY_HOST}/${DOCKER_REGISTRY_USER}/pytango-9.3.0:buster-slim
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        git \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy the venv from the build
-COPY --from=build /venv /venv
+COPY --from=buildenv /venv /venv
 
 COPY Pipfile Pipfile
 COPY Pipfile.lock Pipfile.lock

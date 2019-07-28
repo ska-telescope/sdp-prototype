@@ -1,0 +1,33 @@
+#
+# Note: Tests can be run locally with
+#   gitlab-runner exec <executor, eg. docker> <job name>
+#
+stages:
+  - lint
+  - test_code
+  - build
+  - test_build
+  - post_test
+  - publish
+  - pages
+
+include:
+  - local: '/.gitlab-ci/templates/docker-templates.yml'
+  - local: '/.gitlab-ci/pytango-9.3.0.gitlab-ci.yml'
+  - local: '/.gitlab-ci/pytango-orca-dev-0.3.0.gitlab-ci.yml'
+#  - local: '/scripts/tests.gitlab-ci.yml'
+#  - local: '/scripts/reports.gitlab-ci.yml'
+#  - local: /'/scripts/python.build.gitlab-ci.yml'
+#  - local: '/scripts/python.publish.gitlab-ci.yml'
+#  - local: '/scripts/docker.push.gitlab-ci.yml'
+
+# Generate gitlab pages.
+pages:
+  stage: pages
+  tags: [docker]
+  only: [master]
+  image: python:latest
+  script:
+    - cp -R htmlcov public
+  artifacts:
+    paths: [public/]

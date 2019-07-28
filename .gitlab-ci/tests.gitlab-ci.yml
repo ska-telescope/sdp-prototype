@@ -1,0 +1,54 @@
+.tango_tests:
+  stage: test
+  tags: [docker]
+  image: nexus.engageska-portugal.pt/sdp-prototype/pytango_ska_dev:latest
+
+# Test the SDPSubarray device
+subarray_device_tests:
+  extends: .tango_tests
+  script:
+    - ./scripts/run_test.sh
+        src/tango_sdp_subarray
+        --gherkin-terminal-reporter
+        -vv
+        --cucumber-json=cucumber.json
+    - mv .coverage $CI_JOB_NAME.coverage
+  artifacts:
+    paths:
+    - cucumber.json
+    - $CI_JOB_NAME.coverage
+    expire_in: 1 week
+
+# Test the SDPMaster device.
+master_device_tests:
+  extends: .tango_tests
+  script:
+    - ./scripts/run_test.sh src/tango_sdp_master
+    - mv .coverage $CI_JOB_NAME.coverage
+  artifacts:
+    paths:
+      - $CI_JOB_NAME.coverage
+
+# Test the configuration database
+config_db_tests:
+    stage: test
+    image: nexus.engageska-portugal.pt/sdp-prototype/pytango_ska_dev:latest
+    services:
+      - name: quay.io/coreos/etcd:latest
+        alias: etcd
+        command:
+          - /usr/local/bin/etcd
+          - "--advertise-client-urls=http://0.0.0.0:2379"
+          - "--listen-client-urls=http://0.0.0.0:2379"
+          - "--initial-advertise-peer-urls=http://0.0.0.0:2380"
+          - "--listen-peer-urls=http://0.0.0.0:2380"
+          - "--initial-cluster=default=http://0.0.0.0:2380"
+    variables:
+      SDP_TEST_HOST: etcd
+    script:
+      - pipenv install etcd3-py
+      - ./scripts/run_test.sh src/config_db
+      - mv .coverage $CI_JOB_NAME.coverage
+    artifacts:
+      paths:
+        - $CI_JOB_NAME.coverage

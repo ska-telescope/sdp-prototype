@@ -21,8 +21,10 @@ pytest-codestyle = "*"
 pytest-pydocstyle = "*"
 pytest-cov = "*"
 coveralls = "*"
+twine="*"
 
 [packages]
+lmcbaseclasses = {git = "https://github.com/ska-telescope/lmc-base-classes.git",editable = true}
 wheel = "*"
 jsonschema = "*"
 

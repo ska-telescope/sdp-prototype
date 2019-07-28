@@ -1,0 +1,81 @@
+# Build a two stage image where first stage is tagged as 'buildenv'
+# Expects variables to be defined:
+#    IMAGE_NAME
+#    IMAGE_TAG
+#    IMAGE_PATH
+.docker-two-stage-build:
+  stage: build
+  tags:
+    - docker
+    - engageska
+  image: docker:stable
+  services:
+    - docker:dind
+  variables:
+    IMAGE: $CI_REGISTRY_IMAGE/$IMAGE_NAME:$IMAGE_TAG
+    DOCKER_REGISTRY_HOST: $DOCKER_REGISTRY_HOST
+    DOCKER_REGISTRY_USER: $CI_PROJECT_NAME
+  before_script:
+    - apk add git
+    - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN $CI_REGISTRY
+  script:
+    - cd $IMAGE_PATH
+    # Build buildenv stage. tagged with `-buildenv`
+    - docker pull $IMAGE-buildenv || true
+    - docker build --pull
+      --cache-from $IMAGE-buildenv
+      --build-arg DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST
+      --build-arg DOCKER_REGISTRY_USER=$DOCKER_REGISTRY_USER
+      --target buildenv -t $IMAGE-buildenv .
+    - docker push $IMAGE-buildenv
+    # Build final stage image tagged with `-test` suffix
+    - docker pull $IMAGE-test || true
+    - docker build --pull
+      --cache-from $IMAGE-buildenv
+      --cache-from $IMAGE-test
+      --build-arg DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST
+      --build-arg DOCKER_REGISTRY_USER=$DOCKER_REGISTRY_USER
+      -t $IMAGE-test .
+    - docker push $IMAGE-test
+
+
+# Run tests within a built docker image
+# Expects variables to be defined:
+#    IMAGE_NAME
+#    IMAGE_TAG
+.docker-test-image:
+  stage: test_build
+  tags:
+    - docker
+  variables:
+    IMAGE: $CI_REGISTRY_IMAGE/$IMAGE_NAME:$IMAGE_TAG
+  image: $IMAGE-test
+
+
+# Push a docker image to nexus
+# Expects variables to be defined:
+#    IMAGE_NAME
+#    IMAGE_TAG
+.docker-push-image:
+  stage: publish
+  tags:
+    - docker
+    - engageska
+  variables:
+    #IMAGE_NAME: pytango-orca-dev-0.3.0:buster-slim
+    GIT_STRATEGY: none
+    IMAGE: $CI_REGISTRY_IMAGE/$IMAGE_NAME:$IMAGE_TAG
+    NEXUS_IMAGE: $DOCKER_REGISTRY_HOST/$CI_PROJECT_NAME/$IMAGE_NAME
+  image: docker:stable
+  services:
+    - docker:dind
+  before_script:
+    # Log into the nexus repo.
+    - docker login -u $DOCKER_REGISTRY_USERNAME -p $DOCKER_REGISTRY_PASSWORD $DOCKER_REGISTRY_HOST
+  script:
+    - docker pull $IMAGE-test
+    - docker tag $IMAGE-test $NEXUS_IMAGE:latest
+    - docker tag $IMAGE-test $NEXUS_IMAGE:$IMAGE_TAG
+    - docker image ls
+    - docker push $NEXUS_IMAGE:$IMAGE_TAG
+    - docker push $NEXUS_IMAGE:latest

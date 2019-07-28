@@ -1,0 +1,62 @@
+# *** Common settings for building docker images
+.build_docker:
+  stage: build
+  variables:
+    DOCKER_REGISTRY_HOST: $DOCKER_REGISTRY_HOST
+    DOCKER_REGISTRY_USER: $CI_PROJECT_NAME
+    GIT_VERSION: $CI_COMMIT_SHORT_SHA
+  tags:
+    - docker
+    - engageska
+  image: docker:stable
+  services:
+    - docker:dind
+  before_script:
+    - apk add make git
+    - docker login -u $DOCKER_REGISTRY_USERNAME -p $DOCKER_REGISTRY_PASSWORD $DOCKER_REGISTRY_HOST
+  script:
+    - cd $BUILD_PATH
+    - make DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME pull
+    - make DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME build
+    - make DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push
+  retry: 2
+
+# Build and push the `pytango_build` image.
+build:pytango_build:
+  extends: .build_docker
+  when: manual
+  variables:
+    BUILD_PATH: docker/pytango_build
+
+# Build and push the `pytango_base` image.
+build:pytango_base:
+  extends: .build_docker
+  when: manual
+  variables:
+    BUILD_PATH: docker/pytango_base
+
+# Build and push the `pytango_ska_base` image.
+build:pytango_ska_base:
+  extends: .build_docker
+  when: manual
+  variables:
+    BUILD_PATH: docker/pytango_ska_base
+
+# Build and push the `pytango_ska_dev` image.
+build:pytango_ska_dev:
+  extends: .build_docker
+  when: manual
+  variables:
+    BUILD_PATH: docker/pytango_ska_dev
+
+# Build and push `tangods_sdp_master` image.
+build:tangods_sdp_master:
+  extends: .build_docker
+  variables:
+    BUILD_PATH: src/tango_sdp_master
+
+# Build and push `tangods_sdp_subarray` image.
+build:tangods_sdp_subarray:
+  extends: .build_docker
+  variables:
+    BUILD_PATH: src/tango_sdp_subarray
