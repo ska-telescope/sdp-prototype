@@ -12,6 +12,10 @@ stages:
   - pages
 
 
+# https://blog.sparksuite.com/7-ways-to-speed-up-gitlab-ci-cd-times-29f60aab69f9
+variables:
+  DOCKER_DRIVER: overlay2
+
 # -----------------------------------------------------------------------------
 # Include jobs descriptions
 # -----------------------------------------------------------------------------
