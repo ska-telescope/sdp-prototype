@@ -26,15 +26,15 @@ These images are built by the gitlab CI whenever a change is made. New versions
 of the image are published by means of creating a git tag with the pattern:
 
 ```
-tags/<image name>==<image tag>
+<image name>==<image tag>
 ```
 
 For example:
 
 ```bash
-git tag -a tags/pytango-9.3.0==buster-slim -m "<message>"
-git tag -a tags/ska-lmc-baseclasses==devel-buster-slim -m "<message>"
-git tag -a tags/pytango-orca-dev==0.3.0-buster-slim -m "<message>"
+git tag -a pytango-9.3.0==buster-slim -m "<message>"
+git tag -a ska-lmc-baseclasses==devel-buster-slim -m "<message>"
+git tag -a pytango-orca-dev==0.3.0-buster-slim -m "<message>"
 ```
 
 Published images for the latest versions of these dockerfiles can be found in

@@ -109,4 +109,4 @@
     refs:
       - tags
     variables:
-      - $CI_COMMIT_TAG =~ /^((tags\/)($IMAGE_NAME)(==)($IMAGE_TAG))$/
+      - $CI_COMMIT_TAG =~ /^(($IMAGE_NAME)(==)($IMAGE_TAG))$/
