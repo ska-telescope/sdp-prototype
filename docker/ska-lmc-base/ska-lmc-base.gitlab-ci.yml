@@ -3,7 +3,7 @@
   variables:
     IMAGE_NAME: ska-lmc-base-devel
     IMAGE_TAG: buster-slim
-    IMAGE_PATH: /docker/ska-lmc-base/devel/buster-slim
+    IMAGE_PATH: docker/ska-lmc-base/devel/buster-slim
 
 # Logic for only running job if changes and not tag
 .ska-lmc-base-devel-changes: &ska-lmc-base-devel-changes
