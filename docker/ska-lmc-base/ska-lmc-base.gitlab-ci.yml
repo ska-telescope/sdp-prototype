@@ -9,7 +9,7 @@
 .ska-lmc-base-devel-changes: &ska-lmc-base-devel-changes
   only:
     changes:
-      - docker/ska-lmc-base/devel/buster-slim/devel/*
+      - docker/ska-lmc-base/devel/buster-slim/*
       - docker/ska-lmc-base/ska-lmc-base.gitlab-ci.yml
   except:
     refs:
