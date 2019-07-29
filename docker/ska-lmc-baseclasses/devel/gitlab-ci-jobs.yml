@@ -22,7 +22,7 @@ build ska-lmc-baseclasses-devel:buster-slim when changes:
 build ska-lmc-baseclasses-devel:buster-slim when tagged:
   extends:
     - .docker-two-stage-build
-    - .ska-lmc-base-devel-buster-slim-vars
+    - .ska-lmc-baseclasses-devel-buster-slim-vars
     - .when-docker-image-tagged
 
 
