@@ -1,9 +1,9 @@
 # Common variables
 .pytango-orca-dev-0.3.0:buster-slim vars:
   variables:
-    MODULE_PATH: docker/pytango-orca-dev/0.3.0/buster-slim
-    IMAGE_NAME: pytango-orca-dev-0.3.0
-    IMAGE_TAG: buster-slim
+    MODULE_PATH: docker/pytango-orca-dev/0.3.0-buster-slim
+    IMAGE_NAME: pytango-orca-dev
+    IMAGE_TAG: 0.3.0-buster-slim
 
 
 # -----------------------------------------------------------------------------

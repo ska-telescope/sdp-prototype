@@ -1,6 +1,61 @@
 #
-# docker/ska-lmc-base/gitlab-ci-jobs.yml
+# docker/ska-lmc-baseclasses/devel/gitlab-ci-jobs.yml
 #
 
-include:
-  - local: '/docker/ska-lmc-baseclasses/devel/gitlab-ci-jobs.yml'
+# Common variables
+.ska-lmc-baseclasses-devel-buster-slim-vars:
+  variables:
+    MODULE_PATH: docker/ska-lmc-baseclasses/devel-buster-slim
+    IMAGE_NAME: ska-lmc-baseclasses
+    IMAGE_TAG: devel-buster-slim
+
+
+# -----------------------------------------------------------------------------
+# Build
+# -----------------------------------------------------------------------------
+build ska-lmc-baseclasses-devel:buster-slim when changes:
+  extends:
+    - .docker-two-stage-build
+    - .ska-lmc-baseclasses-devel-buster-slim-vars
+    - .when-docker-image-changes
+
+build ska-lmc-baseclasses-devel:buster-slim when tagged:
+  extends:
+    - .docker-two-stage-build
+    - .ska-lmc-baseclasses-devel-buster-slim-vars
+    - .when-docker-image-tagged
+
+
+# -----------------------------------------------------------------------------
+# Test
+# -----------------------------------------------------------------------------
+.ska-lmc-baseclasses-devel-tests:
+  extends:
+    - .docker-test-image
+    - .ska-lmc-baseclasses-devel-buster-slim-vars
+  script:
+    - cd $MODULE_PATH
+    - pip list
+    - python3 -c "import tango; print(tango.__version__)"
+    - python3 -c "import skabase; print(skabase.__all__)"
+    - python3 -c "from skabase import SKAMaster; print(SKAMaster.__version__)"
+
+test ska-lmc-baseclasses-devel:buster-slim when changes:
+  extends:
+    - .ska-lmc-baseclasses-devel-tests
+    - .when-docker-image-changes
+
+test ska-lmc-baseclasses-devel:buster-slim when tagged:
+  extends:
+    - .ska-lmc-baseclasses-devel-tests
+    - .when-docker-image-tagged
+
+
+# -----------------------------------------------------------------------------
+# Publish / push
+# -----------------------------------------------------------------------------
+publish ska-baseclasses-devel:buster-slim when tagged:
+  extends:
+  - .docker-push-image
+  - .ska-lmc-baseclasses-devel-buster-slim-vars
+  - .when-docker-image-tagged
