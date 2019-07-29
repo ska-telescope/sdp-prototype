@@ -8,6 +8,7 @@ stages:
   - test_build
   - post_test
   - publish
+  - deploy
   - pages
 
 
@@ -16,6 +17,8 @@ stages:
 # -----------------------------------------------------------------------------
 
 include:
+  # TODO(BMo) move project yaml files to source directories.
+
   # Templates for building, testing, and publishing docker images.
   - local: '/.gitlab-ci/templates/docker-templates.yml'
 
@@ -23,7 +26,7 @@ include:
   - local: '/.gitlab-ci/pytango.gitlab-ci.yml'
 
   # Docker image providing PyTango + ska lmc base classes
-  - local: '/.gitlab-ci/ska-lmc-base.gitlab-ci.yml'
+  - local: '/docker/ska_lmc_base/ska-lmc-base.gitlab-ci.yml'
 
   # Docker image for developing and running PyTango tests
   - local: '/.gitlab-ci/pytango-orca-dev.gitlab-ci.yml'
@@ -34,77 +37,79 @@ include:
 #  - local: '/scripts/python.publish.gitlab-ci.yml'
 #  - local: '/scripts/docker.push.gitlab-ci.yml'
 
-# -----------------------------------------------------------------------------
-# test stage
-# -----------------------------------------------------------------------------
-
-# Build documentation
-build_docs:
-  stage: test
-  when: manual
-  before_script:
-    - pip install -r docs/requirements.txt
-  script:
-    - make -C docs html
-  artifacts:
-    paths: [docs/build/html/]
-    expire_in: 1 day
-
-# -----------------------------------------------------------------------------
-# Post test stage : Generate reports
-# -----------------------------------------------------------------------------
-
-# Generate combined test coverage report
-coverage_report:
-  stage: post_test
-  tags: [docker]
-  image: python:latest
-  before_script:
-    - pip install coverage
-  script:
-    - coverage combine *.coverage
-    - coverage report
-    - coverage html
-  coverage: '/TOTAL\s+\d+\s+\d+\s+\d+\s+\d+\s+(\d+\%)/'
-  artifacts:
-    paths: [htmlcov/]
-    expire_in: 1 week
-
-# Create an XRay test execution report
-# (currently only for the SDPSubarray tests)
-.xray_report:
-  stage: post_test
-  tags: [docker]
-  image: python:latest
-  script:
-    - 'curl -X POST -H "Content-Type: application/json"
-         -H "Authorization: Basic $JIRA_AUTH"
-         --data @cucumber.json
-         https://jira.skatelescope.org/rest/raven/1.0/import/execution/cucumber'
-  retry: 2 # In case JIRA doesn't work first time
-
-# Update XRay links in JIRA automatically This is done only for the master
-xray_report:
-  extends: .xray_report
-  only: [master]
-
-# Update XRay links in JIRA. Manual job that can be executed for branches
-xray_report-manual:
-  extends: .xray_report
-  when: manual
-  except: [master]
-
-# ----------------------------------------------------------------------------
-# Pages stages : publish coverage report to gitlab pages
-# ----------------------------------------------------------------------------
-
-# Generate gitlab pages.
-pages:
-  stage: pages
-  tags: [docker]
-  only: [master]
-  image: python:latest
-  script:
-    - cp -R htmlcov public
-  artifacts:
-    paths: [public/]
+## -----------------------------------------------------------------------------
+## test stage
+## -----------------------------------------------------------------------------
+#
+## Build documentation
+#build_docs:
+#  stage: test
+#  when: manual
+#  before_script:
+#    - pip install -r docs/requirements.txt
+#  script:
+#    - make -C docs html
+#  artifacts:
+#    paths: [docs/build/html/]
+#    expire_in: 1 day
+#
+## -----------------------------------------------------------------------------
+## Post test stage : Generate reports
+## -----------------------------------------------------------------------------
+#
+## Generate combined test coverage report
+#coverage_report:
+#  stage: post_test
+#  tags: [docker]
+#  image: python:latest
+#  before_script:
+#    - pip install coverage
+#  script:
+#    - coverage combine *.coverage
+#  after_script:
+#    - coverage report
+#    - coverage html
+#  coverage: '/TOTAL\s+\d+\s+\d+\s+\d+\s+\d+\s+(\d+\%)/'
+#  artifacts:
+#    paths: [htmlcov/]
+#    expire_in: 1 week
+#  allow_failure: true
+#
+## Create an XRay test execution report
+## (currently only for the SDPSubarray tests)
+#.xray_report:
+#  stage: post_test
+#  tags: [docker]
+#  image: python:latest
+#  script:
+#    - 'curl -X POST -H "Content-Type: application/json"
+#         -H "Authorization: Basic $JIRA_AUTH"
+#         --data @cucumber.json
+#         https://jira.skatelescope.org/rest/raven/1.0/import/execution/cucumber'
+#  retry: 2 # In case JIRA doesn't work first time
+#
+## Update XRay links in JIRA automatically This is done only for the master
+#xray_report:
+#  extends: .xray_report
+#  only: [master]
+#
+## Update XRay links in JIRA. Manual job that can be executed for branches
+#xray_report-manual:
+#  extends: .xray_report
+#  when: manual
+#  except: [master]
+#
+## ----------------------------------------------------------------------------
+## Pages stages : publish coverage report to gitlab pages
+## ----------------------------------------------------------------------------
+#
+## Generate gitlab pages.
+#pages:
+#  stage: pages
+#  tags: [docker]
+#  only: [master]
+#  image: python:latest
+#  script:
+#    - cp -R htmlcov public
+#  artifacts:
+#    paths: [public/]

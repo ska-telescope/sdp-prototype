@@ -9,7 +9,8 @@
 .ska-lmc-base-devel-changes: &ska-lmc-base-devel-changes
   only:
     changes:
-      - docker/ska-lmc-base/devel/buster-slim/Dockerfile
+      - docker/ska-lmc-base/devel/buster-slim/devel/*
+      - docker/ska-lmc-base/ska-lmc-base.gitlab-ci.yml
   except:
     refs:
       - tags
@@ -51,6 +52,8 @@ ska-lmc-base-devel:buster-slim build - tag:
     - cd $IMAGE_PATH
     - pip list
     - python3 -c "import tango; print(tango.__version__)"
+    - python3 -c "import skabase; print(skabase.__all__)"
+    - python3 -c "from skabase import SKAMaster; print(SKAMaster.__version__)"
     # TODO Test this image!
 
 ska-lmc-base-devel:buster-slim test - changes:
