@@ -85,8 +85,12 @@
 # Expects $MODULE_PATH to have been already set in variables.
 .when-docker-image-changes:
   only:
-    # This may not work... see:
+    # There currently seems to be an issue with paths in 'only:changes' see:
     # https://gitlab.com/gitlab-org/gitlab-ce/issues/55570
+    # Using docker/**/* works but is a catch all for all files in the docker
+    # directory.
+    # For now please override only:changes from this template in the
+    # local job definition.
     changes:
       - docker/**/*
 #      - $MODULE_PATH/Dockerfile
@@ -104,4 +108,4 @@
     refs:
       - tags
     variables:
-      - $CI_COMMIT_TAG =~ /^($IMAGE_NAME:$IMAGE_TAG)/
+      - $CI_COMMIT_TAG =~ /^($IMAGE_NAME):($IMAGE_TAG).*/
