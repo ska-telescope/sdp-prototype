@@ -88,11 +88,12 @@
     # This may not work... see:
     # https://gitlab.com/gitlab-org/gitlab-ce/issues/55570
     changes:
-      - $MODULE_PATH/Dockerfile
-      - $MODULE_PATH/Pipfile
-      - $MODULE_PATH/Pipfile.lock
-      - $MODULE_PATH/../.gitlab-ci-jobs.yml
-      - $MODULE_PATH/../../.gitlab-ci-jobs.yml
+      - docker/**/*
+#      - $MODULE_PATH/Dockerfile
+#      - $MODULE_PATH/Pipfile
+#      - $MODULE_PATH/Pipfile.lock
+#      - $MODULE_PATH/../.gitlab-ci-jobs.yml
+#      - $MODULE_PATH/../../.gitlab-ci-jobs.yml
   except:
     refs:
       - tags
