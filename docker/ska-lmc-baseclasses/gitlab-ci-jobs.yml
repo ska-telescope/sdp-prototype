@@ -6,6 +6,13 @@
     IMAGE_TAG: devel-buster-slim
 
 
+# Over-ride general behaviour of .when-docker-image-changes for module path
+.when ska-lmc-baseclasses changes:
+  extends: .when-docker-image-changes
+  only:
+    changes:
+      - docker/ska-lmc-baseclasses/**/*
+
 # -----------------------------------------------------------------------------
 # Build
 # -----------------------------------------------------------------------------
@@ -13,7 +20,7 @@ build ska-lmc-baseclasses:devel-buster-slim when changes:
   extends:
     - .docker-two-stage-build
     - .ska-lmc-baseclasses:devel-buster-slim vars
-    - .when-docker-image-changes
+    - .when ska-lmc-baseclasses changes
 
 build ska-lmc-baseclasses:devel-buster-slim when tagged:
   extends:
@@ -39,7 +46,7 @@ build ska-lmc-baseclasses:devel-buster-slim when tagged:
 test ska-lmc-baseclasses:devel-buster-slim when changes:
   extends:
     - .ska-lmc-baseclasses:devel-buster-slim tests
-    - .when-docker-image-changes
+    - .when ska-lmc-baseclasses changes
 
 test ska-lmc-baseclasses:devel-buster-slim when tagged:
   extends:

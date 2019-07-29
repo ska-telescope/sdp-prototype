@@ -5,6 +5,12 @@
     IMAGE_NAME: pytango-orca-dev
     IMAGE_TAG: 0.3.0-buster-slim
 
+# Over-ride general behaviour of .when-docker-image-changes for module path
+.when pytango-orca-dev changes:
+  extends: .when-docker-image-changes
+  only:
+    changes:
+      - docker/pytango-orca-dev/**/*
 
 # -----------------------------------------------------------------------------
 # Build
@@ -13,7 +19,7 @@ build pytango-orca-dev:0.3.0-buster-slim when changes:
   extends:
     - .docker-two-stage-build
     - .pytango-orca-dev:0.3.0-buster-slim vars
-    - .when-docker-image-changes
+    - .when pytango-orca-dev changes
 
 build pytango-orca-dev:0.3.0-buster-slim when tagged:
   extends:
@@ -37,7 +43,7 @@ build pytango-orca-dev:0.3.0-buster-slim when tagged:
 test pytango-orca-dev:0.3.0-buster-slim when changes:
   extends:
     - .pytango-orca-dev:0.3.0-buster-slim tests
-    - .when-docker-image-changes
+    - .when pytango-orca-dev changes
 
 
 test pytango-orca-dev:0.3.0-buster-slim when tagged:

@@ -5,6 +5,13 @@
     IMAGE_NAME: pytango-9.3.0
     IMAGE_TAG: buster-slim
 
+# Over-ride general behaviour of .when-docker-image-changes for module path
+.when-pytango-changes:
+  extends: .when-docker-image-changes
+  only:
+    changes:
+      - docker/pytango/**/*
+
 # -----------------------------------------------------------------------------
 # Build
 # -----------------------------------------------------------------------------
@@ -12,7 +19,7 @@ build pytango-9.3.0:buster-slim when changes:
   extends:
     - .docker-two-stage-build
     - .pytango-9.3.0:buster-slim vars
-    - .when-docker-image-changes
+    - .when-pytango-changes
 
 build pytango-9.3.0:buster-slim when tagged:
   extends:
@@ -34,7 +41,7 @@ build pytango-9.3.0:buster-slim when tagged:
 test pytango-9.3.0:buster-slim when changes:
   extends:
     - .pytango-9.3.0:buster-slim tests
-    - .when-docker-image-changes
+    - .when-pytango-changes
 
 test pytango-9.3.0:buster-slim test whem tagged:
   extends:
