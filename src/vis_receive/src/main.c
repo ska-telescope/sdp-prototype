@@ -100,8 +100,7 @@ int main(int argc, char** argv)
     for (int i = 0; i<num_buffers; i++){
         buf[i] = receiver->buffers[i];
         buf[i]->vis_data = receiver->buffers[i]->vis_data;
-//        printf("%d %d\n",buf[i]->num_channels, receiver->buffers[i]->vis_data[1]->tci);
-        write_ms(ms, 4, buf[i]->num_channels, buf[i]->num_times, buf[i]->num_baselines, 8, buf[i]->vis_data );
+        write_ms(ms, i, 4, buf[i]->num_channels, buf[i]->num_times, buf[i]->num_baselines, &(buf[i]->vis_data));
     }
     close_ms(ms);
 #endif

@@ -38,7 +38,7 @@ oskar_MeasurementSet* create_ms(const char* oms_file_name, const char* app_name,
                                                write_crosscorr);
     return ms;
 }
-int write_ms(oskar_MeasurementSet* ms,int num_pols, int num_channels, int num_times,int num_baselines, int8_t timestamp, struct DataType* vis_data)
+int write_ms(oskar_MeasurementSet* ms, int index, int num_pols, int num_channels, int num_times,int num_baselines, struct DataType** vis_data)
 {
     /* Define data dimensions. */
     int num_stations = 3;
@@ -47,6 +47,7 @@ int write_ms(oskar_MeasurementSet* ms,int num_pols, int num_channels, int num_ti
     double freq_inc_hz = 100e3;
     double exposure_sec = 1.0;
     double interval_sec = 1.0;
+    struct DataType* vis2 = malloc(num_times * num_channels * num_baselines * num_pols* 2 * sizeof(float));
 
     /* Data to write are stored in these arrays. */
     double* uu = (double*) calloc(num_baselines, sizeof(double));
@@ -91,10 +92,12 @@ int write_ms(oskar_MeasurementSet* ms,int num_pols, int num_channels, int num_ti
         const unsigned int start_row = t * num_baselines;
         const size_t vis_block_start =
                 2 * num_pols * num_baselines * num_channels * t;
-        oskar_ms_write_coords_d(ms, start_row, num_baselines, uu, vv, ww,
+//                num_baselines * num_channels * t;
+        oskar_ms_write_coords_d(ms, index*start_row+start_row, num_baselines, uu, vv, ww,
                 exposure_sec, interval_sec, time_stamp);
-        oskar_ms_write_vis_f(ms, start_row, 0, num_channels, num_baselines,
-                vis + vis_block_start);
+        vis2 = vis_data;
+        oskar_ms_write_vis_f(ms, index*start_row+start_row, 0, num_channels, num_baselines,
+                &((vis2->vis + vis_block_start)->x));
     }
 
     /* Clean up. */
