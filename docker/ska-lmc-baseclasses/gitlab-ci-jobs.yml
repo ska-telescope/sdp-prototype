@@ -3,4 +3,4 @@
 #
 
 include:
-  - local: '/docker/ska-lmc-base/devel/gitlab-ci-jobs.yml'
+  - local: '/docker/ska-lmc-baseclasses/devel/gitlab-ci-jobs.yml'
