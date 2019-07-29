@@ -1,9 +1,5 @@
-#
-# docker/ska-lmc-baseclasses/devel/gitlab-ci-jobs.yml
-#
-
 # Common variables
-.ska-lmc-baseclasses-devel-buster-slim-vars:
+.ska-lmc-baseclasses:devel-buster-slim vars:
   variables:
     MODULE_PATH: docker/ska-lmc-baseclasses/devel-buster-slim
     IMAGE_NAME: ska-lmc-baseclasses
@@ -13,49 +9,49 @@
 # -----------------------------------------------------------------------------
 # Build
 # -----------------------------------------------------------------------------
-build ska-lmc-baseclasses-devel:buster-slim when changes:
+build ska-lmc-baseclasses:devel-buster-slim when changes:
   extends:
     - .docker-two-stage-build
-    - .ska-lmc-baseclasses-devel-buster-slim-vars
+    - .ska-lmc-baseclasses:devel-buster-slim vars
     - .when-docker-image-changes
 
-build ska-lmc-baseclasses-devel:buster-slim when tagged:
+build ska-lmc-baseclasses:devel-buster-slim when tagged:
   extends:
     - .docker-two-stage-build
-    - .ska-lmc-baseclasses-devel-buster-slim-vars
+    - .ska-lmc-baseclasses:devel-buster-slim vars
     - .when-docker-image-tagged
 
 
 # -----------------------------------------------------------------------------
 # Test
 # -----------------------------------------------------------------------------
-.ska-lmc-baseclasses-devel-tests:
+.ska-lmc-baseclasses:devel-buster-slim tests:
   extends:
     - .docker-test-image
-    - .ska-lmc-baseclasses-devel-buster-slim-vars
+    - .ska-lmc-baseclasses:devel-buster-slim vars
   script:
-    - cd $MODULE_PATH
-    - pip list
-    - python3 -c "import tango; print(tango.__version__)"
+#    - cd $MODULE_PATH
+#    - pip list
+    - python3 -c "import tango; assert tango.__version__ == '9.3.0'"
     - python3 -c "import skabase; print(skabase.__all__)"
     - python3 -c "from skabase import SKAMaster; print(SKAMaster.__version__)"
 
-test ska-lmc-baseclasses-devel:buster-slim when changes:
+test ska-lmc-baseclasses:devel-buster-slim when changes:
   extends:
-    - .ska-lmc-baseclasses-devel-tests
+    - .ska-lmc-baseclasses:devel-buster-slim tests
     - .when-docker-image-changes
 
-test ska-lmc-baseclasses-devel:buster-slim when tagged:
+test ska-lmc-baseclasses:devel-buster-slim when tagged:
   extends:
-    - .ska-lmc-baseclasses-devel-tests
+    - .ska-lmc-baseclasses:devel-buster-slim tests
     - .when-docker-image-tagged
 
 
 # -----------------------------------------------------------------------------
 # Publish / push
 # -----------------------------------------------------------------------------
-publish ska-baseclasses-devel:buster-slim when tagged:
+publish ska-baseclasses:devel-buster-slim when tagged:
   extends:
   - .docker-push-image
-  - .ska-lmc-baseclasses-devel-buster-slim-vars
+  - .ska-lmc-baseclasses:devel-buster-slim vars
   - .when-docker-image-tagged

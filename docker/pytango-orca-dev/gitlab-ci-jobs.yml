@@ -1,5 +1,5 @@
 # Common variables
-.pytango-orca-dev-0.3.0:buster-slim vars:
+.pytango-orca-dev:0.3.0-buster-slim vars:
   variables:
     MODULE_PATH: docker/pytango-orca-dev/0.3.0-buster-slim
     IMAGE_NAME: pytango-orca-dev
@@ -9,48 +9,48 @@
 # -----------------------------------------------------------------------------
 # Build
 # -----------------------------------------------------------------------------
-build pytango-orca-dev-0.3.0:buster-slim when changes:
+build pytango-orca-dev:0.3.0-buster-slim when changes:
   extends:
     - .docker-two-stage-build
-    - .pytango-orca-dev-0.3.0:buster-slim vars
+    - .pytango-orca-dev:0.3.0-buster-slim vars
     - .when-docker-image-changes
 
-build pytango-orca-dev-0.3.0:buster-slim when tagged:
+build pytango-orca-dev:0.3.0-buster-slim when tagged:
   extends:
     - .docker-two-stage-build
-    - .pytango-orca-dev-0.3.0:buster-slim vars
+    - .pytango-orca-dev:0.3.0-buster-slim vars
     - .when-docker-image-tagged
 
 
 # -----------------------------------------------------------------------------
 # Test
 # -----------------------------------------------------------------------------
-.pytango-orca-dev-0.3.0:buster-slim tests:
+.pytango-orca-dev:0.3.0-buster-slim tests:
   extends:
     - .docker-test-image
-    - .pytango-orca-dev-0.3.0:buster-slim vars
+    - .pytango-orca-dev:0.3.0-buster-slim vars
   script:
-    - cd $MODULE_PATH
+#    - cd $MODULE_PATH
     - pip list
-    - python3 -c "import tango; print(tango.__version__)"
+    - python3 -c "import tango; assert tango.__version__ == '9.3.0'"
 
-test pytango-orca-dev-0.3.0:buster-slim when changes:
+test pytango-orca-dev:0.3.0-buster-slim when changes:
   extends:
-    - .pytango-orca-dev-0.3.0:buster-slim tests
+    - .pytango-orca-dev:0.3.0-buster-slim tests
     - .when-docker-image-changes
 
 
-test pytango-orca-dev-0.3.0:buster-slim when tagged:
+test pytango-orca-dev:0.3.0-buster-slim when tagged:
   extends:
-    - .pytango-orca-dev-0.3.0:buster-slim tests
+    - .pytango-orca-dev:0.3.0-buster-slim tests
     - .when-docker-image-tagged
 
 
 # -----------------------------------------------------------------------------
 # Publish / push
 # -----------------------------------------------------------------------------
-publish pytango-orca-dev-0.3.0:buster-slim when tagged:
+publish pytango-orca-dev:0.3.0-buster-slim when tagged:
   extends:
     - .docker-push-image
-    - .pytango-orca-dev-0.3.0:buster-slim vars
+    - .pytango-orca-dev:0.3.0-buster-slim vars
     - .when-docker-image-tagged
