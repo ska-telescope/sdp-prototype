@@ -19,16 +19,10 @@ stages:
 include:
   # TODO(BMo) move project yaml files to source directories.
 
-  # CI templates
-  - local: '/.gitlab-ci/templates/docker-templates.yml'
-
-  # Docker Image: PyTango
+  # Jobs to build and test Docker base images
+  - local: '/docker/gitlab-ci-templates.yml'
   - local: '/docker/pytango/gitlab-ci-jobs.yml'
-
-  # Docker Image: PyTango dev + test environment
   - local: '/docker/pytango-orca-dev/gitlab-ci-jobs.yml'
-
-  # Docker Image: SKA LMC Tango base classes
   - local: '/docker/ska-lmc-base/gitlab-ci-jobs.yml'
 
 #  # Service: SKA Subarray Device Server

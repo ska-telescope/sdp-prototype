@@ -1,9 +1,8 @@
 # Build a two stage image where first stage is tagged as 'buildenv'
 #
 # Requires the following variables to have been defined.
-#   IMAGE_ROOT_PATH:
+#   MODULE_PATH:
 #   IMAGE_NAME:
-#   IMAGE_VER:
 #   IMAGE_TAG:
 #
 .docker-two-stage-build:
@@ -15,15 +14,14 @@
   services:
     - docker:dind
   variables:
-    IMAGE: $CI_REGISTRY_IMAGE/$IMAGE_NAME-$IMAGE_VER:$IMAGE_TAG
+    IMAGE: $CI_REGISTRY_IMAGE/$IMAGE_NAME:$IMAGE_TAG
     DOCKER_REGISTRY_HOST: $DOCKER_REGISTRY_HOST
     DOCKER_REGISTRY_USER: $CI_PROJECT_NAME
-    IMAGE_PATH: $IMAGE_ROOT_PATH/$IMAGE_NAME/$IMAGE_VER/$IMAGE_TAG
   before_script:
     - apk add git
     - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN $CI_REGISTRY
   script:
-    - cd $IMAGE_PATH
+    - cd $MODULE_PATH
     # Build buildenv stage. tagged with `-buildenv`
     - docker pull $IMAGE-buildenv || true
     - docker build --pull
@@ -42,31 +40,16 @@
       -t $IMAGE-test .
     - docker push $IMAGE-test
 
-
-.docker-two-stage-build-when-changes:
-  extends:
-    - .docker-two-stage-build
-    - .when-docker-image-changes
-
-
-.docker-two-stage-build-when-tagged:
-  extends:
-    - .docker-two-stage-build
-    - .when-docker-image-tagged
-
-
 # Run tests within a built docker image
 # Expects variables to be defined:
 #    IMAGE_NAME
-#    IMAGE_VER
 #    IMAGE_TAG
 .docker-test-image:
   stage: test_build
   tags:
     - docker
   variables:
-    IMAGE: $CI_REGISTRY_IMAGE/$IMAGE_NAME-$IMAGE_VER:$IMAGE_TAG
-    IMAGE_PATH: $IMAGE_ROOT_PATH/$IMAGE_NAME/$IMAGE_VER/$IMAGE_TAG
+    IMAGE: $CI_REGISTRY_IMAGE/$IMAGE_NAME:$IMAGE_TAG
   image: $IMAGE-test
 
 
@@ -81,8 +64,8 @@
     - engageska
   variables:
     GIT_STRATEGY: none
-    IMAGE: $CI_REGISTRY_IMAGE/$IMAGE_NAME-$IMAGE_VER:$IMAGE_TAG
-    NEXUS_IMAGE: $DOCKER_REGISTRY_HOST/$CI_PROJECT_NAME/$IMAGE_NAME-$IMAGE_VER
+    IMAGE: $CI_REGISTRY_IMAGE/$IMAGE_NAME:$IMAGE_TAG
+    NEXUS_IMAGE: $DOCKER_REGISTRY_HOST/$CI_PROJECT_NAME/$IMAGE_NAME
   image: docker:stable
   services:
     - docker:dind
@@ -98,21 +81,22 @@
     - docker push $NEXUS_IMAGE:latest
 
 # Logic to run a job only when there is changes to files in the specified
-# $IMAGE_PATH
-# Expects $IMAGE_PATH to have been already set in variables.
+# $MODULE_PATH
+# Expects $MODULE_PATH to have been already set in variables.
 .when-docker-image-changes:
   only:
     changes:
-      - $IMAGE_PATH/$IMAGE_VER/**/*
+      - $MODULE_PATH/**/*
+      - $MODULE_PATH/../*
+      - $MODULE_PATH/../../*
   except:
     refs:
       - tags
 
 # Logic to run a job only when there is a tag matching the image name
-# Expects $IMAGE_PATH to have been already set in variables.
 .when-docker-image-tagged:
   only:
     refs:
       - tags
     variables:
-      - $CI_COMMIT_TAG =~ /^($IMAGE_NAME-$IMAGE_VER:$IMAGE_TAG)/
+      - $CI_COMMIT_TAG =~ /^($IMAGE_NAME:$IMAGE_TAG)/

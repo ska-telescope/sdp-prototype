@@ -1,9 +1,8 @@
 # Common variables
 .pytango-9.3.0-buster-slim-vars:
   variables:
-    IMAGE_ROOT_PATH: docker
-    IMAGE_NAME: pytango
-    IMAGE_VER: 9.3.0
+    MODULE_PATH: docker/pytango/9.3.0/buster-slim
+    IMAGE_NAME: pytango-9.3.0
     IMAGE_TAG: buster-slim
 
 # -----------------------------------------------------------------------------
@@ -30,7 +29,7 @@ build pytango-9.3.0:buster-slim when tagged:
     - .docker-test-image
     - .pytango-9.3.0-buster-slim-vars
   script:
-    - cd $IMAGE_PATH
+    - cd $MODULE_PATH
     - pip list
     - python3 -c "import tango; print(tango.__version__)"
 
