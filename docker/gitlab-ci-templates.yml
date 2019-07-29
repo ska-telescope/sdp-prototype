@@ -85,10 +85,14 @@
 # Expects $MODULE_PATH to have been already set in variables.
 .when-docker-image-changes:
   only:
+    # This may not work... see:
+    # https://gitlab.com/gitlab-org/gitlab-ce/issues/55570
     changes:
-      - $MODULE_PATH/**/*
-      - $MODULE_PATH/../*
-      - $MODULE_PATH/../../*
+      - $MODULE_PATH/Dockerfile
+      - $MODULE_PATH/Pipfile
+      - $MODULE_PATH/Pipfile.lock
+      - $MODULE_PATH/../.gitlab-ci-jobs.yml
+      - $MODULE_PATH/../../.gitlab-ci-jobs.yml
   except:
     refs:
       - tags
