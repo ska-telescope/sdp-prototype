@@ -3,13 +3,15 @@
 # -----------------------------------------------------------------------------
 
 stages:
-  - test
-  - build
-  - test_build
-  - post_test
-  - publish
-  - deploy
-  - pages
+  - pre-check    # Run quick pre-checks
+  - test         # Run tests which do not require building artifacts
+  - post-test    # Run post test analysis (coverage reports etc)
+  - build        # Build artifacts
+  - test-build   # Run tests against built artifacts
+  - publish      # Publish artifacts to artifact repos
+  - deploy       # Deploy to staging / development cluster
+  - test-deploy  # Test deployment
+  - pages        # Publish github pages
 
 
 # https://blog.sparksuite.com/7-ways-to-speed-up-gitlab-ci-cd-times-29f60aab69f9
@@ -40,13 +42,19 @@ include:
 #  - local: '/scripts/python.publish.gitlab-ci.yml'
 #  - local: '/scripts/docker.push.gitlab-ci.yml'
 
+
 # -----------------------------------------------------------------------------
-# test stage
+# pre-check stage
 # -----------------------------------------------------------------------------
+
+checks:
+  stage: pre-check
+  script:
+    - echo "$CI_COMMIT_TAG"
 
 # Build documentation
 build_docs:
-  stage: test
+  stage: pre-check
   when: manual
   image: python:3.7-alpine3.10
   before_script:
@@ -57,6 +65,7 @@ build_docs:
   artifacts:
     paths: [docs/build/html/]
     expire_in: 1 day
+
 
 ## -----------------------------------------------------------------------------
 ## Post test stage : Generate reports

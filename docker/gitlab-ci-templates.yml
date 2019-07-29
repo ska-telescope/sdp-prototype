@@ -45,7 +45,7 @@
 #    IMAGE_NAME
 #    IMAGE_TAG
 .docker-test-image:
-  stage: test_build
+  stage: test-build
   tags:
     - docker
   variables:
