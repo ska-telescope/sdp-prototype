@@ -1,0 +1,70 @@
+# Common variables
+.ska-lmc-base-devel-vars: &ska-lmc-base-devel-vars
+  variables:
+    IMAGE_NAME: ska-lmc-base-devel
+    IMAGE_TAG: buster-slim
+    IMAGE_PATH: docker/ska-lmc-base/devel/buster-slim
+
+# Logic for only running job if changes and not tag
+.ska-lmc-base-devel-changes: &ska-lmc-base-devel-changes
+  only:
+    changes:
+      - docker/ska-lmc-base/devel/buster-slim/Dockerfile
+  except:
+    refs:
+      - tags
+
+# Logic for only running job if tag
+.ska-lmc-base-devel-tag: &ska-lmc-base-devel-tag
+  only:
+    refs:
+      - tags
+    variables:
+      - $CI_COMMIT_TAG =~ /^(ska-lmc-base-devel)/
+
+
+# -----------------------------------------------------------------------------
+# Build
+# -----------------------------------------------------------------------------
+.ska-lmc-base-devel:buster-slim build:
+  extends: .docker-two-stage-build
+  <<: *ska-lmc-base-devel-vars
+
+ska-lmc-base-devel:buster-slim build - changes:
+  extends: .ska-lmc-base-devel:buster-slim build
+  <<: *ska-lmc-base-devel-changes
+
+ska-lmc-base-devel:buster-slim build - tag:
+  extends: .ska-lmc-base-devel:buster-slim build
+  <<: *ska-lmc-base-devel-tag
+
+# -----------------------------------------------------------------------------
+# Test
+# -----------------------------------------------------------------------------
+.ska-lmc-base-devel:buster-slim test:
+  extends: .docker-test-image
+  <<: *ska-lmc-base-devel-vars
+  script:
+    - echo "$CI_COMMIT_TAG"
+    - echo "$CI_COMMIT_MESSAGE"
+    - echo "$IMAGE_NAME"
+    - cd $IMAGE_PATH
+    - pip list
+    - python3 -c "import tango; print(tango.__version__)"
+    # TODO Test this image!
+
+ska-lmc-base-devel:buster-slim test - changes:
+  extends: .ska-lmc-base-devel:buster-slim test
+  <<: *ska-lmc-base-devel-changes
+
+ska-lmc-base-devel:buster-slim test - tag:
+  extends: .ska-lmc-base-devel:buster-slim test
+  <<: *ska-lmc-base-devel-tag
+
+# -----------------------------------------------------------------------------
+# Publish / push
+# -----------------------------------------------------------------------------
+ska-lmc-base-devel:buster-slim publish:
+  extends: .docker-push-image
+  <<: *ska-lmc-base-devel-vars
+  <<: *ska-lmc-base-devel-tag

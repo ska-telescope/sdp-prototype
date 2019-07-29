@@ -1,3 +1,11 @@
+# Common variables
+.pytango-vars: &pytango-vars
+  variables:
+    IMAGE_NAME: pytango-9.3.0
+    IMAGE_TAG: buster-slim
+    IMAGE_PATH: docker/pytango/9.3.0/buster-slim
+
+# Logic for only running job if changes and not tag
 .pytango-changes: &pytango-changes
   only:
     changes:
@@ -6,6 +14,7 @@
     refs:
       - tags
 
+# Logic for only running job if tag
 .pytango-tag: &pytango-tag
   only:
     refs:
@@ -19,10 +28,7 @@
 # -----------------------------------------------------------------------------
 .pytango-9.3.0:buster-slim build:
   extends: .docker-two-stage-build
-  variables:
-    IMAGE_NAME: pytango-9.3.0
-    IMAGE_TAG: buster-slim
-    IMAGE_PATH: docker/pytango/9.3.0/buster-slim
+  <<: *pytango-vars
 
 pytango-9.3.0:buster-slim build - changes:
   extends: .pytango-9.3.0:buster-slim build
@@ -37,10 +43,7 @@ pytango-9.3.0:buster-slim build - tag:
 # -----------------------------------------------------------------------------
 .pytango-9.3.0:buster-slim test:
   extends: .docker-test-image
-  variables:
-    IMAGE_NAME: pytango-9.3.0
-    IMAGE_TAG: buster-slim
-    IMAGE_PATH: docker/pytango/9.3.0/buster-slim
+  <<: *pytango-vars
   script:
     - echo "$CI_COMMIT_TAG"
     - echo "$CI_COMMIT_MESSAGE"
@@ -63,7 +66,5 @@ pytango-9.3.0:buster-slim test - tag:
 # -----------------------------------------------------------------------------
 pytango-9.3.0:buster-slim publish:
   extends: .docker-push-image
-  variables:
-    IMAGE_NAME: pytango-9.3.0
-    IMAGE_TAG: buster-slim
+  <<: *pytango-vars
   <<: *pytango-tag
