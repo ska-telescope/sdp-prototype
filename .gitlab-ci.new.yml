@@ -37,22 +37,22 @@ include:
 #  - local: '/scripts/python.publish.gitlab-ci.yml'
 #  - local: '/scripts/docker.push.gitlab-ci.yml'
 
-## -----------------------------------------------------------------------------
-## test stage
-## -----------------------------------------------------------------------------
-#
-## Build documentation
-#build_docs:
-#  stage: test
-#  when: manual
-#  before_script:
-#    - pip install -r docs/requirements.txt
-#  script:
-#    - make -C docs html
-#  artifacts:
-#    paths: [docs/build/html/]
-#    expire_in: 1 day
-#
+# -----------------------------------------------------------------------------
+# test stage
+# -----------------------------------------------------------------------------
+
+# Build documentation
+build_docs:
+  stage: test
+  when: manual
+  before_script:
+    - pip install -r docs/requirements.txt
+  script:
+    - make -C docs html
+  artifacts:
+    paths: [docs/build/html/]
+    expire_in: 1 day
+
 ## -----------------------------------------------------------------------------
 ## Post test stage : Generate reports
 ## -----------------------------------------------------------------------------

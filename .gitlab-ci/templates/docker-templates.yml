@@ -19,6 +19,8 @@
     - apk add git
     - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN $CI_REGISTRY
   script:
+    - ls
+    - echo $IMAGE_PATH
     - cd $IMAGE_PATH
     # Build buildenv stage. tagged with `-buildenv`
     - docker pull $IMAGE-buildenv || true
