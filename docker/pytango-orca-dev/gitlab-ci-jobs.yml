@@ -12,6 +12,15 @@
     changes:
       - docker/pytango-orca-dev/**/*
 
+# Over-ride general behaviour of .when-docker-image-tagged for module path
+.when pytango-orca-dev tagged:
+  extends:
+    - .when-docker-image-tagged
+  only:
+    variables:
+      - $CI_COMMIT_TAG =~ /^(pytango-orca-dev==)(\d+!)?(\d+)(\.\d+)+([\.\-\_])?((a(lpha)?|b(eta)?|c|r(c|ev)?|pre(view)?)\d*)?(\.?(post|dev)\d*)?(-buster-slim)/
+
+
 # -----------------------------------------------------------------------------
 # Build
 # -----------------------------------------------------------------------------
@@ -25,7 +34,7 @@ build pytango-orca-dev:0.3.0-buster-slim when tagged:
   extends:
     - .docker-two-stage-build
     - .pytango-orca-dev:0.3.0-buster-slim vars
-    - .when-docker-image-tagged
+    - .when pytango-orca-dev tagged
 
 
 # -----------------------------------------------------------------------------
@@ -49,7 +58,7 @@ test pytango-orca-dev:0.3.0-buster-slim when changes:
 test pytango-orca-dev:0.3.0-buster-slim when tagged:
   extends:
     - .pytango-orca-dev:0.3.0-buster-slim tests
-    - .when-docker-image-tagged
+    - .when pytango-orca-dev tagged
 
 
 # -----------------------------------------------------------------------------
@@ -59,4 +68,4 @@ publish pytango-orca-dev:0.3.0-buster-slim when tagged:
   extends:
     - .docker-push-image
     - .pytango-orca-dev:0.3.0-buster-slim vars
-    - .when-docker-image-tagged
+    - .when pytango-orca-dev tagged

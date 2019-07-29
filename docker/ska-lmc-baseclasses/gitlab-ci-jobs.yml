@@ -13,6 +13,15 @@
     changes:
       - docker/ska-lmc-baseclasses/**/*
 
+# Over-ride general behaviour of .when-docker-image-tagged for module path
+.when ska-lmc-baseclasses tagged:
+  extends:
+    - .when-docker-image-tagged
+  only:
+    variables:
+      - $CI_COMMIT_TAG =~ /^(ska-lmc-baseclasses==)((\d+!)?(\d+)(\.\d+)+([\.\-\_])?((a(lpha)?|b(eta)?|c|r(c|ev)?|pre(view)?)\d*)?(\.?(post|dev)\d*)?|devel|dev|latest|stable|unstable)(-buster-slim)/
+
+
 # -----------------------------------------------------------------------------
 # Build
 # -----------------------------------------------------------------------------
@@ -26,7 +35,7 @@ build ska-lmc-baseclasses:devel-buster-slim when tagged:
   extends:
     - .docker-two-stage-build
     - .ska-lmc-baseclasses:devel-buster-slim vars
-    - .when-docker-image-tagged
+    - .when ska-lmc-baseclasses tagged
 
 
 # -----------------------------------------------------------------------------
@@ -51,7 +60,7 @@ test ska-lmc-baseclasses:devel-buster-slim when changes:
 test ska-lmc-baseclasses:devel-buster-slim when tagged:
   extends:
     - .ska-lmc-baseclasses:devel-buster-slim tests
-    - .when-docker-image-tagged
+    - .when ska-lmc-baseclasses tagged
 
 
 # -----------------------------------------------------------------------------
@@ -61,4 +70,4 @@ publish ska-baseclasses:devel-buster-slim when tagged:
   extends:
   - .docker-push-image
   - .ska-lmc-baseclasses:devel-buster-slim vars
-  - .when-docker-image-tagged
+  - .when ska-lmc-baseclasses tagged
