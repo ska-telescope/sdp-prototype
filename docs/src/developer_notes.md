@@ -8,28 +8,26 @@ packages) when it a new tag is created patterns described in the sections below:
 
 ### Tagging Docker images
 
-**Tag pattern**: `<image name>:<tag>`
+**Tag pattern**: `tags/<image name>==<tag>`
 
 Examples:
 
 ```bash
-git tag -a pytango-9.3.0:alpine3.10 -m "<message>"
+git tag -a tags/pytango-9.3.0==alpine3.10 -m "<message>"
 git push --tags
 
-git tag -a tangods_sdp_subarray:0.3.0 -m "<message>"
+git tag -a tags/tangods-sdp-subarray==0.3.0 -m "<message>"
 git push --tags
 ```
 
-
-
 ### Tagging Python packages
 
-**Tag pattern**: `<Package name>==<Package version>`
+**Tag pattern**: `tags/<Package name>==<Package version>`
 
 Example:
 
 ```bash
-git tag -a ska-sdp-subarray==0.3.2 -m "<message>"
+git tag -a tags/ska-sdp-subarray==0.3.2 -m "<message>"
 git push --tags
 ```
 
