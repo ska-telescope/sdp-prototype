@@ -44,8 +44,9 @@ include:
 build_docs:
   stage: test
   when: manual
-  image: python:3.7-slim-buster
+  image: python:3.7-alpine3.10
   before_script:
+    - apk add make
     - pip install -r docs/requirements.txt
   script:
     - make -C docs html
