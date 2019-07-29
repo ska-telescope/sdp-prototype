@@ -25,11 +25,11 @@ include:
   # Docker Image: PyTango
   - local: '/docker/pytango/gitlab-ci-jobs.yml'
 
-#  # Docker Image: PyTango dev + test environment
-#  - local: '/docker/pytango-orca-dev/gitlab-ci-jobs.yml'
-#
-#  # Docker Image: SKA LMC Tango base classes
-#  - local: '/docker/ska-lmc-base/gitlab-ci-jobs.yml'
+  # Docker Image: PyTango dev + test environment
+  - local: '/docker/pytango-orca-dev/gitlab-ci-jobs.yml'
+
+  # Docker Image: SKA LMC Tango base classes
+  - local: '/docker/ska-lmc-base/gitlab-ci-jobs.yml'
 
 #  # Service: SKA Subarray Device Server
 #  - local: '/src/tangods_sdp_subarray/tangods-sdp-master.gitlab-ci.yml'
