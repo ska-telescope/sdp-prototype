@@ -6,7 +6,7 @@
 .ska-lmc-baseclasses-devel-buster-slim-vars:
   variables:
     MODULE_PATH: docker/ska-lmc-baseclasses/devel/buster-slim
-    IMAGE_NAME: ska-lmc-base-devel
+    IMAGE_NAME: ska-lmc-baseclasses-devel
     IMAGE_TAG: buster-slim
 
 
@@ -42,19 +42,19 @@ build ska-lmc-baseclasses-devel:buster-slim when tagged:
 
 test ska-lmc-baseclasses-devel:buster-slim when changes:
   extends:
-    - .ska-lmc-base-devel-tests
+    - .ska-lmc-baseclasses-devel-tests
     - .when-docker-image-changes
 
 test ska-lmc-baseclasses-devel:buster-slim when tagged:
   extends:
-    - .ska-lmc-base-devel-tests
+    - .ska-lmc-baseclasses-devel-tests
     - .when-docker-image-tagged
 
 
 # -----------------------------------------------------------------------------
 # Publish / push
 # -----------------------------------------------------------------------------
-publish ska-baseclasses-base-devel:buster-slim when tagged:
+publish ska-baseclasses-devel:buster-slim when tagged:
   extends:
   - .docker-push-image
   - .ska-lmc-baseclasses-devel-buster-slim-vars
