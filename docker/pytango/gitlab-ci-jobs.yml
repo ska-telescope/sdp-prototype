@@ -1,0 +1,55 @@
+# Common variables
+.pytango-9.3.0-buster-slim-vars:
+  variables:
+    IMAGE_ROOT_PATH: docker
+    IMAGE_NAME: pytango
+    IMAGE_VER: 9.3.0
+    IMAGE_TAG: buster-slim
+
+# -----------------------------------------------------------------------------
+# Build
+# -----------------------------------------------------------------------------
+build pytango-9.3.0:buster-slim when changes:
+  extends:
+    - .docker-two-stage-build
+    - .pytango-9.3.0-buster-slim-vars
+    - .when-docker-image-changes
+
+build pytango-9.3.0:buster-slim when tagged:
+  extends:
+    - .docker-two-stage-build
+    - .pytango-9.3.0-buster-slim-vars
+    - .when-docker-image-tagged
+
+
+# -----------------------------------------------------------------------------
+# Test
+# -----------------------------------------------------------------------------
+.pytango-9.3.0-tests:
+  extends:
+    - .docker-test-image
+    - .pytango-9.3.0-buster-slim-vars
+  script:
+    - cd $IMAGE_PATH
+    - pip list
+    - python3 -c "import tango; print(tango.__version__)"
+
+test pytango-9.3.0:buster-slim when changes:
+  extends:
+    - .pytango-9.3.0-tests
+    - .when-docker-image-changes
+
+test pytango-9.3.0:buster-slim test whem tagged:
+  extends:
+    - .pytango-9.3.0-tests
+    - .when-docker-image-tagged
+
+
+# -----------------------------------------------------------------------------
+# Publish / push
+# -----------------------------------------------------------------------------
+publish pytango-9.3.0:buster-slim when tagged:
+  extends:
+    - .docker-push-image
+    - .pytango-9.3.0-buster-slim-vars
+    - .when-docker-image-tagged

@@ -1,0 +1,6 @@
+#
+# docker/ska-lmc-base/gitlab-ci-jobs.yml
+#
+
+include:
+  - local: '/docker/ska-lmc-base/devel/gitlab-ci-jobs.yml'
