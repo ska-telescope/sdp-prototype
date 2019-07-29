@@ -24,8 +24,7 @@ RUN pipenv install --deploy --ignore-pipfile --dev
 # -----------------------------------------------------------------------------
 FROM ${DOCKER_REGISTRY_HOST}/${DOCKER_REGISTRY_USER}/pytango-9.3.0:buster-slim
 WORKDIR /app
-COPY --from=buldenv /venv /venv
-
+COPY --from=buildenv /venv /venv
 
 
 #FROM debian:buster-slim
