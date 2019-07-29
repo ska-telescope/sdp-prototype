@@ -23,6 +23,7 @@ This work is being been carried out in PI#3 for
   SDP Configuration Database<config_db>
   SDP Configuration Database Schema<config_db_schema>
   Visibility Receive Workflow<vis_receive_workflow>
+  Developer Notes<developer_notes>
 
 Indices and tables
 ------------------
