@@ -9,14 +9,14 @@
 .when-pytango-changes:
   only:
     changes:
-      - docker/pytango/**/*
+      - docker/pytango/9.3.0/buster-slim/**/*
   except:
-    ref:
+    refs:
       - master
 
 .when-pytango-master:
   only:
-    ref:
+    refs:
       - master
 
 # -----------------------------------------------------------------------------
