@@ -27,7 +27,7 @@ include:
 
   # Jobs to build and test Docker base images.
   - local: '/docker/gitlab-ci-templates.yml'
-  - local: '/docker/pytango/9.3.0/buster-slim/gitlab-ci-jobs.yml'
+  - local: '/docker/pytango/gitlab-ci-jobs.yml'
   - local: '/docker/pytango-orca-dev/gitlab-ci-jobs.yml'
   - local: '/docker/ska-lmc-baseclasses/gitlab-ci-jobs.yml'
 
