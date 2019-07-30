@@ -30,11 +30,11 @@ build pytango-orca-dev:0.3.0-buster-slim when changes:
     - .pytango-orca-dev:0.3.0-buster-slim vars
     - .when pytango-orca-dev changes
 
-build pytango-orca-dev:0.3.0-buster-slim when tagged:
-  extends:
-    - .docker-two-stage-build
-    - .pytango-orca-dev:0.3.0-buster-slim vars
-    - .when pytango-orca-dev tagged
+#build pytango-orca-dev:0.3.0-buster-slim when tagged:
+#  extends:
+#    - .docker-two-stage-build
+#    - .pytango-orca-dev:0.3.0-buster-slim vars
+#    - .when pytango-orca-dev tagged
 
 
 # -----------------------------------------------------------------------------
@@ -55,10 +55,10 @@ test pytango-orca-dev:0.3.0-buster-slim when changes:
     - .when pytango-orca-dev changes
 
 
-test pytango-orca-dev:0.3.0-buster-slim when tagged:
-  extends:
-    - .pytango-orca-dev:0.3.0-buster-slim tests
-    - .when pytango-orca-dev tagged
+#test pytango-orca-dev:0.3.0-buster-slim when tagged:
+#  extends:
+#    - .pytango-orca-dev:0.3.0-buster-slim tests
+#    - .when pytango-orca-dev tagged
 
 
 # -----------------------------------------------------------------------------
@@ -68,4 +68,4 @@ publish pytango-orca-dev:0.3.0-buster-slim when tagged:
   extends:
     - .docker-push-image
     - .pytango-orca-dev:0.3.0-buster-slim vars
-    - .when pytango-orca-dev tagged
+    - .when pytango-orca-dev changes
