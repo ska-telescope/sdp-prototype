@@ -1,0 +1,106 @@
+
+
+
+
+# Build Docker image
+.build_tango_docker_service:
+  stage: build
+  variables:
+    DOCKER_REGISTRY_HOST: $DOCKER_REGISTRY_HOST
+    DOCKER_REGISTRY_USER: $CI_PROJECT_NAME
+    GIT_VERSION: $CI_COMMIT_SHORT_SHA
+  tags:
+    - docker
+    - engageska
+  image: docker:stable
+  services:
+    - docker:dind
+  before_script:
+    - apk add make git
+    - docker login -u $DOCKER_REGISTRY_USERNAME -p $DOCKER_REGISTRY_PASSWORD $DOCKER_REGISTRY_HOST
+  script:
+    - cd $BUILD_PATH
+    - make DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME pull
+    - make DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME build
+    - make DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push
+  retry: 2
+
+# Build python package
+.build_python:
+  stage: build
+  image: nexus.engageska-portugal.pt/sdp-prototype/pytango_ska_dev:latest
+  tags:
+    - docker
+    - engageska
+  artifacts:
+    paths:
+      - ./$BUILD_PATH/dist/
+
+# Build Python development tag
+.build_python_dev:
+  extends: .build_python
+  script:
+    - cd $BUILD_PATH
+    - python setup.py egg_info -b+$CI_COMMIT_SHORT_SHA sdist bdist_wheel
+
+# Build Python Release
+.build_python_release:
+  extends: .build_python
+  script:
+    - cd $BUILD_PATH
+    - python setup.py sdist bdist_wheel
+
+# Publish / Push a docker image to nexus
+.push_docker:
+  stage: publish
+  variables:
+    DOCKER_REGISTRY_HOST: $DOCKER_REGISTRY_HOST
+    DOCKER_REGISTRY_USER: $CI_PROJECT_NAME
+    GIT_VERSION: ${CI_COMMIT_SHA:0:8}
+  tags:
+    - docker
+    - engageska
+  when: manual
+  image: docker:stable
+  services:
+    - docker:dind
+  before_script:
+    - apk add make git
+    - docker login -u $DOCKER_REGISTRY_USERNAME -p $DOCKER_REGISTRY_PASSWORD $DOCKER_REGISTRY_HOST
+  script:
+    - cd $BUILD_PATH
+    - make DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME pull_default
+    - make DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push_version
+    - make DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push_latest
+  retry: 2
+
+# Publish a python package
+.publish_python:
+  stage: publish
+  image: nexus.engageska-portugal.pt/sdp-prototype/pytango_ska_dev:latest
+  variables:
+    TWINE_USERNAME: $TWINE_USERNAME
+    TWINE_PASSWORD: $TWINE_PASSWORD
+  tags:
+    - docker
+    - engageska
+  before_script:
+    - pip install twine
+
+# Publish a python dev package
+.publish_python_dev:
+  extends: .publish_python
+  when: manual
+  except: [master]
+  script:
+    - cd $BUILD_PATH
+    - twine upload --repository-url $PYPI_REPOSITORY_URL dist/* || true
+
+# Publish a python release package
+.publish_python_relase:
+  extends: .publish_python
+  only: [master]
+  script:
+    - cd $BUILD_PATH
+    - twine upload --repository-url $PYPI_REPOSITORY_URL dist/* || true
+    - twine upload --skip-existing -u $PYPI_USER -p $PYPI_PASS dist/* || true

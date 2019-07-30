@@ -1,4 +1,6 @@
-# Build a two stage image where first stage is tagged as 'buildenv'
+# Build a two stage image where first stage is tagged as 'buildenv' and the
+# second stage is tagged with the '-test' suffix. Both these images are
+# published to the gitlab registry.
 #
 # Requires the following variables to have been defined.
 #   MODULE_PATH:
@@ -31,6 +33,42 @@
       --target buildenv -t $IMAGE-buildenv .
     - docker push $IMAGE-buildenv
     # Build final stage image tagged with `-test` suffix
+    - docker pull $IMAGE-test || true
+    - docker build --pull
+      --cache-from $IMAGE-buildenv
+      --cache-from $IMAGE-test
+      --build-arg DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST
+      --build-arg DOCKER_REGISTRY_USER=$DOCKER_REGISTRY_USER
+      -t $IMAGE-test .
+    - docker push $IMAGE-test
+
+
+# Build a simple (one stage) image and publish with a '-test' tag suffix
+# to the gitlab docker registry.
+#
+# Requires the following variables to have been defined.
+#   MODULE_PATH:
+#   IMAGE_NAME:
+#   IMAGE_TAG:
+#
+.docker-build:
+  stage: build
+  tags:
+    - docker
+    - engageska
+  image: docker:stable
+  services:
+    - docker:dind
+  variables:
+    IMAGE: $CI_REGISTRY_IMAGE/$IMAGE_NAME:$IMAGE_TAG
+    DOCKER_REGISTRY_HOST: $DOCKER_REGISTRY_HOST
+    DOCKER_REGISTRY_USER: $CI_PROJECT_NAME
+  before_script:
+    - apk add git
+    - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN $CI_REGISTRY
+  script:
+    - cd $MODULE_PATH
+    # Build the image tagged with `-test` suffix
     - docker pull $IMAGE-test || true
     - docker build --pull
       --cache-from $IMAGE-buildenv

@@ -1,9 +1,9 @@
 ARG DOCKER_REGISTRY_USER
 ARG DOCKER_REGISTRY_HOST
-FROM ${DOCKER_REGISTRY_HOST}/${DOCKER_REGISTRY_USER}/pytango_ska_base:latest as build
+FROM ${DOCKER_REGISTRY_HOST}/${DOCKER_REGISTRY_USER}/pytango9.3.0:buster-slim
 
 WORKDIR /app
-COPY . /app
+COPY SDPSubarray /app
 
 COPY Pipfile Pipfile
 COPY Pipfile.lock Pipfile.lock

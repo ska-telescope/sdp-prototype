@@ -1,26 +1,3 @@
-.push_docker:
-  stage: publish
-  variables:
-    DOCKER_REGISTRY_HOST: $DOCKER_REGISTRY_HOST
-    DOCKER_REGISTRY_USER: $CI_PROJECT_NAME
-    GIT_VERSION: ${CI_COMMIT_SHA:0:8}
-  tags:
-    - docker
-    - engageska
-  when: manual
-  image: docker:stable
-  services:
-    - docker:dind
-  before_script:
-    - apk add make git
-    - docker login -u $DOCKER_REGISTRY_USERNAME -p $DOCKER_REGISTRY_PASSWORD $DOCKER_REGISTRY_HOST
-  script:
-    - cd $BUILD_PATH
-    - make DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME pull_default
-    - make DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push_version
-    - make DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push_latest
-  retry: 2
-
 push:pytango_build:
   extends: .push_docker
   dependencies:
@@ -66,19 +43,3 @@ push:tangods_sdp_master-manual:
   when: manual
   except: [master]
 
-.tangods_subarray_template:
-  extends: .push_docker
-  when: always
-  dependencies:
-    - build:tangods_sdp_subarray
-  variables:
-    BUILD_PATH: src/tango_sdp_subarray
-
-push:tangods_sdp_subarray:
-  extends: .tangods_subarray_template
-  only: [master]
-
-push:tangods_sdp_subarray-manual:
-  extends: .tangods_subarray_template
-  when: manual
-  except: [master]

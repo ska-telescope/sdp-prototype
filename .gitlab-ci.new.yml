@@ -25,16 +25,15 @@ variables:
 include:
   # TODO(BMo) move project yaml files to source directories.
 
-  # Jobs to build and test Docker base images
+  # Jobs to build and test Docker base images.
   - local: '/docker/gitlab-ci-templates.yml'
   - local: '/docker/pytango/gitlab-ci-jobs.yml'
   - local: '/docker/pytango-orca-dev/gitlab-ci-jobs.yml'
   - local: '/docker/ska-lmc-baseclasses/gitlab-ci-jobs.yml'
 
-#  # Service: SKA Subarray Device Server
-#  - local: '/src/tangods_sdp_subarray/tangods-sdp-master.gitlab-ci.yml'
-
-
+  # Jobs to build services in the src directory.
+  - local: '/src/gitlab-ci-templates.yml'
+  - local: '/src/tangods_sdp_subarray/gitlab-ci-jobs.yml'
 
 #  - local: '/scripts/tests.gitlab-ci.yml'
 #  - local: '/scripts/reports.gitlab-ci.yml'
