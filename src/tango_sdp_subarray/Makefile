@@ -2,109 +2,122 @@
 #  Makefile utility functions for the SDP Subarray Tango device
 #
 
-NAME=tangods_sdp_subarray
-CLASS=SDPSubarray
-VERSION=$(patsubst "%",%, $(shell awk -F= '/^VERSION = ".*"/{print $$2}' $(CLASS)/release.py))
+# ----------------------------------------------------------------------------
+# Variables
+# ----------------------------------------------------------------------------
+PACKAGE_NAME:=$(patsubst "%",%, $(shell awk -F= '/^PACKAGE_NAME = ".*"/{print $$2}' SDPSubarray/release.py))
+IMAGE_NAME:=$(patsubst "%",%, $(shell awk -F= '/^IMAGE_NAME = ".*"/{print $$2}' SDPSubarray/release.py))
+VERSION:=$(patsubst "%",%, $(shell awk -F= '/^VERSION = ".*"/{print $$2}' SDPSubarray/release.py))
+IMAGE_ROOT:=$(DOCKER_REGISTRY_HOST)/$(DOCKER_REGISTRY_USER)/$(IMAGE_NAME)
+IMAGE:=$(IMAGE_ROOT):$(VERSION)-buster-slim
 
-include ../make/Makefile
+# Image used for running tests.
+DEV_IMAGE=nexus.engageska-portugal.pt/sdp-prototype/pytango-orca-dev:0.3.0-buster-slim
 
-# If the first make argument is "register"
-ifeq (register,$(firstword $(MAKECMDGOALS)))
-  REGISTER_TARGET = true
-endif
-ifdef REGISTER_TARGET
-  # .. then use the rest as arguments for the make target
-  NUM_DEVICES := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
-  # ...and turn them into do-nothing targets
-  $(eval $(NUM_DEVICES):;@:)
-endif
 
-.PHONY: register unregister
+# ----------------------------------------------------------------------------
+# Test targets
+# ----------------------------------------------------------------------------
 
-register:  ## register devices (usage: make register <number of devices>)
-	@docker run --rm -t \
-		-v $(PWD):/app \
-		--entrypoint=python \
-		--network=container:databaseds \
-		-e TANGO_HOST=localhost:10000 \
-		$(BASE_IMAGE) \
-		$(CLASS)/register.py $(NUM_DEVICES)
+TEST_COMMAND=\
+python3 -m pytest -vv \
+	--pylint \
+	--codestyle \
+	--docstyle \
+	--cov=SDPSubarray \
+	--no-cov-on-fail \
+	--cov-config=./setup.cfg \
+	--cov-branch \
+	--cov-report=term \
+	--gherkin-terminal-reporter
 
-unregister:  ## Unregister devices
-	@docker run --rm -t \
-		-v $(PWD):/app \
-		--entrypoint=python \
-		--network=container:databaseds \
-		-e TANGO_HOST=localhost:10000 \
-		$(BASE_IMAGE) \
-		$(CLASS)/register.py --delete
 
-.PHONY: start_dev start stop
+.PHONY: test
+test:  ## Run tests locally
+	$(TEST_COMMAND)
 
-start_dev:  ## Start the device from the current code
-	@docker run \
-		--rm -t \
-		-v $(PWD):/app \
-		--name=$(NAME)_dev \
-		--network=container:databaseds \
-		-e TANGO_HOST=localhost:10000 \
-		--entrypoint=python \
-		$(IMAGE):latest \
-		$(CLASS) 1 -v4
 
-start_shell:  ## Start the device from the current code
-	@docker run \
-		--rm -it \
-		-v $(PWD):/app \
-		--name=$(NAME)_shell \
-		--network=container:databaseds \
-		-e TANGO_HOST=localhost:10000 \
-		--entrypoint=/bin/bash \
-		$(IMAGE):latest
+.PHONY: test-in-dev-image
+test-in-dev-image:  ## Run tests inside the a Docker development image.
+	docker run --rm -t -v $(PWD):/app $(DEV_IMAGE) $(TEST_COMMAND)
 
-start:  ## Start the device from the current Docker image
-	@docker run \
-		--rm -t \
-		--name=$(NAME) \
-		--network=container:databaseds \
-		-e TANGO_HOST=localhost:10000 \
-		--entrypoint=python \
-		-d \
-		$(IMAGE):latest \
-		$(CLASS) 1 -v4
 
-stop:  ## Stop the device
-	@docker stop $(NAME)
+# ----------------------------------------------------------------------------
+# Docker helper targets
+# ----------------------------------------------------------------------------
 
-.PHONY: test lint ci_test test_shell
 
-test:  ## Run tests for the device
-	@docker run --rm -t \
-		-v $(PWD):/app \
-		$(DEV_IMAGE) \
-		python -m pytest \
-		--pylint \
-		--codestyle \
-		--docstyle \
-		--cov=SDPSubarray \
-	    --cov-report=term \
-    	--cov-config=./setup.cfg \
-		-vv \
-		--gherkin-terminal-reporter \
-		.
+.PHONY: docker-build-test-image
+docker-build-test-image:  ## Build a test image
+	docker pull $(IMAGE)-test || true
+	docker build --pull \
+		--cache-from $(IMAGE)-test \
+		--build-arg DOCKER_REGISTRY_HOST=$(DOCKER_REGISTRY_HOST) \
+		--build-arg DOCKER_REGISTRY_USER=$(DOCKER_REGISTRY_USER) \
+		-t $(IMAGE)-test .
 
-test_shell:  ## Provide a test shell with the current code
-	@docker run --rm -it \
-		-v $(PWD):/app \
-		--network=container:databaseds \
-		-e TANGO_HOST=localhost:10000 \
-		--entrypoint=/bin/bash \
-		$(DEV_IMAGE)
 
-dev_shell:  ## Provide a development shell with the current code
-	@docker run --rm -it \
-		-v $(PWD):/app \
-		$(DEV_IMAGE)
+.PHONY: docker-tag-release
+docker-tag-release:  ## Tag the release version from the -test image.
+	docker tag $(IMAGE)-test $(IMAGE)
 
-build_package:  ## Build the python package
-	@python setup.py sdist bdist_wheel
+
+.PHONY: docker-tag-latest
+docker-tag-latest:  ## Tag the latest version from the -test image
+	docker tag $(IMAGE)-test $(IMAGE_ROOT):latest
+
+
+.PHONY: docker-push-test-image
+docker-push-test-image:  ## Push the test version of the image
+	docker push $(IMAGE)-test
+
+
+.PHONY: docker-push-release-image
+docker-push-release-image:  ## Push the release version of the image
+	docker push $(IMAGE)
+
+
+.PHONY: docker-push-latest-image
+docker-push-latest-image:  ## Push the latest version of the image
+	docker push $(IMAGE_ROOT):latest
+
+
+.PHONY: docker-ls
+docker-ls:  ## List images
+	docker image ls --filter=reference="$(IMAGE_ROOT):*"
+
+
+.PHONY: docker-rm
+docker-rm:  ## Remove images
+	docker image rm $(shell docker image ls --filter=reference="$(IMAGE_ROOT):*" --format '{{.Repository}}:{{.Tag}}')
+
+
+# ----------------------------------------------------------------------------
+# Python package helper targets
+# ----------------------------------------------------------------------------
+
+
+.PHONY: python-test-package
+python-test-package:  ## Test the python package
+	python3 setup.py test
+
+
+.PHONY: python-test-package-in-dev-image
+python-test-package-in-dev-image:  ## Test the python package inside a dev container
+	docker run --rm -t -v $(PWD):/app $(DEV_IMAGE) python3 setup.py test
+
+
+.PHONY: python-build
+python-build:  ## Build the python package
+	python3 setup.py sdist bdist_wheel
+
+
+# ----------------------------------------------------------------------------
+# Help target
+# ----------------------------------------------------------------------------
+
+
+.DEFAULT_GOAL := help
+.PHONY: help
+help:  ## Show this help.
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' ./Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'

@@ -3,18 +3,20 @@
 # -----------------------------------------------------------------------------
 
 # Run linters and unit tests for the SDP Subarray device.
-# FIXME(BMo) create template for other pytest_bdd tests parameterised by
-#            the MODULE_PATH?
 test subarray device:
   stage: test
   tags: [docker]
   image: nexus.engageska-portugal.pt/sdp-prototype/pytango-orca-dev:0.3.0-buster-slim
-  # FIXME(BMo): replace run_test.sh with 'make test' !?
+  variables:
+    MODULE_PATH: src/tango_sdp_subarray
   script:
-    - ./scripts/run_test.sh src/tango_sdp_subarray
-        --gherkin-terminal-reporter -vv --cucumber-json=cucumber.json
+    - cd $MODULE_PATH
+    - make test
   after_script:
     - mv .coverage $CI_JOB_ID.coverage
+  only:
+    changes:
+      - src/tango_sdp_subarray/**/*
   artifacts:
     paths:
       - cucumber.json
@@ -26,101 +28,116 @@ test subarray device:
 # Build Stage
 # -----------------------------------------------------------------------------
 
-## Build a test SDP Subarray device image.
-### FIXME(BMo) dont build the final stage image here... instead create a -test tag and cache
-#build subarray device server (test) image:
-#  stage: build
-#  tags:
-#    - docker
-#    - engageska
-#  image: docker:stable
-#  services:
-#    - docker:dind
-#  variables:
-#    DOCKER_REGISTRY_HOST: $DOCKER_REGISTRY_HOST
-#    DOCKER_REGISTRY_USERNAME: $DOCKER_REGISTRY_USERNAME
-#    DOCKER_REGISTRY_PASSWORD: $DOCKER_REGISTRY_PASSWORD
-##    DOCKER_REGISTRY_HOST: $CI_REGISTRY
-##    DOCKER_REGISTRY_USERNAME: gitlab-ci-token
-##    DOCKER_REGISTRY_PASSWORD: $CI_BUILD_TOKEN
-#    DOCKER_REGISTRY_USER: $CI_PROJECT_NAME
-#    MODULE_PATH: src/tango_sdp_subarray
-#  before_script:
-#    - apk add make git
-#    - docker login -u $DOCKER_REGISTRY_USERNAME -p $DOCKER_REGISTRY_PASSWORD $DOCKER_REGISTRY_HOST
-#  script:
-#    # FIXME(BMo) Test these make targets manually first!
-#    - cd $MODULE_PATH
-#    - make pull   # Pull '-test' image as cache
-#    - make build  # Build '-test' image
-#    - make push   # Push '-test' image (so it can be shared with test-build stage.
-#  # Only build when changes are detected!
-#  only:
-#    changes:
-#      - src/tango_sdp_subarray/**/*
-#  except:
-#    refs:
-#      - tags
-#
-#
-## Build the python package locally, save dist folder as an artifact.
-#build subarray device python (test) package:
-#  stage: build
-#  image: nexus.engageska-portugal.pt/sdp-prototype/pytango-orca-dev:0.3.0-buster-slim
-#  tags:
-#    - docker
-#    - engageska
-#  variables:
-#    MODULE_PATH: src/tango_sdp_subarray
-#  script:
-#    - cd $MODULE_PATH
-#    - python setup.py egg_info dist bdist_wheel
-#  artifacts:
-#    paths:
-#      - ./$BUILD_PATH/dist/
+# Build a test SDP Subarray device image.
+build tangods_sdp_subarray image:
+  stage: build
+  tags:
+    - docker
+    - engageska
+  image: docker:stable
+  services:
+    - docker:dind
+  variables:
+    MODULE_PATH: src/tango_sdp_subarray
+    DOCKER_REGISTRY_HOST: $DOCKER_REGISTRY_HOST
+    DOCKER_REGISTRY_USER: $CI_PROJECT_NAME
+    DOCKER_REGISTRY_USERNAME: $DOCKER_REGISTRY_USERNAME
+    DOCKER_REGISTRY_PASSWORD: $DOCKER_REGISTRY_PASSWORD
+  before_script:
+    - apk add make git
+    - docker login -u $DOCKER_REGISTRY_USERNAME -p $DOCKER_REGISTRY_PASSWORD $DOCKER_REGISTRY_HOST
+  script:
+    - cd $MODULE_PATH
+    - make docker-build-test-image
+    - make docker-push-test-image
+  only:
+    changes:
+      - src/tango_sdp_subarray/**/*
 
 
 # -----------------------------------------------------------------------------
 # Test Build Stage
 # -----------------------------------------------------------------------------
 
-# Run tests against the built artifacts
-# FIXME(BMo) best way to get test against the new '-test' image here??? some 'make' target?
-#test subarray device server (test) image:
+test ska-sdp-subarray package:
+  stage: test-build
+  image: nexus.engageska-portugal.pt/sdp-prototype/pytango-orca-dev:0.3.0-buster-slim
+  tags:
+    - docker
+    - engageska
+  variables:
+    MODULE_PATH: src/tango_sdp_subarray
+  script:
+    - cd $MODULE_PATH
+    - make python-test-package
+  only:
+    changes:
+      - src/tango_sdp_subarray/**/*
+  artifacts:
+    paths:
+      - ./$BUILD_PATH/dist/
+
+
+#test tangods_sdp_subarray image:
 #  stage: test-build
-#  variables:
-#    DOCKER_REGISTRY_HOST: $DOCKER_REGISTRY_HOST
-#    DOCKER_REGISTRY_USERNAME: $DOCKER_REGISTRY_USERNAME
-#    DOCKER_REGISTRY_PASSWORD: $DOCKER_REGISTRY_PASSWORD
-#    DOCKER_REGISTRY_USER: $CI_PROJECT_NAME
-#  image:
-
-#test subarray device python package:
-#  script:
-#    - python setup.py test
-
-#test subarray device docker image:
-# ...
+#  image: nexus.engageska-portugal.pt/sdp-prototype/tangods_sdp_subarray:0.2.2-buster-slim-test
+# TODO(BMo) Test the docker image (as a service?)
 
 
 # -----------------------------------------------------------------------------
-# Publish Stage
+# Publish Stage - only if tagged
 # -----------------------------------------------------------------------------
 
-## Publish Python package
-#publish ska-sdp-subarray package:
-#  extends: .build_python_release
-#  variables:
-#    BUILD_PATH: src/tango_sdp_subarray
-#  only: [master]
-#
-## Push SDP Subarray device image
-#publish tangods-sdp-subarray image:
-#  extends: .push_docker
-#  only: [master]
-#  when: always
-#  dependencies:
-#    - build:tangods_sdp_subarray
-#  variables:
-#    BUILD_PATH: src/tango_sdp_subarray
 
+push tangods_sdp_subarray image:
+  stage: publish
+  tags:
+    - docker
+    - engageska
+  variables:
+    GIT_STRATEGY: none
+    IMAGE_NAME: tangods_sdp_subarray
+    IMAGE_TAG: 0.3.0-buster-slim
+    IMAGE: $DOCKER_REGISTRY_HOST/$CI_PROJECT_NAME/$IMAGE_NAME
+  image: docker:stable
+  services:
+    - docker:dind
+  before_script:
+    - docker login -u $DOCKER_REGISTRY_USERNAME -p $DOCKER_REGISTRY_PASSWORD $DOCKER_REGISTRY_HOST
+  script:
+    - docker pull $IMAGE:$IMAGE_TAG-test
+    - docker tag $IMAGE:$IMAGE_TAG-test $IMAGE:$IMAGE_TAG
+    - docker tag $IMAGE:$IMAGE_TAG-test $IMAGE:latest
+    - docker image ls
+    - docker push $IMAGE:$IMAGE_TAG
+    - docker push $IMAGE:latest
+  only:
+    changes:
+      - src/tango_sdp_subarray/**/*
+#  only:
+#    refs:
+#      - tags
+#    variables:
+#      - $CI_COMMIT_TAG =~ /^(tangods_sdp_subarray==)((\d+!)?(\d+)(\.\d+)+([\.\-\_])?((a(lpha)?|b(eta)?|c|r(c|ev)?|pre(view)?)\d*)?(\.?(post|dev)\d*)?|devel|dev|latest|stable|unstable)(.*)/
+
+publish ska-sdp-subarray package:
+  stage: publish
+  tags:
+    - docker
+    - engageska
+  image: nexus.engageska-portugal.pt/sdp-prototype/pytango-orca-dev:0.3.0-buster-slim
+  variables:
+    MODULE_PATH: src/tango_sdp_subarray
+    PACKAGE_NAME: ska-sdp-subarray
+  script:
+    - cd $MODULE_PATH
+    - twine upload --repository-url $PYPI_REPOSITORY_URL dist/* || true
+    - twine upload --skip-existing -u $PYPI_USER -p $PYPI_PASS dist/* || true
+#  only:
+#    refs:
+#      - tags
+#    variables:
+#      - $CI_COMMIT_TAG =~ /^(ska-sdp-subarray==)(\d+!)?(\d+)(\.\d+)+([\.\-\_])?((a(lpha)?|b(eta)?|c|r(c|ev)?|pre(view)?)\d*)?(\.?(post|dev)\d*)?/
+  only:
+    changes:
+      - src/tango_sdp_subarray/**/*

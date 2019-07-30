@@ -15,7 +15,7 @@ with open('README.pypi.md', 'r') as file:
     LONG_DESCRIPTION = file.read()
 
 setup(
-    name=release_info['NAME'],
+    name=release_info['PACKAGE_NAME'],
     version=release_info['VERSION'],
     description='SKA SDP Subarray device package',
     author=release_info['AUTHOR'],
