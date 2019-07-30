@@ -33,7 +33,7 @@ include:
 
   # Jobs to build services in the src directory.
   - local: '/src/gitlab-ci-templates.yml'
-  - local: '/src/tangods_sdp_subarray/gitlab-ci-jobs.yml'
+  - local: '/src/tango_sdp_subarray/gitlab-ci-jobs.yml'
 
 #  - local: '/scripts/tests.gitlab-ci.yml'
 #  - local: '/scripts/reports.gitlab-ci.yml'
