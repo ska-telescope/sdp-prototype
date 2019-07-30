@@ -7,18 +7,17 @@
 
 # Over-ride general behaviour of .when-docker-image-changes for module path
 .when-pytango-changes:
-  extends: .when-docker-image-changes
   only:
     changes:
       - docker/pytango/**/*
+  except:
+    ref:
+      - master
 
-# Over-ride general behaviour of .when-docker-image-tagged for module path
-.when-pytango-tagged:
-  extends:
-    - .when-docker-image-tagged
+.when-pytango-master:
   only:
-    variables:
-      - $CI_COMMIT_TAG =~ /^(pytango-)(\d+!)?(\d+)(\.\d+)+([\.\-\_])?((a(lpha)?|b(eta)?|c|r(c|ev)?|pre(view)?)\d*)?(\.?(post|dev)\d*)?(==buster-slim)/
+    ref:
+      - master
 
 # -----------------------------------------------------------------------------
 # Build
@@ -29,15 +28,14 @@ build pytango-9.3.0:buster-slim when changes:
     - .pytango-9.3.0:buster-slim vars
     - .when-pytango-changes
 
-build pytango-9.3.0:buster-slim when tagged:
+build pytango-9.3.0:buster-slim when master:
   extends:
     - .docker-two-stage-build
     - .pytango-9.3.0:buster-slim vars
-    - .when-pytango-tagged
-
+    - .when-pytango-master
 
 # -----------------------------------------------------------------------------
-# Test
+# Test build
 # -----------------------------------------------------------------------------
 .pytango-9.3.0:buster-slim tests:
   extends:
@@ -51,17 +49,17 @@ test pytango-9.3.0:buster-slim when changes:
     - .pytango-9.3.0:buster-slim tests
     - .when-pytango-changes
 
-test pytango-9.3.0:buster-slim test whem tagged:
+test pytango-9.3.0:buster-slim when master:
   extends:
     - .pytango-9.3.0:buster-slim tests
-    - .when-pytango-tagged
-
+    - .when-pytango-master
 
 # -----------------------------------------------------------------------------
 # Publish / push
 # -----------------------------------------------------------------------------
-publish pytango-9.3.0:buster-slim when tagged:
+publish pytango-9.3.0:buster-slim when master:
   extends:
     - .docker-push-image
     - .pytango-9.3.0:buster-slim vars
-    - .when-pytango-tagged
+    - .when-pytango-master
+
