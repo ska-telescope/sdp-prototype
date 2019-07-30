@@ -57,10 +57,10 @@ build subarray device server (test) image:
   # Only build when changes are detected!
   only:
     changes:
-      - src/tango_sdp_subarray/**
+      - src/tango_sdp_subarray/**/*
   except:
     refs:
-      -tags
+      - tags
 
 
 # Build the python package locally, save dist folder as an artifact.
