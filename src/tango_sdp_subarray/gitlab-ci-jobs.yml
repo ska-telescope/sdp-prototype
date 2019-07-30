@@ -9,16 +9,16 @@ test subarray device:
   stage: test
   tags: [docker]
   image: nexus.engageska-portugal.pt/sdp-prototype/pytango-orca-dev:0.3.0-buster-slim
-  # FIXME(BMo): replace script with make test?
+  # FIXME(BMo): replace run_test.sh with 'make test' !?
   script:
     - ./scripts/run_test.sh src/tango_sdp_subarray
         --gherkin-terminal-reporter -vv --cucumber-json=cucumber.json
   after_script:
-    - mv .coverage $CI_JOB_NAME.coverage
+    - mv .coverage $CI_JOB_ID.coverage
   artifacts:
     paths:
       - cucumber.json
-      - $CI_JOB_NAME.coverage
+      - $CI_JOB_ID.coverage
     expire_in: 1 day
 
 
@@ -26,58 +26,58 @@ test subarray device:
 # Build Stage
 # -----------------------------------------------------------------------------
 
-# Build a test SDP Subarray device image.
-## FIXME(BMo) dont build the final stage image here... instead create a -test tag and cache
-build subarray device server (test) image:
-  stage: build
-  tags:
-    - docker
-    - engageska
-  image: docker:stable
-  services:
-    - docker:dind
-  variables:
-    DOCKER_REGISTRY_HOST: $DOCKER_REGISTRY_HOST
-    DOCKER_REGISTRY_USERNAME: $DOCKER_REGISTRY_USERNAME
-    DOCKER_REGISTRY_PASSWORD: $DOCKER_REGISTRY_PASSWORD
-#    DOCKER_REGISTRY_HOST: $CI_REGISTRY
-#    DOCKER_REGISTRY_USERNAME: gitlab-ci-token
-#    DOCKER_REGISTRY_PASSWORD: $CI_BUILD_TOKEN
-    DOCKER_REGISTRY_USER: $CI_PROJECT_NAME
-    MODULE_PATH: src/tango_sdp_subarray
-  before_script:
-    - apk add make git
-    - docker login -u $DOCKER_REGISTRY_USERNAME -p $DOCKER_REGISTRY_PASSWORD $DOCKER_REGISTRY_HOST
-  script:
-    # FIXME(BMo) Test these make targets manually first!
-    - cd $MODULE_PATH
-    - make pull   # Pull '-test' image as cache
-    - make build  # Build '-test' image
-    - make push   # Push '-test' image (so it can be shared with test-build stage.
-  # Only build when changes are detected!
-  only:
-    changes:
-      - src/tango_sdp_subarray/**/*
-  except:
-    refs:
-      - tags
-
-
-# Build the python package locally, save dist folder as an artifact.
-build subarray device python (test) package:
-  stage: build
-  image: nexus.engageska-portugal.pt/sdp-prototype/pytango-orca-dev:0.3.0-buster-slim
-  tags:
-    - docker
-    - engageska
-  variables:
-    MODULE_PATH: src/tango_sdp_subarray
-  script:
-    - cd $MODULE_PATH
-    - python setup.py egg_info dist bdist_wheel
-  artifacts:
-    paths:
-      - ./$BUILD_PATH/dist/
+## Build a test SDP Subarray device image.
+### FIXME(BMo) dont build the final stage image here... instead create a -test tag and cache
+#build subarray device server (test) image:
+#  stage: build
+#  tags:
+#    - docker
+#    - engageska
+#  image: docker:stable
+#  services:
+#    - docker:dind
+#  variables:
+#    DOCKER_REGISTRY_HOST: $DOCKER_REGISTRY_HOST
+#    DOCKER_REGISTRY_USERNAME: $DOCKER_REGISTRY_USERNAME
+#    DOCKER_REGISTRY_PASSWORD: $DOCKER_REGISTRY_PASSWORD
+##    DOCKER_REGISTRY_HOST: $CI_REGISTRY
+##    DOCKER_REGISTRY_USERNAME: gitlab-ci-token
+##    DOCKER_REGISTRY_PASSWORD: $CI_BUILD_TOKEN
+#    DOCKER_REGISTRY_USER: $CI_PROJECT_NAME
+#    MODULE_PATH: src/tango_sdp_subarray
+#  before_script:
+#    - apk add make git
+#    - docker login -u $DOCKER_REGISTRY_USERNAME -p $DOCKER_REGISTRY_PASSWORD $DOCKER_REGISTRY_HOST
+#  script:
+#    # FIXME(BMo) Test these make targets manually first!
+#    - cd $MODULE_PATH
+#    - make pull   # Pull '-test' image as cache
+#    - make build  # Build '-test' image
+#    - make push   # Push '-test' image (so it can be shared with test-build stage.
+#  # Only build when changes are detected!
+#  only:
+#    changes:
+#      - src/tango_sdp_subarray/**/*
+#  except:
+#    refs:
+#      - tags
+#
+#
+## Build the python package locally, save dist folder as an artifact.
+#build subarray device python (test) package:
+#  stage: build
+#  image: nexus.engageska-portugal.pt/sdp-prototype/pytango-orca-dev:0.3.0-buster-slim
+#  tags:
+#    - docker
+#    - engageska
+#  variables:
+#    MODULE_PATH: src/tango_sdp_subarray
+#  script:
+#    - cd $MODULE_PATH
+#    - python setup.py egg_info dist bdist_wheel
+#  artifacts:
+#    paths:
+#      - ./$BUILD_PATH/dist/
 
 
 # -----------------------------------------------------------------------------
