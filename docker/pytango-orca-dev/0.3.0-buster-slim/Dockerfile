@@ -26,6 +26,7 @@ FROM ${DOCKER_REGISTRY_HOST}/${DOCKER_REGISTRY_USER}/pytango-9.3.0:buster-slim
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         git \
+        make \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy the venv from the build
