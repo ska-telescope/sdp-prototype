@@ -1,0 +1,41 @@
+{
+ "configure":
+ {
+   "id": "realtime-20190627-0001",
+   "sbiId": "20190627-0001",
+   "workflow": {
+     "id": "vis_ingest",
+     "type": "realtime",
+     "version": "0.1.0"
+   },
+   "parameters": {
+     "numStations": 4,
+     "numChannels": 372,
+     "numPolarisations": 4,
+     "freqStartHz": 0.35e9,
+     "freqEndHz": 1.05e9,
+     "fields": {
+       "0": {
+         "system": "ICRS",
+         "name": "NGC6251",
+         "ra": "2:31:50.91",
+         "dec": "89:15:51.4"
+       }
+     }
+   },
+   "scanParameters": {
+     "12345": {
+       "fieldId": 0,
+       "intervalMs": 1400
+     }
+   }
+ },
+ "configureScan": {
+   "scanParameters": {
+     "12346": {
+       "fieldId": 0,
+       "intervalMs": 2800
+     }
+   }
+ }
+}
