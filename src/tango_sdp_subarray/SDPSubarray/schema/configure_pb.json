@@ -2,39 +2,70 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Configure PB",
   "description": "Schema for Configure",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "type": "object",
+  "required": ["configure"],
   "properties": {
-    "id": {
-      "type": "string",
-      "description": "PB Id, PB_[date]_[unique_id]_[project]"
-    },
-    "sbi_id": {
-      "type": "string",
-      "description": "SBI Id, SBI_[date]_[unique_id]"
-    },
-    "type": {
-      "type": "string",
-      "description": "REAL_TIME or OFFLINE"
-    },
-    "workflow": {
+    "configure": {
+      "$ref": "#/definitions/subarray_pb_configuration"
+    }
+  },
+  "definitions": {
+    "subarray_pb_configuration": {
       "type": "object",
+      "description": "SDP Subarray PB configuration.",
+      "required": ["id", "sbiId", "workflow", "parameters"],
       "properties": {
         "id": {
           "type": "string",
-          "description": "Project Id"
+          "description": "Processing block ID. ID Schema TBD."
         },
-        "version": {
+        "sbiId": {
           "type": "string",
-          "description": "Workflow version"
+          "description": "Scheduling block Instance ID. ID Schema TBD"
+        },
+        "workflow": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "description": "realtime or offline"
+            },
+            "id": {
+              "type": "string",
+              "description": "Project Id"
+            },
+            "version": {
+              "type": "string",
+              "description": "Workflow version"
+            }
+          }
+        },
+        "parameters": {
+          "type": "object"
+        },
+        "scanParameters":
+        {
+          "type": "object",
+          "scanId": {
+            "type": "integer",
+            "description":"Scan ID. Schema TBD."
+          },
+          "fieldId": {
+            "type": "integer",
+            "description":"Field Id"
+          },
+          "interval": {
+            "type": "number",
+            "description": "Interval between visibility samples, in seconds."
+          },
+          "intervalMs": {
+            "type": "number",
+            "$comment": "DEPRECATED",
+            "description": "Interval between visibility samples, in milliseconds."
+          }
         }
       }
-    },
-    "parameters": {
-      "type": "object"
-    },
-    "scan_parameters": {
-      "type": "object"
     }
   }
 }
