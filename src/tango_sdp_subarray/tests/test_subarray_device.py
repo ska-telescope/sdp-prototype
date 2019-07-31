@@ -40,7 +40,7 @@ def subarray_device(tango_context):
 # -----------------------------------------------------------------------------
 
 
-@when('The device is initialised')
+@when('the device is initialised')
 def init_device(subarray_device):
     """Initialise the subarray device.
 
@@ -89,7 +89,7 @@ def command_release_resources(subarray_device):
     subarray_device.ReleaseResources('')
 
 
-@when('The obsState != IDLE')
+@when('obsState is not IDLE')
 def obs_state_not_idle(subarray_device):
     """Set the obsState to a random state that is *not* IDLE.
 
@@ -98,7 +98,7 @@ def obs_state_not_idle(subarray_device):
     subarray_device.obsState = randint(1, 6)  # ObsState.IDLE == 0
 
 
-@when(parsers.parse('obsState == {value}'))
+@when(parsers.parse('obsState is {value}'))
 def set_obs_state(subarray_device, value):
     """Set the obsState attribute to the {commanded state}.
 
@@ -191,7 +191,7 @@ def admin_mode_equals(subarray_device, expected):
     assert subarray_device.adminMode == AdminMode[expected]
 
 
-@then(parsers.parse('adminMode should be either ONLINE or MAINTENANCE'))
+@then('adminMode should be ONLINE or MAINTENANCE')
 def admin_mode_online_or_maintenance(subarray_device):
     """Check the Subarray adminMode is ONLINE or in MAINTENANCE mode.
 
@@ -213,7 +213,7 @@ def health_state_equals(subarray_device, expected):
         assert subarray_device.healthState == 0
 
 
-@then('Calling AssignResources raises tango.DevFailed')
+@then('calling AssignResources raises tango.DevFailed')
 def dev_failed_error_raised(subarray_device):
     """Check that calling AssignResources raises a tango.DevFailed error.
 
