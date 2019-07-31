@@ -27,7 +27,7 @@ Feature: SDPSubarray device
 
 	
 	@XTP-121 @XTP-118
-	Scenario: Assign Resources fails when ObsState != IDLE
+	Scenario: Assign Resources fails when obsState is not IDLE
 		Given I have a SDPSubarray device
 		When obsState is not IDLE
 		Then calling AssignResources raises tango.DevFailed
