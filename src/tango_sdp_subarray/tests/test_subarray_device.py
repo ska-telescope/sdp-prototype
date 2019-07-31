@@ -161,7 +161,7 @@ def command_end_scan(subarray_device):
 # -----------------------------------------------------------------------------
 
 
-@then(parsers.parse('State == {expected}'))
+@then(parsers.parse('State should be {expected}'))
 def device_state_equals(subarray_device, expected):
     """Check the Subarray device device state.
 
@@ -171,7 +171,7 @@ def device_state_equals(subarray_device, expected):
     assert subarray_device.state() == DevState.names[expected]
 
 
-@then(parsers.parse('obsState == {expected}'))
+@then(parsers.parse('obsState should be {expected}'))
 def obs_state_equals(subarray_device, expected):
     """Check the Subarray obsState attribute value.
 
@@ -181,7 +181,7 @@ def obs_state_equals(subarray_device, expected):
     assert subarray_device.obsState == ObsState[expected]
 
 
-@then(parsers.parse('adminMode == {expected}'))
+@then(parsers.parse('adminMode should be {expected}'))
 def admin_mode_equals(subarray_device, expected):
     """Check the Subarray adminMode value.
 
@@ -191,7 +191,7 @@ def admin_mode_equals(subarray_device, expected):
     assert subarray_device.adminMode == AdminMode[expected]
 
 
-@then(parsers.parse('adminMode either ONLINE or MAINTENANCE'))
+@then(parsers.parse('adminMode should be either ONLINE or MAINTENANCE'))
 def admin_mode_online_or_maintenance(subarray_device):
     """Check the Subarray adminMode is ONLINE or in MAINTENANCE mode.
 
@@ -201,7 +201,7 @@ def admin_mode_online_or_maintenance(subarray_device):
                                          AdminMode.MAINTENANCE)
 
 
-@then(parsers.parse('healthState == {expected}'))
+@then(parsers.parse('healthState should be {expected}'))
 def health_state_equals(subarray_device, expected):
     """Check the Subarray healthState value.
 
