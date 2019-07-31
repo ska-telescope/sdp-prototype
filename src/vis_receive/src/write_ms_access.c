@@ -38,7 +38,7 @@ oskar_MeasurementSet* create_ms(const char* oms_file_name, const char* app_name,
                                                write_crosscorr);
     return ms;
 }
-int write_ms(oskar_MeasurementSet* ms, int index, int num_pols, int num_channels, int num_times,int num_baselines, struct DataType** vis_data)
+int write_ms(oskar_MeasurementSet* ms, int buf_index, int num_pols, int num_channels, int num_times,int num_baselines, struct DataType** vis_data)
 {
     /* Define data dimensions. */
     int num_stations = 3;
@@ -68,6 +68,12 @@ int write_ms(oskar_MeasurementSet* ms, int index, int num_pols, int num_channels
     {
         /* Dummy data to write. */
         const double time_stamp = 51544.5 * 86400.0 + (double)t;
+        const unsigned int start_row = t * num_baselines;
+        const unsigned int base_row = buf_index * num_times * num_baselines;
+        const size_t vis_block_start =
+                2 * num_pols * num_baselines * num_channels * t;
+//                num_baselines * num_channels * t;
+
         for (b = 0; b < num_baselines; ++b)
         {
             uu[b] = t + 1;
@@ -89,14 +95,10 @@ int write_ms(oskar_MeasurementSet* ms, int index, int num_pols, int num_channels
         }
 
         /* Write coordinates and visibilities. */
-        const unsigned int start_row = t * num_baselines;
-        const size_t vis_block_start =
-                2 * num_pols * num_baselines * num_channels * t;
-//                num_baselines * num_channels * t;
-        oskar_ms_write_coords_d(ms, index*start_row+start_row, num_baselines, uu, vv, ww,
+        oskar_ms_write_coords_d(ms, base_row+start_row, num_baselines, uu, vv, ww,
                 exposure_sec, interval_sec, time_stamp);
         vis2 = vis_data;
-        oskar_ms_write_vis_f(ms, index*start_row+start_row, 0, num_channels, num_baselines,
+        oskar_ms_write_vis_f(ms, base_row+start_row, 0, num_channels, num_baselines,
                 &((vis2->vis + vis_block_start)->x));
     }
 
