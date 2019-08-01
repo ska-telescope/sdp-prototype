@@ -54,3 +54,17 @@ Feature: SDPSubarray device
 		When obsState == IDLE
 		And I call ConfigureScan
 		Then obsState == READY
+
+
+	Scenario: StartScan command successful
+		Given I have a SDPSubarray device
+		When obsState == READY
+		And I call StartScan
+		Then obsState == SCANNING
+
+
+     	Scenario: EndScan command successful
+		Given I have a SDPSubarray device
+		When obsState == SCANNING
+		And I call EndScan
+		Then obsState == READY
