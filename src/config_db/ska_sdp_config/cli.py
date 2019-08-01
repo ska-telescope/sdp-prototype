@@ -28,8 +28,8 @@ Environment Variables:
 import sys
 import re
 import docopt
-from ska_sdp_config import entity
 import yaml
+from ska_sdp_config import entity
 
 
 def cmd_get(txn, path, args):
