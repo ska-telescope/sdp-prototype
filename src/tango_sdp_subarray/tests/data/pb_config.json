@@ -1,32 +1,37 @@
 {
- "configure": {
-   "id": "realtime-20190627-0001",
-   "sbiId": "20190627-0001",
-   "workflow": {
-     "id": "vis_ingest",
-     "type": "realtime",
-     "version": "0.1.0"
-   },
-   "parameters": {
-     "numStations": 4,
-     "numChannels": 372,
-     "numPolarisations": 4,
-     "freqStartHz": 0.35e9,
-     "freqEndHz": 1.05e9,
-     "fields": {
-       "0": {
-         "system": "ICRS",
-         "name": "NGC6251",
-         "ra": "2:31:50.91",
-         "dec": "89:15:51.4"
-       }
-     }
-   },
-   "scanParameters": {
-     "12345": {
-       "fieldId": 0,
-       "intervalMs": 1400
-     }
-   }
- }
+  "configure": {
+    "workflow":
+    {
+      "type": "realtime",
+      "version": "0.1.0",
+      "id": "vis_ingest"
+    },
+    "sbiId": "20190627-0001",
+    "parameters": {
+      "numStations": 4,
+      "numPolarisations": 4,
+      "numChannels": 372,
+      "freqEndHz": 1050000000.0,
+      "freqStartHz": 350000000.0,
+      "fields": {
+        "0": {
+          "name": "NGC6251",
+          "dec": "89:15:51.4",
+          "system": "ICRS",
+          "ra": "2:31:50.91"
+        }
+      }
+    },
+    "scanParameters": {
+      "12345": {
+        "intervalMs": 1400,
+        "fieldId": 0
+      },
+      "12346": {
+        "intervalMs": 1400,
+        "fieldId": 0
+      }
+    },
+    "id": "realtime-20190627-0001"
+  }
 }
