@@ -7,6 +7,7 @@ Usage:
   sdpcfg [options] delete <path>
   sdpcfg [options] (create|update) <path> <value>
   sdpcfg [options] create_pb <workflow>
+  sdpcfg [options] deploy <type> <name> <value>
   sdpcfg --help
 
 Options:
@@ -28,6 +29,7 @@ import sys
 import re
 import docopt
 from ska_sdp_config import entity
+import yaml
 
 
 def cmd_get(txn, path, args):
@@ -79,6 +81,12 @@ def cmd_create_pb(txn, workflow, _args):
     pb_id = txn.new_processing_block_id(workflow['type'])
     txn.create_processing_block(entity.ProcessingBlock(pb_id, None, workflow))
     return pb_id
+
+
+def cmd_deploy(txn, typ, deploy_id, args):
+    """Create a deployment."""
+    dct = yaml.safe_load(args)
+    txn.create_deployment(entity.Deployment(deploy_id, typ, dct))
 
 
 def main(argv):
@@ -137,6 +145,8 @@ def main(argv):
                 cmd_delete(txn, path, args)
             elif args['create_pb']:
                 pb_id = cmd_create_pb(txn, workflow, args)
+            elif args['deploy']:
+                cmd_deploy(txn, args['<type>'], args['<name>'], value)
             if args['watch']:
                 txn.loop(wait=True)
 
