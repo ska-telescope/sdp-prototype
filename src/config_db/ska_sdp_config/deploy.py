@@ -16,6 +16,7 @@ from .entity import Deployment
 _SUBPROCESS = {}
 _MAX_HISTORY = 500
 
+
 def apply_deployment(dpl: Deployment):
     """
     Create software processes/pods specified.
@@ -26,11 +27,13 @@ def apply_deployment(dpl: Deployment):
 
         # Spawn subprocess
         proc = subprocess.Popen(
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             **dpl.args)
 
         # Spawn thread to watch stdout
         stdout_queue = queue.Queue(maxsize=_MAX_HISTORY)
+
         def stdout_thread():
             for line in proc.stdout:
                 try:
@@ -38,9 +41,10 @@ def apply_deployment(dpl: Deployment):
                 except queue.Full:
                     stdout_queue.get_nowait()
                     stdout_queue.put_nowait(line)
+
         stdout_thread = threading.Thread(target=stdout_thread)
         stdout_thread.start()
-        
+
         # Remember
         _SUBPROCESS[dpl.deploy_id] = (proc, stdout_queue)
 

@@ -22,13 +22,13 @@ class Deployment:
     configuration change.
     """
 
-    # pylint: disable=W0102
+    # pylint: disable=W0102,W0622
     def __init__(self, deploy_id, type, args):
         """
         Create a new deployment structure.
 
         :param deploy_id: Deployment ID
-        :param deploy_type: Type of the deployment (method by which
+        :param type: Type of the deployment (method by which
             it is applied)
         :param args: Type-specific deployment arguments
         :returns: Deployment object
@@ -42,7 +42,7 @@ class Deployment:
 
         # Validate
         if type not in DEPLOYMENT_TYPES:
-            raise ValueError("Unkown deployment type {}!".format(deploy_type))
+            raise ValueError("Unkown deployment type {}!".format(type))
         if not _DEPLOY_ID_RE.match(self.deploy_id):
             raise ValueError("Deployment ID {} not permissable!".format(
                 self.deploy_id))

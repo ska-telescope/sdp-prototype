@@ -8,3 +8,4 @@ updates to the stored configuration information.
 """
 
 from .config import Config
+from .entity import ProcessingBlock, Deployment

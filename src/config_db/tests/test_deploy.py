@@ -1,10 +1,11 @@
 """High-level API tests for deployments."""
 
 import os
-import pytest
 import time
+import yaml
 
-from ska_sdp_config import config, entity, backend
+import pytest
+from ska_sdp_config import config, entity
 
 # pylint: disable=missing-docstring,redefined-outer-name
 
@@ -37,6 +38,7 @@ def test_deploy_process(cfg):
             deploy.to_dict()
         txn.delete_deployment(deploy)
 
+
 def test_deploy_process_log_limit(cfg):
 
     # Make deployment
@@ -55,6 +57,7 @@ def test_deploy_process_log_limit(cfg):
     for txn in cfg.txn():
         txn.delete_deployment(deploy)
 
+
 def test_deploy_kill(cfg):
 
     # Make deployment
@@ -72,6 +75,7 @@ def test_deploy_kill(cfg):
         # Note that we are relying on the logs to be available even
         # after the deployment was removed...
         if wait_time > 0:
-            assert cfg.get_deployment_logs(deploy, 100) == [ b'Enter\n' ]
+            assert cfg.get_deployment_logs(deploy, 100) == [b'Enter\n']
         else:
-            assert cfg.get_deployment_logs(deploy, 100) == [ b'Enter\n', b'Exit\n' ]
+            assert cfg.get_deployment_logs(deploy, 100) == \
+                [b'Enter\n', b'Exit\n']

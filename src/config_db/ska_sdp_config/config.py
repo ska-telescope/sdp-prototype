@@ -132,6 +132,7 @@ class Config():
         self.close()
         return False
 
+    # pylint: disable=R0201
     def get_deployment_logs(self, dpl: entity.Deployment,
                             max_lines: int = 500):
         """
@@ -146,6 +147,7 @@ class Config():
         :returns: A list of the last log lines
         """
         return deploy.get_deployment_logs(dpl, max_lines)
+
 
 class TransactionFactory():
     """Helper object for making transactions."""
