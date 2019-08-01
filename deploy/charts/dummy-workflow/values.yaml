@@ -2,11 +2,17 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-replicaCount: 3
+
+
+
+workflow:
+  container: dummy-workflow
+  version: 0.0.10
+  replicas: 2
 
 etcd:
   version: "3.3"
-  replicas: 3
+  replicas: 1
 
 imagePullSecrets: []
 nameOverride: ""

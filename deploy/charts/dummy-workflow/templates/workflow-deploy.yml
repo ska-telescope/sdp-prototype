@@ -2,10 +2,11 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: {{ include "dummy-workflow.fullname" . }}
+  namespace: {{ .Release.Namespace }}
   labels:
 {{ include "dummy-workflow.labels" . | indent 4 }}
 spec:
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ .Values.workflow.replicas }}
   selector:
     matchLabels:
       app.kubernetes.io/name: {{ include "dummy-workflow.name" . }}
@@ -16,14 +17,6 @@ spec:
         app.kubernetes.io/name: {{ include "dummy-workflow.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
-      {{- with .Values.imagePullSecrets }}
-      imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
       initContainers:
       - image: quay.io/coreos/etcd:v{{ .Values.etcd.version }}
         name: {{ .Chart.Name }}-wait-for-etcd
@@ -34,7 +27,7 @@ spec:
         - name: ETCDCTL_API
           value: "3"
       containers:
-      - image: pw410/workflow_realtime_dummy:0.0.1
+      - image: {{ .Values.workflow.container }}:{{ .Values.workflow.version }}
         name: {{ .Chart.Name }}
         env:
         - name: SDP_CONFIG_HOST
@@ -47,6 +40,8 @@ spec:
       restartPolicy: Always
       schedulerName: default-scheduler
       securityContext: {}
+      serviceAccount: {{ include "dummy-workflow.fullname" . }}
+      serviceAccountName: {{ include "dummy-workflow.fullname" . }}
       terminationGracePeriodSeconds: 30
       {{- with .Values.affinity }}
       affinity:
@@ -54,5 +49,13 @@ spec:
       {{- end }}
       {{- with .Values.tolerations }}
       tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
