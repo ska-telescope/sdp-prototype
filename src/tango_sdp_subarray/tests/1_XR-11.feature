@@ -63,7 +63,7 @@ Feature: SDPSubarray device
 		Then obsState == SCANNING
 
 
-     Scenario: EndScan command successful
+     	Scenario: EndScan command successful
 		Given I have a SDPSubarray device
 		When obsState == SCANNING
 		And I call EndScan
