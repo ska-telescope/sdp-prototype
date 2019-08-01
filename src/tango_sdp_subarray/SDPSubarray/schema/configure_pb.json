@@ -44,25 +44,30 @@
         "parameters": {
           "type": "object"
         },
-        "scanParameters":
-        {
+        "scanParameters": {
           "type": "object",
-          "scanId": {
-            "type": "integer",
-            "description":"Scan ID. Schema TBD."
-          },
-          "fieldId": {
-            "type": "integer",
-            "description":"Field Id"
-          },
-          "interval": {
-            "type": "number",
-            "description": "Interval between visibility samples, in seconds."
-          },
-          "intervalMs": {
-            "type": "number",
-            "$comment": "DEPRECATED",
-            "description": "Interval between visibility samples, in milliseconds."
+          "patternProperties": {
+            "^.*$": {
+              "type": "object",
+              "required": ["fieldId"],
+              "scanId": {
+                "type": "integer",
+                "description":"Scan ID. Schema TBD."
+              },
+              "fieldId": {
+                "type": "integer",
+                "description":"Field Id"
+              },
+              "interval": {
+                "type": "number",
+                "description": "Interval between visibility samples, in seconds."
+              },
+              "intervalMs": {
+                "type": "number",
+                "$comment": "DEPRECATED",
+                "description": "Interval between visibility samples, in milliseconds."
+              }
+            }
           }
         }
       }
