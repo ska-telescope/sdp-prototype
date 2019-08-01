@@ -5,6 +5,7 @@ import time
 import yaml
 
 import pytest
+import kubernetes
 from ska_sdp_config import config, entity
 
 # pylint: disable=missing-docstring,redefined-outer-name
@@ -79,3 +80,52 @@ def test_deploy_kill(cfg):
         else:
             assert cfg.get_deployment_logs(deploy, 100) == \
                 [b'Enter\n', b'Exit\n']
+
+
+def test_deploy_kube(cfg):
+
+    hello_world_yaml = """
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test--deploy-kube
+  namespace: default
+spec:
+  containers:
+  - image: hello-world
+    name: hello-world
+"""
+    deployment = entity.Deployment('deploy-test-kube', 'kubernetes-direct',
+                                   yaml.safe_load(hello_world_yaml))
+
+    # Make deployment
+    try:
+        for txn in cfg.txn():
+            txn.create_deployment(deployment)
+    except kubernetes.utils.FailToCreateError as exc:
+        if exc.api_exceptions[0].reason != 'Conflict':
+            raise
+        # Already exists, likely from a previous failed test. It will
+        # have been added to the configuration at this point, so we
+        # can just continue as normal.
+
+    # Wait up to 30 seconds for the pod to materialise
+    logs = []
+    for _ in range(30):
+        time.sleep(1)
+        try:
+            logs = cfg.get_deployment_logs(deployment)
+            break
+        except kubernetes.client.rest.ApiException as api_exc:
+            if "waiting to start" in api_exc.body:
+                continue  # Wait
+            raise
+    assert "Hello from Docker!" in logs
+
+    # Delete deployment
+    for txn in cfg.txn():
+        txn.delete_deployment(deployment)
+
+
+if __name__ == '__main__':
+    pytest.main()
