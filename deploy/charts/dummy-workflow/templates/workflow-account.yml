@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "dummy-workflow.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+{{ include "dummy-workflow.labels" . | indent 4 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: {{ include "dummy-workflow.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+{{ include "dummy-workflow.labels" . | indent 4 }}
+rules:
+  -
+    apiGroups:
+      - ""
+      - apps
+    resources:
+      - componentstatuses
+      - configmaps
+      - daemonsets
+      - deployments
+      - events
+      - endpoints
+      - horizontalpodautoscalers
+      - ingress
+      - jobs
+      - limitranges
+      - namespaces
+      - nodes
+      - pods
+      - pods/log
+      - persistentvolumes
+      - persistentvolumeclaims
+      - resourcequotas
+      - replicasets
+      - replicationcontrollers
+      - services
+    verbs: ["*"]
+  - nonResourceURLs: ["*"]
+    verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "dummy-workflow.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+{{ include "dummy-workflow.labels" . | indent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "dummy-workflow.fullname" . }}
+subjects:
+- kind: ServiceAccount
+  namespace: {{ .Release.Namespace }}
+  name: {{ include "dummy-workflow.fullname" . }}
