@@ -97,6 +97,9 @@ def _have_kubernetes():
         return True
     except kubernetes.config.ConfigException:
         pass
+    except TypeError:
+        # Happens when there is no configuration at all for some reason
+        pass
     return False
 
 

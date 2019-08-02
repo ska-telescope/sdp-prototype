@@ -31,10 +31,10 @@ import os
 import sys
 import re
 import tempfile
+import json
 import subprocess
 import docopt
 import yaml
-import json
 from ska_sdp_config import entity, config
 
 
@@ -87,7 +87,7 @@ def cmd_edit(txn, path):
         val_in = yaml.dump(val_dict)
         have_yaml = True
 
-    except Exception:
+    except json.JSONDecodeError:
 
         val_in = val
         have_yaml = False
@@ -95,18 +95,18 @@ def cmd_edit(txn, path):
     # Write to temporary file
     with tempfile.NamedTemporaryFile(
             'w', suffix=('.yml' if have_yaml else '.dat'),
-            prefix=os.path.basename(path), delete=False) as f:
-        print(val_in, file=f, flush=True)
-        fname = f.name
+            prefix=os.path.basename(path), delete=False) as tmp:
+        print(val_in, file=tmp, flush=True)
+        fname = tmp.name
 
     # Start editor
     subprocess.call([os.environ['EDITOR'] + " " + fname], shell=True)
 
     # Read new value in
-    with open(fname) as f:
-        new_val = f.read()
+    with open(fname) as tmp:
+        new_val = tmp.read()
     if have_yaml:
-        new_val = config._to_json(yaml.safe_load(new_val))
+        new_val = config.dict_to_json(yaml.safe_load(new_val))
 
     # Apply update
     if new_val == val:
@@ -189,6 +189,11 @@ def main(argv):
         print(__doc__, file=sys.stderr)
         exit(1)
 
+    cmd(args, path, value, workflow, parameters)
+
+
+def cmd(args, path, value, workflow, parameters):
+    """Execute command."""
     # Get configuration client, start transaction
     import ska_sdp_config
     prefix = ('' if args['--prefix'] is None else args['--prefix'])
@@ -216,7 +221,8 @@ def main(argv):
 
         # Possibly give feedback after transaction has concluded
         if not args['--quiet']:
-            if args['create'] or args['update'] or args['delete'] or args['edit']:
+            if args['create'] or args['update'] or args['delete'] or \
+               args['edit']:
                 print("OK")
             if args['process']:
                 print("OK, pb_id = {}".format(pb_id))

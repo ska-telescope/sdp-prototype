@@ -163,7 +163,12 @@ class TransactionFactory():
             yield Transaction(self._config, txn)
 
 
-def _to_json(obj):
+def dict_to_json(obj):
+    """Format a dictionary for writing it into the database.
+
+    :param obj: Dictionary object to format
+    :returns: String representation
+    """
     # We only write dictionaries (JSON objects) at the moment
     assert isinstance(obj, dict)
     # Export to JSON. No need to convert to ASCII, as the backend
@@ -198,11 +203,11 @@ class Transaction():
 
     def _create(self, path, obj, lease=None):
         """Set a new path in the database to a JSON object."""
-        self._txn.create(path, _to_json(obj), lease)
+        self._txn.create(path, dict_to_json(obj), lease)
 
     def _update(self, path, obj):
         """Set a existing path in the database to a JSON object."""
-        self._txn.update(path, _to_json(obj))
+        self._txn.update(path, dict_to_json(obj))
 
     def loop(self, wait=False):
         """Repeat transaction regardless of whether commit succeeds.
