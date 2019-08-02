@@ -82,6 +82,25 @@ def test_deploy_kill(cfg):
                 [b'Enter\n', b'Exit\n']
 
 
+def _have_kubernetes():
+
+    # Try in-cluster configuration
+    try:
+        kubernetes.config.load_incluster_config()
+        return True
+    except kubernetes.config.ConfigException:
+        pass
+
+    # Try kube.conf
+    try:
+        kubernetes.config.load_kube_config()
+        return True
+    except kubernetes.config.ConfigException:
+        pass
+    return False
+
+
+@pytest.mark.skipif(not _have_kubernetes(), reason="need Kubernetes")
 def test_deploy_kube(cfg):
 
     hello_world_yaml = """
