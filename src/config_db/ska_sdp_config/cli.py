@@ -6,8 +6,9 @@ Usage:
   sdpcfg [options] [watch] (ls|list) [values] [-R] <path>
   sdpcfg [options] delete [-R] <path>
   sdpcfg [options] (create|update) <path> <value>
-  sdpcfg [options] process <workflow>
-  sdpcfg [options] deploy <type> <name> <value>
+  sdpcfg [options] edit <path>
+  sdpcfg [options] process <workflow> [<parameters>]
+  sdpcfg [options] deploy <type> <name> <parameters>
   sdpcfg --help
 
 Options:
@@ -26,11 +27,15 @@ Environment Variables:
 
 # pylint: disable=E1111,R0912
 
+import os
 import sys
 import re
+import tempfile
+import subprocess
 import docopt
 import yaml
-from ska_sdp_config import entity
+import json
+from ska_sdp_config import entity, config
 
 
 def cmd_get(txn, path, args):
@@ -72,6 +77,44 @@ def cmd_update(txn, path, value, _args):
     txn.raw.update(path, value)
 
 
+def cmd_edit(txn, path):
+    """Edit the value of a raw key."""
+    val = txn.raw.get(path)
+    try:
+
+        # Attempt translation to YAML
+        val_dict = json.loads(val)
+        val_in = yaml.dump(val_dict)
+        have_yaml = True
+
+    except Exception:
+
+        val_in = val
+        have_yaml = False
+
+    # Write to temporary file
+    with tempfile.NamedTemporaryFile(
+            'w', suffix=('.yml' if have_yaml else '.dat'),
+            prefix=os.path.basename(path), delete=False) as f:
+        print(val_in, file=f, flush=True)
+        fname = f.name
+
+    # Start editor
+    subprocess.call([os.environ['EDITOR'] + " " + fname], shell=True)
+
+    # Read new value in
+    with open(fname) as f:
+        new_val = f.read()
+    if have_yaml:
+        new_val = config._to_json(yaml.safe_load(new_val))
+
+    # Apply update
+    if new_val == val:
+        print("No change!")
+    else:
+        txn.raw.update(path, new_val)
+
+
 def cmd_delete(txn, path, args):
     """Delete a key."""
     if args['-R']:
@@ -83,16 +126,24 @@ def cmd_delete(txn, path, args):
         txn.raw.delete(path)
 
 
-def cmd_create_pb(txn, workflow, _args):
+def cmd_create_pb(txn, workflow, parameters, _args):
     """Create a processing block."""
+    # Parse parameters
+    if parameters is not None:
+        pars = yaml.safe_load(parameters)
+    else:
+        pars = {}
+
+    # Create new processing block ID, create processing block
     pb_id = txn.new_processing_block_id(workflow['type'])
-    txn.create_processing_block(entity.ProcessingBlock(pb_id, None, workflow))
+    txn.create_processing_block(entity.ProcessingBlock(
+        pb_id, None, workflow, parameters=pars))
     return pb_id
 
 
-def cmd_deploy(txn, typ, deploy_id, args):
+def cmd_deploy(txn, typ, deploy_id, parameters):
     """Create a deployment."""
-    dct = yaml.safe_load(args)
+    dct = yaml.safe_load(parameters)
     txn.create_deployment(entity.Deployment(deploy_id, typ, dct))
 
 
@@ -131,6 +182,9 @@ def main(argv):
     value = args["<value>"]
     if value == '-':
         value = sys.stdin.read()
+    parameters = args["<parameters>"]
+    if parameters == '-':
+        parameters = sys.stdin.read()
     if not success:
         print(__doc__, file=sys.stderr)
         exit(1)
@@ -147,20 +201,22 @@ def main(argv):
                 cmd_get(txn, path, args)
             elif args['create']:
                 cmd_create(txn, path, value, args)
+            elif args['edit']:
+                cmd_edit(txn, path)
             elif args['update']:
                 cmd_update(txn, path, value, args)
             elif args['delete']:
                 cmd_delete(txn, path, args)
             elif args['process']:
-                pb_id = cmd_create_pb(txn, workflow, args)
+                pb_id = cmd_create_pb(txn, workflow, parameters, args)
             elif args['deploy']:
-                cmd_deploy(txn, args['<type>'], args['<name>'], value)
+                cmd_deploy(txn, args['<type>'], args['<name>'], parameters)
             if args['watch']:
                 txn.loop(wait=True)
 
         # Possibly give feedback after transaction has concluded
         if not args['--quiet']:
-            if args['create'] or args['update'] or args['delete']:
+            if args['create'] or args['update'] or args['delete'] or args['edit']:
                 print("OK")
             if args['process']:
                 print("OK, pb_id = {}".format(pb_id))
