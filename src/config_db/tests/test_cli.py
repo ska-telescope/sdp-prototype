@@ -3,6 +3,7 @@
 # pylint: disable=missing-docstring
 
 import os
+from datetime import date
 import pytest
 
 from ska_sdp_config import cli
@@ -14,6 +15,9 @@ def test_cli_simple(capsys):
 
     if os.getenv("SDP_TEST_HOST") is not None:
         os.environ["SDP_CONFIG_HOST"] = os.getenv("SDP_TEST_HOST")
+
+    cli.main(['delete', '-R', PREFIX])
+    out, err = capsys.readouterr()
 
     cli.main(['get', PREFIX+'/test'])
     out, err = capsys.readouterr()
@@ -48,7 +52,13 @@ def test_cli_simple(capsys):
 
     cli.main(['-q', 'list', PREFIX+'/'])
     out, err = capsys.readouterr()
-    assert out == "{pre}/foo, {pre}/test\n".format(pre=PREFIX)
+    assert out == "{pre}/foo {pre}/test\n".format(pre=PREFIX)
+    assert err == ""
+
+    cli.main(['--prefix', PREFIX, 'process', 'realtime:test:0.1'])
+    out, err = capsys.readouterr()
+    assert out == "OK, pb_id = realtime-{}-0000\n".format(
+        date.today().strftime('%Y%m%d'))
     assert err == ""
 
     cli.main(['delete', PREFIX+'/test'])

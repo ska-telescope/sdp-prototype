@@ -4,14 +4,15 @@ Command line utility for accessing SKA SDP configuration.
 Usage:
   sdpcfg [options] (get|watch) <path>
   sdpcfg [options] [watch] (ls|list) [values] [-R] <path>
-  sdpcfg [options] delete <path>
+  sdpcfg [options] delete [-R] <path>
   sdpcfg [options] (create|update) <path> <value>
-  sdpcfg [options] create_pb <workflow>
+  sdpcfg [options] process <workflow>
   sdpcfg [options] deploy <type> <name> <value>
   sdpcfg --help
 
 Options:
   -q, --quiet          Cut back on unneccesary output
+  --prefix <prefix>    Path prefix for high-level API
 
 Environment Variables:
   SDP_CONFIG_BACKEND   Database backend (default etcd3)
@@ -48,9 +49,9 @@ def cmd_list(txn, path, args):
     if args['--quiet']:
         if args['values']:
             values = [txn.raw.get(key) for key in keys]
-            print(", ".join(values))
+            print(" ".join(values))
         else:
-            print(", ".join(keys))
+            print(" ".join(keys))
     else:
         if args['values']:
             print("Keys with {} prefix:".format(path))
@@ -71,9 +72,15 @@ def cmd_update(txn, path, value, _args):
     txn.raw.update(path, value)
 
 
-def cmd_delete(txn, path, _args):
+def cmd_delete(txn, path, args):
     """Delete a key."""
-    txn.raw.delete(path)
+    if args['-R']:
+        for key in txn.raw.list_keys(path, recurse=8):
+            if not args['--quiet']:
+                print(key)
+            txn.raw.delete(key)
+    else:
+        txn.raw.delete(path)
 
 
 def cmd_create_pb(txn, workflow, _args):
@@ -130,7 +137,8 @@ def main(argv):
 
     # Get configuration client, start transaction
     import ska_sdp_config
-    cfg = ska_sdp_config.Config()
+    prefix = ('' if args['--prefix'] is None else args['--prefix'])
+    cfg = ska_sdp_config.Config(global_prefix=prefix)
     try:
         for txn in cfg.txn():
             if args['ls'] or args['list']:
@@ -143,7 +151,7 @@ def main(argv):
                 cmd_update(txn, path, value, args)
             elif args['delete']:
                 cmd_delete(txn, path, args)
-            elif args['create_pb']:
+            elif args['process']:
                 pb_id = cmd_create_pb(txn, workflow, args)
             elif args['deploy']:
                 cmd_deploy(txn, args['<type>'], args['<name>'], value)
@@ -154,7 +162,7 @@ def main(argv):
         if not args['--quiet']:
             if args['create'] or args['update'] or args['delete']:
                 print("OK")
-            if args['create_pb']:
+            if args['process']:
                 print("OK, pb_id = {}".format(pb_id))
 
     except KeyboardInterrupt:
