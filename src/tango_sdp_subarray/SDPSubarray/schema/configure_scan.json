@@ -1,22 +1,43 @@
 {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "title":"Configure Scan",
-    "description":"Schema for Configure Scan",
-    "version":"1.0.0",
-    "type": "object",
-    "properties": {
-        "scan_id": {
-            "type": "integer",
-            "description":"Scan Id",
-            "pattern":"^[0-9]{5}$"
-        },
-        "field_id": {
-            "type": "integer",
-            "description":"Field Id"
-        },
-        "interval_ms": {
-            "type": "integer",
-             "description":"Schema for Configure Scan"
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title":"Configure Scan",
+  "description":"Schema for Configure Scan",
+  "version":"0.1.0",
+  "type": "object",
+  "required": ["configureScan"],
+  "properties": {
+    "configureScan": {
+      "required": ["scanParameters"],
+      "type": "object",
+      "properties": {
+        "scanParameters": {
+          "$ref": "#/definitions/scanParameters"
         }
+      }
     }
+  },
+  "definitions": {
+    "scanParameters":
+    {
+      "type": "object",
+      "required": ["scanId", "fieldId"],
+      "scanId": {
+        "type": "integer",
+        "description":"Scan ID. Schema TBD."
+      },
+      "fieldId": {
+        "type": "integer",
+        "description":"Field Id"
+      },
+      "interval": {
+        "type": "number",
+        "description": "Interval between visibility samples, in seconds."
+      },
+      "intervalMs": {
+        "type": "number",
+        "$comment": "DEPRECATED",
+        "description": "Interval between visibility samples, in milliseconds."
+      }
+    }
+  }
 }

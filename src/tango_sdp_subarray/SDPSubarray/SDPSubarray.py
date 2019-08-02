@@ -109,35 +109,35 @@ class SDPSubarray(Device):
     # Attributes methods
     # ------------------
 
-    def write_obsState(self, obs_state: ObsState):
+    def write_obsState(self, obs_state):
         """Set the obsState attribute.
 
         :param obs_state: An observation state enum value.
         """
         self._obs_state = obs_state
 
-    def read_obsState(self) -> ObsState:
+    def read_obsState(self):
         """Get the obsState attribute.
 
         :returns: The current obsState attribute value.
         """
         return self._obs_state
 
-    def write_adminMode(self, admin_mode: AdminMode):
+    def write_adminMode(self, admin_mode):
         """Set the adminMode attribute.
 
         :param admin_mode: An admin mode enum value.
         """
         self._admin_mode = admin_mode
 
-    def read_adminMode(self) -> AdminMode:
+    def read_adminMode(self):
         """Get the adminMode attribute.
 
         :return: The current adminMode attribute value.
         """
         return self._admin_mode
 
-    def read_receiveAddresses(self) -> str:
+    def read_receiveAddresses(self):
         """Get the list of receive addresses encoded as a JSON string.
 
         More details are provided on SKA confluence at the address:
@@ -160,7 +160,7 @@ class SDPSubarray(Device):
 
     @command(dtype_in=str)
     @DebugIt()
-    def AssignResources(self, config: str = ''):
+    def AssignResources(self, config=''):
         """Assign Resources assigned to the subarray device.
 
         This is currently a noop for SDP!
@@ -183,7 +183,7 @@ class SDPSubarray(Device):
 
     @command(dtype_in=str)
     @DebugIt()
-    def ReleaseResources(self, config: str = ''):
+    def ReleaseResources(self, config=''):
         """Release resources assigned to the subarray device.
 
         This is currently a noop for SDP!
@@ -207,7 +207,7 @@ class SDPSubarray(Device):
 
     @command(dtype_in=str)
     @DebugIt()
-    def Configure(self, pb_config: str, schema_path: str = None):
+    def Configure(self, pb_config, schema_path=None):
         """Configure the device to execute a real-time Processing Block (PB).
 
         Provides PB configuration and parameters needed to execute the first
@@ -234,7 +234,7 @@ class SDPSubarray(Device):
 
     @command(dtype_in=str)
     @DebugIt()
-    def ConfigureScan(self, scan_config: str, schema_path: str = None):
+    def ConfigureScan(self, scan_config, schema_path=None):
         """Configure the subarray device to execute a scan.
 
         This allows scan specific, late-binding information to be provided
@@ -259,7 +259,7 @@ class SDPSubarray(Device):
 
     @command
     @DebugIt()
-    def Scan(self):
+    def StartScan(self):
         """Command issued when a scan is started."""
         self._obs_state = ObsState.SCANNING
 
@@ -283,7 +283,7 @@ class SDPSubarray(Device):
         self._obs_state = ObsState.READY
 
 
-def delete_device_server(instance_name: str = "*"):
+def delete_device_server(instance_name="*"):
     """Delete (unregister) SDPSubarray device server instance(s).
 
     :param instance_name: Optional, name of the device server instance to
@@ -301,7 +301,7 @@ def delete_device_server(instance_name: str = "*"):
         pass
 
 
-def register(instance_name: str, *device_names: str):
+def register(instance_name, *device_names):
     """Register device with a SDPSubarray device server instance.
 
     If the device is already registered, do nothing.
@@ -330,7 +330,7 @@ def register(instance_name: str, *device_names: str):
         pass
 
 
-def init_logger(level: str = 'DEBUG', name: str = 'ska.sdp'):
+def init_logger(level='DEBUG', name='ska.sdp'):
     """Initialise stdout logger for the ska.sdp logger.
 
     :param level: Logging level, default: 'DEBUG'
