@@ -8,7 +8,7 @@ REPOS_URL = 'http://github.com/ska-telescope/sdp-prototype'
 
 setup(
     name='ska-sdp-config',
-    version='0.0.1',
+    version='0.0.2',
     description='SKA SDP Configuration Database',
     long_description=LONG_DESCRIPTION,
     long_description_content_type='text/markdown',
