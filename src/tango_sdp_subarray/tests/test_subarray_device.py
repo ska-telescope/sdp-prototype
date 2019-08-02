@@ -3,7 +3,6 @@
 # pylint: disable=redefined-outer-name
 
 from os.path import dirname, join
-from random import randint
 
 import tango
 from tango import DevState
@@ -89,16 +88,8 @@ def command_release_resources(subarray_device):
     subarray_device.ReleaseResources('')
 
 
-@when('obsState is not IDLE')
-def obs_state_not_idle(subarray_device):
-    """Set the obsState to a random state that is *not* IDLE.
-
-    :param subarray_device: An SDPSubarray device.
-    """
-    subarray_device.obsState = randint(1, 6)  # ObsState.IDLE == 0
-
-
 @when(parsers.parse('obsState is {value}'))
+@when('obsState is <value>')
 def set_obs_state(subarray_device, value):
     """Set the obsState attribute to the {commanded state}.
 
@@ -214,10 +205,20 @@ def health_state_equals(subarray_device, expected):
 
 
 @then('calling AssignResources raises tango.DevFailed')
-def dev_failed_error_raised(subarray_device):
+def dev_failed_error_raised_by_command(subarray_device):
     """Check that calling AssignResources raises a tango.DevFailed error.
 
     :param subarray_device: An SDPSubarray device.
     """
     with pytest.raises(tango.DevFailed):
         subarray_device.AssignResources()
+
+
+@then('calling ReleaseResources raises tango.DevFailed')
+def dev_failed_error_raised_by_release_resources(subarray_device):
+    """Check that calling ReleaseResources raises a tango.DevFailed error.
+
+    :param subarray_device: An SDPSubarray device.
+    """
+    with pytest.raises(tango.DevFailed):
+        subarray_device.ReleaseResources()

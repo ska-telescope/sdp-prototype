@@ -12,11 +12,14 @@ Feature: SDPSubarray device
 		Then State should be OFF
 		And obsState should be IDLE
 		And adminMode should be OFFLINE
-		And healthState should be OK	
+		And healthState should be OK
+			
 
-	
+	#When assigning resources to the SDPSubarray device, the device state transitions must follow the [Subarray State Model|https://confluence.skatelescope.org/display/SE/Subarray+State+Model] and behaviour defined for the [Subarray Device interface description|https://confluence.skatelescope.org/pages/viewpage.action?pageId=74716479]. 
+	#
+	#This requires that after successful assignment of resources no exceptions are thrown, device state is ON, the obsState remains in IDLE, and the adminMode is ONLINE.
 	@XTP-120 @XTP-118
-	Scenario: Assign Resources successfully
+	Scenario: AssignResources command successful
 		Given I have a SDPSubarray device
 		When I set adminMode to ONLINE
 		And I call AssignResources
@@ -27,21 +30,45 @@ Feature: SDPSubarray device
 
 	
 	@XTP-121 @XTP-118
-	Scenario: Assign Resources fails when obsState is not IDLE
+	Scenario Outline: AssignResources fails when obsState is not IDLE
 		Given I have a SDPSubarray device
-		When obsState is not IDLE
+		When obsState is <value>
 		Then calling AssignResources raises tango.DevFailed
+		
+		Examples:
+		| value       |
+		| CONFIGURING |
+		| READY       |
+		| SCANNING    |
+		| ABORTED     |
+		| FAULT       |
 			
 
 	
 	@XTP-122 @XTP-118
-	Scenario: Release Resources successfully
+	Scenario: ReleaseResources command successful
 		Given I have a SDPSubarray device
 		When obsState is IDLE
 		And I call ReleaseResources
 		Then State should be OFF
 		And obsState should be IDLE
 		And adminMode should be ONLINE or MAINTENANCE
+			
+
+	
+	@XTP-193 @XTP-118
+	Scenario Outline: ReleaseResources fails when obsState is not IDLE
+		Given I have a SDPSubarray device
+		When obsState is <value>
+		Then calling ReleaseResources raises tango.DevFailed
+		
+		Examples:
+		| value       |
+		| CONFIGURING |
+		| READY       |
+		| SCANNING    |
+		| ABORTED     |
+		| FAULT       |
 			
 
 	#Tests successful execution of the SDP Subarray Configure command.
@@ -60,17 +87,22 @@ Feature: SDPSubarray device
 		When obsState is IDLE
 		And I call ConfigureScan
 		Then obsState should be READY
+			
 
-
+	
+	@XTP-191 @XTP-118
 	Scenario: StartScan command successful
 		Given I have a SDPSubarray device
 		When obsState is READY
 		And I call StartScan
 		Then obsState should be SCANNING
+			
 
-
-     	Scenario: EndScan command successful
+	
+	@XTP-192 @XTP-118
+	Scenario: EndScan command successful
 		Given I have a SDPSubarray device
 		When obsState is SCANNING
 		And I call EndScan
 		Then obsState should be READY
+		
