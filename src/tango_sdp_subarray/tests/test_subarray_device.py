@@ -205,7 +205,7 @@ def health_state_equals(subarray_device, expected):
 
 
 @then('calling AssignResources raises tango.DevFailed')
-def dev_failed_error_raised_by_command(subarray_device):
+def dev_failed_error_raised_by_assign_resources(subarray_device):
     """Check that calling AssignResources raises a tango.DevFailed error.
 
     :param subarray_device: An SDPSubarray device.
