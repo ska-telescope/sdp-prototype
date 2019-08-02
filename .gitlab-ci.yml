@@ -302,6 +302,12 @@ build:tangods_sdp_subarray:
   variables:
     BUILD_PATH: src/tango_sdp_subarray
 
+# Build and push `sdp_vis_receive` image.
+build:sdp_vis_receive:
+  extends: .build_docker
+  variables:
+    BUILD_PATH: src/vis_receive
+
 # ============================================================================
 # Push versioned docker images
 # ============================================================================
@@ -364,6 +370,23 @@ push:pytango_ska_dev:
     - build:tangods_sdp_master
   variables:
     BUILD_PATH: src/tango_sdp_master
+
+.sdp_vis_receive_template:
+  extends: .push_docker
+  when: always
+  dependencies:
+    - build:sdp_vis_receive
+  variables:
+    BUILD_PATH: src/vis_receive
+
+push:sdp_vis_receive:
+  extends: .sdp_vis_receive_template
+  only: [master]
+
+push:sdp_vis_receive-manual:
+  extends: .sdp_vis_receive_template
+  when: manual
+  except: [master]
 
 push:tangods_sdp_master:
   extends: .tangods_master_template
