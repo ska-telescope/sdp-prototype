@@ -259,7 +259,7 @@ class SDPSubarray(Device):
 
     @command
     @DebugIt()
-    def Scan(self):
+    def StartScan(self):
         """Command issued when a scan is started."""
         self._obs_state = ObsState.SCANNING
 
