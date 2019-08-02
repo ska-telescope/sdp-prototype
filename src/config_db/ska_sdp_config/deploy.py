@@ -190,7 +190,7 @@ def get_deployment_logs(dpl: Deployment, max_lines: int = 500):
         # Ask for logs
         metadata = dpl.args['metadata']
         logs = api.read_namespaced_pod_log(
-            metadata['name'], metadata.get('namespace'),
+            metadata['name'], metadata.get('namespace', 'default'),
             tail_lines=max_lines)
         del client
         return logs
