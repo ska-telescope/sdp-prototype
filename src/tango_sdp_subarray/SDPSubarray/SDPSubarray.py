@@ -9,6 +9,8 @@ from inspect import currentframe, getframeinfo
 from os.path import dirname, join
 import logging
 
+import ska_sdp_config
+
 from jsonschema import validate
 from tango import AttrWriteType, DebugIt, DevState, Except
 from tango.server import Device, DeviceMeta, attribute, command, run
@@ -230,6 +232,11 @@ class SDPSubarray(Device):
 
         pb_config = json.loads(pb_config)
         validate(pb_config, schema)
+
+        config = ska_sdp_config.Config()
+        for txn in config.txn():
+            txn.create_processing_block(pb_config)
+
         self._obs_state = ObsState.READY
 
     @command(dtype_in=str)
@@ -255,6 +262,11 @@ class SDPSubarray(Device):
             schema = json.loads(file.read())
         pb_config = json.loads(scan_config)
         validate(pb_config, schema)
+
+        config = ska_sdp_config.Config()
+        for txn in config.txn():
+            txn.create_processing_block(pb_config)
+
         self._obs_state = ObsState.READY
 
     @command
