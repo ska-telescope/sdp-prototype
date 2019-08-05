@@ -3,10 +3,12 @@
 # Runs one test at a time.
 # Usage: run_c_tests.sh test
 # Where test is one of:
-#   - CPP (CPPCheck, CPP-check ...) for the CPP check
+#   - TEST for cpp check and coveralls
 #   - USAN (undefinded, behaviour, ...) for the undefined behaviour check
 #   - TSAN (thread, ...) for the thread sanity check
 #   - ASAN (address ...) for the address sanity check
+# No longer required:
+#   - CPP (CPPCheck, CPP-check ...) for the CPP check
 #   - COV (COVERALLS) Coveralls check
 # The test argument can be upper or lower case.
 # There are aliases for the sanity checks.
@@ -24,11 +26,15 @@ cd src/vis_receive
 mkdir ./build
 cd ./build
 case ${1^^} in
-    CPP*)
+    TEST*)
 	echo -e "\n ${bold}*** Running Cpp Check *** ${normal} \n"
 	cd ..
 	cppcheck ./ -i extern/gtest/ --enable=warning,portability,style
 	cd build
+	echo -e "\n ${bold}*** Running Coveralls *** ${normal} \n"
+	cmake -DCOVERALLS=ON -DCMAKE_BUILD_TYPE=Debug ..
+	make
+	make coveralls
 	;;
     USAN|UNDEF*|BEHAV*)
 	echo -e "\n ${bold}*** Running Undefined Behaviour Sanitizer *** ${normal} \n"
@@ -48,12 +54,12 @@ case ${1^^} in
 	make
 	./tests/recv_test
 	;;
-    COV*)
-	echo -e "\n ${bold}*** Running Coveralls *** ${normal} \n"
-	cmake -DCOVERALLS=ON -DCMAKE_BUILD_TYPE=Debug ..
-	make
-	make coveralls
-	;;
+    #~ COV*)
+	#~ echo -e "\n ${bold}*** Running Coveralls *** ${normal} \n"
+	#~ cmake -DCOVERALLS=ON -DCMAKE_BUILD_TYPE=Debug ..
+	#~ make
+	#~ make coveralls
+	#~ ;;
 esac
 cd ..
 #printf "\n**** No longer require build directory  - deleting ****\n" && \
