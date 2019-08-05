@@ -30,12 +30,13 @@ Contents:
     "workflow": {
         "type": "realtime",
         "id": "vis_ingest",
-        "tag": "0.1.0",
+        "version": "0.1.0"
     }
     "parameters": { ... }
     "scanParameters":
-    { "12345": { ... },
-      "12346": { ... },
+    { 
+        "12345": { ... },
+        "12346": { ... }
     }
 }
 ```
