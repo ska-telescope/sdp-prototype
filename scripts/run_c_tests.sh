@@ -54,13 +54,5 @@ case ${1^^} in
 	make
 	./tests/recv_test
 	;;
-    #~ COV*)
-	#~ echo -e "\n ${bold}*** Running Coveralls *** ${normal} \n"
-	#~ cmake -DCOVERALLS=ON -DCMAKE_BUILD_TYPE=Debug ..
-	#~ make
-	#~ make coveralls
-	#~ ;;
 esac
 cd ..
-#printf "\n**** No longer require build directory  - deleting ****\n" && \
-#        rm -rf ./build
