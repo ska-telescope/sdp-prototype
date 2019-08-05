@@ -56,5 +56,5 @@ case ${1^^} in
 	;;
 esac
 cd ..
-printf "\n**** No longer require build directory  - deleting ****\n" && \
-        rm -rf ./build
+#printf "\n**** No longer require build directory  - deleting ****\n" && \
+#        rm -rf ./build
