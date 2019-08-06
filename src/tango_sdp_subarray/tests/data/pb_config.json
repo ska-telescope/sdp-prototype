@@ -4,7 +4,7 @@
     {
       "type": "realtime",
       "version": "0.1.0",
-      "id": "vis_ingest"
+      "name": "vis_ingest"
     },
     "sbiId": "20190627-0001",
     "parameters": {
