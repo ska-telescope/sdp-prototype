@@ -9,7 +9,7 @@ from inspect import currentframe, getframeinfo
 from os.path import dirname, join
 import logging
 
-from ska_sdp_config import config, entity, backend
+from ska_sdp_config import config as db_config, entity
 
 from jsonschema import validate
 from tango import AttrWriteType, DebugIt, DevState, Except
@@ -233,11 +233,13 @@ class SDPSubarray(Device):
         pb_config = json.loads(pb_config)
         validate(pb_config, schema)
 
-        for txn in config.Config().txn():
+        for txn in db_config.Config().txn():
             confdata = pb_config['configure']
-            workflow = confdata['workflow']
             pb_id = txn.new_processing_block_id(confdata['id'])
-            pb = entity.ProcessingBlock(pb_id, None, workflow, confdata['parameters'])
+            pb = entity.ProcessingBlock(pb_id, None,
+                                        confdata['workflow'],
+                                        confdata['parameters'],
+                                        confdata['scanParameters'])
             txn.create_processing_block(pb)
 
         self._obs_state = ObsState.READY
@@ -265,12 +267,6 @@ class SDPSubarray(Device):
             schema = json.loads(file.read())
         pb_config = json.loads(scan_config)
         validate(pb_config, schema)
-
-        for txn in config.Config().txn():
-            workflow = pb_config['workflow']
-            pb_id = txn.new_processing_block_id(workflow['id'])
-            pb = entity.ProcessingBlock(pb_id, None, workflow, pb_config['parameters'])
-            txn.create_processing_block(pb)
 
         self._obs_state = ObsState.READY
 
