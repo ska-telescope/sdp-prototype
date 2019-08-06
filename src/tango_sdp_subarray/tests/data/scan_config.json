@@ -1,5 +1,9 @@
 {
-    "scan_id": 12346,
-    "field_id": 1,
-    "interval_ms": 140
+    "configureScan": {
+        "scanParameters": {
+            "scanId": 12346,
+            "fieldId": 1,
+            "intervalMs": 140
+        }
+    }
 }

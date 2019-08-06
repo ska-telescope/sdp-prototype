@@ -1,25 +1,37 @@
 {
-    "id": "PB_27062019_0001_ingest",
-    "sbi_id": "SBI_27062019_0001",
-    "type": "REAL_TIME",
-    "workflow": {
-        "id": "vis_ingest",
-        "version": "0.1.0"
+  "configure": {
+    "workflow":
+    {
+      "type": "realtime",
+      "version": "0.1.0",
+      "id": "vis_ingest"
     },
+    "sbiId": "20190627-0001",
     "parameters": {
-        "num_stations": 4,
-        "num_channels": 372,
-        "num_polarisations": 4,
-        "freq_start_hz": 0.35e9,
-        "freq_end_hz": 1.05e9,
-        "fields": {
-            "0": { "system": "ICRS", "name": "", "ra": "", "dec": "" },
-            "1": { "system": "ICRS", "name": "", "ra": "", "dec": "" }
+      "numStations": 4,
+      "numPolarisations": 4,
+      "numChannels": 372,
+      "freqEndHz": 1050000000.0,
+      "freqStartHz": 350000000.0,
+      "fields": {
+        "0": {
+          "name": "NGC6251",
+          "dec": "89:15:51.4",
+          "system": "ICRS",
+          "ra": "2:31:50.91"
         }
+      }
     },
-    "scan_parameters": {
-        "scan_id": 12345,
-        "field_id": 0,
-        "interval_ms": 140
-    }
+    "scanParameters": {
+      "12345": {
+        "intervalMs": 1400,
+        "fieldId": 0
+      },
+      "12346": {
+        "intervalMs": 1400,
+        "fieldId": 0
+      }
+    },
+    "id": "realtime-20190627-0001"
+  }
 }
