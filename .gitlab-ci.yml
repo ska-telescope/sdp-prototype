@@ -21,17 +21,7 @@ stages:
 # Test the SDPSubarray device
 subarray_device_tests:
   extends: .tango_tests
-  before_script:
-    - apt update
-    - apt install -y wget
-    - pip install ska-sdp-config
   script:
-    - cd /usr/local/src
-    - wget "https://github.com/coreos/etcd/releases/download/v3.3.9/etcd-v3.3.9-linux-amd64.tar.gz"
-    - tar -xvf etcd-v3.3.9-linux-amd64.tar.gz
-    - mv etcd-v3.3.9-linux-amd64/etcd* /usr/local/bin/
-    - etcd &
-    - cd /app
     - ./scripts/run_test.sh
         src/tango_sdp_subarray
         --gherkin-terminal-reporter
