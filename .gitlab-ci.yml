@@ -21,6 +21,18 @@ stages:
 # Test the SDPSubarray device
 subarray_device_tests:
   extends: .tango_tests
+  services:
+    - name: quay.io/coreos/etcd:latest
+      alias: etcd
+      command:
+        - /usr/local/bin/etcd
+        - "--advertise-client-urls=http://0.0.0.0:2379"
+        - "--listen-client-urls=http://0.0.0.0:2379"
+        - "--initial-advertise-peer-urls=http://0.0.0.0:2380"
+        - "--listen-peer-urls=http://0.0.0.0:2380"
+        - "--initial-cluster=default=http://0.0.0.0:2380"
+  variables:
+    SDP_TEST_HOST: etcd
   script:
     - ./scripts/run_test.sh
         src/tango_sdp_subarray
