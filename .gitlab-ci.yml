@@ -21,6 +21,8 @@ stages:
 # Test the SDPSubarray device
 subarray_device_tests:
   extends: .tango_tests
+  before_script:
+    - pip install ska-sdp-config
   script:
     - ./scripts/run_test.sh
         src/tango_sdp_subarray
