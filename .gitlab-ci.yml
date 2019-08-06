@@ -73,7 +73,7 @@ config_db_tests:
           - "--listen-peer-urls=http://0.0.0.0:2380"
           - "--initial-cluster=default=http://0.0.0.0:2380"
     variables:
-      SDP_TEST_HOST: etcd
+      SDP_CONFIG_HOST: etcd
     script:
       - pipenv install etcd3-py
       - ./scripts/run_test.sh src/config_db
