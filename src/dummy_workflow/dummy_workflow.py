@@ -61,60 +61,66 @@ for txn in client.txn():
 log.info("Claimed processing block %s", pb)
 pb_id = pb.pb_id
 
-# Wait for something to happen
-deploys = {}
-for txn in client.txn():
-    if not txn.is_processing_block_owner(pb_id):
-        log.warning("Lost processing block ownership")
-        break
 
-    # Get current processing block info (for realtime processing
-    # blocks scan data might get updated)
-    pb = txn.get_processing_block(pb_id)
-    if pb is None:
-        log.warning("Processing block got deleted")
-        break
+def make_deployment(dpl_name, dpl_args):
+    """Make a deployment given PB parameters."""
+    return ska_sdp_config.Deployment(pb_id + "-" + dpl_name, **dpl_args)
 
-    # Check for deployments we need to undo
-    dirty = False
-    for dpl_name, dpl_args in deploys.items():
-        if dpl_args != pb.parameters.get(dpl_name):
-            deploy = ska_sdp_config.Deployment(pb_id + "_" + dpl_name,
-                                               **dpl_args)
-            log.info("Delete deployment {}".format(dpl_name))
-            txn.delete_deployment(deploy)
-            del deploys[dpl_name]
+try:
+    # Wait for something to happen
+    deploys = {}
+    for txn in client.txn():
+        if not txn.is_processing_block_owner(pb_id):
+            log.warning("Lost processing block ownership")
+            break
+
+        # Get current processing block info (for realtime processing
+        # blocks scan data might get updated)
+        pb = txn.get_processing_block(pb_id)
+        if pb is None:
+            log.warning("Processing block got deleted")
+            break
+
+        # Check for deployments we need to undo
+        dirty = False
+        for dpl_name, dpl_args in deploys.items():
+            if dpl_args != pb.parameters.get(dpl_name):
+                deploy = make_deployment(dpl_name, dpl_args)
+                log.info("Delete deployment {}".format(dpl_name))
+                txn.delete_deployment(deploy)
+                del deploys[dpl_name]
+                dirty = True
+                break
+        if dirty:
+            txn.loop()
+            continue
+
+        # Create new deployments
+        for dpl_name, dpl_args in pb.parameters.items():
+
+            # Get deployments, ignoring ones that don't fit
+            try:
+                deploy = make_deployment(dpl_name, dpl_args)
+            except ValueError as e:
+                log.warning("Deployment {} failed validation: {}".format(
+                    dpl_name, str(e)))
+                continue
+
+            # Up-to-date?
+            if deploys.get(dpl_name) == dpl_args:
+                continue
+
+            # Deploy anew
+            txn.create_deployment(deploy)
+            log.info("Created deployment {}".format(dpl_name))
+            deploys[dpl_name] = dpl_args
             dirty = True
             break
-    if dirty:
-        txn.loop()
-        continue
 
-    # Create new deployments
-    for dpl_name, dpl_args in pb.parameters.items():
+        # Loop around, wait if we made no change
+        txn.loop(wait=not dirty)
 
-        # Get deployments, ignoring ones that don't fit
-        try:
-            deploy = ska_sdp_config.Deployment(pb_id + "_" + dpl_name,
-                                               **dpl_args)
-        except ValueError as e:
-            log.warning("Deployment {} failed validation: {}!".format(
-                deploy_id, str(e)))
-            continue
-
-        # Up-to-date?
-        if deploys.get(dpl_name) == dpl_args:
-            continue
-
-        # Deploy anew
-        txn.create_deployment(deploy)
-        log.info("Created deployment {}".format(dpl_name))
-        deploys[dpl_name] = dpl_args
-        dirty = True
-        break
-
-    # Loop around, wait if we made no change
-    txn.loop(wait=not dirty)
-
-for txn in client.txn():
-    txn.delete_deployment(deployment)
+finally:
+    for txn in client.txn():
+        for dpl_name, dpl_args in deploys.items():
+            txn.delete_deployment(make_deployment(dpl_name, dpl_args))
