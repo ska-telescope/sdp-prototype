@@ -10,7 +10,10 @@
     "parameters": {
       "numStations": 4,
       "numPolarisations": 4,
-      "numChannels": 372,
+      "numChannels": 93,
+      "maxChannelsPerHost": 400,
+      "channelAveragingFactor": 8,
+      "portOffset": 9000,
       "freqEndHz": 1050000000.0,
       "freqStartHz": 350000000.0,
       "fields": {
@@ -23,11 +26,11 @@
       }
     },
     "scanParameters": {
-      "12345": {
+      "1": {
         "intervalMs": 1400,
         "fieldId": 0
       },
-      "12346": {
+      "2": {
         "intervalMs": 1400,
         "fieldId": 0
       }

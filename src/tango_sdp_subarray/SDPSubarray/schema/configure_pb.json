@@ -49,11 +49,6 @@
           "patternProperties": {
             "^.*$": {
               "type": "object",
-              "required": ["fieldId"],
-              "scanId": {
-                "type": "integer",
-                "description":"Scan ID. Schema TBD."
-              },
               "fieldId": {
                 "type": "integer",
                 "description":"Field Id"

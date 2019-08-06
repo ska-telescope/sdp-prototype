@@ -1,16 +1,19 @@
 # coding: utf-8
 """SDP Subarray device tests."""
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name,fixme
 
+import json
+import logging
 from os.path import dirname, join
-
-import tango
-from tango import DevState
+from unittest.mock import MagicMock
 
 import pytest
+import tango
 from pytest_bdd import (given, parsers, scenarios, then, when)
+from tango import DevState
 
-from SDPSubarray import AdminMode, HealthState, ObsState
+from SDPSubarray import AdminMode, HealthState, ObsState, SDPSubarray, \
+    init_logger
 
 # -----------------------------------------------------------------------------
 # Scenarios : Specify what we want the software to do
@@ -18,6 +21,23 @@ from SDPSubarray import AdminMode, HealthState, ObsState
 
 # Load all scenarios from the specified feature file.
 scenarios('./1_XR-11.feature')
+
+
+init_logger(level='DEBUG')
+
+
+# -----------------------------------------------------------------------------
+# Mock functions
+# -----------------------------------------------------------------------------
+def read_channel_link_map():
+    """Mock replacement of SDPSubarray device _read_channel_link_map method."""
+    channel_link_map_path = join(dirname(__file__), 'data',
+                                 'channel-links.json')
+    with open(channel_link_map_path, 'r') as file:
+        channel_link_map = file.read()
+    # TODO(BMo) Validate against agreed schema
+    logging.debug('Mock channel link map loaded!')
+    return channel_link_map
 
 
 # -----------------------------------------------------------------------------
@@ -31,6 +51,11 @@ def subarray_device(tango_context):
 
     :param tango_context: fixture providing a TangoTestContext
     """
+    # Mock the SDPSubarray._read_channel_link_map() method so that
+    # it does not need to connect to a CSP subarray device.
+    # pylint: disable=protected-access
+    SDPSubarray._read_channel_link_map = MagicMock(
+        side_effect=read_channel_link_map)
     return tango_context.device
 
 
@@ -105,11 +130,11 @@ def command_configure(subarray_device):
 
     :param subarray_device: An SDPSubarray device.
     """
-
     pb_config_path = join(dirname(__file__), 'data',
                           'pb_config.json')
     with open(pb_config_path, 'r') as file:
         pb_config = file.read()
+
     subarray_device.Configure(pb_config)
 
 
@@ -222,3 +247,20 @@ def dev_failed_error_raised_by_release_resources(subarray_device):
     """
     with pytest.raises(tango.DevFailed):
         subarray_device.ReleaseResources()
+
+
+@then('The receiveAddresses attribute returns expected values')
+def receive_addresses_attribute_ok(subarray_device):
+    """Check that the receiveAddresses attribute works as expected.
+
+    :param subarray_device: An SDPSubarray device.
+    """
+    receive_addresses = subarray_device.receiveAddresses
+    # print(json.dumps(json.loads(receive_addresses), indent=2))
+    expected_output_file = join(dirname(__file__), 'data',
+                                'receiveAddresses.json')
+    with open(expected_output_file, 'r') as file:
+        expected = json.loads(file.read())
+    receive_addresses = json.loads(receive_addresses)
+    assert receive_addresses == expected
+

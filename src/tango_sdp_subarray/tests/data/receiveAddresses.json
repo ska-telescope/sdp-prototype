@@ -1,0 +1,29 @@
+{
+  "scanID": 1,
+  "totalChannels": 5,
+  "receiveAddresses": [
+    {
+      "phaseBinId": 0,
+      "fspId": 1,
+      "hosts":
+      [
+        {
+          "host": "192.168.0.1",
+          "channels":
+          [
+            {
+              "portOffset": 9001,
+              "startChannel": 1,
+              "numChannels": 4
+            },
+            {
+              "portOffset": 9034,
+              "startChannel": 34,
+              "numChannels": 1
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
