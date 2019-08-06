@@ -4,7 +4,7 @@ import re
 import copy
 
 # Permit identifiers up to 64 bytes in length
-_PB_ID_RE = re.compile("[_A-Za-z0-9]{1,64}")
+_PB_ID_RE = re.compile("^[A-Za-z0-9\\-]{1,64}$")
 
 
 class ProcessingBlock:

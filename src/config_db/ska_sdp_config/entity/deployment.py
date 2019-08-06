@@ -6,7 +6,7 @@ import copy
 
 
 # Permit identifiers up to 96 bytes in length
-_DEPLOY_ID_RE = re.compile("[_A-Za-z0-9]{1,96}")
+_DEPLOY_ID_RE = re.compile("^[A-Za-z0-9\\-]{1,96}$")
 
 # Supported deployment types
 DEPLOYMENT_TYPES = {

@@ -22,6 +22,16 @@ def cfg():
         cfg._backend.delete(PREFIX, must_exist=False, recursive=True)
 
 
+def test_deploy_name():
+
+    # Simple check that validation is there
+    with pytest.raises(ValueError, match="deployment type"):
+        entity.Deployment('asd', 'asdasd', {})
+    with pytest.raises(ValueError, match="Deployment ID"):
+        entity.Deployment('asd_', 'helm', {})
+    entity.Deployment('asd', 'helm', {})
+
+
 def test_deploy_process(cfg):
 
     # Make deployment
