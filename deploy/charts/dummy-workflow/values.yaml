@@ -2,13 +2,15 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-
-
-
 workflow:
-  container: dummy-workflow
+  container: pw410/dummy-workflow
   version: 0.0.10
   replicas: 2
+
+helm_deploy:
+  container: pw410/helm-deploy
+  version: 0.0.4
+  replicas: 1
 
 etcd:
   version: "3.3"
