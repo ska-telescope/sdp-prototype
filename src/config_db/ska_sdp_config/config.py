@@ -209,13 +209,14 @@ class Transaction():
         """Set a existing path in the database to a JSON object."""
         self._txn.update(path, dict_to_json(obj))
 
-    def loop(self, wait=False):
+    def loop(self, wait=False, timeout=None):
         """Repeat transaction regardless of whether commit succeeds.
 
         :param wait: If transaction succeeded, wait for any read
             values to change before repeating it.
+        :param timeout: Maximum time to wait, in seconds
         """
-        return self._txn.loop(wait)
+        return self._txn.loop(wait, timeout)
 
     def list_processing_blocks(self, prefix=""):
         """Query processing block IDs from the configuration.
@@ -349,6 +350,19 @@ class Transaction():
         """
         dct = self._get(self._deploy_path + deploy_id)
         return entity.Deployment(**dct)
+
+    def list_deployments(self, prefix=""):
+        """
+        List all current deployments.
+
+        :returns: Deployment IDs
+        """
+        # List keys
+        keys = self._txn.list_keys(self._deploy_path + prefix)
+
+        # return list, stripping the prefix
+        assert all([key.startswith(self._deploy_path) for key in keys])
+        return list([key[len(self._deploy_path):] for key in keys])
 
     def create_deployment(self, dpl: entity.Deployment):
         """

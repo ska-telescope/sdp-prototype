@@ -11,7 +11,8 @@ _DEPLOY_ID_RE = re.compile("^[A-Za-z0-9\\-]{1,96}$")
 # Supported deployment types
 DEPLOYMENT_TYPES = {
     'process-direct',  # Directly spawn local processes
-    'kubernetes-direct'  # Workflow directly changes Kubernetes configuration
+    'kubernetes-direct',  # Workflow directly changes Kubernetes configuration
+    'helm'  # Use helm controller process
 }
 
 

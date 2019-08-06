@@ -72,6 +72,9 @@ def apply_deployment(dpl: Deployment):
             kubernetes.utils.create_from_yaml(client, temp.name)
         del client
 
+    elif dpl.type == 'helm':
+        pass  # Handled by operator
+
     else:
         raise ValueError("Unsupported deployment type {}!".format(
             dpl.type))
@@ -119,6 +122,9 @@ def undo_deployment(dpl: Deployment):
         else:
             _undo_kube_deployment(client, data)
         del client
+
+    elif dpl.type == 'helm':
+        pass  # Handled by operator
 
     else:
         raise ValueError("Unsupported deployment type {}!".format(
