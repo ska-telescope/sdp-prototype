@@ -234,9 +234,10 @@ class SDPSubarray(Device):
         validate(pb_config, schema)
 
         for txn in config.Config().txn():
-            workflow = pb_config['workflow']
-            pb_id = txn.new_processing_block_id(workflow['id'])
-            pb = entity.ProcessingBlock(pb_id, None, workflow, pb_config['parameters'])
+            confdata = pb_config['configure']
+            workflow = confdata['workflow']
+            pb_id = txn.new_processing_block_id(confdata['id'])
+            pb = entity.ProcessingBlock(pb_id, None, workflow, confdata['parameters'])
             txn.create_processing_block(pb)
 
         self._obs_state = ObsState.READY
