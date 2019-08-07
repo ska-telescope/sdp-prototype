@@ -99,8 +99,8 @@ class SDPSubarray(Device):
         """Initialise the device."""
         # SKASubarray.init_device(self)
         Device.init_device(self)
-        LOG.debug('Initialising SDP subarray device %s, version %s',
-                  self.get_name(), self._tango_properties['version'])
+        LOG.debug('Initialising SDP subarray device %s',
+                  self.get_name())
         self.set_state(DevState.OFF)
         self._obs_state = ObsState.IDLE
         self._admin_mode = AdminMode.OFFLINE
