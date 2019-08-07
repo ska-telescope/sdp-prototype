@@ -619,8 +619,13 @@ class SDPSubarray(Device):
         :return: Channel link map string as read from CSP.
 
         """
-        subarray_id = self.get_name().split('_')[-1]
-        attr_name = 'mid_csp/elt/subarray_{}/cbfOutLink'.format(subarray_id)
+        # Obtain the FQDN of the CSP cbfOutLink attribute address from the
+        # PB configuration.
+        attr_name = self._pb_config.get('cspCbfOutlinkAddress', None)
+        if attr_name is None:
+            error_str = "'cspCbfOutlinkAddress' not found in PB configuration"
+            LOG.error(error_str)
+            raise RuntimeError(error_str)
         LOG.debug('Reading cbfOutLink from: %s', attr_name)
         attr = AttributeProxy(attr_name)
         channel_link_map = attr.read()

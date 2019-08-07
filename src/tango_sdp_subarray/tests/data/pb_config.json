@@ -1,13 +1,17 @@
 {
-  "configure": {
+  "configure":
+  {
+    "id": "realtime-20190627-0001",
+    "sbiId": "20190627-0001",
+    "cspCbfOutlinkAddress": "mid_csp/elt/subarray01/cbfOutLink",
     "workflow":
     {
       "type": "realtime",
       "version": "0.1.0",
       "id": "vis_ingest"
     },
-    "sbiId": "20190627-0001",
-    "parameters": {
+    "parameters":
+    {
       "numStations": 4,
       "numPolarisations": 4,
       "numChannels": 93,
@@ -34,7 +38,6 @@
         "intervalMs": 1400,
         "fieldId": 0
       }
-    },
-    "id": "realtime-20190627-0001"
+    }
   }
 }
