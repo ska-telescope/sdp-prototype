@@ -7,11 +7,11 @@ Prerequisites
 
 ### Kubernetes
 
-You will need Kubernetes installed. (Docker for
-Desktop)[https://www.docker.com/products/docker-desktop] includes a
+You will need Kubernetes installed. [Docker for
+Desktop](https://www.docker.com/products/docker-desktop) includes a
 workable one-node Kubernetes installation - just need to activate it
 in the settings. Alternatively, you can install
-(Minikube)[https://kubernetes.io/docs/tasks/tools/install-minikube/].
+[Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/).
 
 Note that on both Windows and Mac, this will run containers within a
 VM that has limited resources. You might want to increase this to at
@@ -23,8 +23,8 @@ you need to specify it on the command line:
 ### Helm
 
 Furthermore you will need to install the Helm utility. It is available
-from most typical package managers, see (Using
-Helm)[https://helm.sh/docs/using_helm/]. Note that for the moment we
+from most typical package managers, see [Using
+Helm](https://helm.sh/docs/using_helm/). Note that for the moment we
 are using Helm version 2, as at the time of writing version 3 is in
 early alpha.
 
