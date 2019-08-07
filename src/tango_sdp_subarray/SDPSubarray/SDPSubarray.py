@@ -15,7 +15,11 @@ from tango import AttrWriteType, AttributeProxy, ConnectionFailed, Database, \
     DbDevInfo, DebugIt, DevState, Except
 from tango.server import Device, DeviceMeta, attribute, command, run
 
-from ska_sdp_config import config as db_config, entity
+try:
+    from ska_sdp_config import config as db_config, entity
+    HAVE_CONFIG_DB = True
+except ImportError:
+    HAVE_CONFIG_DB = False
 
 # from skabase.SKASubarray import SKASubarray
 
@@ -98,6 +102,10 @@ class SDPSubarray(Device):
                                          'the CSP CBF output link map when '
                                          'evaluating receiveAddresses.')
 
+    toggleConfigDb = attribute(dtype=bool, access=AttrWriteType.READ_WRITE,
+                               doc='Feature read and write from the SDP '
+                                   'Config DB')
+
     # ---------------
     # General methods
     # ---------------
@@ -108,17 +116,18 @@ class SDPSubarray(Device):
         Device.init_device(self)
         LOG.debug('Initialising SDP subarray device %s',
                   self.get_name())
-        LOG.debug('XXX %s', sys.argv)
+        if HAVE_CONFIG_DB:
+            self.db_client = db_config.Config()
         self.set_state(DevState.OFF)
         self._obs_state = ObsState.IDLE
         self._admin_mode = AdminMode.OFFLINE
         self._health_state = HealthState.OK
-        self.db_client = db_config.Config()
         self._pb_config = None   # PB config dictionary.
         self._channel_link_map = None  # CSP channel - FSP link map
         self._recv_hosts = None   # Map of receive hosts <-> channels
         self._recv_addresses = None  # receiveAddresses attribute dict
         self._toggle_read_cbf_out_link = True
+        self._toggle_config_db = True
 
     def always_executed_hook(self):
         """Run for on each call."""
@@ -176,7 +185,7 @@ class SDPSubarray(Device):
         return self._health_state
 
     def write_toggleReadCbfOutLink(self, value):
-        """Write value of feature toggle for the cbfOutLink behaviour.
+        """Set feature toggle for the cbfOutLink behaviour.
 
         If true (default), the cbfOutLink CSP Subarray attribute is read when
         generating the receiveAddresses mapping.
@@ -190,8 +199,21 @@ class SDPSubarray(Device):
         self._toggle_read_cbf_out_link = value
 
     def read_toggleReadCbfOutLink(self):
-        """Read value of feature toggle for the cbfOutLink behaviour."""
+        """Get value of feature toggle for the cbfOutLink behaviour."""
         return self._toggle_read_cbf_out_link
+
+    def write_toggleConfigDb(self, value):
+        """Set feature toggle enabling/disabling Config db interaction.
+
+        :param value: Value of the toggle.
+        :type value: bool
+
+        """
+        self._toggle_config_db = value
+
+    def read_toggleConfigDb(self):
+        """Get value of toggle enabling/disabling Config db interaction."""
+        return self._toggle_config_db
 
     # --------
     # Commands
@@ -273,13 +295,14 @@ class SDPSubarray(Device):
                 '{}:{}'.format(frame_info.filename, frame_info.lineno))
 
         # Add the PB configuration to the database.
-        for txn in self.db_client.txn():
-            confdata = pb_config['configure']
-            pb = entity.ProcessingBlock(confdata['id'], None,
-                                        confdata['workflow'],
-                                        confdata['parameters'],
-                                        confdata['scanParameters'])
-            txn.create_processing_block(pb)
+        if HAVE_CONFIG_DB:
+            for txn in self.db_client.txn():
+                confdata = pb_config['configure']
+                pb = entity.ProcessingBlock(confdata['id'], None,
+                                            confdata['workflow'],
+                                            confdata['parameters'],
+                                            confdata['scanParameters'])
+                txn.create_processing_block(pb)
 
         # Cache a local copy of the PB configuration.
         self._pb_config = pb_config['configure']
@@ -339,7 +362,7 @@ class SDPSubarray(Device):
     @DebugIt()
     def EndScan(self):
         """Command issued when the scan is ended."""
-        self._require_obs_state([ObsState.READY])
+        self._require_obs_state([ObsState.SCANNING])
         self._obs_state = ObsState.READY
 
     @command
@@ -731,13 +754,13 @@ def register(instance_name, *device_names):
     :param device_names: Subarray device names to register
 
     """
+    # pylint: disable=protected-access
     try:
         tango_db = Database()
         class_name = 'SDPSubarray'
         server_name = '{}/{}'.format(class_name, instance_name)
         devices = list(tango_db.get_device_name(server_name, class_name))
         device_info = DbDevInfo()
-        # pylint: disable=protected-access
         device_info._class = class_name
         device_info.server = server_name
         for device_name in device_names:

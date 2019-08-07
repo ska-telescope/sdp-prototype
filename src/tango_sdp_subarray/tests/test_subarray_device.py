@@ -7,10 +7,11 @@ import logging
 from os.path import dirname, join
 from unittest.mock import MagicMock
 
-import pytest
 import tango
-from pytest_bdd import (given, parsers, scenarios, then, when)
 from tango import DevState
+
+import pytest
+from pytest_bdd import (given, parsers, scenarios, then, when)
 
 from SDPSubarray import AdminMode, HealthState, ObsState, SDPSubarray, \
     init_logger
@@ -264,4 +265,3 @@ def receive_addresses_attribute_ok(subarray_device):
         expected = json.loads(file.read())
     receive_addresses = json.loads(receive_addresses)
     assert receive_addresses == expected
-
