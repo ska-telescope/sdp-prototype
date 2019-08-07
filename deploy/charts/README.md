@@ -108,7 +108,7 @@ Which correctly shows that the configuration is currently empty.
 Assuming the configuration is prepared as explained in the previous
 section, we can now add a processing block to the configuration:
 
-    $ sdpcfg process realtime:dummy:0.0.6
+    $ sdpcfg process realtime:testdeploy:0.0.7
     OK, pb_id = realtime-20190807-0000
     $ sdpcfg ls values -R /
     Keys with / prefix:
@@ -118,7 +118,7 @@ section, we can now add a processing block to the configuration:
       "sbi_id": null,
       "scan_parameters": {},
       "workflow": {
-        "name": "dummy",
+        "id": "dummy",
         "type": "realtime",
         "version": "0.0.6"
       }
