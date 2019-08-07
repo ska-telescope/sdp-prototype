@@ -176,8 +176,8 @@ coverage_report:
     - coverage report
     - coverage html
   coverage: '/TOTAL\s+\d+\s+\d+\s+\d+\s+\d+\s+(\d+\%)/'
-  after_script:
-    - coveralls --merge=coveralls.json
+#  after_script:
+#    - coveralls --merge=coveralls.json
   artifacts:
     paths: [htmlcov/]
     expire_in: 1 week
