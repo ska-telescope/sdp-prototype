@@ -84,3 +84,7 @@ class ProcessingBlock:
         return "ProcessingBlock({})".format(
             ", ".join(["{}={}".format(k, repr(v))
                        for k, v in self._dict.items()]))
+
+    def __eq__(self, other):
+        """Equality check."""
+        return self.to_dict() == other.to_dict()

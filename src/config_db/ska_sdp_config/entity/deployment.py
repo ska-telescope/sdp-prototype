@@ -66,3 +66,13 @@ class Deployment:
     def args(self):
         """Return deployment arguments."""
         return self._dict['args']
+
+    def __repr__(self):
+        """Produce object representation."""
+        return "entity.Deployment({})".format(
+            ",".join(["{}={}".format(k, repr(v)) for
+                      k, v in self.to_dict().items()]))
+
+    def __eq__(self, other):
+        """Equality check."""
+        return self.to_dict() == other.to_dict()

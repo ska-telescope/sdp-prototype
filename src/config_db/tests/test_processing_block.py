@@ -37,7 +37,11 @@ def test_simple_pb():
         entity.ProcessingBlock('asd_htb', None, WORKFLOW)
     with pytest.raises(ValueError, match="Processing block ID"):
         entity.ProcessingBlock('foo/bar', None, WORKFLOW)
-    entity.ProcessingBlock('foo-bar', None, WORKFLOW)
+
+    pb = entity.ProcessingBlock('foo-bar', None, WORKFLOW)
+    # pylint: disable=W0123,W0611
+    from ska_sdp_config.entity import ProcessingBlock
+    assert pb == eval(repr(pb))
 
 
 def test_create_pb(cfg):

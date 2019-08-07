@@ -29,7 +29,11 @@ def test_deploy_name():
         entity.Deployment('asd', 'asdasd', {})
     with pytest.raises(ValueError, match="Deployment ID"):
         entity.Deployment('asd_', 'helm', {})
-    entity.Deployment('asd', 'helm', {})
+
+    dpl = entity.Deployment('asd', 'helm', dict(test='foobar'))
+    # pylint: disable=W0123,W0611
+    from ska_sdp_config.entity import Deployment
+    assert dpl == eval(repr(dpl))
 
 
 def test_deploy_process(cfg):
