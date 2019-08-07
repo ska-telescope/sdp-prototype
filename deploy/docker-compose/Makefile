@@ -1,3 +1,4 @@
+#!make
 # Makefile based on:
 # https://github.com/ska-telescope/ska-docker/blob/master/docker-compose/Makefile
 
@@ -7,6 +8,8 @@ BASEDIR := $(notdir $(patsubst %/,%,$(dir $(MAKEPATH))))
 
 COMPOSE_FILES := $(wildcard *.yml)
 COMPOSE_FILE_ARGS := $(foreach yml,$(COMPOSE_FILES),-f $(yml))
+
+include .env
 
 # If the first make argument is "start" or "stop"...
 ifeq (start,$(firstword $(MAKECMDGOALS)))
