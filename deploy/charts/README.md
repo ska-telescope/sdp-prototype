@@ -31,7 +31,7 @@ early alpha.
 Once you have it available, you will typically need to initialise it
 (this will create the "Tiller" controller):
 
-    $ helm --init
+    $ helm init
 
 Deploying SDP
 -------------
@@ -87,17 +87,26 @@ Testing it out
 ### Connecting to configuration database
 
 The deployment scripts should have exposed the SDP configuration
-database (i.e. etcd) via a NodePort service. For Minikube, you can
-query the correct address as follows:
+database (i.e. etcd) via a NodePort service. For Docker Desktop, this
+should automatically expose the port on localhost, you just need to
+find out which one:
+
+    $ kubectl get service sdp-prototype-etcd-nodeport
+    NAME                          TYPE       CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE
+    sdp-prototype-etcd-nodeport   NodePort   10.97.188.221   <none>        2379:32234/TCP   3h56m
+    $ export SDP_CONFIG_PORT=32234
+
+For Minikube, you need a full address, which can be queried as
+follows:
 
     $ minikube service --url sdp-prototype-etcd-nodeport
-    http://192.168.39.45:32379
+    http://192.168.39.45:32234
+    $ export SDP_CONFIG_HOST=192.168.39.45
+    $ export SDP_CONFIG_PORT=32234
 
 This will allow you to connect with the `sdpcfg` utility:
 
-    $ pipenv install ska-sdp-config
-    $ export SDP_CONFIG_HOST=192.168.39.45
-    $ export SDP_CONFIG_PORT=32379
+    $ pip install ska-sdp-config
     $ sdpcfg ls -R /
     Keys with / prefix:
 
@@ -172,7 +181,7 @@ This causes Helm to get called, so you should be able to check:
     NAME                        	REVISION	UPDATED                 	STATUS  	CHART              	APP VERSION	NAMESPACE
     etcd                        	1       	Wed Aug  7 12:35:47 2019	DEPLOYED	etcd-operator-0.8.4	0.9.3      	default  
     realtime-20190807-0000-mysql	1       	Wed Aug  7 13:45:33 2019	DEPLOYED	mysql-1.3.0        	5.7.14     	sdp-helm 
-    sdp-prototype               	3       	Wed Aug  7 13:38:42 2019	DEPLOYED	sdp-prototype-0.2.0	1.0        	default
+    sdp-prototype               	1       	Wed Aug  7 13:38:42 2019	DEPLOYED	sdp-prototype-0.2.0	1.0        	default
 
 Note the deployment associated with the processing block. Note that it
 was deployed into the name space `sdp-helm`, so to view the created pod we
