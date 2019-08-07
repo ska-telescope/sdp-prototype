@@ -116,8 +116,6 @@ class SDPSubarray(Device):
         Device.init_device(self)
         LOG.debug('Initialising SDP subarray device %s',
                   self.get_name())
-        if HAVE_CONFIG_DB:
-            self.db_client = db_config.Config()
         self.set_state(DevState.OFF)
         self._obs_state = ObsState.IDLE
         self._admin_mode = AdminMode.OFFLINE
@@ -128,6 +126,8 @@ class SDPSubarray(Device):
         self._recv_addresses = None  # receiveAddresses attribute dict
         self._toggle_read_cbf_out_link = True
         self._toggle_config_db = True
+        if HAVE_CONFIG_DB:
+            self.db_client = db_config.Config()
 
     def always_executed_hook(self):
         """Run for on each call."""
@@ -295,13 +295,14 @@ class SDPSubarray(Device):
                 '{}:{}'.format(frame_info.filename, frame_info.lineno))
 
         # Add the PB configuration to the database.
-        if HAVE_CONFIG_DB:
+        if HAVE_CONFIG_DB and self._toggle_config_db:
             for txn in self.db_client.txn():
-                confdata = pb_config['configure']
-                pb = entity.ProcessingBlock(confdata['id'], None,
-                                            confdata['workflow'],
-                                            confdata['parameters'],
-                                            confdata['scanParameters'])
+                conf_data = pb_config['configure']
+                pb = entity.ProcessingBlock(conf_data['id'],
+                                            None,
+                                            conf_data['workflow'],
+                                            conf_data['parameters'],
+                                            conf_data['scanParameters'])
                 txn.create_processing_block(pb)
 
         # Cache a local copy of the PB configuration.
