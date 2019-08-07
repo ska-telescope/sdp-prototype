@@ -21,8 +21,6 @@ from tango import Database, DbDevInfo, ConnectionFailed
 
 LOG = logging.getLogger('ska.sdp.subarray_ds')
 
-# Global variable for ska_sdp_config database client
-db_client = None
 
 # https://pytango.readthedocs.io/en/stable/data_types.html#devenum-pythonic-usage
 class AdminMode(IntEnum):
