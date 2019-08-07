@@ -21,6 +21,8 @@ from tango import Database, DbDevInfo, ConnectionFailed
 
 LOG = logging.getLogger('ska.sdp.subarray_ds')
 
+# Global variable for ska_sdp_config database client
+db_client = None
 
 # https://pytango.readthedocs.io/en/stable/data_types.html#devenum-pythonic-usage
 class AdminMode(IntEnum):
@@ -100,6 +102,7 @@ class SDPSubarray(Device):
         self._obs_state = ObsState.IDLE
         self._admin_mode = AdminMode.OFFLINE
         self._health_state = HealthState.OK
+        self.db_client = db_config.Config()
 
     def always_executed_hook(self):
         """Run for on each call."""
@@ -233,10 +236,9 @@ class SDPSubarray(Device):
         pb_config = json.loads(pb_config)
         validate(pb_config, schema)
 
-        for txn in db_config.Config().txn():
+        for txn in self.db_client.txn():
             confdata = pb_config['configure']
-            pb_id = txn.new_processing_block_id(confdata['id'])
-            pb = entity.ProcessingBlock(pb_id, None,
+            pb = entity.ProcessingBlock(confdata[id], None,
                                         confdata['workflow'],
                                         confdata['parameters'],
                                         confdata['scanParameters'])
