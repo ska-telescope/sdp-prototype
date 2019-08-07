@@ -135,6 +135,7 @@ def command_configure(subarray_device):
     with open(pb_config_path, 'r') as file:
         pb_config = file.read()
 
+    # subarray_device.toggleReadCbfOutLink = False
     subarray_device.Configure(pb_config)
 
 

@@ -65,6 +65,7 @@ class SDPSubarray(Device):
     """
 
     # pylint: disable=attribute-defined-outside-init
+    # pylint: disable=too-many-instance-attributes
 
     __metaclass__ = DeviceMeta
 
@@ -91,6 +92,12 @@ class SDPSubarray(Device):
 
     receiveAddresses = attribute(dtype=str, access=AttrWriteType.READ)
 
+    toggleReadCbfOutLink = attribute(dtype=bool,
+                                     access=AttrWriteType.READ_WRITE,
+                                     doc='Feature toggle to read '
+                                         'the CSP CBF output link map when '
+                                         'evaluating receiveAddresses.')
+
     # ---------------
     # General methods
     # ---------------
@@ -101,6 +108,7 @@ class SDPSubarray(Device):
         Device.init_device(self)
         LOG.debug('Initialising SDP subarray device %s',
                   self.get_name())
+        LOG.debug('XXX %s', sys.argv)
         self.set_state(DevState.OFF)
         self._obs_state = ObsState.IDLE
         self._admin_mode = AdminMode.OFFLINE
@@ -110,6 +118,7 @@ class SDPSubarray(Device):
         self._channel_link_map = None  # CSP channel - FSP link map
         self._recv_hosts = None   # Map of receive hosts <-> channels
         self._recv_addresses = None  # receiveAddresses attribute dict
+        self._toggle_read_cbf_out_link = True
 
     def always_executed_hook(self):
         """Run for on each call."""
@@ -165,6 +174,24 @@ class SDPSubarray(Device):
         :return: Health State of the device
         """
         return self._health_state
+
+    def write_toggleReadCbfOutLink(self, value):
+        """Write value of feature toggle for the cbfOutLink behaviour.
+
+        If true (default), the cbfOutLink CSP Subarray attribute is read when
+        generating the receiveAddresses mapping.
+        If false, the cbfOutLink attribute is not read and a dummy response is
+        given when generating receiveAddresses
+
+        :param value: Value of the toggle.
+        :type value: bool
+
+        """
+        self._toggle_read_cbf_out_link = value
+
+    def read_toggleReadCbfOutLink(self):
+        """Read value of feature toggle for the cbfOutLink behaviour."""
+        return self._toggle_read_cbf_out_link
 
     # --------
     # Commands
@@ -465,6 +492,12 @@ class SDPSubarray(Device):
         if self._pb_config['workflow']['id'] != 'vis_ingest':
             return
 
+        if not self._toggle_read_cbf_out_link:
+            self._recv_addresses = \
+                dict(scanId=12345, receiveAddresses=[
+                    dict(fspId=1, hosts=[])])
+            return
+
         LOG.debug('Evaluating receive addresses.')
 
         channel_link_map, channels = self._get_channel_link_map()
@@ -489,7 +522,7 @@ class SDPSubarray(Device):
         self._update_host_recv_map(channels)
 
         # Create receive address + channels <-> FSP map
-        recv_addr = dict(scanID=channel_link_map['scanID'],
+        recv_addr = dict(scanId=channel_link_map['scanID'],
                          totalChannels=len(channels),
                          receiveAddresses=list())
         # Create (empty) top level FSP mapping
