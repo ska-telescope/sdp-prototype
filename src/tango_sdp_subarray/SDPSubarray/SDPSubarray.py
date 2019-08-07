@@ -238,7 +238,7 @@ class SDPSubarray(Device):
 
         for txn in self.db_client.txn():
             confdata = pb_config['configure']
-            pb = entity.ProcessingBlock(confdata[id], None,
+            pb = entity.ProcessingBlock(confdata['id'], None,
                                         confdata['workflow'],
                                         confdata['parameters'],
                                         confdata['scanParameters'])
