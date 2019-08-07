@@ -212,12 +212,7 @@ class SDPSubarray(Device):
         :param config: Resource specification (currently ignored)
         """
         # pylint: disable=unused-argument
-        if self._obs_state != ObsState.IDLE:
-            frame_info = getframeinfo(currentframe())
-            Except.throw_exception(
-                'Command: AssignReources failed',
-                'AssignResources requires obsState == IDLE',
-                '{}:{}'.format(frame_info.filename, frame_info.lineno))
+        self._require_obs_state([ObsState.IDLE])
         self.set_state(DevState.ON)
 
     @command(dtype_in=str)
@@ -234,13 +229,7 @@ class SDPSubarray(Device):
         :param config: Resource specification (currently ignored).
         """
         # pylint: disable=unused-argument
-        if self._obs_state != ObsState.IDLE:
-            frame_info = getframeinfo(currentframe())
-            Except.throw_exception(
-                'Command: ReleaseResources failed',
-                'ReleaseResources requires obsState == IDLE',
-                '{}:{}'.format(frame_info.filename, frame_info.lineno))
-
+        self._require_obs_state([ObsState.IDLE])
         self.set_state(DevState.OFF)
 
     @command(dtype_in=str)
@@ -253,6 +242,8 @@ class SDPSubarray(Device):
 
         :param pb_config: JSON string wth Processing Block configuration.
         """
+        self._require_obs_state([ObsState.IDLE])
+
         LOG.info('Command: Configure (%s)', self.get_name())
 
         LOG.debug('Setting ObsState to CONFIGURING.')
@@ -317,6 +308,8 @@ class SDPSubarray(Device):
         :param scan_config: JSON Scan configuration.
         :param schema_path: Path to the Scan config schema (optional).
         """
+        self._require_obs_state([ObsState.READY])
+
         LOG.debug('Setting ObsState to CONFIGURING.')
         self._obs_state = ObsState.CONFIGURING
 
@@ -339,18 +332,21 @@ class SDPSubarray(Device):
     @DebugIt()
     def StartScan(self):
         """Command issued when a scan is started."""
+        self._require_obs_state([ObsState.READY])
         self._obs_state = ObsState.SCANNING
 
     @command
     @DebugIt()
     def EndScan(self):
         """Command issued when the scan is ended."""
+        self._require_obs_state([ObsState.READY])
         self._obs_state = ObsState.READY
 
     @command
     @DebugIt()
     def EndSB(self):
         """Command issued to end the scheduling block."""
+        self._require_obs_state([ObsState.READY])
         self._obs_state = ObsState.IDLE
 
     def _scan_complete(self):
@@ -359,6 +355,7 @@ class SDPSubarray(Device):
         Internal state transition.
 
         """
+        self._require_obs_state([ObsState.SCANNING])
         self._obs_state = ObsState.READY
 
     def _evaluate_receive_host_channel_map(self):
@@ -674,6 +671,36 @@ class SDPSubarray(Device):
         channels = self._evaluate_channels_fsp_map(channel_link_map)
 
         return channel_link_map, channels
+
+    def _require_obs_state(self, allowed_obs_states, invert=False):
+        """Require specified obsState values.
+
+        Checks if the current obsState matches the specified allowed values.
+
+        If invert is False (default), throw an exception if the obsState
+        is not in the list of specified states.
+
+        If invert is True, throw an exception if the obsState is NOT in the
+        list of specified allowed states.
+
+        :param allowed_obs_states: List of allowed obsState values
+        :param invert: If True require that the obsState is not in one of
+                       specified allowed states
+
+        """
+        # Fail if obsState is NOT in one of the allowed_obs_states
+        if not invert and self._obs_state not in allowed_obs_states:
+            error_msg = 'Error: the device must be in one of the following ' \
+                        'obsStates: {}'.format(allowed_obs_states)
+            LOG.error(error_msg)
+            raise RuntimeError(error_msg)
+
+        # Fail if obsState is in one of the allowed_obs_states
+        if invert and self._obs_state in allowed_obs_states:
+            error_msg = 'Error: the device must NOT be in one of the ' \
+                        'following obsStates: {}'.format(allowed_obs_states)
+            LOG.error(error_msg)
+            raise RuntimeError(error_msg)
 
 
 def delete_device_server(instance_name="*"):
