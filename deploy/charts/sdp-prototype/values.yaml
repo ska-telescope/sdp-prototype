@@ -1,0 +1,22 @@
+# Default values for dummy-workflow.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+helm_deploy:
+  container: pw410/helm-deploy
+  version: 0.0.4
+  replicas: 1
+
+etcd:
+  version: "3.3"
+  replicas: 1
+
+workflow:
+  testdeploy:
+    container: pw410/dummy-workflow
+    version: 0.0.10
+    replicas: 2
+    resources: {}
+
+nameOverride: ""
+fullnameOverride: ""

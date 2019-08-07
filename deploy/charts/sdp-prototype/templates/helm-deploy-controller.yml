@@ -1,63 +1,64 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: {{ include "dummy-workflow.fullname" . }}-helm
+  name: {{ include "sdp-prototype.fullname" . }}-helm
   namespace: {{ .Release.Namespace }}
   labels:
-{{ include "dummy-workflow.labels" . | indent 4 }}
+{{ include "sdp-prototype.labels" . | indent 4 }}
 spec:
   replicas: {{ .Values.helm_deploy.replicas }}
   selector:
     matchLabels:
-      app.kubernetes.io/name: {{ include "dummy-workflow.name" . }}-helm
+      app.kubernetes.io/name: {{ include "sdp-prototype.name" . }}-helm
       app.kubernetes.io/instance: {{ .Release.Name }}
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: {{ include "dummy-workflow.name" . }}-helm
+        app.kubernetes.io/name: {{ include "sdp-prototype.name" . }}-helm
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
       initContainers:
+      {{ include "sdp-prototype.wait-for-etcd" . | nindent 6 }}
       containers:
       - image: {{ .Values.helm_deploy.container }}:{{ .Values.helm_deploy.version }}
         name: helm-deploy
         env:
         - name: SDP_CONFIG_HOST
-          value: {{ include "dummy-workflow.fullname" . }}-etcd-client.default.svc.cluster.local
-      serviceAccount: {{ include "dummy-workflow.fullname" . }}-helm
-      serviceAccountName: {{ include "dummy-workflow.fullname" . }}-helm
+          value: {{ include "sdp-prototype.fullname" . }}-etcd-client.default.svc.cluster.local
+      serviceAccount: {{ include "sdp-prototype.fullname" . }}-helm
+      serviceAccountName: {{ include "sdp-prototype.fullname" . }}-helm
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: {{ include "dummy-workflow.fullname" . }}-helm
+  name: {{ include "sdp-prototype.fullname" . }}-helm
   namespace: {{ .Release.Namespace }}
   labels:
-{{ include "dummy-workflow.labels" . | indent 4 }}
+{{ include "sdp-prototype.labels" . | indent 4 }}
 ---
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
-  name: {{ include "dummy-workflow.fullname" . }}-helm
+  name: {{ include "sdp-prototype.fullname" . }}-helm
   namespace: kube-system
   labels:
-{{ include "dummy-workflow.labels" . | indent 4 }}
+{{ include "sdp-prototype.labels" . | indent 4 }}
 subjects:
 - kind: ServiceAccount
-  name: {{ include "dummy-workflow.fullname" . }}-helm
+  name: {{ include "sdp-prototype.fullname" . }}-helm
   namespace: {{ .Release.Namespace }}
 roleRef:
   kind: Role
-  name: {{ include "dummy-workflow.fullname" . }}-helm
+  name: {{ include "sdp-prototype.fullname" . }}-helm
   apiGroup: rbac.authorization.k8s.io
 ---
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
-  name: {{ include "dummy-workflow.fullname" . }}-helm
+  name: {{ include "sdp-prototype.fullname" . }}-helm
   namespace: kube-system
   labels:
-{{ include "dummy-workflow.labels" . | indent 4 }}
+{{ include "sdp-prototype.labels" . | indent 4 }}
 rules:
 - apiGroups: ["", "extensions", "apps"]
   resources: ["pods"]

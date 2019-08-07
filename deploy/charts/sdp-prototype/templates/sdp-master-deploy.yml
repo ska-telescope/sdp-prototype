@@ -5,7 +5,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app: {{ .Release.Name }}-sdp-master
-    chart: {{ template "sdp-proto.chart" . }}
+    chart: {{ template "sdp-prototype.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }} 
 spec:
@@ -17,7 +17,7 @@ spec:
     metadata:
       labels:
         app: {{ .Release.Name }}-sdp-master
-        chart: {{ template "sdp-proto.chart" . }}
+        chart: {{ template "sdp-prototype.chart" . }}
         release: {{ .Release.Name }}
         heritage: {{ .Release.Service }}
     spec:
