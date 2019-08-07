@@ -24,7 +24,17 @@ def test_cli_simple(capsys):
     assert out == PREFIX+"/test = None\n"
     assert err == ""
 
-    cli.main(['create', PREFIX+'/test', 'asd'])
+    cli.main(['create', PREFIX+'/test', 'asdf'])
+    out, err = capsys.readouterr()
+    assert out == "OK\n"
+    assert err == ""
+
+    cli.main(['get', PREFIX+'/test'])
+    out, err = capsys.readouterr()
+    assert out == PREFIX+"/test = asdf\n"
+    assert err == ""
+
+    cli.main(['update', PREFIX+'/test', 'asd'])
     out, err = capsys.readouterr()
     assert out == "OK\n"
     assert err == ""

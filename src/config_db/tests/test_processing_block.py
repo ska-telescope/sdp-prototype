@@ -26,6 +26,20 @@ def cfg():
         cfg._backend.delete(PREFIX, must_exist=False, recursive=True)
 
 
+def test_simple_pb():
+
+    for missing in ['name', 'version', 'type']:
+        with pytest.raises(ValueError, match="Workflow must"):
+            workflow = dict(WORKFLOW)
+            del workflow[missing]
+            entity.ProcessingBlock('foo-bar', None, workflow)
+    with pytest.raises(ValueError, match="Processing block ID"):
+        entity.ProcessingBlock('asd_htb', None, WORKFLOW)
+    with pytest.raises(ValueError, match="Processing block ID"):
+        entity.ProcessingBlock('foo/bar', None, WORKFLOW)
+    entity.ProcessingBlock('foo-bar', None, WORKFLOW)
+
+
 def test_create_pb(cfg):
 
     # Create 3 processing blocks
@@ -33,9 +47,11 @@ def test_create_pb(cfg):
 
         pb1_id = txn.new_processing_block_id(WORKFLOW['type'])
         pb1 = entity.ProcessingBlock(pb1_id, None, WORKFLOW)
+        assert txn.get_processing_block(pb1_id) is None
         txn.create_processing_block(pb1)
         with pytest.raises(backend.Collision):
             txn.create_processing_block(pb1)
+        assert txn.get_processing_block(pb1_id).pb_id == pb1_id
 
         pb2_id = txn.new_processing_block_id(WORKFLOW['type'])
         pb2 = entity.ProcessingBlock(pb2_id, None, WORKFLOW)
@@ -56,6 +72,13 @@ def test_create_pb(cfg):
             'test_scan': 'asd'
         }
         txn.update_processing_block(pb1)
+
+    # Check that update worked
+    for txn in cfg.txn():
+        pb1x = txn.get_processing_block(pb1.pb_id)
+        assert pb1x.sbi_id is None
+        assert pb1x.parameters == pb1.parameters
+        assert pb1x.scan_parameters == pb1.scan_parameters
 
 
 def test_take_pb(cfg):
@@ -83,6 +106,12 @@ def test_take_pb(cfg):
         assert txn.get_processing_block_owner(pb_id) is None
         assert not txn.is_processing_block_owner(pb_id)
 
+    # Check that asking for a non-existing workflow doesn't work
+    for txn in cfg.txn():
+        workflow3 = dict(WORKFLOW)
+        workflow3['name'] += "-take-doesnt-exist"
+        assert txn.take_processing_block_by_workflow(workflow3, lease) is None
+
     # Test that we can find the processing block by workflow
     with cfg.lease() as lease:
         for txn in cfg.txn():
@@ -92,6 +121,15 @@ def test_take_pb(cfg):
     for txn in cfg.txn():
         assert txn.get_processing_block_owner(pb_id) is None
         assert not txn.is_processing_block_owner(pb_id)
+
+    # Check that we can re-claim it using client lease
+    for txn in cfg.txn():
+        pb2 = txn.take_processing_block_by_workflow(workflow2,
+                                                    cfg.client_lease)
+        assert pb2.pb_id == pb_id
+    for txn in cfg.txn():
+        assert txn.get_processing_block_owner(pb_id) == cfg.owner
+        assert txn.is_processing_block_owner(pb_id)
 
 
 if __name__ == '__main__':
