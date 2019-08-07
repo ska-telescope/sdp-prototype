@@ -8,6 +8,7 @@ the SDP configuration.
 # pylint: disable=C0103
 
 import os
+import time
 import subprocess
 import shutil
 import logging
@@ -24,10 +25,43 @@ NAMESPACE = os.getenv('SDP_HELM_NAMESPACE', 'sdp-helm')
 LOGGER = os.getenv('SDP_LOGGER', 'main')
 LOG_LEVEL = int(os.getenv('SDP_LOG_LEVEL', str(logging.DEBUG)))
 
+GIT = shutil.which(os.getenv("SDP_GIT", 'git'))
+CHART_REPO = os.getenv('SDP_CHART_REPO', 'https://github.com/ska-telescope/sdp-prototype.git')
+CHART_REPO_REF = os.getenv('SDP_CHART_REPO_REF', 'master')
+CHART_REPO_PATH = os.getenv('SDP_CHART_REPO_PATH', 'deploy/charts')
+CHART_REPO_REFRESH = int(os.getenv('SDP_CHART_REFRESH', '300'))
+
 # Initialise logger
 logging.basicConfig()
 log = logging.getLogger(LOGGER)
 log.setLevel(LOG_LEVEL)
+
+# Where we are going to check out the charts
+chart_base_path = 'chart-repo'
+chart_path = os.path.join(chart_base_path, CHART_REPO_PATH)
+
+
+
+def invoke(*cmd_line, cwd):
+    """Invoke a command with the given command-line arguments
+
+    :param cwd: Directory to run command in
+    :returns: Output of the command
+    :raises: `subprocess.CalledProcessError` if command returns an error status
+    """
+    # Perform call
+    log.debug(" ".join(["$"] + list(cmd_line)))
+    result = subprocess.run(
+        cmd_line, stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        timeout=HELM_TIMEOUT,
+        cwd=cwd)
+    # Log results
+    log.debug("Code: {}".format(result.returncode))
+    out = result.stdout.decode()
+    log.debug("-> " + out)
+    result.check_returncode()
+    return out
 
 
 def helm_invoke(*args):
@@ -36,19 +70,31 @@ def helm_invoke(*args):
     :returns: Output of the command
     :raises: `subprocess.CalledProcessError` if command returns an error status
     """
-    cmd_line = [HELM] + list(args)
-    # Perform call
-    log.debug(" ".join(["$"] + cmd_line))
-    result = subprocess.run(
-        cmd_line, stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        timeout=HELM_TIMEOUT)
-    # Log results
-    log.debug("Code: {}".format(result.returncode))
-    out = result.stdout.decode()
-    log.debug("-> " + out)
-    result.check_returncode()
-    return out
+    return invoke(*([HELM] + list(args)), cwd=chart_path)
+
+
+def update_chart_repos():
+    """Update the chart repository."""
+    # Does not exist? Initialise
+    if not os.path.exists(chart_base_path):
+        log.info("Initialising chart repos in {}".format(chart_path))
+        os.mkdir(chart_base_path)
+        invoke(GIT, "init", cwd=chart_base_path)
+        invoke(GIT, "config", "core.sparseCheckout", "true",
+               cwd=chart_base_path)
+        with open(os.path.join(chart_base_path, ".git", "info",
+                               "sparse-checkout"), "w") as f:
+            print(CHART_REPO_PATH, file=f)
+        invoke(GIT, "remote", "add", "origin", CHART_REPO,
+               cwd=chart_base_path)
+        invoke(GIT, "fetch", "--depth", "1", "origin", CHART_REPO_REF,
+               cwd=chart_base_path)
+        invoke(GIT, "checkout", CHART_REPO_REF,
+               cwd=chart_base_path)
+    else:
+        log.info("Refreshing chart repos in {}".format(chart_path))
+        invoke(GIT, "pull", "origin", CHART_REPO_REF,
+               cwd=chart_base_path)
 
 
 def delete_helm(txn, dpl_id):
@@ -64,11 +110,10 @@ def delete_helm(txn, dpl_id):
         return False # Assume it was already gone
 
 
-def create_helm(txn, deploy):
+def create_helm(txn, dpl_id, deploy):
     """Create a new Helm deployment."""
 
     # Attempt install
-    dpl_id = deploy.deploy_id
     log.info("Creating deployment {}...".format(dpl_id))
 
     # Build command line
@@ -115,7 +160,11 @@ def main():
 
     # TODO: Service lease + leader election
 
-    # Reload Helm repo (only once currently)
+    # Obtain charts
+    update_chart_repos()
+    next_chart_refresh = time.time() + CHART_REPO_REFRESH
+
+    # Load Helm repository
     helm_invoke("init", "--client-only")
     helm_invoke("repo", "update")
 
@@ -129,6 +178,20 @@ def main():
 
     # Wait for something to happen
     for txn in client.txn():
+
+        # Refresh charts?
+        if time.time() > next_chart_refresh:
+            next_chart_refresh = time.time() + CHART_REPO_REFRESH
+
+            try:
+                helm_invoke("repo", "update")
+            except subprocess.CalledProcessError as e:
+                log.error("Could not refresh global chart repository!")
+
+            try:
+                update_chart_repos()
+            except subprocess.CalledProcessError as e:
+                log.error("Could not refresh chart repository!")
 
         # List deployments
         target_deploys = txn.list_deployments()
@@ -156,11 +219,12 @@ def main():
                     continue
 
                 # Create it
-                if create_helm(txn, deploy):
+                if create_helm(txn, dpl_id, deploy):
                     deploys.add(dpl_id)
 
         # Loop around, wait if we made no change
-        txn.loop(wait=True)
+        timeout = next_chart_refresh
+        txn.loop(wait=True, timeout=next_chart_refresh - time.time())
 
 
 main()

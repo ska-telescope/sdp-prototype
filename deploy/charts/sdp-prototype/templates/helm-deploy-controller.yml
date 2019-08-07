@@ -25,6 +25,12 @@ spec:
         env:
         - name: SDP_CONFIG_HOST
           value: {{ include "sdp-prototype.fullname" . }}-etcd-client.default.svc.cluster.local
+        - name: SDP_CHART_REPO
+          value: "{{ .Values.helm_deploy.chart_repo.url }}"
+        - name: SDP_CHART_REPO_REF
+          value: "{{ .Values.helm_deploy.chart_repo.ref }}"
+        - name: SDP_CHART_REPO_REFRESH
+          value: "{{ .Values.helm_deploy.chart_repo.refresh }}"
       serviceAccount: {{ include "sdp-prototype.fullname" . }}-helm
       serviceAccountName: {{ include "sdp-prototype.fullname" . }}-helm
 ---

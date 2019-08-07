@@ -1,7 +1,7 @@
 
 FROM ska-sdp-config
 
-RUN apt-get update && apt-get install -y curl
+RUN apt-get update && apt-get install -y curl git && rm -rf /var/lib/apt/lists/*
 
 ARG HELMVER=2.14.2
 RUN \
