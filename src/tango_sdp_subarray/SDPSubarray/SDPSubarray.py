@@ -9,6 +9,8 @@ from inspect import currentframe, getframeinfo
 from os.path import dirname, join
 import logging
 
+from ska_sdp_config import config as db_config, entity
+
 from jsonschema import validate
 from tango import AttrWriteType, DebugIt, DevState, Except
 from tango.server import Device, DeviceMeta, attribute, command, run
@@ -98,6 +100,7 @@ class SDPSubarray(Device):
         self._obs_state = ObsState.IDLE
         self._admin_mode = AdminMode.OFFLINE
         self._health_state = HealthState.OK
+        self.db_client = db_config.Config()
 
     def always_executed_hook(self):
         """Run for on each call."""
@@ -230,6 +233,15 @@ class SDPSubarray(Device):
 
         pb_config = json.loads(pb_config)
         validate(pb_config, schema)
+
+        for txn in self.db_client.txn():
+            confdata = pb_config['configure']
+            pb = entity.ProcessingBlock(confdata['id'], None,
+                                        confdata['workflow'],
+                                        confdata['parameters'],
+                                        confdata['scanParameters'])
+            txn.create_processing_block(pb)
+
         self._obs_state = ObsState.READY
 
     @command(dtype_in=str)
@@ -255,6 +267,7 @@ class SDPSubarray(Device):
             schema = json.loads(file.read())
         pb_config = json.loads(scan_config)
         validate(pb_config, schema)
+
         self._obs_state = ObsState.READY
 
     @command
