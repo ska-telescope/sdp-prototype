@@ -10,7 +10,7 @@ from ska_sdp_config import config, entity, backend
 PREFIX = "/__test_pb"
 
 WORKFLOW = {
-    'name': 'test_rt_workflow',
+    'id': 'test_rt_workflow',
     'version': '0.0.1',
     'type': 'realtime'
 }
@@ -28,7 +28,7 @@ def cfg():
 
 def test_simple_pb():
 
-    for missing in ['name', 'version', 'type']:
+    for missing in ['id', 'version', 'type']:
         with pytest.raises(ValueError, match="Workflow must"):
             workflow = dict(WORKFLOW)
             del workflow[missing]
@@ -84,7 +84,7 @@ def test_create_pb(cfg):
 def test_take_pb(cfg):
 
     workflow2 = dict(WORKFLOW)
-    workflow2['name'] += "-take"
+    workflow2['id'] += "-take"
 
     # Create another processing block
     for txn in cfg.txn():
@@ -109,7 +109,7 @@ def test_take_pb(cfg):
     # Check that asking for a non-existing workflow doesn't work
     for txn in cfg.txn():
         workflow3 = dict(WORKFLOW)
-        workflow3['name'] += "-take-doesnt-exist"
+        workflow3['id'] += "-take-doesnt-exist"
         assert txn.take_processing_block_by_workflow(workflow3, lease) is None
 
     # Test that we can find the processing block by workflow

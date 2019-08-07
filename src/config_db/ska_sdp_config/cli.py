@@ -174,7 +174,7 @@ def main(argv):
         else:
             workflow = {
                 'type': workflow[0],
-                'name': workflow[1],
+                'id': workflow[1],
                 'version': workflow[2]
             }
 

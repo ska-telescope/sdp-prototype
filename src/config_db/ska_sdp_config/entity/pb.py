@@ -44,7 +44,7 @@ class ProcessingBlock:
         self._dict.update(kwargs)
 
         # Validate
-        if set(self.workflow) != set(['name', 'type', 'version']):
+        if set(self.workflow) != set(['id', 'type', 'version']):
             raise ValueError("Workflow must specify name, type and version!")
         if not _PB_ID_RE.match(self.pb_id):
             raise ValueError("Processing block ID {} not permissable!".format(

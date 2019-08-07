@@ -19,7 +19,7 @@ client = ska_sdp_config.Config()
 
 # Find processing block configuration
 workflow = {
-    'name': 'example',
+    'id': 'example',
     'version': '0.0.1',
     'type': 'realtime'
 }
