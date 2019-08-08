@@ -220,7 +220,7 @@ class SDPSubarray(Device):
         :param schema_path: Path to the PB config schema (optional).
         """
         # pylint: disable=unused-argument
-        self._obs_state = ObsState.CONFIGURING
+        self._obs_state = ObsState.SILLY
         # time.sleep(1)
 
         # Validate the SBI config schema
