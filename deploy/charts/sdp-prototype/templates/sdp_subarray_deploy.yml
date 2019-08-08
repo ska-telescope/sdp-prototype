@@ -1,11 +1,11 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ .Release.Name }}-sdp-subarray
   namespace: {{ .Release.Namespace }}
   labels:
     app: sdp-subarray-{{ .Release.Name }}
-    chart: {{ template "sdp-proto.chart" . }}
+    chart: {{ template "sdp-prototype.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
@@ -17,7 +17,7 @@ spec:
     metadata:
       labels:
         app: {{ .Release.Name }}-sdp-subarray
-        chart: {{ template "sdp-proto.chart" . }}
+        chart: {{ template "sdp-prototype.chart" . }}
         release: {{ .Release.Name }}
         heritage: {{ .Release.Service }}
     spec:

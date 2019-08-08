@@ -8,14 +8,15 @@ REPOS_URL = 'http://github.com/ska-telescope/sdp-prototype'
 
 setup(
     name='ska-sdp-config',
-    version='0.0.1',
+    version='0.0.4',
     description='SKA SDP Configuration Database',
     long_description=LONG_DESCRIPTION,
     long_description_content_type='text/markdown',
     author='Benjamin Mort, Nijn Thykkathu, Peter Wortmann',
+    author_email='pw410@cam.ac.uk',
     url=REPOS_URL+'/tree/master/src/config_db',
     install_requires=[
-        'etcd3-py', 'docopt-ng'
+        'etcd3-py', 'docopt-ng', 'kubernetes'
     ],
     classifiers=[
         'Topic :: Database :: Front-Ends',

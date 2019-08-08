@@ -1,0 +1,23 @@
+
+helm_deploy:
+  container: pw410/helm-deploy
+  version: 0.0.5
+  replicas: 1
+  chart_repo:
+    url: https://github.com/ska-telescope/sdp-prototype.git
+    ref: master
+    refresh: 300
+
+etcd:
+  version: "3.3"
+  replicas: 1
+
+workflow:
+  testdeploy:
+    container: pw410/workflow-testdeploy
+    version: 0.0.7
+    replicas: 2
+    resources: {}
+
+nameOverride: ""
+fullnameOverride: ""
