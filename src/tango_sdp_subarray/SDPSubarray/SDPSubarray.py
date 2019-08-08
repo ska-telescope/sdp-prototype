@@ -103,8 +103,8 @@ class SDPSubarray(Device):
                                          'evaluating receiveAddresses.')
 
     toggleConfigDb = attribute(dtype=bool, access=AttrWriteType.READ_WRITE,
-                               doc='Feature read and write from the SDP '
-                                   'Config DB')
+                               doc='Feature toogle to read and write from '
+                                   'the SDP Config DB')
 
     # ---------------
     # General methods
