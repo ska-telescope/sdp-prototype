@@ -215,6 +215,7 @@ xray_report:
   extends: .xray_report
   when: always
   only: [master]
+  allow_failure: true
 
 # Update XRay links in JIRA. Manual job that can be executed for branches
 xray_report-manual:
