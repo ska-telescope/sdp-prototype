@@ -1,4 +1,4 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "sdp-prototype.fullname" . }}-helm
@@ -31,7 +31,6 @@ spec:
           value: "{{ .Values.helm_deploy.chart_repo.ref }}"
         - name: SDP_CHART_REPO_REFRESH
           value: "{{ .Values.helm_deploy.chart_repo.refresh }}"
-      serviceAccount: {{ include "sdp-prototype.fullname" . }}-helm
       serviceAccountName: {{ include "sdp-prototype.fullname" . }}-helm
 ---
 apiVersion: v1
