@@ -23,8 +23,6 @@ variables:
 # -----------------------------------------------------------------------------
 
 include:
-  # TODO(BMo) move project yaml files to source directories.
-
   # Jobs to build and test Docker base images.
   - local: '/docker/gitlab-ci-templates.yml'
   - local: '/docker/pytango/gitlab-ci-jobs.yml'
@@ -34,13 +32,6 @@ include:
   # Jobs to build services in the src directory.
   - local: '/src/gitlab-ci-templates.yml'
   - local: '/src/tango_sdp_subarray/gitlab-ci-jobs.yml'
-
-#  - local: '/scripts/tests.gitlab-ci.yml'
-#  - local: '/scripts/reports.gitlab-ci.yml'
-#  - local: /'/scripts/python.build.gitlab-ci.yml'
-#  - local: '/scripts/python.publish.gitlab-ci.yml'
-#  - local: '/scripts/docker.push.gitlab-ci.yml'
-
 
 # -----------------------------------------------------------------------------
 # pre-check stage
