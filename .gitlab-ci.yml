@@ -212,7 +212,8 @@ coverage_report:
 # Update XRay links in JIRA automatically This is done only for the master
 xray_report:
   extends: .xray_report
-  only: [master]
+  when: always
+  only: [feature-fix-xray-for-failed-tests]
 
 # Update XRay links in JIRA. Manual job that can be executed for branches
 xray_report-manual:
