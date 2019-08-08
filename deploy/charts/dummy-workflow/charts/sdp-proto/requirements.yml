@@ -1,4 +1,0 @@
-dependencies:
-- name: etcd-operator
-  version: "0.9.3"
-  repository: "https://example.com/charts"

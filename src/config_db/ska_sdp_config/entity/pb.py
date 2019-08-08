@@ -4,7 +4,7 @@ import re
 import copy
 
 # Permit identifiers up to 64 bytes in length
-_PB_ID_RE = re.compile("[_A-Za-z0-9]{1,64}")
+_PB_ID_RE = re.compile("^[A-Za-z0-9\\-]{1,64}$")
 
 
 class ProcessingBlock:
@@ -44,14 +44,14 @@ class ProcessingBlock:
         self._dict.update(kwargs)
 
         # Validate
-        if set(self.workflow) != set(['name', 'type', 'version']):
+        if set(self.workflow) != set(['id', 'type', 'version']):
             raise ValueError("Workflow must specify name, type and version!")
         if not _PB_ID_RE.match(self.pb_id):
             raise ValueError("Processing block ID {} not permissable!".format(
                 self.pb_id))
 
     def to_dict(self):
-        """Return workflow scan parameters."""
+        """Return data as dictionary."""
         return self._dict
 
     @property
@@ -84,3 +84,7 @@ class ProcessingBlock:
         return "ProcessingBlock({})".format(
             ", ".join(["{}={}".format(k, repr(v))
                        for k, v in self._dict.items()]))
+
+    def __eq__(self, other):
+        """Equality check."""
+        return self.to_dict() == other.to_dict()

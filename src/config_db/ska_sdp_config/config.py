@@ -2,11 +2,12 @@
 
 import os
 import sys
+import functools
 from datetime import date
 import json
 from socket import gethostname
 
-from . import backend as backend_mod, entity
+from . import backend as backend_mod, entity, deploy
 
 
 class Config():
@@ -59,6 +60,7 @@ class Config():
         # Prefixes
         assert global_prefix == '' or global_prefix[0] == '/'
         self.pb_path = global_prefix+"/pb/"
+        self.deploy_path = global_prefix+"/deploy/"
 
         # Lease associated with client
         self._client_lease = None
@@ -130,6 +132,22 @@ class Config():
         self.close()
         return False
 
+    # pylint: disable=R0201
+    def get_deployment_logs(self, dpl: entity.Deployment,
+                            max_lines: int = 500):
+        """
+        Retrieve logs (stdout) produced by a deployment.
+
+        Might not be supported by all deployment types, and not to all
+        processes (e.g. subprocess stdout is only available to the
+        spawning process).
+
+        :param dpl: Deployment to query for logs
+        :param max_lines: Maximum number of lines to return (log tail)
+        :returns: A list of the last log lines
+        """
+        return deploy.get_deployment_logs(dpl, max_lines)
+
 
 class TransactionFactory():
     """Helper object for making transactions."""
@@ -145,7 +163,12 @@ class TransactionFactory():
             yield Transaction(self._config, txn)
 
 
-def _to_json(obj):
+def dict_to_json(obj):
+    """Format a dictionary for writing it into the database.
+
+    :param obj: Dictionary object to format
+    :returns: String representation
+    """
     # We only write dictionaries (JSON objects) at the moment
     assert isinstance(obj, dict)
     # Export to JSON. No need to convert to ASCII, as the backend
@@ -164,6 +187,7 @@ class Transaction():
         self._cfg = config
         self._txn = txn
         self._pb_path = config.pb_path
+        self._deploy_path = config.deploy_path
 
     @property
     def raw(self):
@@ -179,19 +203,20 @@ class Transaction():
 
     def _create(self, path, obj, lease=None):
         """Set a new path in the database to a JSON object."""
-        self._txn.create(path, _to_json(obj), lease)
+        self._txn.create(path, dict_to_json(obj), lease)
 
     def _update(self, path, obj):
         """Set a existing path in the database to a JSON object."""
-        self._txn.update(path, _to_json(obj))
+        self._txn.update(path, dict_to_json(obj))
 
-    def loop(self, wait=False):
+    def loop(self, wait=False, timeout=None):
         """Repeat transaction regardless of whether commit succeeds.
 
         :param wait: If transaction succeeded, wait for any read
             values to change before repeating it.
+        :param timeout: Maximum time to wait, in seconds
         """
-        return self._txn.loop(wait)
+        return self._txn.loop(wait, timeout)
 
     def list_processing_blocks(self, prefix=""):
         """Query processing block IDs from the configuration.
@@ -293,11 +318,12 @@ class Transaction():
         # Provide information identifying this process
         self._create(self._pb_path + pb_id + "/owner", self._cfg.owner, lease)
 
-    def take_processing_block_by_workflow(self, workflow: dict, lease):
+    def take_processing_block_by_workflow(self, workflow: dict, lease) \
+            -> entity.ProcessingBlock:
         """
         Take ownership of unclaimed processing block matching a workflow.
 
-        :param pb_id: Workflow description. Must exactly match the
+        :param workflow: Workflow description. Must exactly match the
             workflow description used to create the processing block.
         :returns: Processing block, or None if no match was found
         """
@@ -314,3 +340,56 @@ class Transaction():
                 return pb
 
         return None
+
+    def get_deployment(self, deploy_id: str) -> entity.Deployment:
+        """
+        Retrieve details about a cluster configuration change.
+
+        :param deploy_id: Name of the deployment
+        :returns: Deployment details
+        """
+        dct = self._get(self._deploy_path + deploy_id)
+        return entity.Deployment(**dct)
+
+    def list_deployments(self, prefix=""):
+        """
+        List all current deployments.
+
+        :returns: Deployment IDs
+        """
+        # List keys
+        keys = self._txn.list_keys(self._deploy_path + prefix)
+
+        # return list, stripping the prefix
+        assert all([key.startswith(self._deploy_path) for key in keys])
+        return list([key[len(self._deploy_path):] for key in keys])
+
+    def create_deployment(self, dpl: entity.Deployment):
+        """
+        Request a change to cluster configuration.
+
+        :param dpl: Deployment to add to database
+        """
+        # Add to database
+        assert isinstance(dpl, entity.Deployment)
+        self._create(self._deploy_path + dpl.deploy_id,
+                     dpl.to_dict())
+
+        # Apply deployment on successful deployment (this should
+        # eventually be done by a separate controller process!)
+        self._txn.on_commit(functools.partial(deploy.apply_deployment, dpl))
+
+    def delete_deployment(self, dpl: entity.Deployment):
+        """
+        Undo a change to cluster configuration.
+
+        :param dpl: Deployment to remove
+        """
+        # Delete all data associated with deployment
+        deploy_path = self._deploy_path + dpl.deploy_id
+        for key in self._txn.list_keys(deploy_path, recurse=5):
+            self._txn.delete(key)
+
+        # Apply deployment on successful deployment (this should
+        # eventually be done by a separate controller process!)
+        self._txn.on_commit(functools.partial(deploy.undo_deployment, dpl))

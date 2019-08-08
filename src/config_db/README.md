@@ -39,7 +39,7 @@ config = ska_sdp_config.Config()
 for txn in config.txn():
     for pb_id in txn.list_processing_blocks():
         pb = txn.get_processing_block(pb_id)
-        print("{} ({}:{})".format(pb_id, pb.workflow['name'], pb.workflow['version']))
+        print("{} ({}:{})".format(pb_id, pb.workflow['id'], pb.workflow['version']))
 ```
 
 To read a list of currently active processing blocks with their
