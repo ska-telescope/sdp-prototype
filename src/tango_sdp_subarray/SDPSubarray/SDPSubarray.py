@@ -125,7 +125,7 @@ class SDPSubarray(Device):
         self._recv_hosts = None   # Map of receive hosts <-> channels
         self._recv_addresses = None  # receiveAddresses attribute dict
         self._toggle_read_cbf_out_link = True
-        self._toggle_config_db = True
+        self._toggle_config_db = False
         if HAVE_CONFIG_DB:
             self.db_client = db_config.Config()
 
@@ -466,6 +466,7 @@ class SDPSubarray(Device):
         :returns: map of channels to FSPs
 
         """
+        LOG.debug('Evaluating channel - FSP mapping.')
         # Build map of channels <-> FSP's
         channels = list()
         for fsp in channel_link_map['fsp']:
@@ -485,10 +486,12 @@ class SDPSubarray(Device):
         pb_params = self._pb_config['parameters']
         pb_num_channels = pb_params['numChannels']
         if len(channels) > pb_num_channels:
-            raise ValueError('Vis Receive configured for fewer channels than'
-                             'defined in the CSP channel link map! '
-                             '(link map: {}, workflow: {})'
-                             .format(len(channels), pb_num_channels))
+            message = 'Vis Receive configured for fewer channels than ' \
+                      'defined in the CSP channel link map! ' \
+                      '(link map: {}, workflow: {})'\
+                .format(len(channels), pb_num_channels)
+            LOG.error('Error: %s', message)
+            raise ValueError(message)
         if len(channels) < pb_num_channels:
             LOG.warning('Vis receive workflow configured for more channels '
                         'than defined in the CSP channel link map! '
@@ -522,7 +525,7 @@ class SDPSubarray(Device):
         LOG.debug('Evaluating receive addresses.')
 
         channel_link_map, channels = self._get_channel_link_map()
-        LOG.debug('Obtained channel link map from CSP')
+        LOG.debug('Successfully obtained channel link map from CSP')
 
         fsp_ids = list({channel['fspID'] for channel in channels})
         LOG.debug('Channel link map active FSP IDs: %s', fsp_ids)
@@ -660,7 +663,7 @@ class SDPSubarray(Device):
         """
         channel_link_map_str = self._read_channel_link_map()
 
-        LOG.debug('Validating cbfOutLink (CSP channel-link-map).')
+        LOG.debug('Validating cbfOutLink (CSP channel-link-map)...')
 
         # Convert string to dictionary.
         try:
@@ -690,7 +693,7 @@ class SDPSubarray(Device):
                 'Invalid channel link map schema! {}'.format(error_message),
                 error_message, '{}:{}'.format(frame_info.filename,
                                               frame_info.lineno))
-
+        LOG.debug('Channel link map validation successful.')
         # Build map of channels <-> FSP's
         channels = self._evaluate_channels_fsp_map(channel_link_map)
 
