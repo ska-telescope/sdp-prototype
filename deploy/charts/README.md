@@ -94,10 +94,15 @@ find out which one:
     $ kubectl get service sdp-prototype-etcd-nodeport
     NAME                          TYPE       CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE
     sdp-prototype-etcd-nodeport   NodePort   10.97.188.221   <none>        2379:32234/TCP   3h56m
+
+Set the environment variable `SDP_CONFIG_PORT` according to the
+second part of the `PORTS(S)` column:
+
     $ export SDP_CONFIG_PORT=32234
 
-For Minikube, you need a full address, which can be queried as
-follows:
+For Minikube, you need to set both `SDP_CONFIG_HOST` and
+`SDP_CONFIG_PORT`, but you can easily query both using
+`minikube service`:
 
     $ minikube service --url sdp-prototype-etcd-nodeport
     http://192.168.39.45:32234
@@ -106,7 +111,7 @@ follows:
 
 This will allow you to connect with the `sdpcfg` utility:
 
-    $ pip install ska-sdp-config
+    $ pip install -U ska-sdp-config
     $ sdpcfg ls -R /
     Keys with / prefix:
 
@@ -127,9 +132,9 @@ section, we can now add a processing block to the configuration:
       "sbi_id": null,
       "scan_parameters": {},
       "workflow": {
-        "id": "dummy",
+        "id": "testdeploy",
         "type": "realtime",
-        "version": "0.0.6"
+        "version": "0.0.7"
       }
     }
     /pb/realtime-20190807-0000/owner = {
@@ -158,9 +163,9 @@ read as follows:
 
     parameters:
       mysql:
+        type: helm
         args:
           chart: stable/mysql
-        type: helm
 
 This will cause the workflow to deploy a new mysql instance, as we can
 easily check:
