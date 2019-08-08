@@ -487,9 +487,9 @@ push:pytango_ska_dev:
 #  when: manual
 #  except: [master]
 
-push:tangods_sdp_master:
-  extends: .tangods_master_template
-  only: [master]
+# push:tangods_sdp_master:
+#   extends: .tangods_master_template
+#   only: [master]
 
 push:tangods_sdp_master-manual:
   extends: .tangods_master_template
@@ -504,9 +504,9 @@ push:tangods_sdp_master-manual:
   variables:
     BUILD_PATH: src/tango_sdp_subarray
 
-push:tangods_sdp_subarray:
-  extends: .tangods_subarray_template
-  only: [master]
+# push:tangods_sdp_subarray:
+#   extends: .tangods_subarray_template
+#   only: [master]
 
 push:tangods_sdp_subarray-manual:
   extends: .tangods_subarray_template
