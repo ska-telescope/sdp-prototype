@@ -89,7 +89,7 @@ test:  ## Run tests for the device
 		--cov=SDPSubarray \
 		--cov-report=term \
 		--cov-config=./setup.cfg \
-		-vv \
+		-vv -s \
 		--gherkin-terminal-reporter \
 		.
 

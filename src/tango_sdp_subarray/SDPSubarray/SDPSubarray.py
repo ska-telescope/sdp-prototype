@@ -539,8 +539,11 @@ class SDPSubarray(Device):
         LOG.debug('Configured scans: %s', configured_scans)
 
         if channel_link_map['scanID'] not in configured_scans:
-            LOG.error('Unknown scanID. Channel Link map scan ')
-            raise RuntimeError('Unknown Scan ID')
+            message = "Unknown scanID {} in channel link map. " \
+                      "Allowed values {}"\
+                .format(channel_link_map['scanID'], configured_scans)
+            LOG.error(message)
+            raise RuntimeError(message)
 
         # Build channel map for each host.
         self._update_host_recv_map(channels)

@@ -33,7 +33,7 @@ init_logger(level='DEBUG')
 def read_channel_link_map():
     """Mock replacement of SDPSubarray device _read_channel_link_map method."""
     channel_link_map_path = join(dirname(__file__), 'data',
-                                 'channel-links.json')
+                                 'channel-links-empty.json')
     with open(channel_link_map_path, 'r') as file:
         channel_link_map = file.read()
     # TODO(BMo) Validate against agreed schema
@@ -258,9 +258,9 @@ def receive_addresses_attribute_ok(subarray_device):
     :param subarray_device: An SDPSubarray device.
     """
     receive_addresses = subarray_device.receiveAddresses
-    # print(json.dumps(json.loads(receive_addresses), indent=2))
+    print(json.dumps(json.loads(receive_addresses), indent=2))
     expected_output_file = join(dirname(__file__), 'data',
-                                'receiveAddresses.json')
+                                'receiveAddresses-empty.json')
     with open(expected_output_file, 'r') as file:
         expected = json.loads(file.read())
     receive_addresses = json.loads(receive_addresses)
