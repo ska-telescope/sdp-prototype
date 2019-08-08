@@ -47,6 +47,7 @@ subarray_device_tests:
     - cucumber.json
     - $CI_JOB_NAME.coverage
     expire_in: 1 week
+    when: always
 
 # Test the SDPMaster device.
 master_device_tests:
