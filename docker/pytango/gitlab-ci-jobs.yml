@@ -1,65 +1,64 @@
 # Common variables
-.pytango-9.3.0:buster-slim vars:
+.pytango vars:
   variables:
     MODULE_PATH: docker/pytango/9.3.0/buster-slim
     IMAGE_NAME: pytango-9.3.0
     IMAGE_TAG: buster-slim
 
-# Over-ride general behaviour of .when-docker-image-changes for module path
-.when-pytango-changes:
+# Build on changes in branch
+.when pytango changes:
   only:
     changes:
-      - docker/pytango/9.3.0/buster-slim/**/*
-  except:
+      - docker/pytango/**/*
     refs:
-      - master
-
-.when-pytango-master:
-  only:
-    refs:
-      - master
+      - branches
 
 # -----------------------------------------------------------------------------
 # Build
 # -----------------------------------------------------------------------------
-build pytango-9.3.0:buster-slim when changes:
+build pytango when changes:
   extends:
+    - .pytango vars
     - .docker-two-stage-build
-    - .pytango-9.3.0:buster-slim vars
-    - .when-pytango-changes
+    - .when pytango changes
 
-build pytango-9.3.0:buster-slim when master:
+build pytango when master:
   extends:
+    - .pytango vars
     - .docker-two-stage-build
-    - .pytango-9.3.0:buster-slim vars
-    - .when-pytango-master
+    - .when master
 
 # -----------------------------------------------------------------------------
 # Test build
 # -----------------------------------------------------------------------------
-.pytango-9.3.0:buster-slim tests:
+.pytango tests:
   extends:
+    - .pytango vars
     - .docker-test-image
-    - .pytango-9.3.0:buster-slim vars
   script:
     - python3 -c "import tango; assert tango.__version__ == '9.3.0'"
 
-test pytango-9.3.0:buster-slim when changes:
+test build when changes:
   extends:
-    - .pytango-9.3.0:buster-slim tests
-    - .when-pytango-changes
+    - .pytango tests
+    - .when pytango changes
 
-test pytango-9.3.0:buster-slim when master:
+test build when master:
   extends:
-    - .pytango-9.3.0:buster-slim tests
-    - .when-pytango-master
+    - .pytango tests
+    - .when master
 
 # -----------------------------------------------------------------------------
 # Publish / push
 # -----------------------------------------------------------------------------
-publish pytango-9.3.0:buster-slim when master:
+publish pytango when master:
   extends:
     - .docker-push-image
-    - .pytango-9.3.0:buster-slim vars
-    - .when-pytango-master
+    - .pytango vars
+    - .when master
 
+publish pytango when manual:
+  extends:
+    - .docker-push-image
+    - .pytango vars
+  when: manual

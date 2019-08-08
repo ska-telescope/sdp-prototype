@@ -1,33 +1,25 @@
 # Common variables
-.pytango-orca-dev:0.3.0-buster-slim vars:
+.pytango-orca-dev  vars:
   variables:
     MODULE_PATH: docker/pytango-orca-dev/0.3.0-buster-slim
     IMAGE_NAME: pytango-orca-dev
     IMAGE_TAG: 0.3.0-buster-slim
 
-# Over-ride general behaviour of .when-docker-image-changes for module path
-.when pytango-orca-dev changes:
-  extends: .when-docker-image-changes
+# Build on changes in branch
+.when pytango changes:
   only:
     changes:
-      - docker/pytango-orca-dev/**/*
-
-# Over-ride general behaviour of .when-docker-image-tagged for module path
-.when pytango-orca-dev tagged:
-  extends:
-    - .when-docker-image-tagged
-  only:
-    variables:
-      - $CI_COMMIT_TAG =~ /^(pytango-orca-dev==)(\d+!)?(\d+)(\.\d+)+([\.\-\_])?((a(lpha)?|b(eta)?|c|r(c|ev)?|pre(view)?)\d*)?(\.?(post|dev)\d*)?(-buster-slim)/
-
+      - docker/pytango/**/*
+    refs:
+      - branches
 
 # -----------------------------------------------------------------------------
 # Build
 # -----------------------------------------------------------------------------
-build pytango-orca-dev:0.3.0-buster-slim when changes:
+build pytango-orca-dev:VERSION-buster-slim when changes:
   extends:
     - .docker-two-stage-build
-    - .pytango-orca-dev:0.3.0-buster-slim vars
+    - .pytango-orca-dev vars
     - .when pytango-orca-dev changes
 
 #build pytango-orca-dev:0.3.0-buster-slim when tagged:

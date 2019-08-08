@@ -81,11 +81,11 @@ test ska-sdp-subarray package:
 #test tangods_sdp_subarray image:
 #  stage: test-build
 #  image: nexus.engageska-portugal.pt/sdp-prototype/tangods_sdp_subarray:0.2.2-buster-slim-test
-# TODO(BMo) Test the docker image (as a service?)
+# TODO(BMo) Test the docker image
 
 
 # -----------------------------------------------------------------------------
-# Publish Stage - only if tagged
+# Publish Stage
 # -----------------------------------------------------------------------------
 
 
@@ -120,7 +120,7 @@ push tangods_sdp_subarray image:
 #    variables:
 #      - $CI_COMMIT_TAG =~ /^(tangods_sdp_subarray==)((\d+!)?(\d+)(\.\d+)+([\.\-\_])?((a(lpha)?|b(eta)?|c|r(c|ev)?|pre(view)?)\d*)?(\.?(post|dev)\d*)?|devel|dev|latest|stable|unstable)(.*)/
 
-publish ska-sdp-subarray package:
+publish ska-sdp-subarray python package:
   stage: publish
   tags:
     - docker
