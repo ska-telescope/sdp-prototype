@@ -164,6 +164,7 @@ vis_receive_asan_test:
 build_docs:
   stage: test
   when: manual
+  image: nexus.engageska-portugal.pt/sdp-prototype/pytango_ska_dev:latest
   before_script:
     - pip install -r docs/requirements.txt
   script:
