@@ -47,10 +47,10 @@ endif()
 # -----------------------------------------------------------------------------
 
 option(COVERALLS "Turn on coveralls support" OFF)
-option(COVERALLS_UPLOAD "Upload the generated coveralls json" ON)
+option(COVERALLS_UPLOAD "Upload the generated coveralls json" OFF)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
-	${PROJECT_SOURCE_DIR}/coveralls-cmake/cmake)
+	${PROJECT_SOURCE_DIR}/extern/coveralls-cmake/cmake)
 
 if (COVERALLS)
 	include(Coveralls)
@@ -61,7 +61,7 @@ if (COVERALLS)
 	coveralls_setup(
         "${recv_SRC}"
         ${COVERALLS_UPLOAD}
-        "${PROJECT_SOURCE_DIR}/coveralls-cmake/cmake")
+        "${PROJECT_SOURCE_DIR}/extern/coveralls-cmake/cmake")
 endif()
 
 # -----------------------------------------------------------------------------
