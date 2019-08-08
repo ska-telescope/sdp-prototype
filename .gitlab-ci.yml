@@ -204,7 +204,7 @@ coverage_report:
   tags: [docker]
   image: python:latest
   script:
-    - 'curl -X POST -H "Content-Type: application/json"
+    - 'curl -X POST -H "Content-Type: application/json" --fail
          -H "Authorization: Basic $JIRA_AUTH"
          --data @cucumber.json
          https://jira.skatelescope.org/rest/raven/1.0/import/execution/cucumber'
