@@ -1,0 +1,528 @@
+#
+# Note: Tests can be run locally with
+#   gitlab-runner exec <executor, eg. docker> <job name>
+#
+stages:
+  - lint
+  - test_code
+  - build
+  - test_build
+  - post_test
+  - publish
+  - pages
+
+# ============================================================================
+# Run linters & tests
+# ============================================================================
+
+.tango_tests:
+  stage: test
+  tags: [docker]
+  image: nexus.engageska-portugal.pt/sdp-prototype/pytango_ska_dev:latest
+
+# Test the SDPSubarray device
+subarray_device_tests:
+  extends: .tango_tests
+  services:
+    - name: quay.io/coreos/etcd:latest
+      alias: etcd
+      command:
+        - /usr/local/bin/etcd
+        - "--advertise-client-urls=http://0.0.0.0:2379"
+        - "--listen-client-urls=http://0.0.0.0:2379"
+        - "--initial-advertise-peer-urls=http://0.0.0.0:2380"
+        - "--listen-peer-urls=http://0.0.0.0:2380"
+        - "--initial-cluster=default=http://0.0.0.0:2380"
+  variables:
+    SDP_CONFIG_HOST: etcd
+  before_script:
+    - pip install ska-sdp-config
+  script:
+    - ./scripts/run_test.sh
+        src/tango_sdp_subarray
+        --gherkin-terminal-reporter
+        -vv
+        --cucumber-json=cucumber.json
+    - mv .coverage $CI_JOB_NAME.coverage
+  artifacts:
+    paths:
+    - cucumber.json
+    - $CI_JOB_NAME.coverage
+    expire_in: 1 week
+
+# Test the SDPMaster device.
+master_device_tests:
+  extends: .tango_tests
+  script:
+    - ./scripts/run_test.sh src/tango_sdp_master
+    - mv .coverage $CI_JOB_NAME.coverage
+  artifacts:
+    paths:
+      - $CI_JOB_NAME.coverage
+
+# Test the configuration database
+config_db_tests:
+    stage: test
+    image: nexus.engageska-portugal.pt/sdp-prototype/pytango_ska_dev:latest
+    services:
+      - name: quay.io/coreos/etcd:latest
+        alias: etcd
+        command:
+          - /usr/local/bin/etcd
+          - "--advertise-client-urls=http://0.0.0.0:2379"
+          - "--listen-client-urls=http://0.0.0.0:2379"
+          - "--initial-advertise-peer-urls=http://0.0.0.0:2380"
+          - "--listen-peer-urls=http://0.0.0.0:2380"
+          - "--initial-cluster=default=http://0.0.0.0:2380"
+    variables:
+      SDP_TEST_HOST: etcd
+    script:
+      - pipenv install etcd3-py
+      - ./scripts/run_test.sh src/config_db
+      - mv .coverage $CI_JOB_NAME.coverage
+    artifacts:
+      paths:
+        - $CI_JOB_NAME.coverage
+
+# Test the visibility receiver: Run CPP Check and Coveralls
+vis_receive_test:
+  stage: test
+  image: ubuntu:bionic
+  before_script:
+    - apt update
+    - apt install -y --no-install-recommends cppcheck=1.82-1
+    - apt install -y cmake curl
+    - apt install -y python3-pip
+    - apt install -y git
+    - pip3 install urllib3==1.21.1
+    - pip3 install cpp-coveralls==0.4.2
+    - pip3 install pyyaml
+  script:
+    - ./scripts/run_c_tests.sh TEST
+    - mv src/vis_receive/build/coveralls.json ./coveralls.json
+  artifacts:
+    paths: [./coveralls.json]
+    expire_in: 1 day
+
+# Test the visibility receiver: Run Undefinded Behaviour Sanitizer
+vis_receive_usan_test:
+  stage: test
+  image: ubuntu:bionic
+  before_script:
+    - apt update
+    - apt install -y --no-install-recommends cppcheck=1.82-1
+    - apt install -y cmake curl
+    - apt install -y python3-pip
+    - apt install -y git
+    - pip3 install urllib3==1.21.1
+    - pip3 install cpp-coveralls==0.4.2
+    - pip3 install pyyaml
+  script:
+    - ./scripts/run_c_tests.sh USAN
+  only:
+    changes:
+      - src/vis_receive/**/*
+
+# Test the visibility receiver: Run Thread Sanitizer
+vis_receive_tsan_test:
+  stage: test
+  image: ubuntu:bionic
+  before_script:
+    - apt update
+    - apt install -y --no-install-recommends cppcheck=1.82-1
+    - apt install -y cmake curl
+    - apt install -y python3-pip
+    - apt install -y git
+    - pip3 install urllib3==1.21.1
+    - pip3 install cpp-coveralls==0.4.2
+    - pip3 install pyyaml
+  script:
+    - ./scripts/run_c_tests.sh TSAN
+  only:
+    changes:
+      - src/vis_receive/**/*
+
+# Test the visibility receiver: Run the Address Sanitizer
+vis_receive_asan_test:
+  stage: test
+  image: ubuntu:bionic
+  before_script:
+    - apt update
+    - apt install -y --no-install-recommends cppcheck=1.82-1
+    - apt install -y cmake curl
+    - apt install -y python3-pip
+    - apt install -y git
+    - pip3 install urllib3==1.21.1
+    - pip3 install cpp-coveralls==0.4.2
+    - pip3 install pyyaml
+  script:
+    - ./scripts/run_c_tests.sh ASAN
+  only:
+    changes:
+      - src/vis_receive/**/*
+
+# Build documentation
+build_docs:
+  stage: test
+  when: manual
+  before_script:
+    - pip install -r docs/requirements.txt
+  script:
+    - make -C docs html
+  artifacts:
+    paths: [docs/build/html/]
+    expire_in: 1 day
+
+# ============================================================================
+# Generate test reports
+# ============================================================================
+
+# Generate combined test coverage report
+coverage_report:
+  stage: post_test
+  tags: [docker]
+  image: python:latest
+  variables:
+    TRAVIS_JOB_ID: $CI_PIPELINE_IID
+  before_script:
+    - pip install coverage
+    - pip install python-coveralls
+  script:
+    - coverage combine *.coverage
+    - coverage report
+    - coverage html
+  coverage: '/TOTAL\s+\d+\s+\d+\s+\d+\s+\d+\s+(\d+\%)/'
+#  after_script:
+#    - coveralls --merge=coveralls.json
+  artifacts:
+    paths: [htmlcov/]
+    expire_in: 1 week
+
+# Create an XRay test execution report
+# (currently only for the SDPSubarray tests)
+.xray_report:
+  stage: post_test
+  tags: [docker]
+  image: python:latest
+  script:
+    - 'curl -X POST -H "Content-Type: application/json"
+         -H "Authorization: Basic $JIRA_AUTH"
+         --data @cucumber.json
+         https://jira.skatelescope.org/rest/raven/1.0/import/execution/cucumber'
+  retry: 2 # In case JIRA doesn't work first time
+
+# Update XRay links in JIRA automatically This is done only for the master
+xray_report:
+  extends: .xray_report
+  only: [master]
+
+# Update XRay links in JIRA. Manual job that can be executed for branches
+xray_report-manual:
+  extends: .xray_report
+  when: manual
+  except: [master]
+
+# ============================================================================
+# Build python packages
+# ============================================================================
+
+.build_python:
+  stage: build
+  image: nexus.engageska-portugal.pt/sdp-prototype/pytango_ska_dev:latest
+  tags:
+    - docker
+    - engageska
+  artifacts:
+    paths:
+      - ./$BUILD_PATH/dist/
+
+.build_python_dev:
+  extends: .build_python
+  script:
+    - cd $BUILD_PATH
+    - python setup.py egg_info -b+$CI_COMMIT_SHORT_SHA sdist bdist_wheel
+
+.build_python_release:
+  extends: .build_python
+  script:
+    - cd $BUILD_PATH
+    - python setup.py sdist bdist_wheel
+
+build:ska-sdp-master_dev:
+  extends: .build_python_dev
+  variables:
+    BUILD_PATH: src/tango_sdp_master
+  except: [master]
+
+build:ska-sdp-master:
+  extends: .build_python_release
+  variables:
+    BUILD_PATH: src/tango_sdp_master
+  only: [master]
+
+build:ska-sdp-subarray_dev:
+  extends: .build_python_dev
+  variables:
+    BUILD_PATH: src/tango_sdp_subarray
+  except: [master]
+
+build:ska-sdp-subarray:
+  extends: .build_python_release
+  variables:
+    BUILD_PATH: src/tango_sdp_subarray
+  only: [master]
+
+# ============================================================================
+# Publish python packages
+# ============================================================================
+
+.publish_python:
+  stage: publish
+  image: nexus.engageska-portugal.pt/sdp-prototype/pytango_ska_dev:latest
+  variables:
+    TWINE_USERNAME: $TWINE_USERNAME
+    TWINE_PASSWORD: $TWINE_PASSWORD
+  tags:
+    - docker
+    - engageska
+  before_script:
+    - pip install twine
+
+.publish_python_dev:
+  extends: .publish_python
+  when: manual
+  except: [master]
+  script:
+    - cd $BUILD_PATH
+    - twine upload --repository-url $PYPI_REPOSITORY_URL dist/* || true
+
+.publish_python_relase:
+  extends: .publish_python
+  only: [master]
+  script:
+    - cd $BUILD_PATH
+    - twine upload --repository-url $PYPI_REPOSITORY_URL dist/* || true
+    - twine upload --skip-existing -u $PYPI_USER -p $PYPI_PASS dist/* || true
+
+publish:ska-sdp-master-manual:
+  extends: .publish_python_dev
+  variables:
+    BUILD_PATH: src/tango_sdp_master
+
+publish:ska-sdp-master:
+  extends: .publish_python_relase
+  variables:
+    BUILD_PATH: src/tango_sdp_master
+
+publish:ska-sdp-subarray-manual:
+  extends: .publish_python_dev
+  variables:
+    BUILD_PATH: src/tango_sdp_subarray
+
+publish:ska-sdp-subarray:
+  extends: .publish_python_relase
+  variables:
+    BUILD_PATH: src/tango_sdp_subarray
+
+# ============================================================================
+# Build docker images
+# Note(1): There are some optimisations to make to this section but that will
+#          also involve updating the Dockerfiles to be more friendly to caching
+#          https://blog.callr.tech/building-docker-images-with-gitlab-ci-best-practices/
+#          https://andrewlock.net/caching-docker-layers-on-serverless-build-hosts-with-multi-stage-builds---target,-and---cache-from/
+# Note(2): Images should be rebuild for each CI job which should be fast
+#          due to build caching. This allows avoid us having to have
+#          dependencies between build stages.
+#          This also means that a each a PR should only update 1
+#          image in a build dependency chain.
+# ============================================================================
+
+# *** Common settings for building docker images
+.build_docker:
+  stage: build
+  variables:
+    DOCKER_REGISTRY_HOST: $DOCKER_REGISTRY_HOST
+    DOCKER_REGISTRY_USER: $CI_PROJECT_NAME
+    GIT_VERSION: ${CI_COMMIT_SHA:0:8}
+  tags:
+    - docker
+    - engageska
+  image: docker:stable
+  services:
+    - docker:dind
+  before_script:
+    - apk add make git
+    - docker login -u $DOCKER_REGISTRY_USERNAME -p $DOCKER_REGISTRY_PASSWORD $DOCKER_REGISTRY_HOST
+  script:
+    - cd $BUILD_PATH
+    - make DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME pull
+    - make DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME build
+    - make DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push
+  retry: 2
+
+# Build and push the `pytango_build` image.
+build:pytango_build:
+  extends: .build_docker
+  when: manual
+  variables:
+    BUILD_PATH: docker/pytango_build
+
+# Build and push the `pytango_base` image.
+build:pytango_base:
+  extends: .build_docker
+  when: manual
+  variables:
+    BUILD_PATH: docker/pytango_base
+
+# Build and push the `pytango_ska_base` image.
+build:pytango_ska_base:
+  extends: .build_docker
+  when: manual
+  variables:
+    BUILD_PATH: docker/pytango_ska_base
+
+# Build and push the `pytango_ska_dev` image.
+build:pytango_ska_dev:
+  extends: .build_docker
+  when: manual
+  variables:
+    BUILD_PATH: docker/pytango_ska_dev
+
+# Build and push `tangods_sdp_master` image.
+build:tangods_sdp_master:
+  extends: .build_docker
+  variables:
+    BUILD_PATH: src/tango_sdp_master
+
+# Build and push `tangods_sdp_subarray` image.
+build:tangods_sdp_subarray:
+  extends: .build_docker
+  variables:
+    BUILD_PATH: src/tango_sdp_subarray
+
+## Build and push `sdp_vis_receive` image.
+#build:sdp_vis_receive:
+#  extends: .build_docker
+#  variables:
+#    BUILD_PATH: src/vis_receive
+
+# ============================================================================
+# Push versioned docker images
+# ============================================================================
+
+.push_docker:
+  stage: publish
+  variables:
+    DOCKER_REGISTRY_HOST: $DOCKER_REGISTRY_HOST
+    DOCKER_REGISTRY_USER: $CI_PROJECT_NAME
+    GIT_VERSION: ${CI_COMMIT_SHA:0:8}
+  tags:
+    - docker
+    - engageska
+  when: manual
+  image: docker:stable
+  services:
+    - docker:dind
+  before_script:
+    - apk add make git
+    - docker login -u $DOCKER_REGISTRY_USERNAME -p $DOCKER_REGISTRY_PASSWORD $DOCKER_REGISTRY_HOST
+  script:
+    - cd $BUILD_PATH
+    - make DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME pull_default
+    - make DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push_version
+    - make DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push_latest
+  retry: 2
+
+push:pytango_build:
+  extends: .push_docker
+  dependencies:
+    - build:pytango_build
+  variables:
+    BUILD_PATH: docker/pytango_build
+
+push:pytango_base:
+  extends: .push_docker
+  dependencies:
+    - build:pytango_base
+  variables:
+    BUILD_PATH: docker/pytango_base
+
+push:pytango_ska_base:
+  extends: .push_docker
+  dependencies:
+    - build:pytango_ska_base
+  variables:
+    BUILD_PATH: docker/pytango_ska_base
+
+push:pytango_ska_dev:
+  extends: .push_docker
+  dependencies:
+    - build:pytango_ska_dev
+  variables:
+    BUILD_PATH: docker/pytango_ska_dev
+
+.tangods_master_template:
+  extends: .push_docker
+  when: always
+  dependencies:
+    - build:tangods_sdp_master
+  variables:
+    BUILD_PATH: src/tango_sdp_master
+
+#.sdp_vis_receive_template:
+#  extends: .push_docker
+#  when: always
+#  dependencies:
+#    - build:sdp_vis_receive
+#  variables:
+#    BUILD_PATH: src/vis_receive
+
+#push:sdp_vis_receive:
+#  extends: .sdp_vis_receive_template
+#  only: [master]
+#
+#push:sdp_vis_receive-manual:
+#  extends: .sdp_vis_receive_template
+#  when: manual
+#  except: [master]
+
+push:tangods_sdp_master:
+  extends: .tangods_master_template
+  only: [master]
+
+push:tangods_sdp_master-manual:
+  extends: .tangods_master_template
+  when: manual
+  except: [master]
+
+.tangods_subarray_template:
+  extends: .push_docker
+  when: always
+  dependencies:
+    - build:tangods_sdp_subarray
+  variables:
+    BUILD_PATH: src/tango_sdp_subarray
+
+push:tangods_sdp_subarray:
+  extends: .tangods_subarray_template
+  only: [master]
+
+push:tangods_sdp_subarray-manual:
+  extends: .tangods_subarray_template
+  when: manual
+  except: [master]
+
+# ============================================================================
+# Publish reports
+# ============================================================================
+
+# Generate gitlab pages.
+pages:
+  stage: pages
+  tags: [docker]
+  only: [master]
+  image: python:latest
+  script:
+    - cp -R htmlcov public
+  artifacts:
+    paths: [public/]
