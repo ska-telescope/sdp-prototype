@@ -155,7 +155,7 @@ create deployments automatically depending on workflow parameters. It
 even watches the processing block parameters and will add deployments
 while it is running. Let's try this out:
 
-    $ sdpcfg edit /pb/realtime-20190807-0000
+    $ sdpcfg edit /pb/realtime-[...]
 
 At this point an editor should open with the processing block
 information formatted as YAML. Change the "`parameters: {}`" line to
@@ -200,7 +200,7 @@ have to ask as follows:
 
 Finally, let us remove the processing block from the configuration:
 
-    $ sdpcfg delete /pb/realtime-20190807-0000
+    $ sdpcfg delete /pb/realtime-[...]
 
 If you re-run the commands from the last section you will notice that
 this correctly causes all changes to the cluster configuration to be
