@@ -163,7 +163,7 @@ vis_receive_asan_test:
 # Build documentation
 build_docs:
   stage: test
-  when: manual
+  image: nexus.engageska-portugal.pt/sdp-prototype/pytango_ska_dev:latest
   before_script:
     - pip install -r docs/requirements.txt
   script:
@@ -229,6 +229,7 @@ xray_report-manual:
 
 .build_python:
   stage: build
+  dependencies: []
   image: nexus.engageska-portugal.pt/sdp-prototype/pytango_ska_dev:latest
   tags:
     - docker
@@ -239,6 +240,7 @@ xray_report-manual:
 
 .build_python_dev:
   extends: .build_python
+  dependencies: []
   script:
     - cd $BUILD_PATH
     - python setup.py egg_info -b+$CI_COMMIT_SHORT_SHA sdist bdist_wheel
@@ -297,7 +299,7 @@ build:ska-sdp-subarray:
     - cd $BUILD_PATH
     - twine upload --repository-url $PYPI_REPOSITORY_URL dist/* || true
 
-.publish_python_relase:
+.publish_python_release:
   extends: .publish_python
   only: [master]
   script:
@@ -307,21 +309,29 @@ build:ska-sdp-subarray:
 
 publish:ska-sdp-master-manual:
   extends: .publish_python_dev
+  dependencies:
+    - build:ska-sdp-master_dev
   variables:
     BUILD_PATH: src/tango_sdp_master
 
 publish:ska-sdp-master:
-  extends: .publish_python_relase
+  extends: .publish_python_release
+  dependencies:
+    - build:ska-sdp-master
   variables:
     BUILD_PATH: src/tango_sdp_master
 
 publish:ska-sdp-subarray-manual:
   extends: .publish_python_dev
+  dependencies:
+    - build:ska-sdp-subarray_dev
   variables:
     BUILD_PATH: src/tango_sdp_subarray
 
 publish:ska-sdp-subarray:
-  extends: .publish_python_relase
+  extends: .publish_python_release
+  dependencies:
+    - build:ska-sdp-subarray
   variables:
     BUILD_PATH: src/tango_sdp_subarray
 
@@ -341,6 +351,7 @@ publish:ska-sdp-subarray:
 # *** Common settings for building docker images
 .build_docker:
   stage: build
+  dependencies: []
   variables:
     DOCKER_REGISTRY_HOST: $DOCKER_REGISTRY_HOST
     DOCKER_REGISTRY_USER: $CI_PROJECT_NAME
@@ -413,6 +424,7 @@ build:tangods_sdp_subarray:
 
 .push_docker:
   stage: publish
+  dependencies: []
   variables:
     DOCKER_REGISTRY_HOST: $DOCKER_REGISTRY_HOST
     DOCKER_REGISTRY_USER: $CI_PROJECT_NAME
@@ -523,6 +535,7 @@ pages:
   tags: [docker]
   only: [master]
   image: python:latest
+  dependencies: [coverage_report]
   script:
     - cp -R htmlcov public
   artifacts:

@@ -29,9 +29,6 @@ spec:
         resources:
           {{- toYaml . | nindent 10 }}
         {{- end }}
-      dnsPolicy: ClusterFirst
-      restartPolicy: Always
-      schedulerName: default-scheduler
-      securityContext: {}
-      serviceAccountName: {{ include "sdp-prototype.fullname" . }}
-      terminationGracePeriodSeconds: 30
+{{- if index .Values "workflow" "testdeploy" "direct-kube-deploy" }}
+      serviceAccountName: {{ include "sdp-prototype.fullname" . }}-testdeploy
+{{- end }}
