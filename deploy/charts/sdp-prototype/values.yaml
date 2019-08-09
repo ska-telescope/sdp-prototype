@@ -40,7 +40,6 @@ tango-base:
     enabled: false
   logviewer:
     enabled: false
->>>>>>> 577c6f632bcf321ffca37f29dfad7cd7304d38e4
 
 nameOverride: ""
 fullnameOverride: ""
