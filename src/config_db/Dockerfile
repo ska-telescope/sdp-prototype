@@ -1,5 +1,8 @@
 
-FROM skaorca/pytango_ska_dev:latest
+FROM python:3.6
+
+RUN pip install pipenv
 
 COPY . config_db
-RUN pipenv install -r config_db/requirements.txt config_db && rm -rf config_db
+COPY Pipfile .
+RUN pipenv install config_db

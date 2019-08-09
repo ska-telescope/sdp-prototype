@@ -301,9 +301,10 @@ class Transaction():
         Check whether this client is owner of the processing block.
 
         :param pb_id: Processing block ID to look up
-        :returns: Whether processing block is owned
+        :returns: Whether processing block exists and is claimed
         """
-        return self.get_processing_block_owner(pb_id) == self._cfg.owner
+        return self.get_processing_block(pb_id) is not None and \
+            self.get_processing_block_owner(pb_id) == self._cfg.owner
 
     def take_processing_block(self, pb_id: str, lease):
         """
