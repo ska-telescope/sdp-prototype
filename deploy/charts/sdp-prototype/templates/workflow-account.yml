@@ -1,7 +1,8 @@
+{{- if index .Values "workflow" "testdeploy" "direct-kube-deploy" }}
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: {{ include "sdp-prototype.fullname" . }}
+  name: {{ include "sdp-prototype.fullname" . }}-testdeploy
   namespace: {{ .Release.Namespace }}
   labels:
 {{ include "sdp-prototype.labels" . | indent 4 }}
@@ -9,7 +10,7 @@ metadata:
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRole
 metadata:
-  name: {{ include "sdp-prototype.fullname" . }}
+  name: {{ include "sdp-prototype.fullname" . }}-testdeploy
   namespace: {{ .Release.Namespace }}
   labels:
 {{ include "sdp-prototype.labels" . | indent 4 }}
@@ -46,15 +47,16 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
 metadata:
-  name: {{ include "sdp-prototype.fullname" . }}
+  name: {{ include "sdp-prototype.fullname" . }}-testdeploy
   namespace: {{ .Release.Namespace }}
   labels:
 {{ include "sdp-prototype.labels" . | indent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: {{ include "sdp-prototype.fullname" . }}
+  name: {{ include "sdp-prototype.fullname" . }}-testdeploy
 subjects:
 - kind: ServiceAccount
   namespace: {{ .Release.Namespace }}
-  name: {{ include "sdp-prototype.fullname" . }}
+  name: {{ include "sdp-prototype.fullname" . }}-testdeploy
+{{- end }}

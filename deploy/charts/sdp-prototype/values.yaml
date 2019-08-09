@@ -1,4 +1,5 @@
 
+# Helm deployment controller
 helm_deploy:
   container: pw410/helm-deploy
   version: 0.0.5
@@ -8,22 +9,37 @@ helm_deploy:
     ref: master
     refresh: 300
 
+# Configuration database
 etcd:
   version: "3.3"
   replicas: 1
 
+# Workflow deployments
 workflow:
   testdeploy:
     container: pw410/workflow-testdeploy
     version: 0.0.7
     replicas: 2
     resources: {}
+    # Allow direct Kubernetes deployments? Should be deprecated.
+    direct-kube-deploy: false
   testdask:
     container: pw410/workflow-testdask
     version: 0.0.1
     replicas: 2
     resources: {}
     imagePullPolicy: Never
+
+# Parameters for sub-chart
+tango-base:
+  tangotest:
+    enabled: false
+  itango:
+    enabled: true
+  jive:
+    enabled: false
+  logviewer:
+    enabled: false
 
 nameOverride: ""
 fullnameOverride: ""
