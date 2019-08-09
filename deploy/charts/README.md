@@ -201,7 +201,7 @@ have to ask as follows:
 Finally, let us remove the processing block from the configuration:
 
     $ sdpcfg delete /pb/realtime-[...]
-
+p
 If you re-run the commands from the last section you will notice that
 this correctly causes all changes to the cluster configuration to be
 undone as well.
@@ -228,16 +228,18 @@ You should be able to query the SDP Tango devices:
 This allows direction interaction with the devices, such as querying and
 and changing attributes and issuing commands:
 
-    In [2]: d.obsState
-    Out[2]: <obsState.IDLE: 0>
-    In [3]: d.state()
-    Out[3]: tango._tango.DevState.OFF
-    In [4]: d.adminMode = 'ONLINE'
+    In [2]: d = DeviceProxy('mid_sdp/elt/subarray_1')
+
+    In [3]: d.obsState
+    Out[3]: <obsState.IDLE: 0>
+    In [4]: d.state()
+    Out[4]: tango._tango.DevState.OFF
+    In [5]: d.adminMode = 'ONLINE'
     
-    In [5]: d.AssignResources('')
+    In [6]: d.AssignResources('')
     
-    In [6]: d.state()
-    Out[6]: tango._tango.DevState.ON
-    In [7]: d.obsState
-    Out[7]: <obsState.IDLE: 0>
+    In [7]: d.state()
+    Out[7]: tango._tango.DevState.ON
+    In [8]: d.obsState
+    Out[8]: <obsState.IDLE: 0>
 
