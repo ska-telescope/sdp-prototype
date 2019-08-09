@@ -18,6 +18,12 @@ workflow:
     version: 0.0.7
     replicas: 2
     resources: {}
+  testdask:
+    container: pw410/workflow-testdask
+    version: 0.0.1
+    replicas: 2
+    resources: {}
+    imagePullPolicy: Never
 
 nameOverride: ""
 fullnameOverride: ""
