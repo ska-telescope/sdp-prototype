@@ -30,9 +30,3 @@ spec:
         resources:
           {{- toYaml . | nindent 10 }}
         {{- end }}
-      dnsPolicy: ClusterFirst
-      restartPolicy: Always
-      schedulerName: default-scheduler
-      securityContext: {}
-      serviceAccountName: {{ include "sdp-prototype.fullname" . }}
-      terminationGracePeriodSeconds: 30
