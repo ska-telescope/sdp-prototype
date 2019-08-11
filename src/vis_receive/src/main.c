@@ -7,6 +7,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <getopt.h>
 
 #include "receiver.h"
 #ifdef WITH_MS
@@ -29,34 +30,70 @@ static char* construct_output_root(const char* output_location,
 
 int main(int argc, char** argv)
 {
-    int num_streams = 1, num_threads_recv = 1, num_threads_write = 8;
+    int num_streams = 2, num_threads_recv = 1, num_threads_write = 8;
     int num_times_in_buffer = 8, num_buffers = 2, num_channels_per_file = 1;
     int write_autocorr = 0, write_crosscorr = 1;
-    int num_stations = 3;
+    int num_stations = 3, opt;
+    unsigned int timeout = 5;
     unsigned short int port_start = 41000;
     double ref_freq_hz = 100e6;
     double freq_inc_hz = 100e3;
+    const int num_cores = sysconf(_SC_NPROCESSORS_ONLN);
     const char* output_location = 0;
     const char* output_name = "ingest";
     const char* oms_file_name = "test_ms";
     oskar_MeasurementSet* ms;
-    if (argc > 1) num_streams = atoi(argv[1]);
-    if (argc > 2) num_threads_recv = atoi(argv[2]);
-    if (argc > 3) num_threads_write = atoi(argv[3]);
-    if (argc > 4) num_times_in_buffer = atoi(argv[4]);
-    if (argc > 5) num_buffers = atoi(argv[5]);
-    if (argc > 6) port_start  = (unsigned short int) atoi(argv[6]);
-    if (argc > 7) num_channels_per_file = atoi(argv[7]);
-    if (argc > 8) output_location = argv[8];
-    if (num_streams < 1) num_streams = 1;
-    if (num_threads_recv < 1) num_threads_recv = 1;
-    if (num_threads_write < 1) num_threads_write = 1;
-    if (num_times_in_buffer < 1) num_times_in_buffer = 1;
-    if (num_buffers < 1) num_buffers = 1;
-    if (num_channels_per_file < 1) num_channels_per_file = 1;
+    while(1){
+      static struct option lopts[] =
+        {
+          {"streams", required_argument, 0, 's'},
+          {"recv", required_argument, 0, 'r'},
+          {"write", required_argument, 0, 'w'},
+          {"buffers", required_argument, 0, 'b'},
+          {"buffertimes", required_argument, 0, 't'},
+          {"port", required_argument, 0, 'p'},
+          {"channels", required_argument, 0, 'c'},
+          {"directory", required_argument, 0, 'd'},
+          {"expire", required_argument, 0, 'e'}
+        };
+      int opt_index = 0;
+      opt = getopt_long(argc, argv, "s:r:w:b:t:p:c:d:e:", lopts, &opt_index);
+      if(opt == -1)
+        break;
+      switch(opt){
+        case 's':
+          num_streams = (atoi(optarg) < 1) ? 1 : atoi(optarg);
+          break;
+        case 'r':
+          num_threads_recv = (atoi(optarg) < 1) ? 1 : atoi(optarg);
+          break;
+        case 'w':
+          num_threads_write = (atoi(optarg) < 1) ? 1 : atoi(optarg);
+          break;
+        case 'b':
+          num_times_in_buffer = (atoi(optarg) < 1) ? 1 : atoi(optarg);
+          break;
+        case 't':
+          num_buffers = (atoi(optarg) < 1) ? 1 : atoi(optarg);
+          break;
+        case 'p':
+          port_start = atoi(optarg);
+          break;
+        case 'c':
+          num_channels_per_file = (atoi(optarg) < 1) ? 1 : atoi(optarg);
+          break;
+        case 'd':
+          output_location = optarg;
+          break;
+        case 'e':
+          timeout = atoi(optarg);
+          break;
+        default:
+          abort();
+      }
+    }
     printf("Running RECV_VERSION %s\n", RECV_VERSION);
     char* output_root = construct_output_root(output_location, output_name);
-    const int num_cores = sysconf(_SC_NPROCESSORS_ONLN);
     if (num_threads_recv > num_cores - 2) num_threads_recv = num_cores - 2;
 #ifdef __linux__
     cpu_set_t my_set;
@@ -86,7 +123,7 @@ int main(int argc, char** argv)
     /* Create the empty Measurement Set if it doesn't exist. */
     if(ms == 0)
     {
-        printf("MS file: %s doesn't exist, creating one instead.\n", oms_file_name);
+        printf("MS file: error opening %s, doesn't exist or unreadable, creating one instead.\n", oms_file_name);
         ms = create_ms(oms_file_name, "C test main",
                 num_stations, 1, 4, ref_freq_hz, freq_inc_hz,
                 write_autocorr, write_crosscorr);
