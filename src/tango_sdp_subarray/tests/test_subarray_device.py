@@ -1,9 +1,9 @@
 # coding: utf-8
 """SDP Subarray device tests."""
-# pylint: disable=redefined-outer-name,fixme
+# pylint: disable=redefined-outer-name
+# pylint: disable=protected-access
 
 import json
-import logging
 from os.path import dirname, join
 from unittest.mock import MagicMock
 
@@ -14,7 +14,7 @@ import pytest
 from pytest_bdd import (given, parsers, scenarios, then, when)
 
 from SDPSubarray import AdminMode, HealthState, ObsState, SDPSubarray, \
-    init_logger
+    init_logger, LOG
 
 # -----------------------------------------------------------------------------
 # Scenarios : Specify what we want the software to do
@@ -24,20 +24,22 @@ from SDPSubarray import AdminMode, HealthState, ObsState, SDPSubarray, \
 scenarios('./1_XR-11.feature')
 
 
+# Initialise logger for cases where the python logging output is useful
+# to debug tests.
 init_logger(level='DEBUG')
 
 
 # -----------------------------------------------------------------------------
 # Mock functions
 # -----------------------------------------------------------------------------
-def read_channel_link_map():
+
+def mock_read_cbf_output_link():
     """Mock replacement of SDPSubarray device _read_channel_link_map method."""
-    channel_link_map_path = join(dirname(__file__), 'data',
-                                 'channel-links-empty.json')
-    with open(channel_link_map_path, 'r') as file:
+    filename = 'attr_cbfOutputLink-simple.json'
+    path = join(dirname(__file__), 'data', filename)
+    with open(path, 'r') as file:
         channel_link_map = file.read()
-    # TODO(BMo) Validate against agreed schema
-    logging.debug('Mock channel link map loaded!')
+    LOG.debug('Mocking read of cbfOutputLinks attribute! (%s)', filename)
     return channel_link_map
 
 
@@ -52,11 +54,11 @@ def subarray_device(tango_context):
 
     :param tango_context: fixture providing a TangoTestContext
     """
-    # Mock the SDPSubarray._read_channel_link_map() method so that
+    # Mock the SDPSubarray._read_cbf_out_link() method so that
     # it does not need to connect to a CSP subarray device.
-    # pylint: disable=protected-access
-    SDPSubarray._read_channel_link_map = MagicMock(
-        side_effect=read_channel_link_map)
+    SDPSubarray.set_feature_toggle_default('cbf_output_link', True)
+    SDPSubarray._read_cbf_output_link = MagicMock(
+        side_effect=mock_read_cbf_output_link)
     return tango_context.device
 
 
@@ -131,12 +133,10 @@ def command_configure(subarray_device):
 
     :param subarray_device: An SDPSubarray device.
     """
-    pb_config_path = join(dirname(__file__), 'data',
-                          'pb_config.json')
+    pb_config_path = join(dirname(__file__), 'data', 'command_Configure.json')
     with open(pb_config_path, 'r') as file:
         pb_config = file.read()
 
-    # subarray_device.toggleReadCbfOutLink = False
     subarray_device.Configure(pb_config)
 
 
@@ -148,7 +148,7 @@ def command_configure_scan(subarray_device):
     # """
 
     scan_config_path = join(dirname(__file__), 'data',
-                            'scan_config.json')
+                            'command_ConfigureScan.json')
     with open(scan_config_path, 'r') as file:
         scan_config = file.read()
     subarray_device.ConfigureScan(scan_config)
@@ -258,10 +258,21 @@ def receive_addresses_attribute_ok(subarray_device):
     :param subarray_device: An SDPSubarray device.
     """
     receive_addresses = subarray_device.receiveAddresses
-    print(json.dumps(json.loads(receive_addresses), indent=2))
-    expected_output_file = join(dirname(__file__), 'data',
-                                'receiveAddresses-empty.json')
+    # print(json.dumps(json.loads(receive_addresses), indent=2))
+
+    data_path = join(dirname(__file__), 'data')
+
+    if not SDPSubarray.is_feature_active('cbf_output_link'):
+        expected_output_file = join(
+            data_path, 'attr_receiveAddresses-cbfOutputLink-disabled.json')
+    elif isinstance(SDPSubarray._read_cbf_output_link, MagicMock):
+        expected_output_file = join(
+            data_path, 'attr_receiveAddresses-simple.json')
+    else:
+        pytest.fail('Not yet able to test using a mock CSP Subarray device')
+
     with open(expected_output_file, 'r') as file:
         expected = json.loads(file.read())
+
     receive_addresses = json.loads(receive_addresses)
     assert receive_addresses == expected
