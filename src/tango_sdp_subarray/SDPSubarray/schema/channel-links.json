@@ -1,0 +1,112 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title":"cbfOutLink Schema",
+  "description":"CSP - SDP channel link map schema",
+  "version":"0.1.0",
+
+  "type": "object",
+  "required": ["scanID", "fsp"],
+
+  "properties":
+  {
+    "scanID":
+    {
+      "description": "Scan identifier",
+      "type": "integer"
+    },
+
+    "fsp":
+    {
+      "type": "array",
+      "items":
+      {
+        "description": "CSP fsp configuration",
+        "$ref": "#/definitions/fsp"
+      }
+    }
+
+  },
+
+  "definitions":
+  {
+
+    "fsp":
+    {
+      "type": "object",
+      "required": ["fspID", "frequencySliceID", "cbfOutLink"],
+      "properties":
+      {
+          "fspID":
+          {
+            "description": "CSP FSP identifier",
+            "type": "integer"
+          },
+
+          "frequencySliceID":
+          {
+            "description": "Frequency slice identifier",
+            "type": "integer"
+          },
+
+          "cbfOutLink":
+          {
+            "type": "array",
+            "items":
+            {
+              "description": "CBF output link specification",
+              "$ref": "#/definitions/fsp_cbfOutLink"
+            }
+          }
+      }
+    },
+
+    "fsp_cbfOutLink":
+    {
+      "type": "object",
+      "required": ["linkID", "channel"],
+      "properties":
+      {
+        "linkID":
+        {
+          "description": "Link identifier",
+          "type": "integer"
+        },
+
+        "channel":
+        {
+          "description": "Array of channels produced by the FSP",
+          "$ref": "#/definitions/fsp_channels"
+        }
+      }
+    },
+
+    "fsp_channels":
+    {
+      "type": "array",
+      "items":
+      {
+        "description": "Channel configuration.",
+        "type": "object",
+        "required": ["bw", "cf", "chanID"],
+        "properties":
+        {
+          "bw":
+          {
+            "description": "Channel bandwidth, in Hz",
+            "type": "number"
+          },
+          "cf":
+          {
+            "description": "Channel center frequency, in Hz",
+            "type": "number"
+          },
+          "chanID":
+          {
+            "description": "Channel ID",
+            "type": "integer"
+          }
+        }
+      }
+    }
+  }
+}
