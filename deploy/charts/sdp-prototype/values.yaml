@@ -28,7 +28,7 @@ workflow:
     version: 0.0.1
     replicas: 2
     resources: {}
-    imagePullPolicy: Never
+    imagePullPolicy: IfNotPresent
 
 # Parameters for sub-chart
 tango-base:

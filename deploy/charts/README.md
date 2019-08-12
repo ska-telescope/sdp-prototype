@@ -201,7 +201,7 @@ have to ask as follows:
 Finally, let us remove the processing block from the configuration:
 
     $ sdpcfg delete /pb/realtime-[...]
-p
+
 If you re-run the commands from the last section you will notice that
 this correctly causes all changes to the cluster configuration to be
 undone as well.
