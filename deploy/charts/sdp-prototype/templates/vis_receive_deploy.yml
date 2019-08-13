@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-vis-receive
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ .Release.Name }}-vis-receive
+    chart: {{ template "sdp-prototype.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-vis-receive
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-vis-receive
+        chart: {{ template "sdp-prototype.chart" . }}
+        release: {{ .Release.Name }}
+        heritage: {{ .Release.Service }}
+    spec:
+      containers:
+      - env:
+#        - name: TANGO_HOST
+#          value: databaseds-tango-base-{{ .Release.Name }}:10000
+        image: skaorca/vis_receive:latest
+        imagePullPolicy: Always
+        name: master
+        resources: {}
