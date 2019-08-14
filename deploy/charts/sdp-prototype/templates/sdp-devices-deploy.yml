@@ -34,13 +34,9 @@ spec:
         heritage: {{ .Release.Service }}
     spec:
       volumes:
-        - name: logs
-          persistentVolumeClaim:
-            claimName: {{ .Release.Name }}
         - name: configuration
           configMap:
-            name: {{ .Release.Name }}
-
+            name: sdp-devices-configuration-json-{{ .Release.Name }}
       initContainers:
         - name: dsconfig
           image: "{{ .Values.dsconfig.image.registry }}/{{ .Values.dsconfig.image.image }}:{{ .Values.dsconfig.image.tag }}"
@@ -59,7 +55,6 @@ spec:
             - name: configuration
               mountPath: data
               readOnly: true
-
       containers:
       - name: sdp-master
         env:
@@ -67,9 +62,6 @@ spec:
           value: databaseds-tango-base-{{ .Release.Name }}:10000
         image: skaorca/tangods_sdp_master:latest
         imagePullPolicy: Always
-        volumeMounts:
-          - name: logs
-            mountPath: /logs
         resources: {}
       - name: sdp-subarray
         env:
@@ -77,9 +69,5 @@ spec:
             value: databaseds-tango-base-{{ .Release.Name }}:10000
         image: skaorca/tangods_sdp_subarray:latest
         imagePullPolicy: Always
-        volumeMounts:
-          - name: configuration
-            mountPath: data
-            readOnly: true
         resources: {}
 
