@@ -14,6 +14,14 @@ etcd:
   version: "3.3"
   replicas: 1
 
+# ds config
+dsconfig:
+  image:
+    registry: nexus.engageska-portugal.pt/ska-docker
+    image: tango-dsconfig
+    tag: latest
+    pullPolicy: IfNotPresent
+
 # Workflow deployments
 workflow:
   testdeploy:
