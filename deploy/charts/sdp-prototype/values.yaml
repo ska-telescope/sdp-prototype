@@ -29,12 +29,6 @@ workflow:
     replicas: 2
     resources: {}
     imagePullPolicy: IfNotPresent
-  visreceive:
-    container: skaorca/vis_receive
-    version: latest
-    replicas: 1
-    resources: {}
-    imagePullPolicy: IfNotPresent
 
 # Parameters for sub-chart
 tango-base:
