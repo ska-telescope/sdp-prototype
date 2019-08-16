@@ -1,16 +1,13 @@
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: batch/v1
+kind: Job
 metadata:
   name: {{ include "vis-receive.fullname" . }}-deploy
   namespace: {{ .Release.Namespace }}
   labels:
 {{ include "vis-receive.labels" . | indent 4 }}
 spec:
-  replicas: {{ .Values.workflow.visreceive.replicas }}
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: {{ include "vis-receive.name" . }}
-      app.kubernetes.io/instance: {{ .Release.Name }}
+  completions: 1
+  replicas: {{ .Values.visreceive.replicas }}
   template:
     metadata:
       labels:
@@ -18,13 +15,12 @@ spec:
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
       containers:
-      - image: {{ .Values.workflow.visreceive.container }}:{{ .Values.workflow.visreceive.version }}
-        imagePullPolicy: {{ .Values.workflow.visreceive.imagePullPolicy }}
+      - image: {{ .Values.visreceive.container }}:{{ .Values.visreceive.version }}
+        imagePullPolicy: {{ .Values.visreceive.imagePullPolicy }}
         name: {{ .Chart.Name }}
-        env:
-        - name: SDP_CONFIG_HOST
-          value: {{ include "vis-receive.fullname" . }}
-        {{- with .Values.workflow.visreceive.resources }}
+        {{- with .Values.visreceive.resources }}
         resources:
           {{- toYaml . | nindent 10 }}
         {{- end }}
+      restartPolicy: Never
+  backoffLimit: 4
