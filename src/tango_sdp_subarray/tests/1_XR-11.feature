@@ -107,3 +107,4 @@ Feature: SDPSubarray device
 		When obsState is SCANNING
 		And I call EndScan
 		Then obsState should be READY
+		Then The receiveAddresses attribute returns an empty JSON object
