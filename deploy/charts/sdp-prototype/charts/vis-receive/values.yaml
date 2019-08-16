@@ -8,7 +8,6 @@ visreceive:
   replicas: 1
   resources: {}
   imagePullPolicy: IfNotPresent
-  config-host: sdp-prototype-etcd-nodeport.default.svc
 
 nameOverride: ""
 fullnameOverride: ""
