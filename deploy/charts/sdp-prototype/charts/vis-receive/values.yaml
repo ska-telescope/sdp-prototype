@@ -35,7 +35,7 @@ etcd:
 # Workflow deployments
 workflow:
   visreceive:
-    container: skaorca/vis_receive
+    container: skaorca/workflow-test-vis-receive:build
     version: latest
     replicas: 1
     resources: {}
