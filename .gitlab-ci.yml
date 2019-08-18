@@ -34,7 +34,7 @@ subarray_device_tests:
   variables:
     SDP_CONFIG_HOST: etcd
     TOGGLE_CONFIG_DB: 1
-    TOGGLE_CBF_OUTPUT_LINK: 0
+    TOGGLE_CBF_OUTPUT_LINK: 1
   before_script:
     - pip install ska-sdp-config
   script:
