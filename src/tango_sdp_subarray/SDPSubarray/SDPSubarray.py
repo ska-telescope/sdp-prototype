@@ -180,6 +180,8 @@ class SDPSubarray(Device):
 
         if self.is_feature_active(FeatureToggle.CBF_OUTPUT_LINK):
             LOG.debug('CBF output link enabled!')
+        else:
+            LOG.debug('CBF output link disabled!')
 
         # The subarray device is initialised in the OFF state.
         self.set_state(DevState.OFF)
