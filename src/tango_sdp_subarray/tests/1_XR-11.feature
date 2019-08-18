@@ -70,6 +70,7 @@ Feature: SDPSubarray device
 		| FAULT       |
 
 
+
 	# Tests successful execution of the SDP Subarray Configure command.
 	@XTP-123 @XTP-118 @Configure @successful
 	Scenario: Configure command successful

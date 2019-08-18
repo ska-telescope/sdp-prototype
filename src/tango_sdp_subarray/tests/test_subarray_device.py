@@ -2,6 +2,7 @@
 """SDP Subarray device tests."""
 # pylint: disable=redefined-outer-name
 # pylint: disable=protected-access
+# pylint: disable=fixme
 
 import json
 from os.path import dirname, join
@@ -15,6 +16,12 @@ from pytest_bdd import (given, parsers, scenarios, then, when)
 
 from SDPSubarray import AdminMode, HealthState, ObsState, SDPSubarray, \
     init_logger, LOG
+
+try:
+    from ska_sdp_config.config import Config as ConfigDbClient
+except ImportError:
+    ConfigDbClient = None
+
 
 # -----------------------------------------------------------------------------
 # Scenarios : Specify what we want the software to do
@@ -149,6 +156,18 @@ def command_configure(subarray_device):
     # print(json.dumps(config_dict, indent=2))
     # print('-------')
     subarray_device.Configure(json.dumps(config_dict))
+
+    # Check that the PB was registered into the db
+    # FIXME(BMo) move this to its own 'then' test step
+    if ConfigDbClient and SDPSubarray.is_feature_active('config_db'):
+        config_db_client = ConfigDbClient()
+        for txn in config_db_client.txn():
+            pb_ids = txn.list_processing_blocks()
+            print()
+            print('--------------')
+            print(pb_ids)
+            print('--------------')
+            assert config_dict['configure']['id'] in pb_ids
 
 
 @when('I call Configure with invalid JSON')

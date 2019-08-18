@@ -160,15 +160,14 @@ class SDPSubarray(Device):
         self._config = dict()  # Dictionary of JSON passed to Configure
         self._cbf_output_link = dict()  # CSP channel - FSP link map
         self._receive_hosts = dict()  # Receive hosts - channels map
-        if ConfigDbClient is None or \
-                self.is_feature_active('config_db') is False:
+        if ConfigDbClient and self.is_feature_active('config_db'):
+            self._config_db_client = ConfigDbClient()  # SDP Config db client.
+        else:
             LOG.warning('Not writing to SDP Config DB (%s)',
                         ("package 'ska_sdp_config' package not found"
                          if ConfigDbClient is None
                          else 'disabled by feature toggle'))
             self._config_db_client = None
-        else:
-            self._config_db_client = ConfigDbClient()  # SDP Config db client.
 
         # The subarray device is initialised in the OFF state.
         self.set_state(DevState.OFF)
@@ -309,12 +308,15 @@ class SDPSubarray(Device):
         # Add the PB configuration to the SDP config database.
         if self._config_db_client and self.is_feature_active('config_db'):
             for txn in self._config_db_client.txn():
+                LOG.info('Creating Processing Block id: %s (SBI Id: %s)',
+                         config.get('id'), config.get('sbiId'))
                 txn.create_processing_block(
-                    ProcessingBlock(pb_id=config['id'],
-                                    sbi_id=None,
-                                    workflow=config['workflow'],
-                                    parameters=config['parameters'],
-                                    scan_parameters=config['scanParameters']))
+                    ProcessingBlock(
+                        pb_id=config.get('id'),
+                        sbi_id=None,
+                        workflow=config.get('workflow'),
+                        parameters=config.get('parameters'),
+                        scan_parameters=config.get('scanParameters')))
         else:
             LOG.warning('Not writing to SDP Config DB (%s)',
                         ("package 'ska_sdp_config' package not found"
