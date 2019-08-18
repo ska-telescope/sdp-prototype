@@ -1,5 +1,5 @@
-SDP Subarray Device(s)
-======================
+SDP Subarray Device
+===================
 
 
 Introduction
@@ -12,6 +12,10 @@ can be found on `SKA Confluence
 The SDPSubarray device is published as a Docker image, available at:
 https://hub.docker.com/r/skaorca/tangods_sdp_master
 
+The SDPSubarray device respects to environment variables as feature toggles:
+
+- TOGGLE_CONFIG_DB
+- TOGGLE_CBF_OUTPUT_LINK
 
 
 API

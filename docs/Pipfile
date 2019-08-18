@@ -18,4 +18,4 @@ sphinx-rtd-theme = {version = "*",index = "nexus"}
 sphinxcontrib-websupport = {version = "*",index = "nexus"}
 
 [requires]
-python_version = "3.6"
+python_version = "3.7"

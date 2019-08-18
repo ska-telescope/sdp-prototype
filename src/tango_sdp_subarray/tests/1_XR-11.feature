@@ -6,7 +6,7 @@ Feature: SDPSubarray device
 
 
 	@XTP-119 @XTP-118
-	Scenario: Device Startup
+	Scenario: Device Startup @startup @successful
 		Given I have an OFFLINE SDPSubarray device
 		When the device is initialised
 		Then State should be OFF

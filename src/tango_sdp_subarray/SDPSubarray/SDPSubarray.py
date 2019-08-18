@@ -18,8 +18,6 @@ from tango import AttrWriteType, AttributeProxy, ConnectionFailed, Database, \
 from tango.server import Device, DeviceMeta, attribute, command, \
     device_property, run
 
-from SDPSubarray.release import VERSION
-
 try:
     from ska_sdp_config.config import Config as ConfigDbClient
     from ska_sdp_config.entity import ProcessingBlock
@@ -95,7 +93,7 @@ class SDPSubarray(Device):
     Version = device_property(
         dtype='str',
         doc='Version of the SDP Subarray device',
-        default_value=VERSION
+        default_value='0.0.0'
     )
 
     # ----------
@@ -145,8 +143,8 @@ class SDPSubarray(Device):
         Device.init_device(self)
 
         self.set_state(DevState.INIT)
-        LOG.debug('Initialising SDP Subarray: %s (version: %s)',
-                  self.get_name(), self._tango_properties['Version'])
+        LOG.info('Initialising SDP Subarray: %s (version: %s)',
+                 self.get_name(), self._tango_properties['Version'])
 
         # Set default values for feature toggles.
         self.set_feature_toggle_default('config_db', True)
@@ -174,13 +172,15 @@ class SDPSubarray(Device):
 
         # The subarray device is initialised in the OFF state.
         self.set_state(DevState.OFF)
+        LOG.info('SDP Subarray initialised: %s (version: %s)',
+                 self.get_name(), self._tango_properties['Version'])
 
     def always_executed_hook(self):
         """Run for on each call."""
 
     def delete_device(self):
         """Device destructor."""
-        LOG.debug('Deleting subarray device: %s', self.get_name())
+        LOG.info('Deleting subarray device: %s', self.get_name())
 
     # ------------------
     # Attributes methods
