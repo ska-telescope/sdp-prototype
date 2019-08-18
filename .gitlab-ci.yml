@@ -33,7 +33,7 @@ subarray_device_tests:
         - "--initial-cluster=default=http://0.0.0.0:2380"
   variables:
     SDP_CONFIG_HOST: etcd
-    TOGGLE_CONFIG_DB: 0
+    TOGGLE_CONFIG_DB: 1
     TOGGLE_CBF_OUTPUT_LINK: 0
   before_script:
     - pip install ska-sdp-config
@@ -42,6 +42,7 @@ subarray_device_tests:
         src/tango_sdp_subarray
         --gherkin-terminal-reporter
         -vv
+        -s
         --cucumber-json=cucumber.json
     - mv .coverage $CI_JOB_NAME.coverage
   artifacts:
