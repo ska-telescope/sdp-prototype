@@ -33,6 +33,8 @@ subarray_device_tests:
         - "--initial-cluster=default=http://0.0.0.0:2380"
   variables:
     SDP_CONFIG_HOST: etcd
+    TOGGLE_CONFIG_DB: 0
+    TOGGLE_CBF_OUTPUT_LINK: 0
   before_script:
     - pip install ska-sdp-config
   script:
