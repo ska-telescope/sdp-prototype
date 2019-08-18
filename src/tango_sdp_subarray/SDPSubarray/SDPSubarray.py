@@ -65,6 +65,14 @@ class ObsState(IntEnum):
     FAULT = 6  #: Fault state
 
 
+@unique
+class FeatureToggle(IntEnum):
+    """Feature Toggles."""
+
+    CONFIG_DB = 1  #: Enable / Disable the Config DB
+    CBF_OUTPUT_LINK = 2  #: Enable / Disable use of of the CBF OUTPUT LINK
+
+
 # class SDPSubarray(SKASubarray):
 class SDPSubarray(Device):
     """SDP Subarray device class.
@@ -147,8 +155,8 @@ class SDPSubarray(Device):
                  self.get_name(), self._tango_properties['Version'])
 
         # Set default values for feature toggles.
-        self.set_feature_toggle_default('config_db', True)
-        self.set_feature_toggle_default('cbf_out_link', True)
+        self.set_feature_toggle_default(FeatureToggle.CONFIG_DB, True)
+        self.set_feature_toggle_default(FeatureToggle.CBF_OUTPUT_LINK, True)
 
         # Initialise attributes
         self._obs_state = ObsState.IDLE
@@ -160,8 +168,9 @@ class SDPSubarray(Device):
         self._config = dict()  # Dictionary of JSON passed to Configure
         self._cbf_output_link = dict()  # CSP channel - FSP link map
         self._receive_hosts = dict()  # Receive hosts - channels map
-        if ConfigDbClient and self.is_feature_active('config_db'):
+        if ConfigDbClient and self.is_feature_active(FeatureToggle.CONFIG_DB):
             self._config_db_client = ConfigDbClient()  # SDP Config db client.
+            LOG.debug('Config Db enabled!')
         else:
             LOG.warning('Not writing to SDP Config DB (%s)',
                         ("package 'ska_sdp_config' package not found"
@@ -306,7 +315,8 @@ class SDPSubarray(Device):
         self._config = config  # Store local copy of the configuration dict
 
         # Add the PB configuration to the SDP config database.
-        if self._config_db_client and self.is_feature_active('config_db'):
+        if self._config_db_client and \
+                self.is_feature_active(FeatureToggle.CONFIG_DB):
             for txn in self._config_db_client.txn():
                 LOG.info('Creating Processing Block id: %s (SBI Id: %s)',
                          config.get('id'), config.get('sbiId'))
@@ -393,7 +403,7 @@ class SDPSubarray(Device):
         self._set_obs_state(ObsState.IDLE)
 
     # -------------------------------------
-    # Private methods
+    # Public methods
     # -------------------------------------
 
     @staticmethod
@@ -404,19 +414,50 @@ class SDPSubarray(Device):
         :param default: Default for the feature toggle (if it is not set)
 
         """
-        env_var = str('toggle_' + feature_name).upper()
+        env_var = SDPSubarray._get_feature_toggle_env_var(feature_name)
         if not os.environ.get(env_var):
+            LOG.debug('Setting default for toggle: %s = %s', env_var, default)
             os.environ[env_var] = str(int(default))
+        # else:
+        #     LOG.debug('Unable to set default for toggle: %s '
+        #               '(already set to: %s)', env_var,
+        #               ('<True: 1>' if os.environ.get(env_var)
+        #                else '<False: 0>'))
 
     @staticmethod
     def is_feature_active(feature_name):
         """Check if feature is active.
 
         :param feature_name: Name of the feature.
+        :returns: True if the feature toggle is enabled.
 
         """
-        env_var_value = os.environ.get(str('toggle_' + feature_name).upper())
+        env_var = SDPSubarray._get_feature_toggle_env_var(feature_name)
+        env_var_value = os.environ.get(env_var)
         return env_var_value == '1'
+
+    # -------------------------------------
+    # Private methods
+    # -------------------------------------
+
+    @staticmethod
+    def _get_feature_toggle_env_var(feature_name):
+        """Get the env var associated with the feature toggle.
+
+        :param feature_name: Name of the feature.
+        :returns: environment variable name for feature toggle.
+
+        """
+        if isinstance(feature_name, FeatureToggle):
+            feature_name = feature_name.name
+        env_var = str('toggle_' + feature_name).upper()
+        allowed = ['TOGGLE_' + toggle.name for toggle in FeatureToggle]
+        if env_var not in allowed:
+            message = 'Unknown feature toggle: {} (allowed: {})'\
+                .format(env_var, allowed)
+            LOG.error(message)
+            raise ValueError(message)
+        return env_var
 
     def _set_obs_state(self, value):
         """Set the obsState and issue a change event."""
@@ -619,7 +660,7 @@ class SDPSubarray(Device):
         configured_scans = [int(scan_id) for scan_id in
                             self._config['scanParameters'].keys()]
 
-        if self.is_feature_active('cbf_output_link'):
+        if self.is_feature_active(FeatureToggle.CBF_OUTPUT_LINK):
             cbf_out_link_str = self._read_cbf_output_link()
         else:
             LOG.warning("CBF Output Link feature disabled! Generating mock "

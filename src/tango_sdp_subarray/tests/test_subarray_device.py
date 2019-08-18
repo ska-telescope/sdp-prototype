@@ -66,8 +66,6 @@ def subarray_device(tango_context, admin_mode_value: str):
     """
     # Mock the SDPSubarray._read_cbf_out_link() method so that
     # it does not need to connect to a CSP subarray device.
-    SDPSubarray.set_feature_toggle_default('config_db', False)
-    SDPSubarray.set_feature_toggle_default('cbf_output_link', True)
     SDPSubarray._read_cbf_output_link = MagicMock(
         side_effect=mock_read_cbf_output_link)
     tango_context.device.Init()
