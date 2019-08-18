@@ -157,18 +157,6 @@ def command_configure(subarray_device):
     # print('-------')
     subarray_device.Configure(json.dumps(config_dict))
 
-    # Check that the PB was registered into the db
-    # FIXME(BMo) move this to its own 'then' test step
-    if ConfigDbClient and SDPSubarray.is_feature_active('config_db'):
-        config_db_client = ConfigDbClient()
-        for txn in config_db_client.txn():
-            pb_ids = txn.list_processing_blocks()
-            print()
-            print('--------------')
-            print(pb_ids)
-            print('--------------')
-            assert config_dict['configure']['id'] in pb_ids
-
 
 @when('I call Configure with invalid JSON')
 def command_configure_invalid_json(subarray_device):
@@ -290,6 +278,27 @@ def dev_failed_error_raised_by_release_resources(subarray_device):
     """
     with pytest.raises(tango.DevFailed):
         subarray_device.ReleaseResources()
+
+
+@then('The configured Processing Block should be in the Config Db')
+def check_config_db():
+    """Check that the config db has the configured PB.
+
+    Only run this step if the config db is enabled.
+    """
+    if ConfigDbClient and SDPSubarray.is_feature_active('config_db'):
+        filename = join(dirname(__file__), 'data', 'command_Configure.json')
+        with open(filename, 'r') as file:
+            config_json = file.read()
+        config_dict = json.loads(config_json)
+        config_db_client = ConfigDbClient()
+        for txn in config_db_client.txn():
+            pb_ids = txn.list_processing_blocks()
+            # print()
+            # print('--------------')
+            # print(pb_ids)
+            # print('--------------')
+            assert config_dict['configure']['id'] in pb_ids
 
 
 @then('The receiveAddresses attribute returns expected values')

@@ -78,6 +78,7 @@ Feature: SDPSubarray device
 		When obsState is IDLE
 		And I call Configure
 		Then obsState should be READY
+		And The configured Processing Block should be in the Config Db
 		And The receiveAddresses attribute returns expected values
 
 
