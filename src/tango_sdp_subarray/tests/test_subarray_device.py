@@ -39,8 +39,10 @@ def mock_read_cbf_output_link():
     path = join(dirname(__file__), 'data', filename)
     with open(path, 'r') as file:
         channel_link_map = file.read()
+    channel_link_map_dict = json.loads(channel_link_map)
+    channel_link_map_dict['scanID'] = 4
     LOG.debug('Mocking read of cbfOutputLinks attribute! (%s)', filename)
-    return channel_link_map
+    return json.dumps(channel_link_map_dict)
 
 
 # -----------------------------------------------------------------------------
@@ -48,17 +50,21 @@ def mock_read_cbf_output_link():
 # -----------------------------------------------------------------------------
 
 
-@given('I have a SDPSubarray device')
-def subarray_device(tango_context):
+@given(parsers.parse('I have an {admin_mode_value} SDPSubarray device'))
+def subarray_device(tango_context, admin_mode_value: str):
     """Get a SDPSubarray device object
 
     :param tango_context: fixture providing a TangoTestContext
+    :param admin_mode_value: adminMode value the device is created with
     """
     # Mock the SDPSubarray._read_cbf_out_link() method so that
     # it does not need to connect to a CSP subarray device.
+    SDPSubarray.set_feature_toggle_default('config_db', False)
     SDPSubarray.set_feature_toggle_default('cbf_output_link', True)
     SDPSubarray._read_cbf_output_link = MagicMock(
         side_effect=mock_read_cbf_output_link)
+    tango_context.device.Init()
+    tango_context.device.adminMode = AdminMode[admin_mode_value]
     return tango_context.device
 
 
@@ -133,11 +139,26 @@ def command_configure(subarray_device):
 
     :param subarray_device: An SDPSubarray device.
     """
-    pb_config_path = join(dirname(__file__), 'data', 'command_Configure.json')
-    with open(pb_config_path, 'r') as file:
-        pb_config = file.read()
+    filename = join(dirname(__file__), 'data', 'command_Configure.json')
+    with open(filename, 'r') as file:
+        config_json = file.read()
+    config_dict = json.loads(config_json)
+    config_dict['configure']['scanParameters'] = {}
+    config_dict['configure']['scanParameters']["4"] = {}
+    # print('-------')
+    # print(json.dumps(config_dict, indent=2))
+    # print('-------')
+    subarray_device.Configure(json.dumps(config_dict))
 
-    subarray_device.Configure(pb_config)
+
+@when('I call Configure with invalid JSON')
+def command_configure_invalid_json(subarray_device):
+    """Call the Configure command with invalid json.
+
+    :param subarray_device: An SDPSubarray device.
+    """
+    with pytest.raises(tango.DevFailed):
+        subarray_device.Configure('{}')
 
 
 @when('I call ConfigureScan')
@@ -206,7 +227,8 @@ def admin_mode_equals(subarray_device, expected):
     :param subarray_device: An SDPSubarray device.
     :param expected: The expected adminMode.
     """
-    assert subarray_device.adminMode == AdminMode[expected]
+    assert subarray_device.adminMode == AdminMode[expected], \
+        "actual != expected"
 
 
 @then('adminMode should be ONLINE or MAINTENANCE')
@@ -261,6 +283,7 @@ def receive_addresses_attribute_ok(subarray_device):
     # print(json.dumps(json.loads(receive_addresses), indent=2))
     data_path = join(dirname(__file__), 'data')
 
+    expected_output_file = ''
     if not SDPSubarray.is_feature_active('cbf_output_link'):
         expected_output_file = join(
             data_path, 'attr_receiveAddresses-cbfOutputLink-disabled.json')
@@ -273,11 +296,12 @@ def receive_addresses_attribute_ok(subarray_device):
     with open(expected_output_file, 'r') as file:
         expected = json.loads(file.read())
 
+    expected['scanId'] = 4
     receive_addresses = json.loads(receive_addresses)
     assert receive_addresses == expected
 
 
-@then('The receiveAddresses attribute returns an empty JSON object')
+@then('The receiveAddresses attribute should return an empty JSON object')
 def receive_addresses_empty(subarray_device):
     """Check that receiveAddresss attribute returns an empty JSON object.
 

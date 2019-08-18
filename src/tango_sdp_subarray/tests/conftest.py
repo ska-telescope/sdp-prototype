@@ -1,7 +1,7 @@
 # coding: utf-8
 """Pytest plugins."""
 
-from unittest.mock import Mock
+from unittest.mock import MagicMock
 
 import pytest
 from tango.test_context import DeviceTestContext
@@ -16,6 +16,7 @@ def tango_context():
     device_name = 'mid_sdp/elt/subarray_1'
     tango_context = DeviceTestContext(SDPSubarray, device_name=device_name)
     tango_context.start()
-    SDPSubarray.get_name = Mock(side_effect=tango_context.get_device_access)
+    SDPSubarray.get_name = MagicMock(
+        side_effect=tango_context.get_device_access)
     yield tango_context
     tango_context.stop()

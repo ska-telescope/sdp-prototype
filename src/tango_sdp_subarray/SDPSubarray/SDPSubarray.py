@@ -104,25 +104,36 @@ class SDPSubarray(Device):
     # ----------
 
     obsState = attribute(
+        label='Obs State',
         dtype=ObsState,
-        access=AttrWriteType.READ_WRITE
+        access=AttrWriteType.READ_WRITE,
+        doc='The device obs state.',
+        polling_period=1000
     )
 
     adminMode = attribute(
+        label='Admin mode',
         dtype=AdminMode,
-        access=AttrWriteType.READ_WRITE
+        access=AttrWriteType.READ_WRITE,
+        doc='The device admin mode.',
+        polling_period=1000
     )
 
     healthState = attribute(
+        label='Health state',
         dtype=HealthState,
         access=AttrWriteType.READ,
-        doc='The health state reported for this device.'
+        doc='The health state reported for this device.',
+        polling_period=1000
     )
 
     receiveAddresses = attribute(
+        label='Receive Addresses',
         dtype=str,
         access=AttrWriteType.READ,
-        doc="Visibility receive workflow host addresses given as a JSON object"
+        doc="Host addresses for the visibility receive workflow given as a "
+            "JSON object.",
+        polling_period=1000
     )
 
     # ---------------
@@ -139,8 +150,8 @@ class SDPSubarray(Device):
                   self.get_name(), self._tango_properties['Version'])
 
         # Set default values for feature toggles.
-        # self.set_feature_toggle_default('config_db', False)
-        # self.set_feature_toggle_default('cbf_out_link', False)
+        self.set_feature_toggle_default('config_db', True)
+        self.set_feature_toggle_default('cbf_out_link', True)
 
         # Initialise attributes
         self._obs_state = ObsState.IDLE
@@ -210,14 +221,16 @@ class SDPSubarray(Device):
 
         :param obs_state: An observation state enum value.
         """
-        self._obs_state = obs_state
+        self._set_obs_state(obs_state)
 
     def write_adminMode(self, admin_mode):
         """Set the adminMode attribute.
 
         :param admin_mode: An admin mode enum value.
         """
+        LOG.debug('Setting adminMode to: %s', repr(AdminMode(admin_mode)))
         self._admin_mode = admin_mode
+        self.push_change_event("adminMode", self._obs_state)
 
     # --------
     # Commands
@@ -237,8 +250,12 @@ class SDPSubarray(Device):
         :param config: Resource specification (currently ignored)
         """
         # pylint: disable=unused-argument
+        LOG.info('Assigning resources...')
         self._require_obs_state([ObsState.IDLE])
+        self._require_admin_mode([AdminMode.OFFLINE, AdminMode.NOT_FITTED],
+                                 invert=True)
         self.set_state(DevState.ON)
+        LOG.info('Resources assigned successfully.')
 
     @command(dtype_in=str, doc_in='Resource configuration JSON object')
     def ReleaseResources(self, config=''):
@@ -253,8 +270,12 @@ class SDPSubarray(Device):
         :param config: Resource specification (currently ignored).
         """
         # pylint: disable=unused-argument
+        LOG.info('Releasing resources...')
         self._require_obs_state([ObsState.IDLE])
+        self._require_admin_mode([AdminMode.OFFLINE, AdminMode.NOT_FITTED],
+                                 invert=True)
         self.set_state(DevState.OFF)
+        LOG.info('Resources released successfully')
 
     @command(dtype_in=str, doc_in='Processing Block configuration JSON object')
     def Configure(self, json_config):
@@ -280,6 +301,7 @@ class SDPSubarray(Device):
 
         # Validate the Configure JSON object argument
         config = self._validate_configure_json(json_config)
+        LOG.debug('Configure JSON successfully validated.')
         config = config.get('configure')
         self._config = config  # Store local copy of the configuration dict
 
@@ -394,12 +416,14 @@ class SDPSubarray(Device):
 
     def _set_obs_state(self, value):
         """Set the obsState and issue a change event."""
-        LOG.debug('Setting obsState to: %s', value)
+        LOG.debug('Setting obsState to: %s', repr(ObsState(value)))
+        # LOG.debug('Setting obsState to: %s', value)
         self._obs_state = value
         self.push_change_event("obsState", self._obs_state)
+        if value == ObsState.FAULT:
+            self.set_state(DevState.FAULT)
 
-    @staticmethod
-    def _validate_configure_json(json_str):
+    def _validate_configure_json(self, json_str):
         """Validate the JSON object passed to the Configure command.
 
         :param json_str: JSON object string
@@ -410,6 +434,7 @@ class SDPSubarray(Device):
             config = json.loads(json_str)
         except json.JSONDecodeError as error:
             LOG.error('Unable to load JSON PB configuration: %s', error.msg)
+            self._set_obs_state(ObsState.FAULT)
             raise
         schema_path = join(dirname(__file__), 'schema', 'configure_pb.json')
         with open(schema_path, 'r') as file:
@@ -418,6 +443,8 @@ class SDPSubarray(Device):
             validate(config, schema)
         except exceptions.ValidationError as error:
             LOG.error('Configure JSON validation error: %s', error.message)
+            self._set_obs_state(ObsState.FAULT)
+            self._receive_addresses = None
             frame_info = getframeinfo(currentframe())
             Except.throw_exception(
                 'Command failed',
@@ -475,6 +502,7 @@ class SDPSubarray(Device):
                       "Allowed values {}"\
                 .format(cbf_output_link['scanID'], configured_scans)
             LOG.error(message)
+            self._set_obs_state(ObsState.FAULT)
             raise RuntimeError(message)
 
         # Evaluate map of hosts to channels and FSPs
@@ -574,6 +602,7 @@ class SDPSubarray(Device):
           reworking at some point!
 
         """
+        self._set_obs_state(ObsState.FAULT)
         raise NotImplementedError()
 
     def _get_cbf_output_link_map(self):
@@ -601,6 +630,7 @@ class SDPSubarray(Device):
         if not cbf_out_link_str or cbf_out_link_str == json.dumps(dict()):
             message = 'CBF Output Link map is empty!'
             LOG.error(message)
+            self._set_obs_state(ObsState.FAULT)
             raise RuntimeError(message)
 
         # Convert string to dictionary.
@@ -612,6 +642,7 @@ class SDPSubarray(Device):
             LOG.error('Channel link map JSON load error: %s '
                       '(line %s, column: %s)', error.msg, error.lineno,
                       error.colno)
+            self._set_obs_state(ObsState.FAULT)
             raise
 
         LOG.debug('Validating cbfOutputLinks ...')
@@ -649,6 +680,7 @@ class SDPSubarray(Device):
         if attribute_fqdn is None:
             error_str = "'cspCbfOutlinkAddress' not found in PB configuration"
             LOG.error(error_str)
+            self._set_obs_state(ObsState.FAULT)
             raise RuntimeError(error_str)
         LOG.debug('Reading cbfOutLink from: %s', attribute_fqdn)
         attribute_proxy = AttributeProxy(attribute_fqdn)
@@ -752,6 +784,7 @@ class SDPSubarray(Device):
                       '(link map: {}, workflow: {})'\
                 .format(len(channels), pb_num_channels)
             LOG.error('Error: %s', message)
+            self._set_obs_state(ObsState.FAULT)
             raise ValueError(message)
         if len(channels) < pb_num_channels:
             LOG.warning("Workflow '%s:%s' configured with more channels "
@@ -762,7 +795,7 @@ class SDPSubarray(Device):
                         len(channels), pb_num_channels)
         return channels
 
-    def _require_obs_state(self, allowed_obs_states, invert=False):
+    def _require_obs_state(self, allowed_states, invert=False):
         """Require specified obsState values.
 
         Checks if the current obsState matches the specified allowed values.
@@ -773,23 +806,59 @@ class SDPSubarray(Device):
         If invert is True, throw an exception if the obsState is NOT in the
         list of specified allowed states.
 
-        :param allowed_obs_states: List of allowed obsState values
+        :param allowed_states: List of allowed obsState values
         :param invert: If True require that the obsState is not in one of
                        specified allowed states
 
         """
         # Fail if obsState is NOT in one of the allowed_obs_states
-        if not invert and self._obs_state not in allowed_obs_states:
+        if not invert and self._obs_state not in allowed_states:
             error_msg = 'Error: the device must be in one of the following ' \
-                        'obsStates: {}'.format(allowed_obs_states)
+                        'obsStates: {}'.format(allowed_states)
             LOG.error(error_msg)
+            self._set_obs_state(ObsState.FAULT)
             raise RuntimeError(error_msg)
 
         # Fail if obsState is in one of the allowed_obs_states
-        if invert and self._obs_state in allowed_obs_states:
+        if invert and self._obs_state in allowed_states:
             error_msg = 'Error: the device must NOT be in one of the ' \
-                        'following obsStates: {}'.format(allowed_obs_states)
+                        'following obsState values: {}'.format(allowed_states)
             LOG.error(error_msg)
+            self._set_obs_state(ObsState.FAULT)
+            raise RuntimeError(error_msg)
+
+    def _require_admin_mode(self, allowed_modes, invert=False):
+        """Require specified adminMode values.
+
+        Checks if the current adminMode matches the specified allowed values.
+
+        If invert is False (default), throw an exception if not in the list
+        of specified states / modes.
+
+        If invert is True, throw an exception if the adminMode is NOT in the
+        list of specified allowed states.
+
+        :param allowed_modes: List of allowed adminMode values
+        :param invert: If True require that the adminMode is not in one of
+                       specified allowed states
+
+        """
+        # Fail if adminMode is NOT in one of the allowed_modes
+        if not invert and self._admin_mode not in allowed_modes:
+            error_msg = 'The device must be in one of the following ' \
+                        'adminMode values: {}'.format(allowed_modes)
+            LOG.error(error_msg)
+            self._set_obs_state(ObsState.FAULT)
+            raise RuntimeError(error_msg)
+
+        # Fail if obsState is in one of the allowed_obs_states
+        if invert and self._admin_mode in allowed_modes:
+            error_msg = 'The device must NOT be in one of the ' \
+                        'following adminModes: {}. Current ' \
+                        'mode: {}'.format(allowed_modes,
+                                          repr(self._admin_mode))
+            LOG.error(error_msg)
+            self._set_obs_state(ObsState.FAULT)
             raise RuntimeError(error_msg)
 
 
