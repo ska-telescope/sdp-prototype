@@ -259,7 +259,6 @@ def receive_addresses_attribute_ok(subarray_device):
     """
     receive_addresses = subarray_device.receiveAddresses
     # print(json.dumps(json.loads(receive_addresses), indent=2))
-
     data_path = join(dirname(__file__), 'data')
 
     if not SDPSubarray.is_feature_active('cbf_output_link'):
@@ -276,3 +275,13 @@ def receive_addresses_attribute_ok(subarray_device):
 
     receive_addresses = json.loads(receive_addresses)
     assert receive_addresses == expected
+
+
+@then('The receiveAddresses attribute returns an empty JSON object')
+def receive_addresses_empty(subarray_device):
+    """Check that receiveAddresss attribute returns an empty JSON object.
+
+    :param subarray_device: An SDPSubarray device.
+    """
+    receive_addresses = subarray_device.receiveAddresses
+    assert str(receive_addresses) == 'null'

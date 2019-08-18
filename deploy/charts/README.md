@@ -205,3 +205,41 @@ Finally, let us remove the processing block from the configuration:
 If you re-run the commands from the last section you will notice that
 this correctly causes all changes to the cluster configuration to be
 undone as well.
+
+Accessing Tango
+---------------
+
+By default the chart installs the iTango shell pod from the tango-base
+chart. You can access it as follows:
+
+    $ kubectl exec -it itango-tango-base-sdp-prototype /venv/bin/itango3
+
+You should be able to query the SDP Tango devices:
+
+    In [1]: lsdev
+    Device                                   Alias                     Server                    Class
+    ---------------------------------------- ------------------------- ------------------------- --------------------
+    mid_sdp/elt/master                                                 SDPMaster/1               SDPMaster
+    sys/tg_test/1                                                      TangoTest/test            TangoTest
+    sys/database/2                                                     DataBaseds/2              DataBase
+    sys/access_control/1                                               TangoAccessControl/1      TangoAccessControl
+    mid_sdp/elt/subarray_1                                             SDPSubarray/1             SDPSubarray
+
+This allows direction interaction with the devices, such as querying and
+and changing attributes and issuing commands:
+
+    In [2]: d = DeviceProxy('mid_sdp/elt/subarray_1')
+
+    In [3]: d.obsState
+    Out[3]: <obsState.IDLE: 0>
+    In [4]: d.state()
+    Out[4]: tango._tango.DevState.OFF
+    In [5]: d.adminMode = 'ONLINE'
+    
+    In [6]: d.AssignResources('')
+    
+    In [7]: d.state()
+    Out[7]: tango._tango.DevState.ON
+    In [8]: d.obsState
+    Out[8]: <obsState.IDLE: 0>
+

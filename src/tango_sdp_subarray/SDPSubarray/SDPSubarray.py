@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Tango SDPSubarray device module."""
-# pylint: disable=invalid-name,fixme
+# pylint: disable=invalid-name
+# pylint: disable=fixme
 
 import json
 import logging
@@ -24,6 +25,8 @@ try:
     from ska_sdp_config.entity import ProcessingBlock
 except ImportError:
     NO_CONFIG_DB = True
+    ConfigDbClient = None
+    ProcessingBlock = None
 
 # from skabase.SKASubarray import SKASubarray
 
@@ -202,14 +205,6 @@ class SDPSubarray(Device):
         """
         return self._health_state
 
-    def read_toggleReadCbfOutLink(self):
-        """Get value of feature toggle for the cbfOutLink behaviour."""
-        return self._toggle_cbf_output_link
-
-    def read_toggleConfigDb(self):
-        """Get value of toggle enabling/disabling Config db interaction."""
-        return self._toggle_config_db
-
     def write_obsState(self, obs_state):
         """Set the obsState attribute.
 
@@ -355,19 +350,21 @@ class SDPSubarray(Device):
     def StartScan(self):
         """Command issued when a scan is started."""
         self._require_obs_state([ObsState.READY])
-        self._obs_state = ObsState.SCANNING
+        self._set_obs_state(ObsState.SCANNING)
 
     @command
     def EndScan(self):
         """Command issued when the scan is ended."""
         self._require_obs_state([ObsState.SCANNING])
-        self._obs_state = ObsState.READY
+        self._receive_addresses = None
+        self._set_obs_state(ObsState.READY)
 
     @command
     def EndSB(self):
         """Command issued to end the scheduling block."""
         self._require_obs_state([ObsState.READY])
-        self._obs_state = ObsState.IDLE
+        self._receive_addresses = None
+        self._set_obs_state(ObsState.IDLE)
 
     # -------------------------------------
     # Private methods
@@ -515,6 +512,7 @@ class SDPSubarray(Device):
         recv_port_offset = pb_params.get('portOffset', 9000)
         for host in self._receive_hosts:
             host_ip = host['ip']
+
             for channel in host['channels']:
                 fsp_id = channel.get('fspID')
                 channel_id = channel.get('id')
@@ -560,11 +558,11 @@ class SDPSubarray(Device):
                                           numChannels=num_channels)
                     host_config['channels'].append(channel_config)
 
-        # LOG.debug('Recv. addresses\n%s', json.dumps(recv_addr, indent=2))
+        # LOG.debug('Recv. addresses\n%s',
+        #           json.dumps(receive_addresses, indent=2))
         self._receive_addresses = receive_addresses
         self.push_change_event("receiveAddresses",
                                json.dumps(self._receive_addresses))
-        self._published_recv_addresses = True
 
     def _update_receive_addresses(self):
         """Update receive addresses map (private method).
@@ -609,6 +607,7 @@ class SDPSubarray(Device):
         try:
             cbf_output_link = json.loads(cbf_out_link_str)
             LOG.debug('Successfully loaded cbfOutputLinks JSON object as dict')
+
         except json.JSONDecodeError as error:
             LOG.error('Channel link map JSON load error: %s '
                       '(line %s, column: %s)', error.msg, error.lineno,
