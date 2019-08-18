@@ -178,6 +178,9 @@ class SDPSubarray(Device):
                          else 'disabled by feature toggle'))
             self._config_db_client = None
 
+        if self.is_feature_active(FeatureToggle.CBF_OUTPUT_LINK):
+            LOG.debug('CBF output link enabled!')
+
         # The subarray device is initialised in the OFF state.
         self.set_state(DevState.OFF)
         LOG.info('SDP Subarray initialised: %s (version: %s)',
