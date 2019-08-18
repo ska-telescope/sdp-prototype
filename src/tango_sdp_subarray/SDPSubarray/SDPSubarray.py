@@ -24,7 +24,6 @@ try:
     from ska_sdp_config.config import Config as ConfigDbClient
     from ska_sdp_config.entity import ProcessingBlock
 except ImportError:
-    NO_CONFIG_DB = True
     ConfigDbClient = None
     ProcessingBlock = None
 
@@ -163,13 +162,15 @@ class SDPSubarray(Device):
         self._config = dict()  # Dictionary of JSON passed to Configure
         self._cbf_output_link = dict()  # CSP channel - FSP link map
         self._receive_hosts = dict()  # Receive hosts - channels map
-        if not NO_CONFIG_DB and not self.is_feature_active('config_db'):
-            self._config_db_client = ConfigDbClient()  # SDP Config db client.
-        else:
+        if ConfigDbClient is None or \
+                self.is_feature_active('config_db') is False:
             LOG.warning('Not writing to SDP Config DB (%s)',
                         ("package 'ska_sdp_config' package not found"
-                         if NO_CONFIG_DB else 'disabled by feature toggle'))
+                         if ConfigDbClient is None
+                         else 'disabled by feature toggle'))
             self._config_db_client = None
+        else:
+            self._config_db_client = ConfigDbClient()  # SDP Config db client.
 
         # The subarray device is initialised in the OFF state.
         self.set_state(DevState.OFF)
@@ -317,7 +318,8 @@ class SDPSubarray(Device):
         else:
             LOG.warning('Not writing to SDP Config DB (%s)',
                         ("package 'ska_sdp_config' package not found"
-                         if NO_CONFIG_DB else 'disabled by feature toggle'))
+                         if ConfigDbClient is None
+                         else 'disabled by feature toggle'))
 
         # Evaluate the receive addresses.
         # Note(BMo) Generating receive addresses requires:
