@@ -4,16 +4,11 @@ kind: ConfigMap
 metadata:
   name: sdp-devices-configuration-json-{{ .Release.Name }}
   namespace: {{ .Release.Namespace }}
+  labels:
+{{ include "sdp-prototype.labels" . | indent 4 }}
 data:
   sdp-devices.json:
 {{ (tpl (.Files.Glob "data/sdp-devices.json").AsConfig . ) | indent 2  }}
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: sdp-devices-sane-dsconfig-{{ .Release.Name }}
-  namespace: {{ .Release.Namespace }}
-data:
   sane-dsconfig.sh:
 {{ (tpl (.Files.Glob "data/sane-dsconfig.sh").AsConfig . ) | indent 2  }}
 ---
@@ -23,10 +18,7 @@ metadata:
   name: {{ .Release.Name }}-sdp-devices
   namespace: {{ .Release.Namespace }}
   labels:
-    app: {{ .Release.Name }}-sdp-devices
-    chart: {{ template "sdp-prototype.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+{{ include "sdp-prototype.labels" . | indent 4 }}
 spec:
   replicas: 1
   selector:
@@ -44,9 +36,6 @@ spec:
         - name: configuration
           configMap:
             name: sdp-devices-configuration-json-{{ .Release.Name }}
-        - name: sane-dsconfig
-          configMap:
-            name: sdp-devices-sane-dsconfig-{{ .Release.Name }}
       initContainers:
         - name: dsconfig
           image: "{{ .Values.dsconfig.image.registry }}/{{ .Values.dsconfig.image.image }}:{{ .Values.dsconfig.image.tag }}"
@@ -58,16 +47,13 @@ spec:
             - --strict
             - --
             - /bin/bash
-            - script/sane-dsconfig.sh -w -a -u data/sdp-devices.json
+            - data/sane-dsconfig.sh -w -a -u data/sdp-devices.json
           env:
             - name: TANGO_HOST
               value: databaseds-tango-base-{{ .Release.Name }}:10000
           volumeMounts:
             - name: configuration
               mountPath: data
-              readOnly: true
-            - name: sane-dsconfig
-              mountPath: script
               readOnly: true
       containers:
       - name: sdp-master
