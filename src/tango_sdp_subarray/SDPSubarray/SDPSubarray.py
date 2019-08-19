@@ -364,6 +364,7 @@ class SDPSubarray(Device):
     def EndScan(self):
         """Command issued when the scan is ended."""
         self._require_obs_state([ObsState.SCANNING])
+        self._recv_addresses = None
         self._obs_state = ObsState.READY
 
     @command
