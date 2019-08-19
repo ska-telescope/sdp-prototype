@@ -157,8 +157,8 @@ class SDPSubarray(Device):
         LOG.info('Initialising SDP Subarray: %s', self.get_name())
 
         # Set default values for feature toggles.
-        self.set_feature_toggle_default(FeatureToggle.CONFIG_DB, True)
-        self.set_feature_toggle_default(FeatureToggle.CBF_OUTPUT_LINK, True)
+        self.set_feature_toggle_default(FeatureToggle.CONFIG_DB, False)
+        self.set_feature_toggle_default(FeatureToggle.CBF_OUTPUT_LINK, False)
 
         # Initialise attributes
         self._obs_state = ObsState.IDLE
