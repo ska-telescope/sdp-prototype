@@ -546,9 +546,10 @@ class SDPSubarray(Device):
             raise ValueError(message)
         return env_var
 
-    def _set_obs_state(self, value):
+    def _set_obs_state(self, value, verbose=True):
         """Set the obsState and issue a change event."""
-        LOG.debug('Setting obsState to: %s', repr(ObsState(value)))
+        if verbose:
+            LOG.debug('Setting obsState to: %s', repr(ObsState(value)))
         # LOG.debug('Setting obsState to: %s', value)
         self._obs_state = value
         self.push_change_event("obsState", self._obs_state)
@@ -815,10 +816,9 @@ class SDPSubarray(Device):
         LOG.debug('Reading cbfOutputLink attribute ...')
         attribute_fqdn = self._config.get('cspCbfOutlinkAddress', None)
         if attribute_fqdn is None:
-            error_str = "'cspCbfOutlinkAddress' not found in PB configuration"
-            LOG.error(error_str)
-            self._set_obs_state(ObsState.FAULT)
-            raise RuntimeError(error_str)
+            msg = "'cspCbfOutlinkAddress' not found in PB configuration"
+            self._set_obs_state(ObsState.FAULT, verbose=False)
+            self._raise_command_error(msg)
         LOG.debug('Reading cbfOutLink from: %s', attribute_fqdn)
         attribute_proxy = AttributeProxy(attribute_fqdn)
         attribute_proxy.ping()
@@ -826,25 +826,26 @@ class SDPSubarray(Device):
                   self._scanId)
         cbf_out_link_dict = {}
         start_time = time.time()
-        # FIXME(BMo) Horrible hack to poll the CSP device - use events!!
+        # FIXME(BMo) Horrible hack to poll the CSP device until the scanID \
+        # matches - use events instead!!
+        cbf_out_link = ''
         while cbf_out_link_dict.get('scanId') != self._scanId:
             cbf_out_link = attribute_proxy.read().value
             cbf_out_link_dict = json.loads(cbf_out_link)
             time.sleep(1.0)
             elapsed = time.time() - start_time
-            LOG.debug('Waiting for cbfOutputLink attribute (elapsed: %.2f s) '
+            LOG.debug('Waiting for cbfOutputLink attribute (elapsed: %2.4f s) '
                       ': %s', elapsed, cbf_out_link)
-            if elapsed >= 10.0:
+            if elapsed >= 20.0:
+                self._set_obs_state(ObsState.FAULT, verbose=False)
                 self._raise_command_error(
-                    'Timeout reached while reading cbf output link!',
-                    '_read_cbf_output_link')
+                    'Timeout reached while reading cbf output link!')
                 break
         # event_id = attribute_proxy.subscribe_event(
         #     tango.EventType.CHANGE_EVENT,
         #     self._cbf_output_link_callback
         # )
         # self._events_telstate[event_id] = attribute_proxy
-
         # print(attribute_proxy.is_event_queue_empty())
         # events = attribute_proxy.get_events()
         LOG.debug('Channel link map (str): "%s"', cbf_out_link)
