@@ -162,7 +162,7 @@ class SDPSubarray(Device):
 
         # Initialise attributes
         self._obs_state = ObsState.IDLE
-        self._admin_mode = AdminMode.OFFLINE
+        self._admin_mode = AdminMode.ONLINE
         self._health_state = HealthState.OK
         self._receive_addresses = dict()
 
@@ -331,6 +331,7 @@ class SDPSubarray(Device):
         # 1. Check obsState is IDLE, and set to CONFIGURING
         self._require_obs_state([ObsState.IDLE])
         self._set_obs_state(ObsState.CONFIGURING)
+        self.set_state(DevState.ON)
 
         # 2. Validate the Configure JSON object argument
         config = self._validate_configure_json(json_config)
@@ -452,6 +453,7 @@ class SDPSubarray(Device):
         LOG.info('Start Scan (%s)', self.get_name())
         LOG.info('-------------------------------------------------------')
         self._require_obs_state([ObsState.READY])
+        self.set_state(DevState.ON)
         self._set_obs_state(ObsState.SCANNING)
         LOG.info('-------------------------------------------------------')
         LOG.info('Start Scan Successful')

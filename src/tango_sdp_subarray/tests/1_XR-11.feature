@@ -11,7 +11,7 @@ Feature: SDPSubarray device
 		When the device is initialised
 		Then State should be OFF
 		And obsState should be IDLE
-		And adminMode should be OFFLINE
+		And adminMode should be ONLINE
 		And healthState should be OK
 
 
