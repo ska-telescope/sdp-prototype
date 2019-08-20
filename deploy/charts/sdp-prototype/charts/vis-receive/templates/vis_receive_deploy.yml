@@ -18,6 +18,9 @@ spec:
       - image: {{ .Values.visreceive.container }}:{{ .Values.visreceive.version }}
         imagePullPolicy: {{ .Values.visreceive.imagePullPolicy }}
         name: {{ .Chart.Name }}
+        env:
+          - name: SDP_CONFIG_HOST
+            value: {{ index .Values "config-host" }}
         {{- with .Values.visreceive.resources }}
         resources:
           {{- toYaml . | nindent 10 }}

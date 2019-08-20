@@ -7,6 +7,7 @@ Example Vis Receive workflow
 import logging
 import ska_sdp_config
 import distributed
+import os
 
 # Initialise logging
 logging.basicConfig()
@@ -15,7 +16,7 @@ log.setLevel(logging.INFO)
 
 # Obtain connection to configuration database. This is the main way to
 # both obtain information about what the workflow is supposed to do,
-# and its way to request actions from the rest of the system (e.g. ask
+# and its way to request actions from the rest of tska_sdp_confighe system (e.g. ask
 # for deployments of additional software)
 config = ska_sdp_config.Config()
 
@@ -62,9 +63,10 @@ deploy = ska_sdp_config.Deployment(
     deploy_id, "helm", {
         'chart': 'skaorca/vis_receive:latest',
         'values': {
-            'worker.replicas': 1,
+            'config-host': os.environ['SDP_CONFIG_HOST'],
+            'worker.replicas': 1
             # We want to access vis_receive in-cluster using a DNS name
-            'scheduler.serviceType': 'ClusterIP'
+            # 'scheduler.serviceType': 'ClusterIP'
         }})
 for txn in config.txn():
     txn.create_deployment(deploy)
@@ -75,7 +77,7 @@ try:
     # (clearly populated by controllers querying Helm/Kubernetes).  So
     # for the moment we'll simply query the DNS name where we know
     # that vis receive must become available eventually
-    log.info("Waiting for Dask...")
+    log.info("Waiting for Vis Receive...")
     client = None
     for _ in range(200):
         try:
