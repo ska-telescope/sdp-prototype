@@ -48,8 +48,10 @@ RUN docker-apt-install libcasa-ms3
 
 # Copy binaries compiled in the buid stage into the final image.
 COPY --from=buildenv /usr/local/lib/liboskar_ms.* /usr/local/lib/
-COPY --from=buildenv /app/vis_receive/build/recv /usr/local/bin/
+COPY --from=buildenv /app/vis_receive/build/recv .
 
 # Copy test into final layer
 # FIXME(BMo) Remove this when done debugging!
 COPY --from=buildenv /app/vis_receive/build/tests/recv_test /app/
+ENTRYPOINT ["./recv"]
+CMD []
