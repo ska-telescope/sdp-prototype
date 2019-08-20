@@ -6,7 +6,7 @@ helm_deploy:
   replicas: 1
   chart_repo:
     url: https://github.com/ska-telescope/sdp-prototype.git
-    ref: master
+    ref: ORCA-166/vis_receive_workflow
     refresh: 300
 
 # Configuration database
@@ -38,8 +38,8 @@ workflow:
     resources: {}
     imagePullPolicy: IfNotPresent
   visreceive:
-    container: skaorca/workflow-test-vis-receive
-    version: build
+    container: pw410/workflow-vis-receive
+    version: 0.1.0
     replicas: 2
     resources: {}
     imagePullPolicy: IfNotPresent
