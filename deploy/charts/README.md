@@ -19,6 +19,21 @@ least 3 GB. For Docker this can be found in the settings, for Minikube
 you need to specify it on the command line:
 
     $ minikube --mem 4096 ...
+    
+#### Micro8ks for Kubernetes
+
+Canonical supports **microk8s** for Ubuntu Linux distributions - and it 
+is also available for many other distributions (42 according to 
+[here](https://github.com/ubuntu/microk8s#accessing-kubernetes)). It gives a more-or-less 
+'one line' Kubernetes installation
+
+- To install type 'sudo snap install microk8s --classic'
+- 'microk8s.start' will start the Kubernetes system
+- 'microk8s.enable dns' is required for the SDP development system
+- 'microk8s.status' should show that things are active
+- microk8s will install 'kubectl' as 'microk8s.kubectl' - unless you have another 
+Kubernetes installation in parallel you may wish to type 
+'sudo snap alias microk8s.kubectl kubectl'
 
 ### Helm
 
@@ -27,6 +42,9 @@ from most typical package managers, see [Using
 Helm](https://helm.sh/docs/using_helm/). Note that for the moment we
 are using Helm version 2, as at the time of writing version 3 is in
 early alpha.
+
+It may be available in the 'snap' installation system (eg. on
+recent Ubuntu installations)
 
 Once you have it available, you will typically need to initialise it
 (this will create the "Tiller" controller):
