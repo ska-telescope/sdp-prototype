@@ -37,6 +37,12 @@ workflow:
     replicas: 2
     resources: {}
     imagePullPolicy: IfNotPresent
+  visreceive:
+    container: skaorca/workflow-test-vis-receive
+    version: build
+    replicas: 2
+    resources: {}
+    imagePullPolicy: IfNotPresent
 
 # Parameters for sub-chart
 tango-base:

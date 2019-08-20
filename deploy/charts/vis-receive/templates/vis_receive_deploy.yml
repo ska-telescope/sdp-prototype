@@ -14,15 +14,10 @@ spec:
         app.kubernetes.io/name: {{ include "vis-receive.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
-      initContainers:
-      {{ include "sdp-prototype.wait-for-etcd" . | nindent 6 }}
       containers:
       - image: {{ .Values.visreceive.container }}:{{ .Values.visreceive.version }}
         imagePullPolicy: {{ .Values.visreceive.imagePullPolicy }}
         name: {{ .Chart.Name }}
-        env:
-          - name: SDP_CONFIG_HOST
-            value: {{ .Values.visreceive.config-host }}
         {{- with .Values.visreceive.resources }}
         resources:
           {{- toYaml . | nindent 10 }}
