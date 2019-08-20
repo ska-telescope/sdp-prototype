@@ -1,8 +1,12 @@
 
 Visibility Receiver deployed!
 
+<<<<<<< HEAD
 To connect to the configuration database:
 
    $ export SDP_CONFIG_PORT=`kubectl get service {{ include "vis-receive.fullname" . }}-etcd-nodeport -o jsonpath="{..nodePort}"`
    $ pip install -U ska-sdp-config
    $ sdpcfg ls /pb/
+=======
+
+>>>>>>> 3df16e8512e252841afec2304de31f7965921f2e

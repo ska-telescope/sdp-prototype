@@ -8,9 +8,6 @@ sudo helm install vis-receive -n vis-receive
 sudo kubectl get pod --watch
 ```
 
-The status will show CrashLoopBackkOff, it just means it has completed. 
-Check logs to confirm by running the following commands
-
 ```bash
 sudo kubectl logs <name>
 ```
