@@ -37,6 +37,12 @@ workflow:
     replicas: 2
     resources: {}
     imagePullPolicy: IfNotPresent
+  visreceive:
+    container: pw410/workflow-vis-receive
+    version: 0.1.0
+    replicas: 2
+    resources: {}
+    imagePullPolicy: IfNotPresent
 
 # Parameters for sub-chart
 tango-base:
