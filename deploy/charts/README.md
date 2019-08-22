@@ -35,6 +35,13 @@ is also available for many other distributions (42 according to
 Kubernetes installation in parallel you may wish to type 
 'sudo snap alias microk8s.kubectl kubectl'
 
+Initially I had problems with microk8s PODs not communicating. 'microk8s.inspect' 
+correctly told me the reason was that I needed an 'sudo iptables -P FORWARD ACCEPT'
+and things worked fine after this!
+
+microk8s works differently to minikube and does not need drivers or mem= options
+
+
 ### Helm
 
 Furthermore you will need to install the Helm utility. It is available
