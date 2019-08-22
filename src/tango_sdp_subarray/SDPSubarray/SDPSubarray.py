@@ -724,6 +724,14 @@ class SDPSubarray(Device):
                                           numChannels=num_channels)
                     host_config['channels'].append(channel_config)
 
+        # HACK(BMo) Make sure FSPs appear in the receive_addresses map
+        # This is needed by CSP if the cbfOutputLink toggle is disabled.
+        if not receive_addresses['receiveAddresses']:
+            for fsp in cbf_output_link['fsp']:
+                receive_addresses['receiveAddresses'].append(
+                    dict(fspId=fsp.get('fspID'), hosts=list())
+                )
+
         # LOG.debug('Recv. addresses\n%s',
         #           json.dumps(receive_addresses, indent=2))
         self._receive_addresses = receive_addresses
@@ -763,7 +771,14 @@ class SDPSubarray(Device):
                         "attribute value.")
             cbf_out_link = dict(
                 scanID=configured_scans[0],
-                fsp=[dict(cbfOutLink=list(), fspID=1, frequencySliceID=1)]
+                fsp=[
+                    dict(cbfOutLink=[],
+                         fspID=1,
+                         frequencySliceID=1),
+                    dict(cbfOutLink=list(),
+                         fspID=2,
+                         frequencySliceID=2)
+                ]
             )
             cbf_out_link_str = json.dumps(cbf_out_link)
 
@@ -912,13 +927,13 @@ class SDPSubarray(Device):
                       host['num_channels'])
             channel_start += host['num_channels']
 
-    def _generate_channels_fsp_map(self, channel_link_map):
+    def _generate_channels_fsp_map(self, cbf_output_links):
         """Evaluate a map of channels <-> FSPs.
 
         This is used as an intermediate data structure for generating
         receiveAddresses.
 
-        :param channel_link_map: Channel link map (from CSP)
+        :param cbf_output_links: Channel link map (from CSP)
 
         :returns: map of channels to FSPs
 
@@ -926,11 +941,13 @@ class SDPSubarray(Device):
         LOG.debug('Evaluating channel - FSP mapping.')
         # Build map of channels <-> FSP's
         channels = list()
-        for fsp in channel_link_map['fsp']:
+        for fsp in cbf_output_links['fsp']:
             for link in fsp['cbfOutLink']:
                 for channel in link['channel']:
-                    channel = dict(id=channel['chanID'], bw=channel['bw'],
-                                   cf=channel['cf'], fspID=fsp['fspID'],
+                    channel = dict(id=channel['chanID'],
+                                   bw=channel['bw'],
+                                   cf=channel['cf'],
+                                   fspID=fsp['fspID'],
                                    linkID=link['linkID'])
                     channels.append(channel)
 
