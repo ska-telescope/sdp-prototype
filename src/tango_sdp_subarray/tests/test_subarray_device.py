@@ -23,6 +23,12 @@ except ImportError:
     ConfigDbClient = None
 
 
+try:
+    from ska_sdp_config.config import Config as ConfigDbClient
+except ImportError:
+    ConfigDbClient = None
+
+
 # -----------------------------------------------------------------------------
 # Scenarios : Specify what we want the software to do
 # -----------------------------------------------------------------------------
@@ -305,7 +311,7 @@ def receive_addresses_attribute_ok(subarray_device):
     :param subarray_device: An SDPSubarray device.
     """
     receive_addresses = subarray_device.receiveAddresses
-    print(json.dumps(json.loads(receive_addresses), indent=2))
+    # print(json.dumps(json.loads(receive_addresses), indent=2))
     data_path = join(dirname(__file__), 'data')
 
     expected_output_file = ''
