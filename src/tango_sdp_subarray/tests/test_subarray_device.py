@@ -15,7 +15,7 @@ import pytest
 from pytest_bdd import (given, parsers, scenarios, then, when)
 
 from SDPSubarray import AdminMode, HealthState, ObsState, SDPSubarray, \
-    init_logger, LOG
+    init_logger
 
 try:
     from ska_sdp_config.config import Config as ConfigDbClient
@@ -48,7 +48,6 @@ def mock_read_cbf_output_link():
         channel_link_map = file.read()
     channel_link_map_dict = json.loads(channel_link_map)
     channel_link_map_dict['scanID'] = 4
-    LOG.debug('Mocking read of cbfOutputLinks attribute! (%s)', filename)
     return json.dumps(channel_link_map_dict)
 
 
@@ -306,7 +305,7 @@ def receive_addresses_attribute_ok(subarray_device):
     :param subarray_device: An SDPSubarray device.
     """
     receive_addresses = subarray_device.receiveAddresses
-    # print(json.dumps(json.loads(receive_addresses), indent=2))
+    print(json.dumps(json.loads(receive_addresses), indent=2))
     data_path = join(dirname(__file__), 'data')
 
     expected_output_file = ''

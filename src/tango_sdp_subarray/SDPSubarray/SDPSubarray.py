@@ -774,10 +774,7 @@ class SDPSubarray(Device):
                 fsp=[
                     dict(cbfOutLink=[],
                          fspID=1,
-                         frequencySliceID=1),
-                    dict(cbfOutLink=list(),
-                         fspID=2,
-                         frequencySliceID=2)
+                         frequencySliceID=1)
                 ]
             )
             cbf_out_link_str = json.dumps(cbf_out_link)
