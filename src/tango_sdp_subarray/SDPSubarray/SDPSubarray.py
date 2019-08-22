@@ -365,6 +365,7 @@ class SDPSubarray(Device):
         self._generate_receive_addresses()
 
         # 5. Wait for receive addresses to be generated...
+        # FIXME(BMo) This is a hack for debugging and not a long term solution.
         start_time = time.time()
         while not self._receive_addresses.get('scanId') == self._scanId:
             LOG.debug('%s', self._receive_addresses)
