@@ -4,9 +4,10 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [packages]
-pytango = "*"
 jsonschema = "*"
+ska-sdp-config = "*"
 # ---- Inherited from base class, not installed again here as depends on git ------
+pytango = "==9.3.0"
 # lmcbaseclasses = {git = "https://github.com/ska-telescope/lmc-base-classes.git", editable = true}
 
 [dev-packages]

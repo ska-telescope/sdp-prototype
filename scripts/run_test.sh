@@ -51,13 +51,13 @@ fi
 
 if [[ $# -ge 1 ]]
 then
-    prefix_options=$'-m pytest -vv
+    prefix_options=$'-m pytest -vv --color=yes
     --rootdir=.'
     printf "%s------------------------------------------------------\n" \
             "$RED"
     printf "* OPTIONS=%s%s\n" "$NC" "$*"
 else
-     prefix_options=$'-m pytest -vv
+     prefix_options=$'-m pytest -vv --color=yes
     --rootdir=.'
 fi
 printf "%s------------------------------------------------------\n" \

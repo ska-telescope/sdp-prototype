@@ -8,8 +8,6 @@ sudo helm install vis-receive -n vis-receive
 sudo kubectl get pod --watch
 ```
 
-To check logs run the following command
-
 ```bash
 sudo kubectl logs <name>
 ```

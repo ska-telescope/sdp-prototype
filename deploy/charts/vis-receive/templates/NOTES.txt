@@ -1,4 +1,2 @@
 
 Visibility Receiver deployed!
-
-

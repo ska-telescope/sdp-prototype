@@ -83,6 +83,7 @@ test:  ## Run tests for the device
 		-v $(PWD):/app \
 		$(DEV_IMAGE) \
 		python -m pytest \
+		--color=yes \
 		--pylint \
 		--codestyle \
 		--docstyle \
