@@ -79,17 +79,27 @@ stop:  ## Stop the device
 .PHONY: test lint ci_test test_shell
 
 test:  ## Run tests for the device
-	@docker run --rm -t \
+	docker run --rm -t \
 		-v $(PWD):/app \
 		$(DEV_IMAGE) \
 		python -m pytest \
+		--color=yes \
 		--pylint \
 		--codestyle \
 		--docstyle \
 		--cov=SDPSubarray \
-	    --cov-report=term \
-    	--cov-config=./setup.cfg \
-		-vv \
+		--cov-report=term \
+		--cov-config=./setup.cfg \
+		-vv -s \
+		--gherkin-terminal-reporter \
+		.
+
+test_only:  ## Run tests for the device
+	docker run --rm -t \
+		-v $(PWD):/app \
+		$(DEV_IMAGE) \
+		python -m pytest \
+		-vv -s \
 		--gherkin-terminal-reporter \
 		.
 

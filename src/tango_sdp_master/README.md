@@ -136,3 +136,9 @@ make test
   d.command_list_query()
   d.attribute_list_query()
   ```
+
+## API Documentation
+
+See [SKA developer
+portal](https://developer.skatelescope.org/projects/sdp-prototype/en/latest/sdp_master.html)
+for the API documentation.

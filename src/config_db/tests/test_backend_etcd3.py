@@ -14,13 +14,18 @@ PREFIX = "/__test"
 @pytest.fixture(scope="session")
 def etcd3():
     host = os.getenv('SDP_TEST_HOST', '127.0.0.1')
-    with backend.Etcd3(host=host) as etcd3:
+    port = os.getenv('SDP_CONFIG_PORT', '2379')
+    with backend.Etcd3(host=host, port=port) as etcd3:
         etcd3.delete(PREFIX, must_exist=False, recursive=True)
         yield etcd3
         etcd3.delete(PREFIX, must_exist=False, recursive=True)
 
 
 def test_valid(etcd3):
+    with pytest.raises(ValueError, match="must start"):
+        etcd3.create("", "")
+    with pytest.raises(ValueError, match="must start"):
+        etcd3.create("foo", "")
     with pytest.raises(ValueError, match="trailing"):
         etcd3.create(PREFIX + "/", "")
     with pytest.raises(ValueError, match="trailing"):
@@ -99,6 +104,34 @@ def test_list(etcd3):
         key+"/ab/c"]
     assert etcd3.list_keys(key+"/ab")[0] == [
         key+"/ab"]
+
+    # Try listing recursively
+    assert etcd3.list_keys(key, recurse=1)[0] == [
+        key+"/a", key+"/ab", key+"/ax", key+"/b"]
+    assert etcd3.list_keys(key, recurse=(1,))[0] == [
+        key+"/a", key+"/ab", key+"/ax", key+"/b"]
+    assert etcd3.list_keys(key, recurse=2)[0] == [
+        key+"/a", key+"/a/d", key+"/ab", key+"/ab/c",
+        key+"/ax", key+"/b"]
+    assert etcd3.list_keys(key, recurse=(2,))[0] == [
+        key+"/a/d", key+"/ab/c"]
+    assert etcd3.list_keys(key+"/", recurse=1)[0] == [
+        key+"/a", key+"/a/d", key+"/ab", key+"/ab/c",
+        key+"/ax", key+"/b"]
+    assert etcd3.list_keys(key, recurse=3)[0] == [
+        key+"/a", key+"/a/d", key+"/a/d/x",
+        key+"/ab", key+"/ab/c", key+"/ax", key+"/b"]
+    assert etcd3.list_keys(key, recurse=[3, 2, 1])[0] == [
+        key+"/a", key+"/a/d", key+"/a/d/x",
+        key+"/ab", key+"/ab/c", key+"/ax", key+"/b"]
+    assert etcd3.list_keys(key+"/a", recurse=2)[0] == [
+        key+"/a", key+"/a/d", key+"/a/d/x",
+        key+"/ab", key+"/ab/c", key+"/ax"]
+    assert etcd3.list_keys(key+"/a/", recurse=1)[0] == [
+        key+"/a/d", key+"/a/d/x"]
+    assert set(etcd3.list_keys("/", recurse=32)[0]) >= set([
+        key+"/a", key+"/a/d", key+"/a/d/x",
+        key+"/ab", key+"/ab/c", key+"/ax"])
 
     # Remove
     etcd3.delete(key, must_exist=False, recursive=True)
@@ -316,10 +349,16 @@ def test_transaction_conc(etcd3):
     key3 = key + "/3"
     key4 = key + "/4"
 
+    counter = {'i': 0}
+
+    def increase_counter():
+        counter['i'] += 1
+
     # Ensure reading is consistent
     etcd3.create(key, "1")
     etcd3.create(key2, "1")
     for i, txn in enumerate(etcd3.txn()):
+        txn.on_commit(increase_counter)
         # First "get" should bake in revision, so subsequent calls
         # return values from this point in time
         txn.get(key)
@@ -327,11 +366,13 @@ def test_transaction_conc(etcd3):
         assert txn.get(key2)[0] == "1"
     # As this transaction is not writing anything, it will not get repeated
     assert i == 0
+    assert counter['i'] == 0  # No commit happens
 
     # Now check the behaviour if we write something. This time we
     # might be writing an inconsistent value to the database, so the
     # transaction needs to be repeated (10 times!)
     for i, txn in enumerate(etcd3.txn()):
+        txn.on_commit(increase_counter)
         v2 = txn.get(key2)
         if i < 10:
             etcd3.update(key2, i)
@@ -339,19 +380,25 @@ def test_transaction_conc(etcd3):
     assert i == 10
     assert etcd3.get(key2)[0] == "9"
     assert etcd3.get(key3)[0] == "10"
+    assert counter['i'] == 1
+    counter['i'] = 0
 
     # Same experiment, but with a key that didn't exist yet
     for i, txn in enumerate(etcd3.txn()):
+        txn.on_commit(increase_counter)
         txn.get(key4)
         if i == 0:
             etcd3.create(key4, "1")
         txn.update(key3, int(i))
     assert i == 1
+    assert counter['i'] == 1
     etcd3.delete(key4)
+    counter['i'] = 0
 
     # This is especially important because it underpins the safety
     # check of create():
     for i, txn in enumerate(etcd3.txn()):
+        txn.on_commit(increase_counter)
         # "Succeeds" first time only to cause the transaction to get
         # re-run to find a failure the second time around
         if i == 0:
@@ -361,6 +408,7 @@ def test_transaction_conc(etcd3):
             with pytest.raises(backend.Collision):
                 txn.create(key4, "2")
     assert i == 1
+    assert counter['i'] == 0  # No commit
 
     etcd3.delete(key, recursive=True)
 
@@ -369,30 +417,38 @@ def test_transaction_list(etcd3):
 
     key = PREFIX + "/test_txn_list"
     keys = [key+"/"+str(i) for i in range(5)]
-    for k in keys:
-        etcd3.create(k, k)
+    keys_sub = [key+"/sub" for key in keys]
+    for txn in etcd3.txn():
+        for k in keys:
+            txn.create(k, k)
+            txn.create(k+"/sub", k+"/sub")
 
     # Ensure that we can list the keys
-    assert set(etcd3.list_keys(key+'/')[0]) == set(keys)
+    assert etcd3.list_keys(key+'/')[0] == keys
     for txn in etcd3.txn():
-        assert set(txn.list_keys(key+'/')) == set(keys)
+        assert txn.list_keys(key+'/') == keys
+        assert txn.list_keys(key+'/', recurse=1) == sorted(keys + keys_sub)
+        assert txn.list_keys(key+'/', recurse=(1,)) == keys_sub
+    for txn in etcd3.txn():
+        assert txn.list_keys(key+'/', recurse=(1,)) == keys_sub
 
     # Ensure that we can add another key into the range and have it
     # appear to the transaction *before* we commit
     keys.append(key+"/xxx")
-    assert set(etcd3.list_keys(key+'/')[0]) == set(keys[:-1])
+    assert etcd3.list_keys(key+'/')[0] == keys[:-1]
     for txn in etcd3.txn():
-        assert set(txn.list_keys(key+'/')) == set(keys[:-1])
+        assert txn.list_keys(key+'/') == keys[:-1]
         txn.create(key+"/xxx", "xxx")
-        assert set(txn.list_keys(key+'/')) == set(keys)
-        assert set(etcd3.list_keys(key+'/')[0]) == set(keys[:-1])
-    assert set(etcd3.list_keys(key+'/')[0]) == set(keys)
+        assert txn.list_keys(key+'/', recurse=3) == sorted(keys + keys_sub)
+        assert txn.list_keys(key+'/') == keys
+        assert etcd3.list_keys(key+'/')[0] == keys[:-1]
+    assert etcd3.list_keys(key+'/')[0] == keys
 
     # Test iteratively building up
     etcd3.delete(key, recursive=True, must_exist=False)
     for i, k in enumerate(keys):
         for txn in etcd3.txn():
-            assert set(txn.list_keys(key+'/')) == set(keys[:i])
+            assert txn.list_keys(key+'/') == keys[:i]
             txn.create(k, k)
 
     # Removing keys causes a re-run, but a value update does not.
@@ -470,7 +526,7 @@ def test_transaction_watchers(etcd3):
     # Test that watchers get cancelled as we read fewer values
     # pylint: disable=W0212
     def watcher_count(typ, txn):
-        return len([() for t, _ in txn._watchers if t == typ])
+        return len([() for wk in txn._watchers if wk[0] == typ])
     for i, txn in enumerate(etcd3.txn()):
         txn.get(key)
         if i == 0:

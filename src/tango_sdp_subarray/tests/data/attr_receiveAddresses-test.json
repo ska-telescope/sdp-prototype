@@ -1,0 +1,22 @@
+{
+  "scanId": 1,
+  "totalChannels": 93,
+  "receiveAddresses": [
+    {
+      "phaseBinId": 0,
+      "fspId": 1,
+      "hosts": [
+        {
+          "host": "192.168.0.0",
+          "channels": [
+            {
+              "portOffset": 9001,
+              "startChannel": 1,
+              "numChannels": 93
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
