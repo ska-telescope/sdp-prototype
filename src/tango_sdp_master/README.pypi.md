@@ -13,3 +13,9 @@ Usage:
 ```bash
 SDPMaster <instance name> [-v4]
 ```
+
+## API Documentation
+
+See [SKA developer
+portal](https://developer.skatelescope.org/projects/sdp-prototype/en/latest/sdp_master.html)
+for the API documentation.

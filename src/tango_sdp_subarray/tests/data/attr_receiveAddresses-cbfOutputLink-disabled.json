@@ -1,0 +1,14 @@
+{
+  "scanId": 1,
+  "totalChannels": 0,
+  "receiveAddresses": [
+    {
+      "fspId": 1,
+      "hosts": []
+    },
+    {
+      "fspId": 2,
+      "hosts": []
+    }
+  ]
+}
