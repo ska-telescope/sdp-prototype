@@ -1,0 +1,13 @@
+# Default values for vis_receive
+# Declare variables to be passed into your templates.
+
+visreceive:
+  container: skaorca/vis_receive
+  version: latest
+  replicas: 1
+  resources: {}
+  imagePullPolicy: IfNotPresent
+
+nameOverride: ""
+fullnameOverride: ""
+
