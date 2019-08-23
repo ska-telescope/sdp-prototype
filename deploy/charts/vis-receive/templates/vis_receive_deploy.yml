@@ -18,9 +18,57 @@ spec:
       - image: {{ .Values.visreceive.container }}:{{ .Values.visreceive.version }}
         imagePullPolicy: {{ .Values.visreceive.imagePullPolicy }}
         name: {{ .Chart.Name }}
+        volumeMounts:
+          - mountPath: "/output"
+            name: output
+#        command:
+#          - ./recv
+#          - -d
+#          - /output
         {{- with .Values.visreceive.resources }}
         resources:
           {{- toYaml . | nindent 10 }}
         {{- end }}
       restartPolicy: Never
+      volumes:
+        - name: output
+          persistentVolumeClaim:
+            claimName: {{ include "vis-receive.fullname" . }}-out
   backoffLimit: 4
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ include "vis-receive.fullname" . }}-out
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ include "vis-receive.fullname" . }}
+{{ include "vis-receive.labels" . | indent 4 }}
+spec:
+  capacity:
+    storage: 1Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Recycle
+  storageClassName: standard
+  hostPath:
+    path: /data/{{ include "vis-receive.fullname" . }}-out/
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "vis-receive.fullname" . }}-out
+  namespace: {{ .Release.Namespace }}
+  labels:
+{{ include "vis-receive.labels" . | indent 4 }}
+spec:
+  storageClassName: standard
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  selector:
+    matchLabels:
+      app: {{ include "vis-receive.fullname" . }}
