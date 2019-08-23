@@ -268,3 +268,47 @@ and changing attributes and issuing commands:
     In [8]: d.obsState
     Out[8]: <obsState.IDLE: 0>
 
+
+Troubleshooting
+---------------
+
+## etcd doesn't start (DNS problems)
+
+Something that often happens on home set-ups is that `sdp-prototype-etcd`
+doesn't start, which means that quite a bit of the
+SDP system will not work. Try executing `kubectl logs` on the pod to
+get a log. You might see something like this as the last three lines:
+
+    ... I | pkg/netutil: resolving sdp-prototype-etcd-9s4hbbmmvw.k8s-sdp-prototype-etcd.default.svc:2380 to 10.1.0.21:2380
+    ... I | pkg/netutil: resolving sdp-prototype-etcd-9s4hbbmmvw.k8s-sdp-prototype-etcd.default.svc:2380 to 92.242.132.24:2380
+    ... C | etcdmain: failed to resolve http://sdp-prototype-etcd-9s4hbbmmvw.sdp-prototype-etcd.default.svc:2380 to match --initial-cluster=sdp-prototype-etcd-9s4hbbmmvw=http://sdp-prototype-etcd-9s4hbbmmvw.sdp-prototype-etcd.default.svc:2380 ("http://10.1.0.21:2380"(resolved from "http://sdp-prototype-etcd-9s4hbbmmvw.sdp-prototype-etcd.default.svc:2380") != "http://92.242.132.24:2380"(resolved from "http://sdp-prototype-etcd-9s4hbbmmvw.sdp-prototype-etcd.default.svc:2380"))
+
+This informs you that `etcd` tried to resolve its own address, and for
+some reason got two different answers both times. Interestingly, the 
+`92.242.132.24` address is not actually in-cluster, but from the Internet,
+and re-appears if we attempt to `ping` a nonexistant DNS name:
+
+    $ ping does.not.exist
+	Pinging does.not.exist [92.242.132.24] with 32 bytes of data:
+    Reply from 92.242.132.24: bytes=32 time=25ms TTL=242
+
+What is going on here is that that your ISP has installed a DNS server
+that re-directs unknown DNS names to some server showing a "helpful"
+error message complete with a bunch of advertisment. For some reason
+this seems to cause a problem with Kubernetes' internal DNS resolution.
+
+How can this be prevented? Theoretically it should be enough to force
+the DNS server to one that doesn't have this problem (like Google's
+`8.8.8.8` and `8.8.4.4` DNS servers), but that is tricky to get working.
+Alternatively you can simply restart the entire thing until it works.
+Unfortunately this is not quite as straightforward with `etcd-operator`,
+as it sets the `restartPolicy` to `Never`, which means that any `etcd`
+pod only gets once chance, and then will remain `Failed` forever. The
+quickest way I have found is to delete the `EtcdCluster` object, then
+`upgrade` the chart in order to re-install it:
+
+    $ kubectl delete etcdcluster sdp-prototype-etcd
+    $ helm upgrade sdp-prototype sdp-prototype
+
+This can generally be repeated until by pure chance the two DNS resolutions
+return the same result and `etcd` starts up.
