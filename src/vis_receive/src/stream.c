@@ -66,7 +66,14 @@ struct Stream* stream_create(unsigned short int port, int stream_id,
     return cls;
 }
 
-void stream_decode(struct Stream* self, const uchar* buf, int depth)
+/**
+ * Decode a SPEAD stream.
+ *
+ * @param stream SPEAD stream object
+ * @param buf Socket buffer
+ * @param depth
+ */
+void stream_decode(struct Stream* stream, const uchar* buf, int depth)
 {
     /* Extract SPEAD packet headers. */
     const uchar magic = buf[0];
@@ -83,11 +90,14 @@ void stream_decode(struct Stream* self, const uchar* buf, int depth)
     const uchar* payload_start = (const uchar*) &items[num_items];
 
     /* Heap data. */
-    int packet_has_header_data = 0, packet_has_stream_control = 0;
-    uint32_t timestamp_count = 0, timestamp_fraction = 0;
+    int packet_has_header_data = 0;
+    int packet_has_stream_control = 0;
+    uint32_t timestamp_count = 0;
+    uint32_t timestamp_fraction = 0;
     uint64_t scan_id = 0;
     size_t packet_payload_length = 0;
-    size_t heap_offset = 0, heap_size = 0;
+    size_t heap_offset = 0;
+    size_t heap_size = 0;
     size_t vis_data_start = 0;
 
     /* Iterate ItemPointers. */
@@ -104,7 +114,7 @@ void stream_decode(struct Stream* self, const uchar* buf, int depth)
             break;
         case 0x1:
             /* Heap counter (immediate addressing, big endian). */
-            if (depth == 0) self->heap_count = (int) item_addr - 2;
+            if (depth == 0) stream->heap_count = (int) item_addr - 2;
             break;
         case 0x2:
             /* Heap size (immediate addressing, big endian). */
@@ -125,7 +135,7 @@ void stream_decode(struct Stream* self, const uchar* buf, int depth)
         case 0x6:
             /* Stream control messages (immediate addressing, big endian). */
             packet_has_stream_control = 1;
-            if (item_addr == 2) self->done = 1;
+            if (item_addr == 2) stream->done = 1;
             break;
         case 0x10: /* Item descriptor name     (absolute addressing). */
         case 0x11: /* Item descriptor desc.    (absolute addressing). */
@@ -146,7 +156,7 @@ void stream_decode(struct Stream* self, const uchar* buf, int depth)
             break;
         case 0x6005:
             /* Visibility baseline count (immediate addressing). */
-            self->receiver->num_baselines = be32toh((uint32_t) item_addr);
+            stream->receiver->num_baselines = be32toh((uint32_t) item_addr);
             packet_has_header_data = 1;
             break;
         case 0x6008:
@@ -156,7 +166,7 @@ void stream_decode(struct Stream* self, const uchar* buf, int depth)
             break;
         case 0x600A:
             /* Visibility data (absolute addressing). */
-            self->vis_data_heap_offset = (size_t) item_addr;
+            stream->vis_data_heap_offset = (size_t) item_addr;
             vis_data_start = (size_t) item_addr;
             break;
         default:
@@ -167,40 +177,40 @@ void stream_decode(struct Stream* self, const uchar* buf, int depth)
     }
     if (0 && !packet_has_stream_control)
         printf("==== Packet in heap %3d "
-                "(heap offset %zu/%zu, payload length %zu)\n", self->heap_count,
+                "(heap offset %zu/%zu, payload length %zu)\n", stream->heap_count,
                 heap_offset, heap_size, packet_payload_length);
     if (0 && packet_has_header_data)
     {
-        printf("     heap               : %d\n", self->heap_count);
+        printf("     heap               : %d\n", stream->heap_count);
         printf("     timestamp_count    : %" PRIu32 "\n", timestamp_count);
         printf("     timestamp_fraction : %" PRIu32 "\n", timestamp_fraction);
         printf("     scan_id            : %" PRIu64 "\n", scan_id);
-        printf("     num_baselines      : %d\n", self->receiver->num_baselines);
+        printf("     num_baselines      : %d\n", stream->receiver->num_baselines);
     }
-    if (!packet_has_stream_control && self->vis_data_heap_offset > 0 &&
-            self->receiver->num_baselines > 0)
+    if (!packet_has_stream_control && stream->vis_data_heap_offset > 0 &&
+            stream->receiver->num_baselines > 0)
     {
         const double timestamp = tmr_get_timestamp();
         const size_t vis_data_length = packet_payload_length - vis_data_start;
         /*printf("Visibility data length: %zu bytes\n", vis_data_length);*/
         struct Buffer* buf = receiver_buffer(
-                self->receiver, self->heap_count, vis_data_length, timestamp);
+                stream->receiver, stream->heap_count, vis_data_length, timestamp);
         if (buf)
         {
             const uchar* src_addr = payload_start + vis_data_start;
-            const int i_time = self->heap_count - buf->heap_id_start;
-            const int i_chan = self->stream_id;
+            const int i_time = stream->heap_count - buf->heap_id_start;
+            const int i_chan = stream->stream_id;
             uchar* dst_addr = ((uchar*) buf->vis_data) +
-                    heap_offset - self->vis_data_heap_offset + vis_data_start +
+                    heap_offset - stream->vis_data_heap_offset + vis_data_start +
                     buf->block_size * (i_time * buf->num_channels + i_chan);
-            tmr_resume(self->tmr_memcpy);
+            tmr_resume(stream->tmr_memcpy);
             memcpy(dst_addr, src_addr, vis_data_length);
-            tmr_pause(self->tmr_memcpy);
-            self->recv_byte_counter += vis_data_length;
+            tmr_pause(stream->tmr_memcpy);
+            stream->recv_byte_counter += vis_data_length;
         }
         else
         {
-            self->dump_byte_counter += vis_data_length;
+            stream->dump_byte_counter += vis_data_length;
         }
     }
 }
@@ -214,11 +224,18 @@ void stream_free(struct Stream* self)
     free(self);
 }
 
-void stream_receive(struct Stream* self)
+/**
+ * Read and decode a SPEAD stream
+ *
+ * @param stream Stream object
+ */
+void stream_receive(struct Stream* stream)
 {
-    if (!self) return;
-    const int recvlen = recv(
-            self->socket_handle, self->socket_buffer, self->buffer_len, 0);
+    if (!stream) return;
+    const int recvlen = recv(stream->socket_handle, stream->socket_buffer,
+            stream->buffer_len, 0);
+    // FIXME Loop until all packets have been decoded
+    // Need to check if recvlen > packet size
     if (recvlen >= 8)
-        stream_decode(self, self->socket_buffer, 0);
+        stream_decode(stream, stream->socket_buffer, 0);
 }

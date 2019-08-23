@@ -35,29 +35,29 @@
 # NOTE: This order is important for static version of the library... don't mess with it!
 # --> Enabled only modules that required for libcasa_ms
 set(casacore_modules
-    casa_ms
-    casa_measures
-    casa_tables
-    casa_scimath
-    casa_scimath_f
-    casa_casa
-)
+        casa_ms
+        casa_measures
+        casa_tables
+        casa_scimath
+        casa_scimath_f
+        casa_casa
+        )
 
 # mmm this only works by luck by the looks of things...!
 find_package(LAPACK QUIET)
 if (LAPACK_FOUND)
     set(CASACORE_LINKER_FLAGS ${LAPACK_LINKER_FLAGS})
     find_path(CASACORE_INCLUDE_DIR MeasurementSets.h
-        HINTS ${CASACORE_INC_DIR}
-        PATH_SUFFIXES casacore/ms ms)
+            HINTS ${CASACORE_INC_DIR}
+            PATH_SUFFIXES casacore/ms ms)
     if (CASACORE_INCLUDE_DIR)
         get_filename_component(CASACORE_INCLUDE_DIR ${CASACORE_INCLUDE_DIR} DIRECTORY)
         get_filename_component(CASACORE_INCLUDE_DIR ${CASACORE_INCLUDE_DIR} DIRECTORY)
         foreach (module ${casacore_modules})
             find_library(CASACORE_LIBRARY_${module} NAMES ${module}
-                HINTS ${CASACORE_LIB_DIR}
-                PATHS ENV CASACORE_LIBRARY_PATH
-                PATH_SUFFIXES lib)
+                    HINTS ${CASACORE_LIB_DIR}
+                    PATHS ENV CASACORE_LIBRARY_PATH
+                    PATH_SUFFIXES lib)
             mark_as_advanced(CASACORE_LIBRARY_${module})
             list(APPEND CASACORE_LIBRARIES ${CASACORE_LIBRARY_${module}})
         endforeach()
@@ -68,7 +68,7 @@ endif()
 # handle the QUIETLY and REQUIRED arguments and set CASACORE_FOUND to TRUE if
 # all listed variables are TRUE
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(CASACORE DEFAULT_MSG
-    CASACORE_LIBRARIES CASACORE_INCLUDE_DIR)
+        CASACORE_LIBRARIES CASACORE_INCLUDE_DIR)
 
 if (NOT CASACORE_FOUND)
     set(CASACORE_LIBRARIES)

@@ -10,12 +10,20 @@ import spead2.send
 
 def main():
     """Runs the test sender."""
+    num_stations = 4
+    num_heaps = 1500
+    num_streams = 1
+    rate = 2e5
+
+    print(f'no. stations      : {num_stations}')
+    print(f'no. times (heaps) : {num_heaps}')
+
     stream_config = spead2.send.StreamConfig(
-        max_packet_size=16356, rate=1000e6, burst_size=10, max_heaps=1)
+        max_packet_size=16356, rate=rate, burst_size=10, max_heaps=1)
     item_group = spead2.send.ItemGroup(flavour=spead2.Flavour(4, 64, 48, 0))
 
     # Add item descriptors to the heap.
-    num_baselines = (512 * 513) // 2
+    num_baselines = (num_stations * (num_stations + 1)) // 2
     dtype = [('TCI', 'i1'), ('FD', 'u1'), ('VIS', '<c8', 4)]
     item_group.add_item(
         id=0x6000, name='visibility_timestamp_count', description='',
@@ -35,7 +43,6 @@ def main():
 
     # Create streams and send start-of-stream message.
     streams = []
-    num_streams = 2
     for i in range(num_streams):
         stream = spead2.send.UdpStream(
             thread_pool=spead2.ThreadPool(threads=1),
@@ -44,7 +51,8 @@ def main():
         streams.append(stream)
 
     vis = numpy.zeros(shape=(num_baselines,), dtype=dtype)
-    num_heaps = 200
+    vis_amps = numpy.arange(num_baselines*4, dtype='c8').reshape(
+        (num_baselines, 4)) / 1000.0
     start_time = time.time()
     for stream in streams:
         # Update values in the heap.
@@ -55,6 +63,7 @@ def main():
         item_group['correlator_output_data'].value = vis
         # Iterate heaps.
         for i in range(num_heaps):
+            item_group['correlator_output_data'].value['VIS'] = vis_amps + i
             # Send heap.
             stream.send_heap(item_group.get_heap(descriptors='all', data='all'))
 

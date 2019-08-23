@@ -14,19 +14,17 @@ IMAGE:=$(DOCKER_REGISTRY_HOST)/$(DOCKER_REGISTRY_USER)/$(IMAGE_NAME)
 # ----------------------------------------------------------------------------
 
 .PHONY: build
-build:
-	# build buildenv stage.
+build:  ## Build the docker image
 	docker pull $(IMAGE):buildenv || true
 	docker build --pull --cache-from $(IMAGE):buildenv --target buildenv \
 		-t $(IMAGE):buildenv .
 
-	# Build final stage
 	docker pull $(IMAGE):latest || true
 	docker build --cache-from $(IMAGE):latest --cache-from $(IMAGE):buildenv \
 		-t $(IMAGE):latest .
 
 .PHONY: ls
-ls:
+ls:  ## List docker images
 	docker image ls --filter=reference="$(IMAGE)"
 
 # ----------------------------------------------------------------------------

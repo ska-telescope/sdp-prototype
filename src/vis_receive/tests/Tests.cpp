@@ -179,14 +179,6 @@ TEST(Stream, test_stream_receive)
                 (item_id << heap_address_bits) |
                 item_addr_or_val;
         items[i] = htobe64(item);
-	/* APM - the following is for picking up any values we may wish
-	 * to use for testing later. Place a star-slash at
-	 * the end of this line to include the below code. 
-	switch (p_items[i].id)
-	{
-	    // heap_count will need to be defined.
-	    case heap_counter : heap_count = p_items[i].val; break;
-	} /* */
     }
 
     // get start of heap

@@ -2,8 +2,12 @@
 #define RECV_RECEIVER_H_
 
 #include <pthread.h>
-
 #include "buffer.h"
+
+#ifdef WITH_MS
+#   include <oskar_measurement_set.h>
+#endif
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -15,6 +19,9 @@ struct Timer;
 struct Stream;
 struct Buffer;
 
+/**
+ * Receiver data structure
+ */
 struct Receiver
 {
     pthread_mutex_t lock;
@@ -25,10 +32,19 @@ struct Receiver
     struct Buffer** buffers;
     char* output_root;
     int completed_streams;
-    int num_baselines, num_times_in_buffer, max_num_buffers;
-    int num_threads_recv, num_threads_write, num_streams, num_buffers;
+    int num_baselines;
+    int num_times_in_buffer;
+    int max_num_buffers;
+    int num_threads_recv;
+    int num_threads_write;
+    int num_streams;
+    int num_buffers;
     int num_channels_per_file;
     unsigned short int port_start;
+#ifdef WITH_MS
+    int write_counter;
+    oskar_MeasurementSet* ms;
+#endif
 };
 
 /**
@@ -38,15 +54,15 @@ struct Buffer* receiver_buffer(struct Receiver* self, int heap, size_t length,
         double timestamp);
 
 /**
- * @brief Creates a new receiver.
+ * @brief Creates a new receiver object.
  */
-struct Receiver* receiver_create(int num_buffers, int num_times_in_buffer,
+struct Receiver* receiver_create(int max_num_buffers, int num_times_in_buffer,
         int num_threads_recv, int num_threads_write, int num_streams,
         unsigned short int port_start, int num_channels_per_file,
         const char* output_root);
 
 /**
- * @brief Destroys the receiver.
+ * @brief Destroys the receiver object.
  */
 void receiver_free(struct Receiver* self);
 
