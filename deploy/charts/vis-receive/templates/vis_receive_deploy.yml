@@ -21,10 +21,10 @@ spec:
         volumeMounts:
           - mountPath: "/output"
             name: output
-#        command:
-#          - ./recv
-#          - -d
-#          - /output
+        command: ["./recv", "-d", "/output"]
+        env:
+          - name: USER
+            value: ska
         {{- with .Values.visreceive.resources }}
         resources:
           {{- toYaml . | nindent 10 }}
