@@ -17,7 +17,7 @@ spec:
       containers:
       - image: {{ .Values.visreceive.container }}:{{ .Values.visreceive.version }}
         imagePullPolicy: {{ .Values.visreceive.imagePullPolicy }}
-        name: {{ .Chart.Name }}
+        name: vis-receive
         volumeMounts:
           - mountPath: "/output"
             name: output
@@ -26,6 +26,13 @@ spec:
           - name: USER
             value: ska
         {{- with .Values.visreceive.resources }}
+        resources:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+      - image: {{ .Values.vissender.container }}:{{ .Values.vissender.version }}
+        imagePullPolicy: {{ .Values.vissender.imagePullPolicy }}
+        name: vis-send
+        {{- with .Values.vissender.resources }}
         resources:
           {{- toYaml . | nindent 10 }}
         {{- end }}

@@ -8,6 +8,13 @@ visreceive:
   resources: {}
   imagePullPolicy: IfNotPresent
 
+vissender:
+  container: pw410/vis_sender
+  version: 0.1.0
+  replicas: 1
+  resources: {}
+  imagePullPolicy: Never
+
 nameOverride: ""
 fullnameOverride: ""
 
