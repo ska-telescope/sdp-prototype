@@ -54,8 +54,11 @@ RUN docker-apt-install libcasa-ms3
 COPY --from=buildenv /usr/local/lib/liboskar_ms.* /usr/local/lib/
 COPY --from=buildenv /app/vis_receive/release/recv .
 
+RUN mkdir output
+
 # Copy test into final layer
 # FIXME(BMo) Remove this when done debugging!
 COPY --from=buildenv /app/vis_receive/release/tests/recv_test /app/
+
 ENTRYPOINT ["./recv"]
-CMD []
+CMD ["-d", "/app/output"]

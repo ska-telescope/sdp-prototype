@@ -52,11 +52,22 @@ or run the unit test binary directly using:
 
 ### Starting the receiver
 
-TODO
+Run natively with:
+
 ```bash
-./recv <...>
+./recv -d .
 ```
- 
+
+or with Docker:
+
+```bash
+docker run -t --rm \
+    -p 41000:41000/udp \
+    -v $(pwd)/output:/app/output \
+    --env USER=orca \
+    nexus.engageska-portugal.pt/sdp-prototype/vis-receive:latest
+```
+
 ### Staring the sender
 
 ```bash

@@ -14,12 +14,14 @@ def main():
     num_stations = 4
     num_heaps = 1500
     num_streams = 1
-    rate = 2e5
+    rate = 1.0e5   # Bytes/s
     target = ('127.0.0.1' if len(sys.argv) < 2 else sys.argv[1])
     target_port = int('41000' if len(sys.argv) < 3 else sys.argv[2])
 
     print(f'no. stations      : {num_stations}')
     print(f'no. times (heaps) : {num_heaps}')
+    print(f'host              : {target}')
+    print(f'port              : {target_port}')
 
     stream_config = spead2.send.StreamConfig(
         max_packet_size=16356, rate=rate, burst_size=10, max_heaps=1)
