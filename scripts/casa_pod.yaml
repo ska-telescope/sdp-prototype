@@ -1,0 +1,26 @@
+
+# Useful for inspecting results from receive processing blocks. Usage:
+#
+#  $ kubectl apply -f casa_pod
+#  $ kubectl exec -it casa casa
+#
+# You will find receive results in /data/realtime-20190627-0001-... or
+# similar.
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: casa
+spec:
+  containers:
+  - name: casa
+    image: nexus.engageska-portugal.pt/sdp-prototype/casa:latest
+    command: ["/bin/bash", "-c", "sleep infinity"]
+    volumeMounts:
+    - name: data
+      mountPath: /data
+  volumes:
+  - name: data
+    hostPath:
+      path: /data
+      type: Directory
