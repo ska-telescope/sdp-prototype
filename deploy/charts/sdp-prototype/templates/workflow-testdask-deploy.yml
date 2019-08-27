@@ -20,7 +20,7 @@ spec:
       initContainers:
       {{ include "sdp-prototype.wait-for-etcd" . | nindent 6 }}
       containers:
-      - image: {{ .Values.workflow.testdask.container }}:{{ .Values.workflow.testdask.version }}
+      - image: {{ .Values.workflow.testdask.image }}:{{ .Values.workflow.testdask.version }}
         imagePullPolicy: {{ .Values.workflow.testdask.imagePullPolicy }}
         name: {{ .Chart.Name }}
         env:

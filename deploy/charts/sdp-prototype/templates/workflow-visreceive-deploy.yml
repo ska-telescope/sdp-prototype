@@ -20,7 +20,7 @@ spec:
       initContainers:
       {{ include "sdp-prototype.wait-for-etcd" . | nindent 6 }}
       containers:
-      - image: {{ .Values.workflow.visreceive.container }}:{{ .Values.workflow.visreceive.version }}
+      - image: {{ .Values.workflow.visreceive.image }}:{{ .Values.workflow.visreceive.version }}
         imagePullPolicy: {{ .Values.workflow.visreceive.imagePullPolicy }}
         name: {{ .Chart.Name }}
         env:

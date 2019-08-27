@@ -20,11 +20,13 @@ spec:
       initContainers:
       {{ include "sdp-prototype.wait-for-etcd" . | nindent 6 }}
       containers:
-      - image: {{ .Values.helm_deploy.container }}:{{ .Values.helm_deploy.version }}
+      - image: {{ .Values.helm_deploy.image }}:{{ .Values.helm_deploy.version }}
         name: helm-deploy
         env:
         - name: SDP_CONFIG_HOST
           value: {{ include "sdp-prototype.etcd-host" . }}
+        - name: SDP_HELM_NAMESPACE
+          value: {{ quote .Values.helm_deploy.namespace }}
         - name: SDP_CHART_REPO
           value: "{{ .Values.helm_deploy.chart_repo.url }}"
         - name: SDP_CHART_REPO_REF
