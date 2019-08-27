@@ -20,7 +20,7 @@ spec:
       initContainers:
       {{ include "sdp-prototype.wait-for-etcd" . | nindent 6 }}
       containers:
-      - image: {{ .Values.workflow.testdeploy.container }}:{{ .Values.workflow.testdeploy.version }}
+      - image: {{ .Values.workflow.testdeploy.image }}:{{ .Values.workflow.testdeploy.version }}
         name: {{ .Chart.Name }}
         env:
         - name: SDP_CONFIG_HOST

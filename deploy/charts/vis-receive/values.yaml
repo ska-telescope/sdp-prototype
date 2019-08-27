@@ -13,7 +13,7 @@ vissender:
   version: 0.1.0
   replicas: 1
   resources: {}
-  imagePullPolicy: Never
+  imagePullPolicy: IfNotPresent
 
 nameOverride: ""
 fullnameOverride: ""
