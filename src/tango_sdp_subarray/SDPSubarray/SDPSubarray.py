@@ -340,7 +340,8 @@ class SDPSubarray(Device):
         self._config = config  # Store local copy of the configuration dict
         configured_scans = [int(scan_id) for scan_id in
                             self._config['scanParameters'].keys()]
-        self._scanId = configured_scans[0]  # Store the current scan id
+        if configured_scans:
+            self._scanId = configured_scans[0]  # Store the current scan id
 
         # 3. Add the PB configuration to the SDP config database.
         if self._config_db_client and \
@@ -367,14 +368,16 @@ class SDPSubarray(Device):
         # 5. Wait for receive addresses to be generated...
         # FIXME(BMo) This is a hack for debugging and not a long term solution.
         start_time = time.time()
-        while not self._receive_addresses.get('scanId') == self._scanId:
-            LOG.debug('%s', self._receive_addresses)
-            LOG.debug('%s == %s?',
-                      self._receive_addresses.get('scanId'),
-                      self._scanId)
-            time.sleep(1.0)
-            if time.time() - start_time > 5.0:
-                self._raise_command_error('Timeout reached!!')
+        if self._scanId:
+            while not self._receive_addresses.get('scanId') == self._scanId:
+                LOG.debug('%s', self._receive_addresses)
+                LOG.debug('%s == %s?',
+                          self._receive_addresses.get('scanId'),
+                          self._scanId)
+                time.sleep(1.0)
+                if time.time() - start_time > 3.0:
+                    self._raise_command_error('Timeout reached!!')
+                    break
 
         # 6. Set the obsState to ready.
         self._set_obs_state(ObsState.READY)
@@ -614,10 +617,14 @@ class SDPSubarray(Device):
         # pylint: disable=too-many-branches
         # pylint: disable=too-many-statements
 
-        # Currently this function is intended to only work with vis_ingest!
-        if self._config['workflow']['id'] != 'vis_ingest':
-            LOG.warning('Not updating receive addresses: '
-                        'workflow != vis_ingest')
+        # Currently this function is intended to only work with
+        # vis_ingest or vis_receive.
+        allowed_ids = ['vis_ingest', 'vis_receive']
+        if not any([_id == self._config['workflow']['id']
+                    for _id in allowed_ids]):
+            LOG.warning('Not updating receive addresses. '
+                        'Workflow Id not not match a known '
+                        'ingest or receive workflow.')
             return
 
         LOG.debug('Generating receive addresses.')
@@ -626,6 +633,10 @@ class SDPSubarray(Device):
         # List of Scans IDs specified in the Configure JSON object.
         configured_scans = [int(scan_id) for scan_id in
                             self._config['scanParameters'].keys()]
+
+        if not configured_scans:
+            self._raise_command_error('No scanParameters specified in '
+                                      'Configure JSON')
 
         # Get the cbf output links map from CSP.
         cbf_output_link = self._get_cbf_output_link_map()
@@ -885,7 +896,7 @@ class SDPSubarray(Device):
         # Work out how many hosts are needed on workflow parameters.
         # Note(BMo) Eventually this should be a function of the workflow.
         pb_params = self._config.get('parameters')
-        num_channels = pb_params.get('numChannels')
+        num_channels = pb_params.get('numChannels', 0)
         max_channels_per_host = pb_params.get('maxChannelsPerHost', 400)
         num_hosts = ceil(num_channels / max_channels_per_host)
         LOG.debug('No. channels: %d, No. hosts: %d, channels / host: %d',
@@ -956,7 +967,7 @@ class SDPSubarray(Device):
         # The number of channels in the channel link map should be <= number
         # of channels in the receive parameters.
         pb_params = self._config['parameters']
-        pb_num_channels = pb_params['numChannels']
+        pb_num_channels = pb_params.get('numChannels', 0)
         if len(channels) > pb_num_channels:
             self._set_obs_state(ObsState.FAULT)
             msg = 'Vis Receive configured for fewer channels than defined in '\
