@@ -38,6 +38,13 @@ struct Buffer* buffer_create(int num_times, int num_channels,
     }
     // buffer_clear(cls);
     cls->receiver = receiver;
+#ifdef WITH_MS
+    // Unpacked visibility data for one channel and 1 time (all polarisations)
+    cls->vis_unpacked = (float*)malloc(num_baselines * 4 * 2 * sizeof(float));
+    cls->uu = (float*)calloc(num_baselines, sizeof(float));
+    cls->vv = (float*)calloc(num_baselines, sizeof(float));
+    cls->ww = (float*)calloc(num_baselines, sizeof(float));
+#endif
     return cls;
 }
 
@@ -45,5 +52,6 @@ void buffer_free(struct Buffer* self)
 {
     if (!self) return;
     free(self->vis_data);
+    free(self->vis_unpacked);
     free(self);
 }

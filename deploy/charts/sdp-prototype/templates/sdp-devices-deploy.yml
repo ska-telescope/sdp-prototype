@@ -24,6 +24,11 @@ spec:
   selector:
     matchLabels:
       app: {{ .Release.Name }}-sdp-devices
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
   template:
     metadata:
       labels:
@@ -37,6 +42,9 @@ spec:
           configMap:
             name: sdp-devices-configuration-json-{{ .Release.Name }}
       initContainers:
+{{- if index .Values "feature" "config-db" }}
+{{ include "sdp-prototype.wait-for-etcd" . | nindent 8 }}
+{{- end }}
         - name: dsconfig
           image: "{{ .Values.dsconfig.image.registry }}/{{ .Values.dsconfig.image.image }}:{{ .Values.dsconfig.image.tag }}"
           imagePullPolicy: {{ .Values.dsconfig.image.pullPolicy }}
@@ -60,14 +68,22 @@ spec:
         env:
         - name: TANGO_HOST
           value: databaseds-tango-base-{{ .Release.Name }}:10000
-        image: skaorca/tangods_sdp_master:latest
-        imagePullPolicy: Always
+        image: {{ .Values.tango.master.image }}:{{ .Values.tango.master.version }}
+        imagePullPolicy: {{ .Values.tango.master.imagePullPolicy }}
         resources: {}
       - name: sdp-subarray
         env:
-          - name: TANGO_HOST
-            value: databaseds-tango-base-{{ .Release.Name }}:10000
-        image: skaorca/tangods_sdp_subarray:latest
-        imagePullPolicy: Always
+        - name: TANGO_HOST
+          value: databaseds-tango-base-{{ .Release.Name }}:10000
+        - name: TOGGLE_CONFIG_DB
+          value: {{ quote (index .Values "feature" "config-db") }}
+        - name: TOGGLE_CBF_OUTPUT_LINK
+          value: {{ quote (index .Values "feature" "cbf-output-link") }}
+{{- if index .Values "feature" "config-db" }}
+        - name: SDP_CONFIG_HOST
+          value: {{ include "sdp-prototype.etcd-host" . }}
+{{- end }}
+        image: {{ .Values.tango.subarray.image }}:{{ .Values.tango.subarray.version }}
+        imagePullPolicy: {{ .Values.tango.subarray.imagePullPolicy }}
         resources: {}
 

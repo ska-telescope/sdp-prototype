@@ -16,6 +16,23 @@
 #include "thread_pool.h"
 #include "timer.h"
 
+#ifdef WITH_MS
+#   include <oskar_measurement_set.h>
+#endif
+
+
+/**
+ * Manage the buffer and returns the buffer to use for the current data packet
+ *
+ * Check to see if any buffers have been locked or finished with
+ * repurpose the oldest buffer not in use.
+ *
+ * @param self
+ * @param heap
+ * @param length
+ * @param timestamp
+ * @return
+ */
 struct Buffer* receiver_buffer(struct Receiver* self, int heap, size_t length,
         double timestamp)
 {
@@ -80,7 +97,20 @@ struct Buffer* receiver_buffer(struct Receiver* self, int heap, size_t length,
     return buf;
 }
 
-struct Receiver* receiver_create(int num_buffers, int num_times_in_buffer,
+/**
+ * Create a receiver object
+ *
+ * @param max_num_buffers
+ * @param num_times_in_buffer
+ * @param num_threads_recv
+ * @param num_threads_write
+ * @param num_streams
+ * @param port_start
+ * @param num_channels_per_file
+ * @param output_root
+ * @return
+ */
+struct Receiver* receiver_create(int max_num_buffers, int num_times_in_buffer,
         int num_threads_recv, int num_threads_write, int num_streams,
         unsigned short int port_start, int num_channels_per_file,
         const char* output_root)
@@ -91,7 +121,7 @@ struct Receiver* receiver_create(int num_buffers, int num_times_in_buffer,
     cls->tmr = tmr_create();
     cls->barrier = barrier_create(num_threads_recv);
     cls->pool = threadpool_create(1);
-    cls->max_num_buffers = num_buffers;
+    cls->max_num_buffers = max_num_buffers;
     cls->num_times_in_buffer = num_times_in_buffer;
     cls->num_threads_recv = num_threads_recv;
     cls->num_threads_write = num_threads_write;
@@ -108,9 +138,28 @@ struct Receiver* receiver_create(int num_buffers, int num_times_in_buffer,
     for (int i = 0; i < num_streams; ++i)
         cls->streams[i] = stream_create(
                 port_start + (unsigned short int)i, i, cls);
+    #ifdef WITH_MS
+        int num_stations = 4;
+        int num_channels = num_streams;
+        int num_pols = 4;
+        double ref_freq_hz = 100.0e6;
+        double freq_inc_hz = 100.0e3;
+        int write_autocorr = 1;
+        int write_crosscorr = 1;
+        cls->ms = oskar_ms_create(
+                cls->output_root, "vis_recv", num_stations, num_channels,
+                num_pols, ref_freq_hz, freq_inc_hz, write_autocorr,
+                write_crosscorr);
+    #endif
     return cls;
 }
 
+
+/**
+ * Free the receiver object
+ *
+ * @param self
+ */
 void receiver_free(struct Receiver* self)
 {
     if (!self) return;
@@ -123,6 +172,9 @@ void receiver_free(struct Receiver* self)
     free(self->streams);
     free(self->buffers);
     free(self->output_root);
+#ifdef WITH_MS
+    oskar_ms_close(self->ms);
+#endif
     free(self);
 }
 
@@ -133,12 +185,18 @@ struct ThreadArg
     struct Buffer* buffer;
 };
 
+/**
+ * Thread start routine used to write the visibility buffer.
+ *
+ * @param arg Thread arguments
+ * @return
+ */
 static void* thread_write_parallel(void* arg)
 {
-    struct ThreadArg* a = (struct ThreadArg*) arg;
-    struct Receiver* receiver = a->receiver;
-    struct Buffer* buf = a->buffer;
-    const int thread_id = a->thread_id;
+    struct ThreadArg* thread_args = (struct ThreadArg*) arg;
+    struct Receiver* receiver = thread_args->receiver;
+    struct Buffer* buf = thread_args->buffer;
+    const int thread_id = thread_args->thread_id;
     const int num_threads = receiver->num_threads_write;
     const int num_baselines = buf->num_baselines;
     const int num_channels = buf->num_channels;
@@ -178,6 +236,12 @@ static void* thread_write_parallel(void* arg)
     return 0;
 }
 
+/**
+ * Start write of visibility data buffers
+ *
+ * @param arg
+ * @return
+ */
 static void* thread_write_buffer(void* arg)
 {
     struct Buffer* buf = (struct Buffer*) arg;
@@ -226,40 +290,130 @@ static void* thread_write_buffer(void* arg)
     return 0;
 }
 
+#ifdef WITH_MS
+/**
+ * Start write of visibility data buffers
+ *
+ * @param arg
+ * @return
+ */
+static void* thread_write_buffer_ms(void* arg)
+{
+    struct Buffer* buf = (struct Buffer*) arg;
+    struct Receiver* receiver = buf->receiver;
+    if (buf->byte_counter != buf->buffer_size)
+        printf("WARNING: Buffer %d incomplete (%zu/%zu, %.1f%%)\n",
+               buf->buffer_id, buf->byte_counter, buf->buffer_size,
+               100 * buf->byte_counter / (float)buf->buffer_size);
+    if (receiver->output_root)
+    {
+#ifdef __linux__
+        const int cpu_id = sched_getcpu();
+        printf("Writing buffer %d from CPU %d...\n", buf->buffer_id, cpu_id);
+#else
+        printf("Writing buffer %d...\n", buf->buffer_id);
+#endif
+        const double start = tmr_get_timestamp();
+
+        for (unsigned int t = 0; t < buf->num_times; ++t)
+        {
+            for (unsigned int c = 0; c < buf->num_channels; ++c)
+            {
+                const struct DataType* block_start = buf->vis_data +
+                    buf->num_baselines * (buf->num_channels * t + c);
+                for (unsigned int i = 0; i < buf->num_baselines; ++i) {
+                    float* dst = buf->vis_unpacked + i * 8;
+                    memcpy(dst, (float*)&(block_start[i].vis),
+                            8 * sizeof(float));
+                }
+                unsigned int t_global = receiver->write_counter *
+                        buf->num_times + t;
+                unsigned int start_row = t_global * buf->num_baselines;
+                oskar_ms_write_coords_f(receiver->ms, start_row,
+                        buf->num_baselines, buf->uu, buf->vv, buf->ww,
+                        1.0, 1.0, 0.0);
+                oskar_ms_write_vis_f(
+                        receiver->ms, start_row,
+                        c, 1, buf->num_baselines,
+                        buf->vis_unpacked);
+            }
+        }
+        receiver->write_counter++;
+        const double time_taken = tmr_get_timestamp() - start;
+        printf("Writing buffer %d took %.2f sec (%.2f MB/s)\n",
+               buf->buffer_id, time_taken,
+               buf->buffer_size * 1e-6 / time_taken);
+    }
+    buffer_clear(buf);
+    buf->locked_for_write = 0;
+    return 0;
+}
+#endif
+
+
+
+/**
+ * Receiver thread start routine
+ *
+ * @param arg Thread argument structure
+ */
 static void* thread_receive(void* arg)
 {
-    struct ThreadArg* a = (struct ThreadArg*) arg;
-    struct Receiver* receiver = a->receiver;
-    const int thread_id = a->thread_id;
+    struct ThreadArg* thread_args = (struct ThreadArg*) arg;
+    struct Receiver* receiver = thread_args->receiver;
+    const int thread_id = thread_args->thread_id;
     const int num_threads = receiver->num_threads_recv;
     const int num_streams = receiver->num_streams;
+    printf("Starting receiver thread %d (num streams = %d)\n",
+            thread_id, num_streams);
+
+    // Wait for all streams handled by this thread to be completed.
     while (receiver->completed_streams != num_streams)
     {
+        // Call receive on all current streams (non blocking)
         for (int i = thread_id; i < num_streams; i += num_threads)
         {
             struct Stream* stream = receiver->streams[i];
+            // FIXME needs to loop until there is nothing left in
+            //  the socket buffer
             if (!stream->done)
                 stream_receive(stream);
         }
+
+        // Make sure threads dont get out of sync
         if (num_threads > 1)
             barrier_wait(receiver->barrier);
+
+        // Determine if the buffer can be written and report stream stats
         if (thread_id == 0)
         {
-            const int num_buffers = receiver->num_buffers;
             double now = tmr_get_timestamp();
+            const int num_buffers = receiver->num_buffers;
+
+            // Loop over buffer to determine if they can be written
+            // if yes, write buffer using a pool of threads.
             for (int i = 0; i < num_buffers; ++i)
             {
                 struct Buffer* buf = receiver->buffers[i];
+                // Determine if the buffer is ready to be written
                 if ((buf->byte_counter > 0) && !buf->locked_for_write &&
                         (now - buf->last_updated >= 1.0))
                 {
                     buf->locked_for_write = 1;
                     printf("Locked buffer %d for writing\n", buf->buffer_id);
+#ifdef WITH_MS
+                    threadpool_enqueue(receiver->pool,
+                            &thread_write_buffer_ms, buf);
+#else
                     threadpool_enqueue(receiver->pool,
                             &thread_write_buffer, buf);
+#endif
                 }
             }
-            size_t dump_byte_counter = 0, recv_byte_counter = 0;
+
+            // Get stats on the state of the streams
+            size_t dump_byte_counter = 0;
+            size_t recv_byte_counter = 0;
             receiver->completed_streams = 0;
             for (int i = 0; i < num_streams; ++i)
             {
@@ -269,6 +423,8 @@ static void* thread_receive(void* arg)
                 dump_byte_counter += stream->dump_byte_counter;
             }
             const double overall_time = tmr_elapsed(receiver->tmr);
+
+            // Report stats on the state of the stream (every GB or 1s)
             if (recv_byte_counter > 1000000000uL || overall_time > 1.0)
             {
                 double memcpy_total = 0.0;
@@ -291,12 +447,19 @@ static void* thread_receive(void* arg)
                 tmr_start(receiver->tmr);
             }
         }
+
         if (num_threads > 1)
             barrier_wait(receiver->barrier);
     }
     return 0;
 }
 
+
+/**
+ * Start the SPEAD receiver.
+ *
+ * @param self Receiver object
+ */
 void receiver_start(struct Receiver* self)
 {
     if (!self) return;
@@ -304,8 +467,7 @@ void receiver_start(struct Receiver* self)
     pthread_attr_t attr;
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-    pthread_t* threads =
-            (pthread_t*) malloc(num_threads * sizeof(pthread_t));
+    pthread_t* threads = (pthread_t*) malloc(num_threads * sizeof(pthread_t));
     struct ThreadArg* args =
             (struct ThreadArg*) malloc(num_threads * sizeof(struct ThreadArg));
     tmr_start(self->tmr);

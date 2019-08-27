@@ -6,21 +6,27 @@ to this repository.
 
 ## Introduction
 
-This workflow script uses a combination of SPEAD asyncio and blocking worker
-threads to asynchronously receive and perform ingest processing on visibility
-data streamed from CSP.
+This is a simple C code for a visibility receiver capable of receiving UDP-based
+SPEAD streams containing the item identifiers specified in the of the SDP-CSP 
+ICD.
 
-This workflow assumes that each ingest process receives and processes the 
-complete time stream for a set of channels (which may be as many as ~300).
+## Dependencies
 
-The total data from CSP for the scheduling block, which may consist of as much
-as ~65k channels, is then split between a number of ingest processes.
-
-The assumption we are taking is that these ingest processes can be deployed 
-as a set of Docker containers using container orchestration (currently 
-Docker Swarm).
+- CASACORE >= 2.0.0 : https://github.com/casacore/casacore
+- OSKAR measurement set library : https://github.com/OxfordSKA/OSKAR
+    - The OSKAR ms library can be installed as a standalone library   
+      from the `oskar/ms` folder of the repo. eg.: 
+      ```
+      git clone https://github.com/OxfordSKA/OSKAR.git
+      mkdir OSKAR/oskar/ms/release
+      cd OSAKR/oskar/ms/release
+      cmake ..
+      make
+      make install
+      ```  
 
 ## Build Instructions
+
 To build the code on a local machine, ensure `make` and `CMake` are both install
 ed and give the following commands from the current directory:
 
@@ -44,4 +50,26 @@ or run the unit test binary directly using:
 
 ## Test Instructions
 
-To be written
+### Starting the receiver
+
+Run natively with:
+
+```bash
+./recv -d .
+```
+
+or with Docker:
+
+```bash
+docker run -t --rm \
+    -p 41000:41000/udp \
+    -v $(pwd)/output:/app/output \
+    --env USER=orca \
+    nexus.engageska-portugal.pt/sdp-prototype/vis-receive:latest
+```
+
+### Staring the sender
+
+```bash
+python3 send.py
+```

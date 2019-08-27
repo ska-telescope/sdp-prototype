@@ -41,6 +41,12 @@ struct Buffer
     size_t buffer_size, block_size, byte_counter;
     int buffer_id, heap_id_start, heap_id_end, locked_for_write;
     int num_times, num_channels, num_baselines;
+#ifdef WITH_MS
+    float* vis_unpacked;
+    float* uu;
+    float* vv;
+    float* ww;
+#endif
 };
 
 /**

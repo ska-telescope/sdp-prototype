@@ -29,7 +29,7 @@ struct Stream* stream_create(unsigned short int port, int stream_id,
 /**
  * @brief Decodes one or more UDP packets in the buffer.
  */
-void stream_decode(struct Stream* self, const unsigned char* buf, int depth);
+void stream_decode(struct Stream* stream, const unsigned char* buf, int depth);
 
 /**
  * @brief Destroys the stream.
@@ -39,7 +39,7 @@ void stream_free(struct Stream* self);
 /**
  * @brief Receives data from the stream's network socket.
  */
-void stream_receive(struct Stream* self);
+void stream_receive(struct Stream* stream);
 
 #ifdef __cplusplus
 }

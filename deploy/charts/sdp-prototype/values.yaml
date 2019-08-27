@@ -1,9 +1,16 @@
 
+# Feature toggles
+feature:
+  # Tango devices connect to configuration DB?
+  config-db: "1"
+  cbf-output-link: "0"
+
 # Helm deployment controller
 helm_deploy:
-  container: pw410/helm-deploy
+  image: pw410/helm-deploy
   version: 0.0.5
   replicas: 1
+  namespace: sdp
   chart_repo:
     url: https://github.com/ska-telescope/sdp-prototype.git
     ref: master
@@ -25,23 +32,34 @@ dsconfig:
 # Workflow deployments
 workflow:
   testdeploy:
-    container: pw410/workflow-testdeploy
+    image: pw410/workflow-testdeploy
     version: 0.0.7
     replicas: 2
     resources: {}
     # Allow direct Kubernetes deployments? Should be deprecated
     direct-kube-deploy: false
   testdask:
-    container: pw410/workflow-testdask
+    image: pw410/workflow-testdask
     version: 0.0.1
     replicas: 2
     resources: {}
     imagePullPolicy: IfNotPresent
   visreceive:
-    container: pw410/workflow-vis-receive
+    image: pw410/workflow-vis-receive
     version: 0.1.0
     replicas: 2
     resources: {}
+    imagePullPolicy: IfNotPresent
+
+# Tango devices
+tango:
+  master:
+    image: nexus.engageska-portugal.pt/sdp-prototype/tangods_sdp_master
+    version: 0.2.1
+    imagePullPolicy: IfNotPresent
+  subarray:
+    image: nexus.engageska-portugal.pt/sdp-prototype/tangods_sdp_subarray
+    version: 0.5.13
     imagePullPolicy: IfNotPresent
 
 # Parameters for sub-chart

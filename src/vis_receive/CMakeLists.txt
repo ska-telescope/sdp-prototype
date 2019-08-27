@@ -1,11 +1,89 @@
-cmake_minimum_required(VERSION 3.6)
+# CMake initialisation.
+cmake_minimum_required(VERSION 3.6 FATAL_ERROR)
+
+# Set policies to avoid CMake warnings.
+if (POLICY CMP0042)
+    cmake_policy(SET CMP0042 NEW)
+endif()
+if (POLICY CMP0045)
+    cmake_policy(SET CMP0045 NEW)
+endif()
+if (POLICY CMP0068)
+    cmake_policy(SET CMP0068 OLD)
+endif()
+
+# Declare the CMake project.
 project(vis_recv_c C CXX)
-find_package(Threads REQUIRED)
 
 set(CMAKE_CXX_STANDARD 14)
 
+# Add local CMake module path.
+list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_SOURCE_DIR}/cmake/modules)
+
+# Get version number from file
+file(STRINGS "VERSION" RECV_VERSION)
+
 # -----------------------------------------------------------------------------
-# List of source files.
+# Dependencies
+# -----------------------------------------------------------------------------
+find_package(Threads REQUIRED)
+find_package(CasaCore)
+find_package(OSKAR_MS)
+
+
+# -----------------------------------------------------------------------------
+# Measurement Set write support
+# -----------------------------------------------------------------------------
+if (OSKAR_MS_FOUND AND CASACORE_FOUND)
+    include_directories(${OSKAR_MS_INCLUDE_DIR})
+    include_directories(${OSKAR_MS_INCLUDE_DIR}/ms)
+    include_directories(${CASACORE_INCLUDE_DIR})
+    include_directories(${CASACORE_INCLUDE_DIR}/casacore)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D WITH_MS")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D WITH_MS")
+endif()
+
+
+# -----------------------------------------------------------------------------
+# Coveralls (code coverage) set up
+# -----------------------------------------------------------------------------
+option(COVERALLS "Turn on coveralls support" OFF)
+option(COVERALLS_UPLOAD "Upload the generated coveralls json" OFF)
+
+if (COVERALLS)
+    include(Coveralls)
+    coveralls_turn_on_coverage()
+    coveralls_setup("${recv_SRC}" ${COVERALLS_UPLOAD}
+        "${PROJECT_SOURCE_DIR}/extern/coveralls-cmake/cmake")
+endif()
+
+# -----------------------------------------------------------------------------
+# Set compiler flags for Google Sanitizers
+# -----------------------------------------------------------------------------
+# Address sanitiser
+if(ENABLE_ASAN)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O1")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fuse-ld=gold")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=leak")
+endif()
+
+# Undefined sanitiser
+if(ENABLE_USAN)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fuse-ld=gold")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=undefined")
+endif()
+
+# Thread sanitiser
+if(ENABLE_TSAN)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fuse-ld=gold")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=thread")
+endif()
+
+# -----------------------------------------------------------------------------
+# Source files
 # -----------------------------------------------------------------------------
 
 include_directories(src)
@@ -18,103 +96,43 @@ set(recv_SRC
     ${PROJECT_SOURCE_DIR}/src/timer.c
 )
 
-# -----------------------------------------------------------------------------
-# Measurement Set write support 
-# -----------------------------------------------------------------------------
+if (OSKAR_MS_FOUND)
+    list(APPEND recv_SRC ${PROJECT_SOURCE_DIR}/src/write_ms_access.c)
+endif(OSKAR_MS_FOUND)
 
-if(OSKAR_DIR)
-		find_path(OSKAR_INCLUDE_DIR oskar_measurement_set.h
-    		     	HINTS ${OSKAR_DIR}
-							PATH_SUFFIXES include)	
-		find_path(OSKAR_LIBRARY_DIR liboskar_ms.so
-    		    	HINTS ${OSKAR_DIR}
-							PATH_SUFFIXES lib)	
-		if(OSKAR_INCLUDE_DIR AND OSKAR_LIBRARY_DIR)
-				include_directories("${OSKAR_INCLUDE_DIR}")
-				link_directories("${OSKAR_LIBRARY_DIR}")
-				list(APPEND recv_SRC
-  		  		${PROJECT_SOURCE_DIR}/src/write_ms_access.c
-				)
-				include_directories("${CASACORE_HOME}/include")
-				link_directories("${CASACORE_HOME}/lib")
-				set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D WITH_MS")
-				set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D WITH_MS")
-		endif()
-endif()
 
 # -----------------------------------------------------------------------------
-# Coveralls
+# Build
 # -----------------------------------------------------------------------------
 
-option(COVERALLS "Turn on coveralls support" OFF)
-option(COVERALLS_UPLOAD "Upload the generated coveralls json" OFF)
-
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
-	${PROJECT_SOURCE_DIR}/extern/coveralls-cmake/cmake)
-
-if (COVERALLS)
-	include(Coveralls)
-	coveralls_turn_on_coverage()
-endif()
-
-if (COVERALLS)
-	coveralls_setup(
-        "${recv_SRC}"
-        ${COVERALLS_UPLOAD}
-        "${PROJECT_SOURCE_DIR}/extern/coveralls-cmake/cmake")
-endif()
-
-# -----------------------------------------------------------------------------
-# Google Sanitizers
-# -----------------------------------------------------------------------------
-
-if(ENABLE_ASAN)
+if(DEBUG)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O1")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fuse-ld=gold")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=leak")
-endif()
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
+endif(DEBUG)
 
-if(ENABLE_USAN)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fuse-ld=gold")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=undefined")
-endif()
-
-if(ENABLE_TSAN)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fuse-ld=gold")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=thread")
-endif()
-
-# -----------------------------------------------------------------------------
-# Valgrind
-# -----------------------------------------------------------------------------
-
-include (CTest)
-
-# -----------------------------------------------------------------------------
-# Unit test
-# -----------------------------------------------------------------------------
-
-# Get version number from file and add to definitions for compiler.
-file(STRINGS "VERSION" RECV_VERSION)
 add_definitions(-DRECV_VERSION="${RECV_VERSION}")
 
-
 # Build library.
-add_library(vis_recv ${recv_SRC})
-target_link_libraries(vis_recv Threads::Threads)
-if(OSKAR_LIBRARY_DIR)
-	target_link_libraries(vis_recv oskar_ms casa_casa casa_ms casa_meas)
+set(libname vis_recv)
+add_library(${libname} ${recv_SRC})
+target_link_libraries(${libname} Threads::Threads)
+if (OSKAR_MS_FOUND)
+    target_link_libraries(${libname} ${OSKAR_MS_LIBRARY} ${CASACORE_LIBRARIES})
 endif()
+set_target_properties(${libname} PROPERTIES
+        SOVERSION ${RECV_VERSION}
+        VERSION ${RECV_VERSION})
 
 # Build executable.
 add_executable(recv src/main.c)
 target_link_libraries(recv vis_recv Threads::Threads)
-if(OSKAR_LIBRARY_DIR)
-	target_link_libraries(recv oskar_ms casa_casa casa_ms casa_meas)
+if (OSKAR_MS_FOUND)
+    target_link_libraries(recv ${OSKAR_MS_LIBRARY} ${CASACORE_LIBRARIES})
 endif()
+
+# -----------------------------------------------------------------------------
+# Unit tests
+# -----------------------------------------------------------------------------
 
 # Build tests.
 include(CTest)
