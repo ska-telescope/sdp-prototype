@@ -74,6 +74,7 @@ class FeatureToggle(IntEnum):
 
     CONFIG_DB = 1  #: Enable / Disable the Config DB
     CBF_OUTPUT_LINK = 2  #: Enable / Disable use of of the CBF OUTPUT LINK
+    AUTO_REGISTER = 3  #: Enable / Disable tango db auto-registration
 
 
 # class SDPSubarray(SKASubarray):
@@ -156,12 +157,8 @@ class SDPSubarray(Device):
         self.set_state(DevState.INIT)
         LOG.info('Initialising SDP Subarray: %s', self.get_name())
 
-        # Set default values for feature toggles.
-        self.set_feature_toggle_default(FeatureToggle.CONFIG_DB, False)
-        self.set_feature_toggle_default(FeatureToggle.CBF_OUTPUT_LINK, False)
-
         # Initialise attributes
-        self._obs_state = ObsState.IDLE
+        self._set_obs_state(ObsState.IDLE)
         self._admin_mode = AdminMode.ONLINE
         self._health_state = HealthState.OK
         self._receive_addresses = dict()
@@ -605,7 +602,7 @@ class SDPSubarray(Device):
 
         """
         self._require_obs_state([ObsState.SCANNING])
-        self._obs_state = ObsState.READY
+        self._set_obs_state(ObsState.READY)
 
     def _generate_receive_addresses(self):
         """Evaluate mapping between receive hosts and channels.
@@ -1155,14 +1152,26 @@ def init_logger(level='DEBUG', name='ska'):
 
 def main(args=None, **kwargs):
     """Run server."""
+    # Set default values for feature toggles.
+    SDPSubarray.set_feature_toggle_default(FeatureToggle.CONFIG_DB, False)
+    SDPSubarray.set_feature_toggle_default(FeatureToggle.CBF_OUTPUT_LINK,
+                                           False)
+    SDPSubarray.set_feature_toggle_default(FeatureToggle.AUTO_REGISTER, True)
+
     log_level = 'INFO'
     if len(sys.argv) > 2 and '-v' in sys.argv[2]:
         log_level = 'DEBUG'
     init_logger(log_level)
-    if len(sys.argv) > 1:
-        # delete_device_server("*")
-        devices = ['mid_sdp/elt/subarray_{:d}'.format(i+1) for i in range(1)]
-        register(sys.argv[1], *devices)
+
+    # If the feature is enabled, attempt to auto-register the device
+    # with the tango db.
+    if SDPSubarray.is_feature_active(FeatureToggle.AUTO_REGISTER):
+        if len(sys.argv) > 1:
+            # delete_device_server("*")
+            devices = ['mid_sdp/elt/subarray_{:d}'.format(i+1)
+                       for i in range(1)]
+            register(sys.argv[1], *devices)
+
     return run((SDPSubarray,), args=args, **kwargs)
 
 
