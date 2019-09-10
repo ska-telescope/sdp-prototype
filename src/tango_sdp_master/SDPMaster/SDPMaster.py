@@ -2,9 +2,10 @@
 """Tango SDP Master device module."""
 # pylint: disable=invalid-name, import-error, no-name-in-module
 
+import os
 import logging
 import sys
-from enum import IntEnum
+from enum import IntEnum, unique
 
 from tango import (AttrWriteType, ConnectionFailed,
                    Database, DbDevInfo, DebugIt, DevState)
@@ -13,6 +14,7 @@ from tango.server import Device, DeviceMeta, attribute, command, run
 LOG = logging.getLogger('ska.sdp.subarray_ds')
 
 
+@unique
 class HealthState(IntEnum):
     """HealthState enum."""
 
@@ -20,6 +22,13 @@ class HealthState(IntEnum):
     DEGRADED = 1
     FAILED = 2
     UNKNOWN = 3
+
+
+@unique
+class FeatureToggle(IntEnum):
+    """Feature Toggles."""
+
+    AUTO_REGISTER = 1  #: Enable / Disable tango db auto-registration
 
 
 class SDPMaster(Device):
@@ -130,6 +139,58 @@ class SDPMaster(Device):
         self._operating_state = 6
         # PROTECTED REGION END #    //  SDPMaster.off
 
+    # ---------------
+    # Public methods
+    # ---------------
+
+    @staticmethod
+    def set_feature_toggle_default(feature_name, default):
+        """Set the default value of a feature toggle.
+
+        :param feature_name: Name of the feature
+        :param default: Default for the feature toggle (if it is not set)
+
+        """
+        env_var = SDPMaster._get_feature_toggle_env_var(feature_name)
+        if not os.environ.get(env_var):
+            LOG.debug('Setting default for toggle: %s = %s', env_var, default)
+            os.environ[env_var] = str(int(default))
+
+    @staticmethod
+    def is_feature_active(feature_name):
+        """Check if feature is active.
+
+        :param feature_name: Name of the feature.
+        :returns: True if the feature toggle is enabled.
+
+        """
+        env_var = SDPMaster._get_feature_toggle_env_var(feature_name)
+        env_var_value = os.environ.get(env_var)
+        return env_var_value == '1'
+
+    # -------------------------------------
+    # Private methods
+    # -------------------------------------
+
+    @staticmethod
+    def _get_feature_toggle_env_var(feature_name):
+        """Get the env var associated with the feature toggle.
+
+        :param feature_name: Name of the feature.
+        :returns: environment variable name for feature toggle.
+
+        """
+        if isinstance(feature_name, FeatureToggle):
+            feature_name = feature_name.name
+        env_var = str('toggle_' + feature_name).upper()
+        allowed = ['TOGGLE_' + toggle.name for toggle in FeatureToggle]
+        if env_var not in allowed:
+            message = 'Unknown feature toggle: {} (allowed: {})'\
+                .format(env_var, allowed)
+            LOG.error(message)
+            raise ValueError(message)
+        return env_var
+
 
 def delete_device_server(instance_name: str = "*"):
     """Delete (unregister) SDPMaster device server instance(s).
@@ -204,15 +265,23 @@ def init_logger(level: str = 'DEBUG', name: str = 'ska.sdp'):
 def main(args=None, **kwargs):
     """Run server."""
     # PROTECTED REGION ID(SDPMaster.main) ENABLED START #
+    # Set default values for feature toggles.
+    SDPMaster.set_feature_toggle_default(FeatureToggle.AUTO_REGISTER, True)
+
     log_level = 'INFO'
     if len(sys.argv) > 2 and '-v' in sys.argv[2]:
         log_level = 'DEBUG'
     init_logger(log_level)
-    if len(sys.argv) > 1:
-        # delete_device_server("*")
-        register(sys.argv[1], 'mid_sdp/elt/master')
+
+    # If the feature is enabled, attempt to auto-register the device
+    # with the tango db.
+    if SDPMaster.is_feature_active(FeatureToggle.AUTO_REGISTER):
+        if len(sys.argv) > 1:
+            # delete_device_server("*")
+            register(sys.argv[1], 'mid_sdp/elt/master')
+
     return run((SDPMaster,), args=args, **kwargs)
-# PROTECTED REGION END #    //  SDPMaster.main
+    # PROTECTED REGION END #    //  SDPMaster.main
 
 
 if __name__ == '__main__':
