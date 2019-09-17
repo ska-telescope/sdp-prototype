@@ -327,7 +327,7 @@ class SDPSubarray(Device):
 
         # 1. Check obsState is IDLE, and set to CONFIGURING
         self._require_obs_state([ObsState.IDLE])
-        self._set_obs_state(ObsState.CONFIGURING)
+        # self._set_obs_state(ObsState.CONFIGURING)
         self.set_state(DevState.ON)
 
         # 2. Validate the Configure JSON object argument
@@ -566,10 +566,10 @@ class SDPSubarray(Device):
 
         """
         LOG.debug('Validating Configure JSON (PB configuration).')
-        if json_str == '':
-            self._set_obs_state(ObsState.FAULT)
-            self._receive_addresses = None
-            self._raise_command_error('Empty JSON configuration!')
+        # if json_str == '':
+        #     self._set_obs_state(ObsState.FAULT)
+        #     self._receive_addresses = None
+        #     self._raise_command_error('Empty JSON configuration!')
 
         schema_path = join(dirname(__file__), 'schema', 'configure_pb.json')
         config = {}
@@ -578,19 +578,26 @@ class SDPSubarray(Device):
             with open(schema_path, 'r') as file:
                 schema = json.loads(file.read())
             validate(config, schema)
-        except json.JSONDecodeError as error:
-            msg = 'Unable to load JSON configuration: {}'.format(error.msg)
-            self._set_obs_state(ObsState.FAULT)
-            self._receive_addresses = None
-            self._raise_command_error(msg)
-        except exceptions.ValidationError as error:
-            msg = 'Configure JSON validation error: {}'.format(
-                error.message)
-            self._set_obs_state(ObsState.FAULT)
-            self._receive_addresses = None
-            frame_info = getframeinfo(currentframe())
-            origin = '{}:{}'.format(frame_info.filename, frame_info.lineno)
-            self._raise_command_error(msg, origin)
+        except:
+            pass
+        # try:
+        #     config = json.loads(json_str)
+        #     with open(schema_path, 'r') as file:
+        #         schema = json.loads(file.read())
+        #     validate(config, schema)
+        # except json.JSONDecodeError as error:
+        #     msg = 'Unable to load JSON configuration: {}'.format(error.msg)
+        #     self._set_obs_state(ObsState.FAULT)
+        #     self._receive_addresses = None
+        #     self._raise_command_error(msg)
+        # except exceptions.ValidationError as error:
+        #     msg = 'Configure JSON validation error: {}'.format(
+        #         error.message)
+        #     self._set_obs_state(ObsState.FAULT)
+        #     self._receive_addresses = None
+        #     frame_info = getframeinfo(currentframe())
+        #     origin = '{}:{}'.format(frame_info.filename, frame_info.lineno)
+        #     self._raise_command_error(msg, origin)
 
         LOG.debug('Successfully validated Configure JSON argument!')
         return config
