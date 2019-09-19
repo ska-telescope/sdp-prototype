@@ -171,6 +171,7 @@ def command_configure_invalid_json(subarray_device):
         subarray_device.Configure('{}')
 
 
+
 @when('I call ConfigureScan')
 def command_configure_scan(subarray_device):
     """Call the Configure Scan command.
