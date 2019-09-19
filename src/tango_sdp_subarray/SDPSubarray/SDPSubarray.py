@@ -568,8 +568,8 @@ class SDPSubarray(Device):
         LOG.debug('Validating Configure JSON (PB configuration).')
         if json_str == '':
             self._set_obs_state(ObsState.IDLE)
-            # self._receive_addresses = None
-            # self._raise_command_error('Empty JSON configuration!')
+            self._receive_addresses = None
+            self._raise_command_error('Empty JSON configuration!')
 
         schema_path = join(dirname(__file__), 'schema', 'configure_pb.json')
         config = {}
