@@ -332,7 +332,7 @@ class SDPSubarray(Device):
 
         # 2. Validate the Configure JSON object argument
         config = self._validate_configure_json(json_config)
-        LOG.debug('Configure JSON successfully validated.')
+        # LOG.debug('Configure JSON successfully validated.')
         config = config.get('configure')
         self._config = config  # Store local copy of the configuration dict
         configured_scans = [int(scan_id) for scan_id in
@@ -567,7 +567,7 @@ class SDPSubarray(Device):
         """
         LOG.debug('Validating Configure JSON (PB configuration).')
         if json_str == '':
-            self._set_obs_state(ObsState.FAULT)
+            self._set_obs_state(ObsState.IDLE)
             self._receive_addresses = None
             self._raise_command_error('Empty JSON configuration!')
 
@@ -580,13 +580,13 @@ class SDPSubarray(Device):
             validate(config, schema)
         except json.JSONDecodeError as error:
             msg = 'Unable to load JSON configuration: {}'.format(error.msg)
-            self._set_obs_state(ObsState.FAULT)
+            self._set_obs_state(ObsState.IDLE)
             self._receive_addresses = None
             self._raise_command_error(msg)
         except exceptions.ValidationError as error:
             msg = 'Configure JSON validation error: {}'.format(
                 error.message)
-            self._set_obs_state(ObsState.FAULT)
+            self._set_obs_state(ObsState.IDLE)
             self._receive_addresses = None
             frame_info = getframeinfo(currentframe())
             origin = '{}:{}'.format(frame_info.filename, frame_info.lineno)

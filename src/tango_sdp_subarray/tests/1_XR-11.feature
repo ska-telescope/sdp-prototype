@@ -89,7 +89,7 @@ Feature: SDPSubarray device
 		Given I have an ONLINE SDPSubarray device
 		When obsState is IDLE
 		And I call Configure with invalid JSON
-		Then obsState should be FAULT
+		Then obsState should be IDLE
 		And The receiveAddresses attribute should return an empty JSON object
 
 
