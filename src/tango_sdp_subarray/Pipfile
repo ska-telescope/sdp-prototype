@@ -7,7 +7,7 @@ verify_ssl = true
 jsonschema = "*"
 ska-sdp-config = "*"
 # ---- Inherited from base class, not installed again here as depends on git ------
-pytango = "==9.3.0"
+pytango = "*"
 # lmcbaseclasses = {git = "https://github.com/ska-telescope/lmc-base-classes.git", editable = true}
 
 [dev-packages]
