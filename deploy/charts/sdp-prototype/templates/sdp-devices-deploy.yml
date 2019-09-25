@@ -68,10 +68,16 @@ spec:
         env:
         - name: TANGO_HOST
           value: databaseds-tango-base-{{ .Release.Name }}:10000
+        - name: TOGGLE_AUTO_REGISTER
+          value: "0"
         image: {{ .Values.tango.master.image }}:{{ .Values.tango.master.version }}
         imagePullPolicy: {{ .Values.tango.master.imagePullPolicy }}
         resources: {}
       - name: sdp-subarray-1
+        args: ["1", "-v4"]
+        image: {{ .Values.tango.subarray.image }}:{{ .Values.tango.subarray.version }}
+        imagePullPolicy: {{ .Values.tango.subarray.imagePullPolicy }}
+        resources: {}
         env:
         - name: TANGO_HOST
           value: databaseds-tango-base-{{ .Release.Name }}:10000
@@ -79,15 +85,17 @@ spec:
           value: {{ quote (index .Values "feature" "config-db") }}
         - name: TOGGLE_CBF_OUTPUT_LINK
           value: {{ quote (index .Values "feature" "cbf-output-link") }}
+        - name: TOGGLE_AUTO_REGISTER
+          value: "0"
 {{- if index .Values "feature" "config-db" }}
         - name: SDP_CONFIG_HOST
           value: {{ include "sdp-prototype.etcd-host" . }}
 {{- end }}
-        command: ["1", "-v4"]
-        image: {{ .Values.tango.subarray.image }}:{{ .Values.tango.subarray.version }}
-        imagePullPolicy: {{ .Values.tango.subarray.imagePullPolicy }}
-        resources: {}
       - name: sdp-subarray-2
+        args: ["2", "-v4"]
+        image: {{ .Values.tango.subarray.image }}:{{ .Values.tango.subarray.version }}
+        imagePullPolicy: {{ .Values.tango.subarray.imagePullPolicy }}
+        resources: {}
         env:
         - name: TANGO_HOST
           value: databaseds-tango-base-{{ .Release.Name }}:10000
@@ -95,12 +103,9 @@ spec:
           value: {{ quote (index .Values "feature" "config-db") }}
         - name: TOGGLE_CBF_OUTPUT_LINK
           value: {{ quote (index .Values "feature" "cbf-output-link") }}
+        - name: TOGGLE_AUTO_REGISTER
+          value: "0"
 {{- if index .Values "feature" "config-db" }}
         - name: SDP_CONFIG_HOST
           value: {{ include "sdp-prototype.etcd-host" . }}
 {{- end }}
-        command: ["2", "-v4"]
-        image: {{ .Values.tango.subarray.image }}:{{ .Values.tango.subarray.version }}
-        imagePullPolicy: {{ .Values.tango.subarray.imagePullPolicy }}
-        resources: {}
-
