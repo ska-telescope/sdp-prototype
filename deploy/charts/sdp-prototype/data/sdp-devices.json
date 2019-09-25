@@ -83,7 +83,11 @@
                                 "2000"
                             ]
                         }
-                    },
+                    }
+                }
+            },
+            "2": {
+                "SdpSubarray": {
                     "mid_sdp/elt/subarray_2": {
                         "attribute_properties": {
                             "adminMode": {
