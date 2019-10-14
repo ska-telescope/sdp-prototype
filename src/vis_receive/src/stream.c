@@ -67,21 +67,23 @@ struct Stream* stream_create(unsigned short int port, int stream_id,
 }
 
 /**
- * Decode a SPEAD stream.
+ * Decode a SPEAD packet.
  *
- * @param stream SPEAD stream object
- * @param buf Socket buffer
- * @param depth
+ * @param stream SPEAD stream object.
+ * @param buf Pointer to start of packet.
+ * @param depth For internal use only - must be 0.
+ *
+ * @return Number of bytes decoded.
  */
-void stream_decode(struct Stream* stream, const uchar* buf, int depth)
+int stream_decode(struct Stream* stream, const uchar* buf, int depth)
 {
     /* Extract SPEAD packet headers. */
     const uchar magic = buf[0];
     const uchar version = buf[1];
-    if (magic != 'S' || version != (uchar)4) return;
     const uchar item_id_bits = buf[2] * 8 - 1;
     const uchar heap_address_bits = buf[3] * 8;
     const uchar num_items = buf[7];
+    if (magic != 'S' || version != (uchar)4) return 8;
 
     /* Get pointers to items and payload start. */
     const uint64_t* items = (const uint64_t*) &buf[8];
@@ -213,6 +215,7 @@ void stream_decode(struct Stream* stream, const uchar* buf, int depth)
             stream->dump_byte_counter += vis_data_length;
         }
     }
+    return (8 + 8 * num_items) + (int)packet_payload_length;
 }
 
 void stream_free(struct Stream* self)
@@ -231,11 +234,14 @@ void stream_free(struct Stream* self)
  */
 void stream_receive(struct Stream* stream)
 {
+    int offset = 0;
     if (!stream) return;
     const int recvlen = recv(stream->socket_handle, stream->socket_buffer,
             stream->buffer_len, 0);
-    // FIXME Loop until all packets have been decoded
-    // Need to check if recvlen > packet size
-    if (recvlen >= 8)
-        stream_decode(stream, stream->socket_buffer, 0);
+    while ((recvlen - offset) >= 8)
+    {
+        const int bytes_decoded = stream_decode(
+                stream, stream->socket_buffer + offset, 0);
+        offset += bytes_decoded;
+    }
 }
