@@ -52,6 +52,11 @@ void buffer_free(struct Buffer* self)
 {
     if (!self) return;
     free(self->vis_data);
+#ifdef WITH_MS
     free(self->vis_unpacked);
+    free(self->uu);
+    free(self->vv);
+    free(self->ww);
+#endif
     free(self);
 }

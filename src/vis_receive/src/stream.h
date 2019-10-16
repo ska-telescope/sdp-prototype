@@ -27,9 +27,9 @@ struct Stream* stream_create(unsigned short int port, int stream_id,
         struct Receiver* receiver);
 
 /**
- * @brief Decodes one or more UDP packets in the buffer.
+ * @brief Decodes a SPEAD packet from the buffer.
  */
-void stream_decode(struct Stream* stream, const unsigned char* buf, int depth);
+int stream_decode(struct Stream* stream, const unsigned char* buf, int depth);
 
 /**
  * @brief Destroys the stream.
