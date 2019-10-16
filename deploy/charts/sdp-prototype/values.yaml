@@ -7,8 +7,8 @@ feature:
 
 # Helm deployment controller
 helm_deploy:
-  image: njthykkathu/helm_deploy
-  version: 0.0.2
+  image: pw410/helm-deploy
+  version: 0.0.5
   replicas: 1
   namespace: sdp
   chart_repo:
