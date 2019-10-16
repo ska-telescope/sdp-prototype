@@ -7,8 +7,8 @@ feature:
 
 # Helm deployment controller
 helm_deploy:
-  image: pw410/helm-deploy
-  version: 0.0.5
+  image: njthykkathu/helm_deploy
+  version: 0.0.2
   replicas: 1
   namespace: sdp
   chart_repo:
@@ -44,12 +44,12 @@ workflow:
     replicas: 2
     resources: {}
     imagePullPolicy: IfNotPresent
-  visreceive:
-    image: pw410/workflow-vis-receive
-    version: 0.1.0
-    replicas: 2
-    resources: {}
-    imagePullPolicy: IfNotPresent
+#  visreceive:
+#    image: pw410/workflow-vis-receive
+#    version: 0.1.0
+#    replicas: 2
+#    resources: {}
+#    imagePullPolicy: IfNotPresent
 
 # Tango devices
 tango:

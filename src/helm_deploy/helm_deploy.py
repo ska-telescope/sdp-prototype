@@ -164,17 +164,19 @@ def main():
     update_chart_repos()
     next_chart_refresh = time.time() + CHART_REPO_REFRESH
 
-    # Load Helm repository
-    helm_invoke("init", "--client-only")
-    helm_invoke("repo", "update")
+    log.info("I am in here")
 
-    # Show
-    log.info("Loading helm deployments...")
-
-    # Query helm for active deployments. Filter for active ones.
-    deploys = helm_invoke('list', '-q', '--namespace', NAMESPACE).split('\n')
-    deploys = set(deploys).difference(set(['']))
-    log.info("Found {} existing deployments.".format(len(deploys)))
+    # # Load Helm repository
+    # helm_invoke("init", "--client-only")
+    # helm_invoke("repo", "update")
+    #
+    # # Show
+    # log.info("Loading helm deployments...")
+    #
+    # # Query helm for active deployments. Filter for active ones.
+    # deploys = helm_invoke('list', '-q', '--namespace', NAMESPACE).split('\n')
+    # deploys = set(deploys).difference(set(['']))
+    # log.info("Found {} existing deployments.".format(len(deploys)))
 
     # Wait for something to happen
     for txn in client.txn():
@@ -183,44 +185,50 @@ def main():
         if time.time() > next_chart_refresh:
             next_chart_refresh = time.time() + CHART_REPO_REFRESH
 
-            try:
-                helm_invoke("repo", "update")
-            except subprocess.CalledProcessError as e:
-                log.error("Could not refresh global chart repository!")
+        log.info("Inside the loop")
+        for pb_id in txn.list_processing_blocks():
+            pb = txn.get_processing_block(pb_id)
+            print("{} ({}:{})".format(pb_id, pb.workflow['id'], pb.workflow['version']))
 
-            try:
-                update_chart_repos()
-            except subprocess.CalledProcessError as e:
-                log.error("Could not refresh chart repository!")
 
-        # List deployments
-        target_deploys = txn.list_deployments()
-
-        # Check for deployments that we should delete
-        for dpl_id in list(deploys):
-            if dpl_id not in target_deploys:
-                if delete_helm(txn, dpl_id):
-                    deploys.remove(dpl_id)
-
-        # Check for deployments we should add
-        for dpl_id in target_deploys:
-            if dpl_id not in deploys:
-
-                # Get details
-                try:
-                    deploy = txn.get_deployment(dpl_id)
-                except ValueError as e:
-                    log.warning("Deployment {} failed validation: {}!".format(
-                        dpl_id, str(e)))
-                    continue
-
-                # Right type?
-                if deploy.type != 'helm':
-                    continue
-
-                # Create it
-                if create_helm(txn, dpl_id, deploy):
-                    deploys.add(dpl_id)
+        #     try:
+        #         helm_invoke("repo", "update")
+        #     except subprocess.CalledProcessError as e:
+        #         log.error("Could not refresh global chart repository!")
+        #
+        #     try:
+        #         update_chart_repos()
+        #     except subprocess.CalledProcessError as e:
+        #         log.error("Could not refresh chart repository!")
+        #
+        # # List deployments
+        # target_deploys = txn.list_deployments()
+        #
+        # # Check for deployments that we should delete
+        # for dpl_id in list(deploys):
+        #     if dpl_id not in target_deploys:
+        #         if delete_helm(txn, dpl_id):
+        #             deploys.remove(dpl_id)
+        #
+        # # Check for deployments we should add
+        # for dpl_id in target_deploys:
+        #     if dpl_id not in deploys:
+        #
+        #         # Get details
+        #         try:
+        #             deploy = txn.get_deployment(dpl_id)
+        #         except ValueError as e:
+        #             log.warning("Deployment {} failed validation: {}!".format(
+        #                 dpl_id, str(e)))
+        #             continue
+        #
+        #         # Right type?
+        #         if deploy.type != 'helm':
+        #             continue
+        #
+        #         # Create it
+        #         if create_helm(txn, dpl_id, deploy):
+        #             deploys.add(dpl_id)
 
         # Loop around, wait if we made no change
         timeout = next_chart_refresh
