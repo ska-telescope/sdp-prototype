@@ -31,10 +31,17 @@ dsconfig:
 
 # Workflow deployments
 workflow:
-  testdeploy:
-    image: pw410/workflow-testdeploy
-    version: 0.0.7
-    replicas: 2
+#  testdeploy:
+#    image: pw410/workflow-testdeploy
+#    version: 0.0.7
+#    replicas: 2
+#    resources: {}
+#    # Allow direct Kubernetes deployments? Should be deprecated
+#    direct-kube-deploy: false
+  testdynamic:
+    image: njthykkathu/workflow
+    version: 0.0.6
+    replicas: 1
     resources: {}
     # Allow direct Kubernetes deployments? Should be deprecated
     direct-kube-deploy: false

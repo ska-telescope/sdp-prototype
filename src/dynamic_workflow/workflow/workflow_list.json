@@ -1,0 +1,14 @@
+{
+   "id":"workflow_list",
+   "version":"1.0.0",
+   "visreceive":[
+      {
+         "1.0.0": [
+            {
+               "id": "visreceive",
+               "type": "realtime"
+            }
+         ]
+      }
+   ]
+}
