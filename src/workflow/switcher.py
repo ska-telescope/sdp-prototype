@@ -30,10 +30,13 @@ def main():
             if pb.workflow['type'] == "realtime":
                 log.info(pb.workflow['id'])
                 if pb.workflow['id'] == "vis_receive":
-                    os.system("python3 {0}".format("test_vis_receive.py"))
+                    os.system("python3 {0} {1}".format("test_vis_receive.py", pb_id))
                 elif pb.workflow['id'] == "testdeploy":
-                    os.system("python3 {0}".format("testdeploy.py"))
+                    os.system("python3 {0} {1}".format("testdeploy.py", pb_id))
+                elif pb.workflow['id'] == "testdask":
+                    os.system("python3 {0}".format("testdask.py"))
 
+        log.info("Continue waiting...")
         txn.loop(wait=True)
 
 

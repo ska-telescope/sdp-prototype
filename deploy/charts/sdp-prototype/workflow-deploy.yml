@@ -1,12 +1,12 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "sdp-prototype.fullname" . }}-workflow-deploy
+  name: {{ include "sdp-prototype.fullname" . }}-workflow-testdeploy
   namespace: {{ .Release.Namespace }}
   labels:
 {{ include "sdp-prototype.labels" . | indent 4 }}
 spec:
-  replicas: {{ .Values.workflow.replicas }}
+  replicas: {{ .Values.workflow.testdeploy.replicas }}
   selector:
     matchLabels:
       app.kubernetes.io/name: {{ include "sdp-prototype.name" . }}
@@ -20,13 +20,15 @@ spec:
       initContainers:
       {{ include "sdp-prototype.wait-for-etcd" . | nindent 6 }}
       containers:
-      - image: {{ .Values.workflow.image }}:{{ .Values.workflow.version }}
-        imagePullPolicy: {{ .Values.workflow.imagePullPolicy }}
+      - image: {{ .Values.workflow.testdeploy.image }}:{{ .Values.workflow.testdeploy.version }}
         name: {{ .Chart.Name }}
         env:
         - name: SDP_CONFIG_HOST
           value: {{ include "sdp-prototype.etcd-host" . }}
-        {{- with .Values.workflow.resources }}
+        {{- with .Values.workflow.testdeploy.resources }}
         resources:
           {{- toYaml . | nindent 10 }}
         {{- end }}
+{{- if index .Values "workflow" "testdeploy" "direct-kube-deploy" }}
+      serviceAccountName: {{ include "sdp-prototype.fullname" . }}-testdeploy
+{{- end }}

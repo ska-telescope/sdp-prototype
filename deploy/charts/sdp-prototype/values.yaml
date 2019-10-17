@@ -31,25 +31,30 @@ dsconfig:
 
 # Workflow deployments
 workflow:
-  testdeploy:
     image: njthykkathu/workflow
-    version: latest
-    replicas: 2
-    resources: {}
-    # Allow direct Kubernetes deployments? Should be deprecated
-    direct-kube-deploy: false
-  testdask:
-    image: njthykkathu/workflow
-    version: latest
-    replicas: 2
+    version: 0.0.16
+    replicas: 1
     resources: {}
     imagePullPolicy: IfNotPresent
-  visreceive:
-    image: njthykkathu/workflow
-    version: latest
-    replicas: 2
-    resources: {}
-    imagePullPolicy: IfNotPresent
+#  testdeploy:
+#    image: njthykkathu/workflow
+#    version: latest
+#    replicas: 2
+#    resources: {}
+#    # Allow direct Kubernetes deployments? Should be deprecated
+#    direct-kube-deploy: false
+#  testdask:
+#    image: njthykkathu/workflow
+#    version: latest
+#    replicas: 2
+#    resources: {}
+#    imagePullPolicy: IfNotPresent
+#  visreceive:
+#    image: pw410/workflow-vis-receive
+#    version: 0.1.0
+#    replicas: 2
+#    resources: {}
+#    imagePullPolicy: IfNotPresent
 
 # Tango devices
 tango:

@@ -35,92 +35,96 @@ process and Kubernetes pod to be created:
 
 import logging
 import ska_sdp_config
+import sys
 
 logging.basicConfig()
-log = logging.getLogger('main')
+log = logging.getLogger('testdeploy')
 log.setLevel(logging.INFO)
 
 # Instantiate configuration
 client = ska_sdp_config.Config()
 
-# Find processing block configuration
-workflow = {
-    'id': 'testdeploy',
-    'version': '0.0.7',
-    'type': 'realtime'
-}
 
-log.info("Waiting for processing block...")
-for txn in client.txn():
-    pb = txn.take_processing_block_by_workflow(workflow, client.client_lease)
-    if pb is not None:
-        continue
-    txn.loop(wait=True)
-
-# Show
-log.info("Claimed processing block %s", pb)
-pb_id = pb.pb_id
-
-
-def make_deployment(dpl_name, dpl_args):
+def make_deployment(dpl_name, dpl_args, pb_id):
     """Make a deployment given PB parameters."""
     return ska_sdp_config.Deployment(pb_id + "-" + dpl_name, **dpl_args)
 
-try:
-    # Wait for something to happen
-    deploys = {}
+
+def main(argv):
+    pb_id = argv[0]
+    log.info("Inside Vis receive...")
     for txn in client.txn():
-        if not txn.is_processing_block_owner(pb_id):
-            log.warning("Lost processing block ownership")
-            break
-
-        # Get current processing block info (for realtime processing
-        # blocks scan data might get updated)
+        # target_pb_blocks = txn.list_processing_blocks()
+        # for pb_id in target_pb_blocks:
         pb = txn.get_processing_block(pb_id)
-        if pb is None:
-            log.warning("Processing block got deleted")
-            break
+        if txn.get_processing_block_owner(pb_id) is None:
+            # Take ownership
+            txn.take_processing_block(pb_id, client.client_lease)
+        # if pb is not None:
+        #     continue
 
-        # Check for deployments we need to undo
-        dirty = False
-        for dpl_name, dpl_args in deploys.items():
-            if dpl_args != pb.parameters.get(dpl_name):
-                deploy = make_deployment(dpl_name, dpl_args)
-                log.info("Delete deployment {}".format(dpl_name))
-                txn.delete_deployment(deploy)
-                del deploys[dpl_name]
+    # Show
+    log.info("Claimed processing block %s", pb)
+
+    try:
+        # Wait for something to happen
+        deploys = {}
+        for txn in client.txn():
+            if not txn.is_processing_block_owner(pb_id):
+                log.warning("Lost processing block ownership")
+                break
+
+            # Get current processing block info (for realtime processing
+            # blocks scan data might get updated)
+            pb = txn.get_processing_block(pb_id)
+            if pb is None:
+                log.warning("Processing block got deleted")
+                break
+
+            # Check for deployments we need to undo
+            dirty = False
+            for dpl_name, dpl_args in deploys.items():
+                if dpl_args != pb.parameters.get(dpl_name):
+                    deploy = make_deployment(dpl_name, dpl_args)
+                    log.info("Delete deployment {}".format(dpl_name))
+                    txn.delete_deployment(deploy)
+                    del deploys[dpl_name]
+                    dirty = True
+                    break
+            if dirty:
+                txn.loop()
+                continue
+
+            # Create new deployments
+            for dpl_name, dpl_args in pb.parameters.items():
+
+                # Get deployments, ignoring ones that don't fit
+                try:
+                    deploy = make_deployment(dpl_name, dpl_args)
+                except ValueError as e:
+                    log.warning("Deployment {} failed validation: {}".format(
+                        dpl_name, str(e)))
+                    continue
+
+                # Up-to-date?
+                if deploys.get(dpl_name) == dpl_args:
+                    continue
+
+                # Deploy anew
+                txn.create_deployment(deploy)
+                log.info("Created deployment {}".format(dpl_name))
+                deploys[dpl_name] = dpl_args
                 dirty = True
                 break
-        if dirty:
-            txn.loop()
-            continue
 
-        # Create new deployments
-        for dpl_name, dpl_args in pb.parameters.items():
+            # Loop around, wait if we made no change
+            txn.loop(wait=not dirty)
 
-            # Get deployments, ignoring ones that don't fit
-            try:
-                deploy = make_deployment(dpl_name, dpl_args)
-            except ValueError as e:
-                log.warning("Deployment {} failed validation: {}".format(
-                    dpl_name, str(e)))
-                continue
+    finally:
+        for txn in client.txn():
+            for dpl_name, dpl_args in deploys.items():
+                txn.delete_deployment(make_deployment(dpl_name, dpl_args, pb_id))
 
-            # Up-to-date?
-            if deploys.get(dpl_name) == dpl_args:
-                continue
 
-            # Deploy anew
-            txn.create_deployment(deploy)
-            log.info("Created deployment {}".format(dpl_name))
-            deploys[dpl_name] = dpl_args
-            dirty = True
-            break
-
-        # Loop around, wait if we made no change
-        txn.loop(wait=not dirty)
-
-finally:
-    for txn in client.txn():
-        for dpl_name, dpl_args in deploys.items():
-            txn.delete_deployment(make_deployment(dpl_name, dpl_args))
+if __name__ == "__main__":
+    main(sys.argv[1:])
