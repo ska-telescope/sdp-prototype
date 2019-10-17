@@ -1,8 +1,0 @@
-# Workflow deployments
-workflow:
-  visreceive:
-    image: pw410/workflow-vis-receive
-    version: 0.1.0
-    replicas: 2
-    resources: {}
-    imagePullPolicy: IfNotPresent
