@@ -6,7 +6,6 @@ Example Vis Receive workflow
 
 import logging
 import ska_sdp_config
-import os
 import sys
 
 # Initialise logging and configuration
@@ -16,25 +15,13 @@ log.setLevel(logging.INFO)
 config = ska_sdp_config.Config()
 
 
-# # Find processing block configuration from the configuration.
-# workflow = {
-#     'id': 'vis_receive',
-#     'version': '0.1.0',
-#     'type': 'realtime'
-# }
-
 def main(argv):
     pb_id = argv[0]
-    log.info("Inside Vis receive...")
     for txn in config.txn():
-        # target_pb_blocks = txn.list_processing_blocks()
-        # for pb_id in target_pb_blocks:
         pb = txn.get_processing_block(pb_id)
         if txn.get_processing_block_owner(pb_id) is None:
             # Take ownership
             txn.take_processing_block(pb_id, config.client_lease)
-        # if pb is not None:
-        #     continue
 
     # Show
     log.info("Claimed processing block %s", pb)

@@ -4,12 +4,8 @@ RUN apt-get update && apt-get install -y curl git && rm -rf /var/lib/apt/lists/*
 
 
 RUN pip install ska_sdp_config
-## Copy the Pipfile
-#COPY Pipfile Pipfile
-#COPY Pipfile.lock Pipfile.lock
-#
-## Install Python deps
-#RUN pipenv install --deploy --ignore-pipfile --dev
+RUN pip install distributed
+
 
 COPY switcher.py .
 COPY test_vis_receive.py .

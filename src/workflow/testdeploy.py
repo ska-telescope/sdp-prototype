@@ -52,16 +52,11 @@ def make_deployment(dpl_name, dpl_args, pb_id):
 
 def main(argv):
     pb_id = argv[0]
-    log.info("Inside Vis receive...")
     for txn in client.txn():
-        # target_pb_blocks = txn.list_processing_blocks()
-        # for pb_id in target_pb_blocks:
         pb = txn.get_processing_block(pb_id)
         if txn.get_processing_block_owner(pb_id) is None:
             # Take ownership
             txn.take_processing_block(pb_id, client.client_lease)
-        # if pb is not None:
-        #     continue
 
     # Show
     log.info("Claimed processing block %s", pb)

@@ -11,12 +11,12 @@ import logging
 import ska_sdp_config
 
 # Dictionary defining mapping from workflow IDs to Python scripts.
-
 workflows_realtime = {
     'testdeploy': 'testdeploy.py',
     'testdask': 'testdask.py',
     'vis_receive': 'test_vis_receive.py'
 }
+
 
 def main():
     """Main loop."""
@@ -55,6 +55,7 @@ def main():
                 log.error("Unknown workflow type: {0}".format(wf_type))
         log.info("Continue waiting...")
         txn.loop(wait=True)
+
 
 if __name__ == "__main__":
     main()

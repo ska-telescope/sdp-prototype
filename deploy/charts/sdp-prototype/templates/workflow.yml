@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "sdp-prototype.fullname" . }}-workflow-deploy
+  name: {{ include "sdp-prototype.fullname" . }}-workflow
   namespace: {{ .Release.Namespace }}
   labels:
 {{ include "sdp-prototype.labels" . | indent 4 }}
