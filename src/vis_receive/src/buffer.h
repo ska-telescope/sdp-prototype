@@ -43,9 +43,9 @@ struct Buffer
     int num_times, num_channels, num_baselines;
 #ifdef WITH_MS
     float* vis_unpacked;
-    float* uu;
-    float* vv;
-    float* ww;
+    double* uu;
+    double* vv;
+    double* ww;
 #endif
 };
 

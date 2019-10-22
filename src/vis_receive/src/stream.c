@@ -151,7 +151,7 @@ int stream_decode(struct Stream* stream, const uchar* buf, int depth)
             break;
         case 0x6000:
             /* Visibility timestamp count (immediate addressing). */
-            timestamp_count = be32toh((uint32_t) item_addr);
+            stream->receiver->timestamp_count = be32toh((uint32_t) item_addr);
             packet_has_header_data = 1;
             break;
         case 0x6001:

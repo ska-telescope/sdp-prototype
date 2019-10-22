@@ -40,7 +40,10 @@ struct Receiver
     int num_streams;
     int num_buffers;
     int num_channels_per_file;
+    uint32_t timestamp_count;
     unsigned short int port_start;
+    double ra;
+    double dec;
 #ifdef WITH_MS
     int write_counter;
     oskar_MeasurementSet* ms;
@@ -70,6 +73,8 @@ void receiver_free(struct Receiver* self);
  * @brief Activates the receiver and blocks until all streams have finished.
  */
 void receiver_start(struct Receiver* self);
+
+void receiver_set_phase(struct Receiver* self, double ra, double dec);
 
 #ifdef __cplusplus
 }
