@@ -37,6 +37,9 @@ int main(int argc, char** argv)
     int num_times_in_buffer = 50;
     int max_num_buffers = 4;
     int num_channels_per_file = 1;
+    double ra = 0;
+    double dec = 0;
+
 //    int write_autocorr = 0;
 //    int write_crosscorr = 1;
 //    int num_stations = 3;
@@ -62,11 +65,13 @@ int main(int argc, char** argv)
             {"buffertimes", required_argument, 0, 't'},
             {"port", required_argument, 0, 'p'},
             {"channels", required_argument, 0, 'c'},
-            {"directory", required_argument, 0, 'd'},
-            {"expire", required_argument, 0, 'e'}
+            {"output", required_argument, 0, 'o'},
+            {"expire", required_argument, 0, 'e'},
+            {"declination", optional_argument, 0, 'd'},
+            {"ascension", optional_argument, 0, 'a'}
         };
         int opt_index = 0;
-        opt = getopt_long(argc, argv, "s:r:w:b:t:p:c:d:e:", lopts, &opt_index);
+        opt = getopt_long(argc, argv, "s:r:w:b:t:p:c:o:e:d:a:", lopts, &opt_index);
         if(opt == -1)
             break;
         switch(opt){
@@ -91,11 +96,17 @@ int main(int argc, char** argv)
             case 'c':
                 num_channels_per_file = (atoi(optarg) < 1) ? 1 : atoi(optarg);
                 break;
-            case 'd':
+            case 'o':
                 output_location = optarg;
                 break;
             case 'e':
                 timeout = atoi(optarg);
+                break;
+            case 'd':
+                dec = atof(optarg);
+                break;
+            case 'a':
+                ra = atof(optarg);
                 break;
             default:
                 abort();

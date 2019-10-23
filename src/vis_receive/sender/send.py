@@ -37,6 +37,15 @@ def main():
         id=0x6001, name='visibility_timestamp_fraction', description='',
         shape=tuple(), format=None, dtype='<u4')
     item_group.add_item(
+        id=0x6002, name='visibility_channel_id', description='',
+        shape=tuple(), format=None, dtype='<u4')
+    item_group.add_item(
+        id=0x6003, name='visibility_channel_count', description='',
+        shape=tuple(), format=None, dtype='<u4')
+    item_group.add_item(
+        id=0x6004, name='visibility_polarisation_id', description='',
+        shape=tuple(), format=None, dtype='<u4')
+    item_group.add_item(
         id=0x6005, name='visibility_baseline_count', description='',
         shape=tuple(), format=None, dtype='<u4')
     item_group.add_item(
@@ -66,6 +75,9 @@ def main():
         item_group['visibility_timestamp_count'].value = 1
         item_group['visibility_timestamp_fraction'].value = 0
         item_group['visibility_baseline_count'].value = num_baselines
+        item_group['visibility_channel_id'].value = 12345
+        item_group['visibility_channel_count'].value = 0
+        item_group['visibility_polarisation_id'].value = 0
         item_group['scan_id'].value = 100000000
         item_group['correlator_output_data'].value = vis
         # Iterate heaps.

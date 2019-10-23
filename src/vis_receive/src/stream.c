@@ -96,6 +96,9 @@ int stream_decode(struct Stream* stream, const uchar* buf, int depth)
     int packet_has_stream_control = 0;
     uint32_t timestamp_count = 0;
     uint32_t timestamp_fraction = 0;
+    uint32_t channel_id = 0;
+    uint32_t channel_count = 0;
+    uint32_t polarisation_id = 0;
     uint64_t scan_id = 0;
     size_t packet_payload_length = 0;
     size_t heap_offset = 0;
@@ -148,12 +151,27 @@ int stream_decode(struct Stream* stream, const uchar* buf, int depth)
             break;
         case 0x6000:
             /* Visibility timestamp count (immediate addressing). */
-            timestamp_count = be32toh((uint32_t) item_addr);
+            stream->receiver->timestamp_count = be32toh((uint32_t) item_addr);
             packet_has_header_data = 1;
             break;
         case 0x6001:
             /* Visibility timestamp fraction (immediate addressing). */
             timestamp_fraction = be32toh((uint32_t) item_addr);
+            packet_has_header_data = 1;
+            break;
+        case 0x6002:
+            /* Visibility channel id (immediate addressing). */
+            channel_id = be32toh((uint32_t) item_addr);
+            packet_has_header_data = 1;
+            break;
+        case 0x6003:
+            /* Visibility channel count (immediate addressing). */
+            channel_count = be32toh((uint32_t) item_addr);
+            packet_has_header_data = 1;
+            break;
+        case 0x6004:
+            /* Visibility polarisation id (immediate addressing). */
+            polarisation_id = be32toh((uint32_t) item_addr);
             packet_has_header_data = 1;
             break;
         case 0x6005:

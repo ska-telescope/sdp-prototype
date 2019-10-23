@@ -8,6 +8,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <math.h>
 
 #include "buffer.h"
 #include "receiver.h"
@@ -297,10 +298,23 @@ static void* thread_write_buffer(void* arg)
  * @param arg
  * @return
  */
+
 static void* thread_write_buffer_ms(void* arg)
 {
     struct Buffer* buf = (struct Buffer*) arg;
     struct Receiver* receiver = buf->receiver;
+    int hour_angle = receiver->timestamp_count - receiver->ra;
+    int LX, LY, LZ;
+    LX = 1;
+    LY = 2;
+    LZ = 3;
+    *(buf->uu) = sin(hour_angle)*LX + cos(hour_angle)*LY;
+    *(buf->vv) = -sin(receiver->dec)*cos(hour_angle)*LX 
+                  + sin(receiver->dec)*sin(hour_angle)*LY
+                  + cos(receiver->dec)*LZ;
+    *(buf->ww) = cos(receiver->dec)*cos(hour_angle)*LX
+                  + cos(receiver->dec)*sin(hour_angle)*LY
+                  + sin(receiver->dec)*LZ;
     if (buf->byte_counter != buf->buffer_size)
         printf("WARNING: Buffer %d incomplete (%zu/%zu, %.1f%%)\n",
                buf->buffer_id, buf->byte_counter, buf->buffer_size,
@@ -314,6 +328,7 @@ static void* thread_write_buffer_ms(void* arg)
         printf("Writing buffer %d...\n", buf->buffer_id);
 #endif
         const double start = tmr_get_timestamp();
+        oskar_ms_set_phase_centre(receiver->ms, 0, receiver->ra, receiver->dec);
 
         for (unsigned int t = 0; t < buf->num_times; ++t)
         {
@@ -329,7 +344,7 @@ static void* thread_write_buffer_ms(void* arg)
                 unsigned int t_global = receiver->write_counter *
                         buf->num_times + t;
                 unsigned int start_row = t_global * buf->num_baselines;
-                oskar_ms_write_coords_f(receiver->ms, start_row,
+                oskar_ms_write_coords_d(receiver->ms, start_row,
                         buf->num_baselines, buf->uu, buf->vv, buf->ww,
                         1.0, 1.0, 0.0);
                 oskar_ms_write_vis_f(
@@ -483,4 +498,10 @@ void receiver_start(struct Receiver* self)
     free(args);
     free(threads);
     printf("All %d stream(s) completed.\n", self->num_streams);
+}
+
+void receiver_set_phase(struct Receiver* self, double ra, double dec)
+{
+  self->ra = ra;
+	self->dec = dec;
 }
