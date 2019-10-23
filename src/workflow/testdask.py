@@ -37,10 +37,8 @@ def main(argv):
     # or will be declared dead (and presumably restarted). This
     # obviously means that no serious work should actually happen here.
     for txn in config.txn():
+        txn.take_processing_block(pb_id, config.client_lease)
         pb = txn.get_processing_block(pb_id)
-        if txn.get_processing_block_owner(pb_id) is None:
-            # Take ownership
-            txn.take_processing_block(pb_id, config.client_lease)
 
     # Show
     log.info("Claimed processing block %s", pb)

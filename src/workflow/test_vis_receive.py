@@ -18,10 +18,8 @@ config = ska_sdp_config.Config()
 def main(argv):
     pb_id = argv[0]
     for txn in config.txn():
+        txn.take_processing_block(pb_id, config.client_lease)
         pb = txn.get_processing_block(pb_id)
-        if txn.get_processing_block_owner(pb_id) is None:
-            # Take ownership
-            txn.take_processing_block(pb_id, config.client_lease)
 
     # Show
     log.info("Claimed processing block %s", pb)
