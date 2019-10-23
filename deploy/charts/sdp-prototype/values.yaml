@@ -32,8 +32,8 @@ dsconfig:
 
 # Workflow deployments
 workflow:
-    image: njthykkathu/workflow
-    version: 0.1.0
+    image: pw410/workflow
+    version: 0.1.1
     replicas: 1
     resources: {}
     imagePullPolicy: IfNotPresent

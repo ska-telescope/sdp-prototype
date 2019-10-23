@@ -4,6 +4,7 @@ Example Dask workflow
 
 # pylint: disable=C0103
 
+import os
 import logging
 import ska_sdp_config
 import distributed
@@ -75,7 +76,9 @@ def main(argv):
         client = None
         for _ in range(200):
             try:
-                client = distributed.Client(deploy_id+'-scheduler.sdp-helm:8786')
+                client = distributed.Client(
+                    deploy_id + '-scheduler.' +
+                    os.environ['SDP_HELM_NAMESPACE'] + ':8786')
             except Exception as e:
                 print(e)
         if client is None:
