@@ -13,6 +13,7 @@ import subprocess
 import shutil
 import logging
 import ska_sdp_config
+import requests
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -31,6 +32,10 @@ CHART_REPO_REF = os.getenv('SDP_CHART_REPO_REF', 'master')
 CHART_REPO_PATH = os.getenv('SDP_CHART_REPO_PATH', 'deploy/charts')
 CHART_REPO_REFRESH = int(os.getenv('SDP_CHART_REFRESH', '300'))
 
+TILLER = shutil.which(os.getenv('SDP_TILLER', 'tiller'))
+TILLER_TIMEOUT = int(os.getenv('SDP_TILLER_TIMEOUT', '10'))
+TILLER_HISTORY_MAX = int(os.getenv('SDP_TILLER_HSTORY_MAX', '100'))
+
 # Initialise logger
 logging.basicConfig()
 log = logging.getLogger(LOGGER)
@@ -41,6 +46,35 @@ chart_base_path = 'chart-repo'
 chart_path = os.path.join(chart_base_path, CHART_REPO_PATH)
 
 
+def start_tiller():
+    """Start Tiller process to execute deployments."""
+    # Set tiller name space unless overridden
+    if 'TILLER_NAMESPACE' not in os.environ:
+        os.environ['TILLER_NAMESPACE'] = NAMESPACE
+
+    # Start tiller
+    cmd_line = [
+        TILLER,
+        '-listen', 'localhost:44134',
+        '-probe-listen', 'localhost:44135',
+        '-storage', 'secret',
+        '-history-max', str(TILLER_HISTORY_MAX),
+    ]
+    log.debug(" ".join(["$"] + list(cmd_line)))
+    process = subprocess.Popen(cmd_line)
+
+    # Wait for readiness by probing
+    t = time.time()
+    while time.time() - t < TILLER_TIMEOUT:
+        try:
+            if requests.get('http://localhost:44135/readiness'):
+                log.info("Tiller ready after {} s".format(time.time() - t))
+                return process
+        except requests.exceptions.ConnectionError:
+            pass
+        time.sleep(0.1)
+    log.error("Tiller not ready after {} s!".format(time.time() - t))
+    exit(1)
 
 def invoke(*cmd_line, cwd):
     """Invoke a command with the given command-line arguments
@@ -159,6 +193,12 @@ def main():
     client = ska_sdp_config.Config()
 
     # TODO: Service lease + leader election
+
+    # Start local Tiller process unless HELM_HOST is set
+    tiller = None
+    if 'HELM_HOST' not in os.environ:
+        tiller = start_tiller()
+        os.environ['HELM_HOST'] = 'localhost:44134'
 
     # Obtain charts
     update_chart_repos()

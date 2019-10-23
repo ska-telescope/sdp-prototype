@@ -21,6 +21,7 @@ spec:
       {{ include "sdp-prototype.wait-for-etcd" . | nindent 6 }}
       containers:
       - image: {{ .Values.helm_deploy.image }}:{{ .Values.helm_deploy.version }}
+        imagePullPolicy: {{ .Values.helm_deploy.imagePullPolicy }}
         name: helm-deploy
         env:
         - name: SDP_CONFIG_HOST
@@ -47,7 +48,7 @@ kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
   name: {{ include "sdp-prototype.fullname" . }}-helm
-  namespace: kube-system
+  namespace: {{ .Values.helm_deploy.namespace }}
   labels:
 {{ include "sdp-prototype.labels" . | indent 4 }}
 subjects:
@@ -59,17 +60,45 @@ roleRef:
   name: {{ include "sdp-prototype.fullname" . }}-helm
   apiGroup: rbac.authorization.k8s.io
 ---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: {{ include "sdp-prototype.fullname" . }}-helm-global
+  labels:
+{{ include "sdp-prototype.labels" . | indent 4 }}
+subjects:
+- kind: ServiceAccount
+  name: {{ include "sdp-prototype.fullname" . }}-helm
+  namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: ClusterRole
+  name: {{ include "sdp-prototype.fullname" . }}-helm-global
+  apiGroup: rbac.authorization.k8s.io
+---
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
   name: {{ include "sdp-prototype.fullname" . }}-helm
+  namespace: {{ .Values.helm_deploy.namespace }}
+  labels:
+{{ include "sdp-prototype.labels" . | indent 4 }}
+rules:
+- apiGroups: [""]
+  resources: ["namespaces"]
+  verbs: ["list", "get"]
+- apiGroups: ["", "batch", "apps"]
+  resources: ["deployments", "jobs", "pods", "configmaps",
+              "persistentvolumeclaims", "services", "secrets"]
+  verbs: ["list", "get", "watch", "create", "update", "patch", "delete"]
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: {{ include "sdp-prototype.fullname" . }}-helm-global
   namespace: kube-system
   labels:
 {{ include "sdp-prototype.labels" . | indent 4 }}
 rules:
-- apiGroups: ["", "extensions", "apps"]
-  resources: ["pods"]
-  verbs: ["list"]
 - apiGroups: [""]
-  resources: ["pods/portforward"]
-  verbs: ["create"]
+  resources: ["persistentvolumes"]
+  verbs: ["list", "get", "watch", "create", "update", "patch", "delete"]
