@@ -6,6 +6,7 @@ import os
 import logging
 import sys
 from enum import IntEnum, unique
+import signal
 
 from tango import (AttrWriteType, ConnectionFailed,
                    Database, DbDevInfo, DebugIt, DevState)
@@ -284,5 +285,12 @@ def main(args=None, **kwargs):
     # PROTECTED REGION END #    //  SDPMaster.main
 
 
+def terminate(_sig, _frame):
+    """Terminate the program."""
+    LOG.info("Asked to terminate")
+    exit(0)
+
+
 if __name__ == '__main__':
+    signal.signal(signal.SIGTERM, terminate)
     main()

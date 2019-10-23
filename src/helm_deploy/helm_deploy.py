@@ -10,6 +10,8 @@ the SDP configuration.
 import os
 import time
 import subprocess
+import requests
+import signal
 import shutil
 import logging
 import ska_sdp_config
@@ -263,8 +265,16 @@ def main():
                     deploys.add(dpl_id)
 
         # Loop around, wait if we made no change
-        timeout = next_chart_refresh
         txn.loop(wait=True, timeout=next_chart_refresh - time.time())
 
 
-main()
+
+def terminate(signal, frame):
+    """Terminate the program."""
+    log.info("Asked to terminate")
+    exit(0)
+
+
+if __name__ == '__main__':
+    signal.signal(signal.SIGTERM, terminate)
+    main()

@@ -8,6 +8,7 @@ import json
 import logging
 import sys
 import time
+import signal
 from enum import IntEnum, unique
 from inspect import currentframe, getframeinfo
 from math import ceil
@@ -1175,5 +1176,12 @@ def main(args=None, **kwargs):
     return run((SDPSubarray,), args=args, **kwargs)
 
 
+def terminate(_sig, _frame):
+    """Terminate the program."""
+    LOG.info("Asked to terminate")
+    exit(0)
+
+
 if __name__ == '__main__':
+    signal.signal(signal.SIGTERM, terminate)
     main()

@@ -7,6 +7,7 @@ Launches workflows from processing blocks in the configuration database.
 # pylint: disable=C0103
 
 import subprocess
+import signal
 import logging
 import ska_sdp_config
 
@@ -18,12 +19,13 @@ workflows_realtime = {
 }
 
 
+logging.basicConfig()
+log = logging.getLogger('main')
+log.setLevel(logging.INFO)
+
+
 def main():
     """Main loop."""
-
-    logging.basicConfig()
-    log = logging.getLogger('main')
-    log.setLevel(logging.INFO)
 
     # Connect to configuration database.
     client = ska_sdp_config.Config()
@@ -56,6 +58,18 @@ def main():
         log.info("Continue waiting...")
         txn.loop(wait=True)
 
+def terminate(signal, frame):
+    """Terminate the program."""
+    log.info("Asked to terminate")
+    # Note that this will likely send SIGKILL to children processes -
+    # not exactly how this is supposed to work. But all of this is
+    # temporary anyway.
+    exit(0)
 
 if __name__ == "__main__":
+
+    # Register SIGTERM handler
+    signal.signal(signal.SIGTERM, terminate)
+
+    # Call main
     main()
