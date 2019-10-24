@@ -23,7 +23,7 @@ make start sdp_subarray
 In order to test the deployment, start an `itango` shell:
 
 ```bash
-make itango_shell
+make itango_prompt
 ```
 
 Get the list of registered devices by using the command:

@@ -46,7 +46,7 @@ tango:
     imagePullPolicy: IfNotPresent
   subarray:
     image: nexus.engageska-portugal.pt/sdp-prototype/tangods_sdp_subarray
-    version: 0.5.16
+    version: 0.5.16-test
     imagePullPolicy: IfNotPresent
 
 # Parameters for sub-chart
