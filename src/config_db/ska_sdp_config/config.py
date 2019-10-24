@@ -342,6 +342,36 @@ class Transaction():
 
         return None
 
+    def get_processing_block_state(self, pb_id: str) -> dict:
+        """
+        Get the current processing block state.
+
+        :param pb_id: Processing block ID
+        :returns: Processing block state, or None if not present
+        """
+        state = self._get(self._pb_path + pb_id + "/state")
+        if state is None:
+            return None
+        return state
+
+    def create_processing_block_state(self, pb_id: str, state: dict):
+        """
+        Create processing block state.
+
+        :param pb_id: Processing block ID
+        :param state: Processing block state to create
+        """
+        self._create(self._pb_path + pb_id + "/state", state)
+
+    def update_processing_block_state(self, pb_id: str, state: dict):
+        """
+        Update processing block state.
+
+        :param pb_id: Processing block ID
+        :param state: Processing block state to update
+        """
+        self._update(self._pb_path + pb_id + "/state", state)
+
     def get_deployment(self, deploy_id: str) -> entity.Deployment:
         """
         Retrieve details about a cluster configuration change.

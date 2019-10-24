@@ -46,7 +46,7 @@ the workflow script version as well as the required underlying
 software (e.g. processing components, execution engines). `...` stands
 for arbitrary workflow-defined parameters.
 
-### Processing Block Status
+### Processing Block State
 
 Path: `/pb/[pb_id]/state`
 

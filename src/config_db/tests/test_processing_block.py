@@ -136,5 +136,63 @@ def test_take_pb(cfg):
         assert txn.is_processing_block_owner(pb_id)
 
 
+def test_pb_state(cfg):
+
+    pb_id = 'teststate-00000000-0000'
+    state1 = {
+        "state": "executing",
+        "subarray": "ON",
+        "obsState": "SCANNING",
+        "receiveAddresses": {
+            "1": {
+                "1": ["0.0.0.0", 1024]
+            }
+        }
+    }
+    state2 = {
+        "state": "failed",
+        "subarray": "ON",
+        "obsState": "SCANNING",
+        "receiveAddresses": {
+            "1": {
+                "1": ["0.0.0.0", 1024]
+            }
+        }
+    }
+
+    # Create processing block
+    for txn in cfg.txn():
+        pb = entity.ProcessingBlock(pb_id, None, WORKFLOW)
+        txn.create_processing_block(pb)
+
+    # Check PB state is None
+    for txn in cfg.txn():
+        state_out = txn.get_processing_block_state(pb_id)
+        assert state_out is None
+
+    # Create PB state as state1
+    for txn in cfg.txn():
+        txn.create_processing_block_state(pb_id, state1)
+
+    # Read PB state and check it matches state1
+    for txn in cfg.txn():
+        state_out = txn.get_processing_block_state(pb_id)
+        assert state_out == state1
+
+    # Try to create PB state again and check it raises a collision exception
+    for txn in cfg.txn():
+        with pytest.raises(backend.Collision):
+            txn.create_processing_block_state(pb_id, state1)
+
+    # Update PB state to state2
+    for txn in cfg.txn():
+        txn.update_processing_block_state(pb_id, state2)
+
+    # Read PB state and check it now matches state2
+    for txn in cfg.txn():
+        state_out = txn.get_processing_block_state(pb_id)
+        assert state_out == state2
+
+
 if __name__ == '__main__':
     pytest.main()
