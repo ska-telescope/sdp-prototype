@@ -7,5 +7,12 @@ database. This library provides primitives for atomic queries and
 updates to the stored configuration information.
 """
 
+from . import release
 from .config import Config
 from .entity import ProcessingBlock, Deployment
+
+__version__ = release.VERSION
+__version_info__ = release.VERSION_INFO
+
+__all__ = ["Config", "ProcessingBlock", "Deployment",
+           "__version__", "__version_info__"]

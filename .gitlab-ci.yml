@@ -278,6 +278,18 @@ build:ska-sdp-subarray:
     BUILD_PATH: src/tango_sdp_subarray
   only: [master]
 
+build:ska-sdp-config_dev:
+  extends: .build_python_dev
+  variables:
+    BUILD_PATH: src/config_db
+  except: [master]
+
+build:ska-sdp-config:
+  extends: .build_python_release
+  variables:
+    BUILD_PATH: src/config_db
+  only: [master]
+
 # ============================================================================
 # Publish python packages
 # ============================================================================
@@ -337,6 +349,20 @@ publish:ska-sdp-subarray:
     - build:ska-sdp-subarray
   variables:
     BUILD_PATH: src/tango_sdp_subarray
+
+publish:ska-sdp-config-manual:
+  extends: .publish_python_dev
+  dependencies:
+    - build:ska-sdp-config_dev
+  variables:
+    BUILD_PATH: src/config_db
+
+publish:ska-sdp-config:
+  extends: .publish_python_release
+  dependencies:
+    - build:ska-sdp-config
+  variables:
+    BUILD_PATH: src/config_db
 
 # ============================================================================
 # Build docker images
