@@ -1,0 +1,9 @@
+# Default values for workflow.
+# Declare variables to be passed into your templates.
+
+workflow:
+  image: majashdown/ska-sdp-workflow
+  version: latest
+  replicas: 1
+  resources: {}
+  imagePullPolicy: IfNotPresent

@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "workflow.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+{{ include "workflow.labels" . | indent 4 }}
+spec:
+  replicas: {{ .Values.workflow.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "workflow.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "workflow.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      containers:
+      - image: {{ .Values.workflow.image }}:{{ .Values.workflow.version }}
+        imagePullPolicy: {{ .Values.workflow.imagePullPolicy }}
+        name: {{ .Chart.Name }}
+        {{- with .Values.workflow.resources }}
+        resources:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        env:
+        - name: SDP_CONFIG_HOST
+          value: {{ .Values.sdp_config_host }}
+        args:
+          - python
+          - -m
+          - {{ .Values.wf_script }}
+          - {{ .Values.pb_id }}
