@@ -32,6 +32,8 @@ spec:
           value: "{{ .Values.helm_deploy.chart_repo.url }}"
         - name: SDP_CHART_REPO_REF
           value: "{{ .Values.helm_deploy.chart_repo.ref }}"
+        - name: SDP_CHART_REPO_PATH
+          value: "{{ .Values.helm_deploy.chart_repo.path }}"
         - name: SDP_CHART_REPO_REFRESH
           value: "{{ .Values.helm_deploy.chart_repo.refresh }}"
       serviceAccountName: {{ include "sdp-prototype.fullname" . }}-helm

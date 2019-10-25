@@ -15,6 +15,7 @@ helm_deploy:
   chart_repo:
     url: https://github.com/ska-telescope/sdp-prototype.git
     ref: master
+    path: deploy/charts
     refresh: 300
 
 # Configuration database
