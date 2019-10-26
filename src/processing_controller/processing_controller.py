@@ -82,9 +82,10 @@ def main():
                      "".format(pb_id, wf_type, wf_id, wf_version))
             if wf_type == "realtime":
                 if wf_id in WORKFLOWS_REALTIME:
-                    LOG.info("Deploying realtime workflow ID: {}, version: {}".format(wf_id, wf_version))
+                    LOG.info("Deploying realtime workflow ID: {}, version: {}"
+                             "".format(wf_id, wf_version))
                     wf_script = WORKFLOWS_REALTIME[wf_id]
-                    deploy_id = "{}-workflow-{}-{}".format(pb_id, wf_id, wf_version.replace('.', '-'))
+                    deploy_id = "{}-workflow".format(pb_id)
                     # Values to pass to workflow Helm chart.
                     values = {
                         'sdp_config_host': os.getenv('SDP_CONFIG_HOST', '127.0.0.1'),
