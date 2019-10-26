@@ -1,8 +1,7 @@
 # Default values for workflow.
-# Declare variables to be passed into your templates.
 
 workflow:
-  image: majashdown/ska-sdp-workflow
+  image: majashdown/workflow
   version: latest
   replicas: 1
   resources: {}

@@ -7,13 +7,13 @@ feature:
 
 # Helm deployment controller
 helm_deploy:
-  image: pw410/helm-deploy
-  version: 0.1.1
+  image: majashdown/helm-deploy
+  version: latest
   imagePullPolicy: IfNotPresent
   replicas: 1
   namespace: sdp
   chart_repo:
-    url: https://github.com/ska-telescope/sdp-prototype.git
+    url: https://gitlab.com/ska-telescope/sdp-prototype.git
     ref: master
     path: deploy/charts
     refresh: 300
@@ -31,10 +31,10 @@ dsconfig:
     tag: latest
     pullPolicy: IfNotPresent
 
-# Workflow deployments
-workflow:
-    image: pw410/workflow
-    version: 0.1.1
+# Processing controller
+processing_controller:
+    image: majashdown/processing-controller
+    version: latest
     replicas: 1
     resources: {}
     imagePullPolicy: IfNotPresent
