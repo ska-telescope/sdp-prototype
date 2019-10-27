@@ -10,14 +10,16 @@ import signal
 import logging
 import ska_sdp_config
 
-# Dictionaries defining mapping from workflow IDs to Python scripts.
-# The workflow scripts are in the workflow container.
+# Dictionaries defining mapping from tuple of workflow (ID, version) to Docker
+# containers.
+
+REGISTRY_PATH = 'majashdown'
 
 WORKFLOWS_REALTIME = {
-    'testdeploy': 'testdeploy',
-    'testdask': 'testdask',
-    'vis_receive': 'vis_receive',
-    'testdlg': 'daliuge.main'
+    ('testdeploy',  '0.1.0'): REGISTRY_PATH + '/testdeploy:0.1.0',
+    ('testdask',    '0.1.0'): REGISTRY_PATH + '/testdask:0.1.0',
+    ('vis_receive', '0.1.0'): REGISTRY_PATH + '/vis_receive:0.1.0',
+    ('testdlg',     '0.1.0'): REGISTRY_PATH + '/testdlg:0.1.0'
 }
 
 WORKFLOWS_BATCH = {}
@@ -92,18 +94,18 @@ def main():
             wf_type = pb.workflow['type']
             wf_id = pb.workflow['id']
             wf_version = pb.workflow['version']
-            LOG.info("PB {} has no deployment, workflow type: {}, ID: {}, version: {}"
+            LOG.info("PB {} has no deployment (workflow type = {}, ID = {}, version = {})"
                      "".format(pb_id, wf_type, wf_id, wf_version))
             if wf_type == "realtime":
-                if wf_id in WORKFLOWS_REALTIME:
-                    LOG.info("Deploying realtime workflow ID: {}, version: {}"
+                if (wf_id, wf_version) in WORKFLOWS_REALTIME:
+                    LOG.info("Deploying realtime workflow ID = {}, version = {}"
                              "".format(wf_id, wf_version))
-                    wf_script = WORKFLOWS_REALTIME[wf_id]
+                    wf_image = WORKFLOWS_REALTIME[(wf_id, wf_version)]
                     deploy_id = "{}-workflow".format(pb_id)
                     # Values to pass to workflow Helm chart.
                     # Copy environment variable values and add argument values.
                     values = dict(values_env)
-                    values['wf_script'] = wf_script
+                    values['wf_image'] = wf_image
                     values['pb_id'] = pb_id
                     deploy = ska_sdp_config.Deployment(
                         deploy_id, 'helm', {'chart': 'workflow', 'values': values}
@@ -111,10 +113,10 @@ def main():
                     LOG.info("Creating deployment {}".format(deploy_id))
                     txn.create_deployment(deploy)
                 else:
-                    # Unknown realtime workflow ID.
-                    LOG.error("Unknown realtime workflow ID: {}".format(wf_id))
+                    # Unknown realtime workflow ID and version.
+                    LOG.error("Workflow ID = {} version = {} is not supported".format(wf_id, wf_version))
             elif wf_type == "batch":
-                LOG.warning("Batch workflows are not handled at present")
+                LOG.warning("Batch workflows are not supported at present")
             else:
                 LOG.error("Unknown workflow type: {}".format(wf_type))
         LOG.debug("Waiting...")

@@ -18,7 +18,7 @@ spec:
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
       containers:
-      - image: {{ .Values.workflow.image }}:{{ .Values.workflow.version }}
+      - image: {{ .Values.wf_image }}
         imagePullPolicy: {{ .Values.workflow.imagePullPolicy }}
         name: {{ .Chart.Name }}
         {{- with .Values.workflow.resources }}
@@ -33,7 +33,4 @@ spec:
         {{- end }}
         {{- end }}
         args:
-          - python
-          - -m
-          - {{ .Values.wf_script }}
           - {{ .Values.pb_id }}

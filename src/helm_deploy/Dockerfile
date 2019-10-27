@@ -10,5 +10,6 @@ RUN \
 
 RUN pip install ska-sdp-config python-dotenv
 
+WORKDIR /app
 COPY helm_deploy.py .
 ENTRYPOINT [ "python", "helm_deploy.py"]
