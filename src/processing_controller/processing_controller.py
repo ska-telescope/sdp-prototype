@@ -16,10 +16,10 @@ import ska_sdp_config
 REGISTRY_PATH = 'majashdown'
 
 WORKFLOWS_REALTIME = {
-    ('testdeploy',  '0.1.0'): REGISTRY_PATH + '/testdeploy:0.1.0',
-    ('testdask',    '0.1.0'): REGISTRY_PATH + '/testdask:0.1.0',
-    ('vis_receive', '0.1.0'): REGISTRY_PATH + '/vis_receive:0.1.0',
-    ('testdlg',     '0.1.0'): REGISTRY_PATH + '/testdlg:0.1.0'
+    ('testdeploy',  '0.1.0'): REGISTRY_PATH + '/workflow-testdeploy:0.1.0',
+    ('testdask',    '0.1.0'): REGISTRY_PATH + '/workflow-testdask:0.1.0',
+    ('vis_receive', '0.1.0'): REGISTRY_PATH + '/workflow-vis-receive:0.1.0',
+    ('testdlg',     '0.1.0'): REGISTRY_PATH + '/workflow-testdlg:0.1.0'
 }
 
 WORKFLOWS_BATCH = {}
