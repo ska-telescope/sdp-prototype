@@ -10,7 +10,7 @@ import signal
 import logging
 import ska_sdp_config
 
-# Dictionary defining mapping from workflow IDs to Python scripts.
+# Dictionaries defining mapping from workflow IDs to Python scripts.
 # The workflow scripts are in the workflow container.
 
 WORKFLOWS_REALTIME = {
@@ -24,7 +24,17 @@ WORKFLOWS_BATCH = {}
 
 logging.basicConfig()
 LOG = logging.getLogger('main')
-LOG.setLevel(logging.INFO)
+LOG.setLevel(logging.DEBUG)
+
+
+def get_environment_variables(var: list) -> dict:
+    """Get values of environment variables and store them in a suitable
+    form for passing to the workflow Helm chart.
+    """
+    values = {}
+    for v in var:
+        values['env.{}'.format(v)] = os.environ[v]
+    return values
 
 
 def get_pb_id_from_deploy_id(deploy_id: str) -> str:
@@ -40,10 +50,14 @@ def get_pb_id_from_deploy_id(deploy_id: str) -> str:
 def main():
     """Main loop."""
 
+    # Get environment variables to pass to workflow containers.
+    values_env = get_environment_variables(['SDP_CONFIG_HOST',
+                                            'SDP_HELM_NAMESPACE'])
+
     # Connect to configuration database.
     client = ska_sdp_config.Config()
 
-    LOG.info("Starting main loop...")
+    LOG.debug("Starting main loop...")
     for txn in client.txn():
 
         # Get lists of processing blocks and deployments.
@@ -87,16 +101,14 @@ def main():
                     wf_script = WORKFLOWS_REALTIME[wf_id]
                     deploy_id = "{}-workflow".format(pb_id)
                     # Values to pass to workflow Helm chart.
-                    values = {
-                        'sdp_config_host': os.getenv('SDP_CONFIG_HOST', '127.0.0.1'),
-                        'wf_script': wf_script,
-                        'pb_id': pb_id
-                    }
+                    # Copy environment variable values and add argument values.
+                    values = dict(values_env)
+                    values['wf_script'] = wf_script
+                    values['pb_id'] = pb_id
                     deploy = ska_sdp_config.Deployment(
-                        deploy_id, 'helm', {
-                            'chart': 'workflow',
-                            'values': values
-                        })
+                        deploy_id, 'helm', {'chart': 'workflow', 'values': values}
+                    )
+                    LOG.info("Creating deployment {}".format(deploy_id))
                     txn.create_deployment(deploy)
                 else:
                     # Unknown realtime workflow ID.
@@ -105,7 +117,7 @@ def main():
                 LOG.warning("Batch workflows are not handled at present")
             else:
                 LOG.error("Unknown workflow type: {}".format(wf_type))
-        LOG.info("Waiting...")
+        LOG.debug("Waiting...")
         txn.loop(wait=True)
 
 
