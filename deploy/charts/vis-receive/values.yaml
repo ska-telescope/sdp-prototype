@@ -2,14 +2,14 @@
 # Declare variables to be passed into your templates.
 
 visreceive:
-  container: pw410/vis_receive
+  container: nexus.engageska-portugal.pt/sdp-prototype/vis-receive
   version: 0.1.0
   replicas: 1
   resources: {}
   imagePullPolicy: IfNotPresent
 
 vissender:
-  container: pw410/vis_sender
+  container: nexus.engageska-portugal.pt/sdp-prototype/vis-sender
   version: 0.1.0
   replicas: 1
   resources: {}
@@ -17,4 +17,3 @@ vissender:
 
 nameOverride: ""
 fullnameOverride: ""
-
