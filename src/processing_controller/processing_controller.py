@@ -8,25 +8,18 @@ database.
 import os
 import signal
 import logging
+import json
+import jsonschema
 import ska_sdp_config
-
-# Dictionaries defining mapping from tuple of workflow (ID, version) to Docker
-# containers.
-
-REGISTRY_PATH = 'majashdown'
-
-WORKFLOWS_REALTIME = {
-    ('testdeploy',  '0.1.0'): REGISTRY_PATH + '/workflow-testdeploy:0.1.0',
-    ('testdask',    '0.1.0'): REGISTRY_PATH + '/workflow-testdask:0.1.0',
-    ('vis_receive', '0.1.0'): REGISTRY_PATH + '/workflow-vis-receive:0.1.0',
-    ('testdlg',     '0.1.0'): REGISTRY_PATH + '/workflow-testdlg:0.1.0'
-}
-
-WORKFLOWS_BATCH = {}
 
 logging.basicConfig()
 LOG = logging.getLogger('main')
 LOG.setLevel(logging.DEBUG)
+
+# Location of workflow definition file and the schema file for validating it.
+
+WORKFLOW_DEFINITION = 'workflows.json'
+WORKFLOW_SCHEMA = 'workflows_schema.json'
 
 
 def get_environment_variables(var: list) -> dict:
@@ -37,6 +30,74 @@ def get_environment_variables(var: list) -> dict:
     for v in var:
         values['env.{}'.format(v)] = os.environ[v]
     return values
+
+
+def read_workflow_definition(definition_file, schema_file):
+    """Read workflow definitions from JSON file."""
+
+    with open(schema_file, 'r') as f:
+        schema = json.load(f)
+    with open(definition_file, 'r') as f:
+        definition = json.load(f)
+
+    # Validate the definitions against the schema.
+    jsonschema.validate(definition, schema)
+
+    # Get version of workflow definition file.
+    version = definition['version']
+
+    # Parse repositories.
+    repositories = {}
+    for repo in definition['repositories']:
+        name = repo['name']
+        path = repo['path']
+        if name in repositories:
+            LOG.warning("Repository {} already defined, will be overwritten".format(repo))
+        repositories[name] = path
+
+    # Parse realtime workflow definitions.
+    realtime = {}
+    for wf in definition['realtime']:
+        id = wf['id']
+        repo = wf['repository']
+        image = wf['image']
+        versions = wf['versions']
+        if repo not in repositories:
+            LOG.warning("Repository {} for realtime workflow {} not found, skipping".format(repo, id))
+            continue
+        for vers in versions:
+            if (id, vers) in realtime:
+                LOG.warning("Realtime workflow {} version {} already defined, "
+                            "will be overwritten".format(id, vers))
+            realtime[(id, vers)] = repositories[repo] + "/" + image + ":" + vers
+
+    # Parse batch workflow definitions.
+    batch = {}
+    for wf in definition['batch']:
+        id = wf['id']
+        repo = wf['repository']
+        image = wf['image']
+        versions = wf['versions']
+        if repo not in repositories:
+            LOG.warning("Repository {} for batch workflow {} not found".format(repo, id))
+            continue
+        for vers in versions:
+            if (id, vers) in batch:
+                LOG.warning("Batch workflow {} version {} already defined, "
+                            "will be overwritten".format(id, vers))
+            batch[(id, vers)] = repositories[repo] + "/" + image + ":" + vers
+
+    LOG.debug("Workflow definitions version:")
+    for k, v in version.items():
+        LOG.debug("{}: {}".format(k, v))
+    LOG.debug("Realtime workflows:")
+    for k, v in realtime.items():
+        LOG.debug("{}: {}".format(k, v))
+    LOG.debug("Batch workflows:")
+    for k, v in batch.items():
+        LOG.debug("{}: {}".format(k, v))
+
+    return version, realtime, batch
 
 
 def get_pb_id_from_deploy_id(deploy_id: str) -> str:
@@ -55,6 +116,10 @@ def main():
     # Get environment variables to pass to workflow containers.
     values_env = get_environment_variables(['SDP_CONFIG_HOST',
                                             'SDP_HELM_NAMESPACE'])
+
+    # Read workflow definitions.
+    workflows_version, workflows_realtime, workflows_batch = \
+        read_workflow_definition(WORKFLOW_DEFINITION, WORKFLOW_SCHEMA)
 
     # Connect to configuration database.
     client = ska_sdp_config.Config()
@@ -97,10 +162,10 @@ def main():
             LOG.info("PB {} has no deployment (workflow type = {}, ID = {}, version = {})"
                      "".format(pb_id, wf_type, wf_id, wf_version))
             if wf_type == "realtime":
-                if (wf_id, wf_version) in WORKFLOWS_REALTIME:
+                if (wf_id, wf_version) in workflows_realtime:
                     LOG.info("Deploying realtime workflow ID = {}, version = {}"
                              "".format(wf_id, wf_version))
-                    wf_image = WORKFLOWS_REALTIME[(wf_id, wf_version)]
+                    wf_image = workflows_realtime[(wf_id, wf_version)]
                     deploy_id = "{}-workflow".format(pb_id)
                     # Values to pass to workflow Helm chart.
                     # Copy environment variable values and add argument values.
