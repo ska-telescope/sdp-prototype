@@ -1,8 +1,6 @@
 # Default values for workflow.
 
 workflow:
-  image: majashdown/workflow
-  version: latest
   replicas: 1
   resources: {}
   imagePullPolicy: IfNotPresent
