@@ -441,7 +441,43 @@ build:tangods_sdp_subarray:
   variables:
     BUILD_PATH: src/tango_sdp_subarray
 
-## Build and push `sdp_vis_receive` image.
+# Build and push `helm-deploy` image.
+build:helm-deploy:
+  extends: .build_docker
+  variables:
+    BUILD_PATH: src/helm_deploy
+
+# Build and push `processing-controller` image.
+build:processing-controller:
+  extends: .build_docker
+  variables:
+    BUILD_PATH: src/processing_controller
+
+# Build and push `workflow-testdask` image.
+build:workflow-testdask:
+  extends: .build_docker
+  variables:
+    BUILD_PATH: src/workflows/testdask
+
+# Build and push `workflow-testdeploy` image.
+build:workflow-testdeploy:
+  extends: .build_docker
+  variables:
+    BUILD_PATH: src/workflows/testdeploy
+
+# Build and push `workflow-testdlg` image.
+build:workflow-testdlg:
+  extends: .build_docker
+  variables:
+    BUILD_PATH: src/workflows/testdlg
+
+# Build and push `workflow-vis-receive` image.
+build:workflow-vis-receive:
+  extends: .build_docker
+  variables:
+    BUILD_PATH: src/workflows/vis_receive
+
+## Build and push `vis_receive` EE image.
 #build:sdp_vis_receive:
 #  extends: .build_docker
 #  variables:
@@ -511,23 +547,6 @@ push:pytango_ska_dev:
   variables:
     BUILD_PATH: src/tango_sdp_master
 
-#.sdp_vis_receive_template:
-#  extends: .push_docker
-#  when: always
-#  dependencies:
-#    - build:sdp_vis_receive
-#  variables:
-#    BUILD_PATH: src/vis_receive
-
-#push:sdp_vis_receive:
-#  extends: .sdp_vis_receive_template
-#  only: [master]
-#
-#push:sdp_vis_receive-manual:
-#  extends: .sdp_vis_receive_template
-#  when: manual
-#  except: [master]
-
 # push:tangods_sdp_master:
 #   extends: .tangods_master_template
 #   only: [master]
@@ -553,6 +572,23 @@ push:tangods_sdp_subarray-manual:
   extends: .tangods_subarray_template
   when: manual
   except: [master]
+
+#.sdp_vis_receive_template:
+#  extends: .push_docker
+#  when: always
+#  dependencies:
+#    - build:sdp_vis_receive
+#  variables:
+#    BUILD_PATH: src/vis_receive
+
+#push:sdp_vis_receive:
+#  extends: .sdp_vis_receive_template
+#  only: [master]
+#
+#push:sdp_vis_receive-manual:
+#  extends: .sdp_vis_receive_template
+#  when: manual
+#  except: [master]
 
 # ============================================================================
 # Publish reports
