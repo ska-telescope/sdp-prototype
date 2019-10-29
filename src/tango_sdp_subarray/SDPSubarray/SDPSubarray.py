@@ -8,6 +8,7 @@ import json
 import logging
 import sys
 import time
+import signal
 from enum import IntEnum, unique
 from inspect import currentframe, getframeinfo
 from math import ceil
@@ -189,12 +190,6 @@ class SDPSubarray(Device):
         # The subarray device is initialised in the OFF state.
         self.set_state(DevState.OFF)
         LOG.info('SDP Subarray initialised: %s', self.get_name())
-
-        # Generate a fault in tango_sdp_subarray_1
-        device_name = self.get_name()
-        if device_name == 'mid_sdp/elt/subarray_1':
-            LOG.info("ObsState will change to FAULT in 120sec")
-            self._generate_fault()
 
     def always_executed_hook(self):
         """Run for on each call."""
@@ -600,24 +595,6 @@ class SDPSubarray(Device):
 
         LOG.debug('Successfully validated Configure JSON argument!')
         return config
-
-    def _generate_fault(self):
-        """Create a fault in sdp_subarray-1.
-
-        This function is TEMPORARY. It will change the obsStte
-        into into faulted state or hang/irresponsive.
-
-        """
-        # time.sleep(180)
-        delay = 60 * 2
-        close_time = time.time() + delay
-        while True:
-            pass
-            if time.time() > close_time:
-                self._set_obs_state(ObsState.FAULT)
-                LOG.info("ObsState to FAULT")
-                LOG.error("sdp_subarray-1 not responding")
-                break
 
     def _scan_complete(self):
         """Update the obsState to READY when a scan is complete.
@@ -1199,5 +1176,12 @@ def main(args=None, **kwargs):
     return run((SDPSubarray,), args=args, **kwargs)
 
 
+def terminate(_sig, _frame):
+    """Terminate the program."""
+    LOG.info("Asked to terminate")
+    exit(0)
+
+
 if __name__ == '__main__':
+    signal.signal(signal.SIGTERM, terminate)
     main()
