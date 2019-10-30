@@ -292,7 +292,7 @@ class SDPSubarray(Device):
         """
         # pylint: disable=unused-argument
         # Check if device is in FAULT state
-        if self.get_state() == 'FAULT':
+        if str(self.get_state()) == 'FAULT':
             LOG.debug("Device in FAULT state")
         else:
             LOG.info('-----------------------------------------------------')
@@ -322,7 +322,7 @@ class SDPSubarray(Device):
         """
         # pylint: disable=unused-argument
         # Check if device is in FAULT state
-        if self.get_state() == 'FAULT':
+        if str(self.get_state())== 'FAULT':
             LOG.debug("Device in FAULT state")
         else:
             LOG.info('-----------------------------------------------------')
@@ -356,7 +356,7 @@ class SDPSubarray(Device):
         """
 
         # Check if device is in FAULT state
-        if self.get_state() == 'FAULT':
+        if str(self.get_state()) == 'FAULT':
             LOG.debug("Device in FAULT state")
         else:
             LOG.info('-----------------------------------------------------')
@@ -417,9 +417,9 @@ class SDPSubarray(Device):
             # 6. Set the obsState to ready.
             self._set_obs_state(ObsState.READY)
 
-        LOG.info('-------------------------------------------------------')
-        LOG.info('Configure successful!')
-        LOG.info('-------------------------------------------------------')
+            LOG.info('-------------------------------------------------------')
+            LOG.info('Configure successful!')
+            LOG.info('-------------------------------------------------------')
 
     @command(dtype_in=str, doc_in="Scan Configuration JSON object")
     def ConfigureScan(self, json_scan_config):
@@ -439,7 +439,7 @@ class SDPSubarray(Device):
         :param json_scan_config: Scan configuration JSON object.
 
         """
-        if self.get_state() == 'FAULT':
+        if str(self.get_state()) == 'FAULT':
             LOG.debug("Device in FAULT state")
         else:
             LOG.info('-----------------------------------------------------')
@@ -475,7 +475,7 @@ class SDPSubarray(Device):
     @command
     def StartScan(self):
         """Command issued when a scan is started."""
-        if self.get_state() == 'FAULT':
+        if str(self.get_state()) == 'FAULT':
             LOG.debug("Device in FAULT state")
         else:
             LOG.info('-----------------------------------------------------')
@@ -510,7 +510,7 @@ class SDPSubarray(Device):
     @command
     def EndScan(self):
         """Command issued when the scan is ended."""
-        if self.get_state() == 'FAULT':
+        if str(self.get_state()) == 'FAULT':
             LOG.debug("Device in FAULT state")
         else:
             LOG.info('-----------------------------------------------------')
@@ -527,7 +527,7 @@ class SDPSubarray(Device):
     @command
     def EndSB(self):
         """Command issued to end the scheduling block."""
-        if self.get_state() == 'FAULT':
+        if str(self.get_state()) == 'FAULT':
             LOG.debug("Device in FAULT state")
         else:
             LOG.info('-----------------------------------------------------')
