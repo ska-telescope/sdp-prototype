@@ -6,8 +6,7 @@
   "required": [
     "version",
     "repositories",
-    "realtime",
-    "batch"
+    "workflows"
   ],
   "optional":[
     "about"
@@ -76,12 +75,12 @@
         }
       }
     },
-    "realtime": {
-      "$id": "#/properties/realtime",
+    "workflows": {
+      "$id": "#/properties/workflows",
       "type": "array",
       "minItems": 1,
       "items": {
-        "$id": "#/properties/realtime/items",
+        "$id": "#/properties/workflows/items",
         "type": "object",
         "required": [
           "id",
@@ -91,8 +90,17 @@
         ],
         "additionalProperties": false,
         "properties": {
+          "type": {
+            "$id": "#/properties/workflows/items/properties/type",
+            "type": "string",
+            "examples": [
+              "realtime",
+              "batch"
+            ],
+            "pattern": "^(realtime)|(batch)$"
+          },
           "id": {
-            "$id": "#/properties/realtime/items/properties/id",
+            "$id": "#/properties/workflows/items/properties/id",
             "type": "string",
             "examples": [
               "test1"
@@ -100,7 +108,7 @@
             "pattern": "^(.*)$"
           },
           "repository": {
-            "$id": "#/properties/realtime/items/properties/repository",
+            "$id": "#/properties/workflows/items/properties/repository",
             "type": "string",
             "examples": [
               "nexus"
@@ -108,7 +116,7 @@
             "pattern": "^(.*)$"
           },
           "image": {
-            "$id": "#/properties/realtime/items/properties/image",
+            "$id": "#/properties/workflows/items/properties/image",
             "type": "string",
             "examples": [
               "workflow-test1"
@@ -116,71 +124,15 @@
             "pattern": "^(.*)$"
           },
           "versions": {
-            "$id": "#/properties/realtime/items/properties/versions",
+            "$id": "#/properties/workflows/items/properties/versions",
             "type": "array",
             "minItems": 1,
             "items": {
-              "$id": "#/properties/realtime/items/properties/versions/items",
+              "$id": "#/properties/workflows/items/properties/versions/items",
               "type": "string",
               "examples": [
                 "1.0.0",
                 "1.1.0"
-              ],
-              "pattern": "^(.*)$"
-            }
-          }
-        }
-      }
-    },
-    "batch": {
-      "$id": "#/properties/batch",
-      "type": "array",
-      "items": {
-        "$id": "#/properties/batch/items",
-        "type": "object",
-        "required": [
-          "id",
-          "repository",
-          "image",
-          "versions"
-        ],
-        "minItems": 0,
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "$id": "#/properties/batch/items/properties/id",
-            "type": "string",
-            "examples": [
-              "test2"
-            ],
-            "pattern": "^(.*)$"
-          },
-          "repository": {
-            "$id": "#/properties/batch/items/properties/repository",
-            "type": "string",
-            "examples": [
-              "nexus"
-            ],
-            "pattern": "^(.*)$"
-          },
-          "image": {
-            "$id": "#/properties/batch/items/properties/image",
-            "type": "string",
-            "examples": [
-              "workflow-test2"
-            ],
-            "pattern": "^(.*)$"
-          },
-          "versions": {
-            "$id": "#/properties/batch/items/properties/versions",
-            "type": "array",
-            "minItems": 1,
-            "items": {
-              "$id": "#/properties/batch/items/properties/versions/items",
-              "type": "string",
-              "examples": [
-                "2.0.0",
-                "2.1.0"
               ],
               "pattern": "^(.*)$"
             }

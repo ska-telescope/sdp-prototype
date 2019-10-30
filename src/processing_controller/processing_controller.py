@@ -49,43 +49,36 @@ def read_workflow_definition(definition_file, schema_file):
     # Parse repositories.
     repositories = {}
     for repo in definition['repositories']:
-        name = repo['name']
-        path = repo['path']
-        if name in repositories:
-            LOG.warning("Repository {} already defined, will be overwritten".format(repo))
-        repositories[name] = path
+        repo_name = repo['name']
+        repo_path = repo['path']
+        if repo_name in repositories:
+            LOG.warning("Repository {} already defined, will be overwritten".format(repo_name))
+        repositories[repo_name] = repo_path
 
-    # Parse realtime workflow definitions.
+    # Parse workflow definitions.
     realtime = {}
-    for wf in definition['realtime']:
-        id = wf['id']
-        repo = wf['repository']
-        image = wf['image']
-        versions = wf['versions']
-        if repo not in repositories:
-            LOG.warning("Repository {} for realtime workflow {} not found, skipping".format(repo, id))
-            continue
-        for vers in versions:
-            if (id, vers) in realtime:
-                LOG.warning("Realtime workflow {} version {} already defined, "
-                            "will be overwritten".format(id, vers))
-            realtime[(id, vers)] = repositories[repo] + "/" + image + ":" + vers
-
-    # Parse batch workflow definitions.
     batch = {}
-    for wf in definition['batch']:
-        id = wf['id']
-        repo = wf['repository']
-        image = wf['image']
-        versions = wf['versions']
-        if repo not in repositories:
-            LOG.warning("Repository {} for batch workflow {} not found".format(repo, id))
+    for wf in definition['workflows']:
+        wf_type = wf['type']
+        wf_id = wf['id']
+        wf_repo = wf['repository']
+        wf_image = wf['image']
+        wf_versions = wf['versions']
+        if wf_repo not in repositories:
+            LOG.warning("Repository {} for {} workflow {} not found, skipping".format(wf_repo, wf_type, wf_id))
             continue
-        for vers in versions:
-            if (id, vers) in batch:
-                LOG.warning("Batch workflow {} version {} already defined, "
-                            "will be overwritten".format(id, vers))
-            batch[(id, vers)] = repositories[repo] + "/" + image + ":" + vers
+        if wf_type == 'realtime':
+            workflows = realtime
+        elif wf_type == 'batch':
+            workflows = batch
+        else:
+            LOG.warning("Workflow {} has unknown type {}, skipping".format(wf_id, wf_type))
+            continue
+        for vers in wf_versions:
+            if (wf_id, vers) in workflows:
+                LOG.warning("{} workflow {} version {} already defined, "
+                            "will be overwritten".format(wf_type, wf_id, vers))
+            workflows[(wf_id, vers)] = repositories[wf_repo] + "/" + wf_image + ":" + vers
 
     LOG.debug("Workflow definitions version:")
     for k, v in version.items():
