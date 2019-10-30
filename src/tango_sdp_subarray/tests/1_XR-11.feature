@@ -14,6 +14,13 @@ Feature: SDPSubarray device
 		And adminMode should be ONLINE
 		And healthState should be OK
 
+	@XTP-119 @XTP-118
+	Scenario: Device fault state successful
+		Given I have an ONLINE SDPSubarray device
+		When faulty is TRUE
+		Then State should be FAULT
+		And prevent the device from responding to commands
+
 
 	# When assigning resources to the SDPSubarray device, the device state transitions must follow the [Subarray State Model|https://confluence.skatelescope.org/display/SE/Subarray+State+Model] and behaviour defined for the [Subarray Device interface description|https://confluence.skatelescope.org/pages/viewpage.action?pageId=74716479].
 	#

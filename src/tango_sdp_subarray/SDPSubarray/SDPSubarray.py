@@ -121,6 +121,14 @@ class SDPSubarray(Device):
         polling_period=1000
     )
 
+    faulty = attribute(
+        label='faulty',
+        dtype='bool',
+        access=AttrWriteType.READ_WRITE,
+        doc='The device faulty.',
+        polling_period=1000
+    )
+
     adminMode = attribute(
         label='Admin mode',
         dtype=AdminMode,
@@ -160,6 +168,7 @@ class SDPSubarray(Device):
 
         # Initialise attributes
         self._set_obs_state(ObsState.IDLE)
+        self._faulty = False
         self._admin_mode = AdminMode.ONLINE
         self._health_state = HealthState.OK
         self._receive_addresses = dict()
@@ -209,6 +218,13 @@ class SDPSubarray(Device):
         """
         return self._obs_state
 
+    def read_faulty(self):
+        """Get the faulty state attribute.
+
+        :returns: The current faulty state attribute value.
+        """
+        return self._faulty
+
     def read_adminMode(self):
         """Get the adminMode attribute.
 
@@ -240,6 +256,14 @@ class SDPSubarray(Device):
         """
         self._set_obs_state(obs_state)
 
+    def write_faulty(self, faulty):
+        """Set the faulty attribute.
+
+        :param faulty: A faulty bool.
+        """
+        # self._set_obs_state(obs_state)
+        self._set_faulty(faulty)
+
     def write_adminMode(self, admin_mode):
         """Set the adminMode attribute.
 
@@ -267,18 +291,22 @@ class SDPSubarray(Device):
         :param config: Resource specification (currently ignored)
         """
         # pylint: disable=unused-argument
-        LOG.info('-------------------------------------------------------')
-        LOG.info('AssignResources (%s)', self.get_name())
-        LOG.info('-------------------------------------------------------')
-        self._require_obs_state([ObsState.IDLE])
-        self._require_admin_mode([AdminMode.ONLINE, AdminMode.MAINTENANCE,
-                                  AdminMode.RESERVED])
-        LOG.warning('Assigning resources is currently a noop!')
-        LOG.debug('Setting device state to ON')
-        self.set_state(DevState.ON)
-        LOG.info('-------------------------------------------------------')
-        LOG.info('AssignResources Successful!')
-        LOG.info('-------------------------------------------------------')
+        # Check if device is in FAULT state
+        if self.get_state() == 'FAULT':
+            LOG.debug("Device in FAULT state")
+        else:
+            LOG.info('-----------------------------------------------------')
+            LOG.info('AssignResources (%s)', self.get_name())
+            LOG.info('-------------------------------------------------------')
+            self._require_obs_state([ObsState.IDLE])
+            self._require_admin_mode([AdminMode.ONLINE, AdminMode.MAINTENANCE,
+                                      AdminMode.RESERVED])
+            LOG.warning('Assigning resources is currently a noop!')
+            LOG.debug('Setting device state to ON')
+            self.set_state(DevState.ON)
+            LOG.info('-----------------------------------------------------')
+            LOG.info('AssignResources Successful!')
+            LOG.info('-----------------------------------------------------')
 
     @command(dtype_in=str, doc_in='Resource configuration JSON object')
     def ReleaseResources(self, config=''):
@@ -293,18 +321,22 @@ class SDPSubarray(Device):
         :param config: Resource specification (currently ignored).
         """
         # pylint: disable=unused-argument
-        LOG.info('-------------------------------------------------------')
-        LOG.info('ReleaseResources (%s)', self.get_name())
-        LOG.info('-------------------------------------------------------')
-        self._require_obs_state([ObsState.IDLE])
-        self._require_admin_mode([AdminMode.OFFLINE, AdminMode.NOT_FITTED],
-                                 invert=True)
-        LOG.warning('Release resources is currently a noop!')
-        LOG.debug('Setting device state to OFF')
-        self.set_state(DevState.OFF)
-        LOG.info('-------------------------------------------------------')
-        LOG.info('ReleaseResources Successful!')
-        LOG.info('-------------------------------------------------------')
+        # Check if device is in FAULT state
+        if self.get_state() == 'FAULT':
+            LOG.debug("Device in FAULT state")
+        else:
+            LOG.info('-----------------------------------------------------')
+            LOG.info('ReleaseResources (%s)', self.get_name())
+            LOG.info('-------------------------------------------------------')
+            self._require_obs_state([ObsState.IDLE])
+            self._require_admin_mode([AdminMode.OFFLINE, AdminMode.NOT_FITTED],
+                                     invert=True)
+            LOG.warning('Release resources is currently a noop!')
+            LOG.debug('Setting device state to OFF')
+            self.set_state(DevState.OFF)
+            LOG.info('-----------------------------------------------------')
+            LOG.info('ReleaseResources Successful!')
+            LOG.info('-----------------------------------------------------')
 
     @command(dtype_in=str, doc_in='Processing Block configuration JSON object')
     def Configure(self, json_config):
@@ -322,63 +354,68 @@ class SDPSubarray(Device):
 
         :param json_config: Processing Block configuration JSON object.
         """
-        LOG.info('-------------------------------------------------------')
-        LOG.info('Configure (%s)', self.get_name())
-        LOG.info('-------------------------------------------------------')
 
-        # 1. Check obsState is IDLE, and set to CONFIGURING
-        self._require_obs_state([ObsState.IDLE])
-        self._set_obs_state(ObsState.CONFIGURING)
-        self.set_state(DevState.ON)
-
-        # 2. Validate the Configure JSON object argument
-        config = self._validate_configure_json(json_config)
-        # LOG.debug('Configure JSON successfully validated.')
-        config = config.get('configure')
-        self._config = config  # Store local copy of the configuration dict
-        configured_scans = [int(scan_id) for scan_id in
-                            self._config['scanParameters'].keys()]
-        if configured_scans:
-            self._scanId = configured_scans[0]  # Store the current scan id
-
-        # 3. Add the PB configuration to the SDP config database.
-        if self._config_db_client and \
-                self.is_feature_active(FeatureToggle.CONFIG_DB):
-            for txn in self._config_db_client.txn():
-                LOG.info('Creating Processing Block id: %s (SBI Id: %s)',
-                         config.get('id'), config.get('sbiId'))
-                txn.create_processing_block(
-                    ProcessingBlock(
-                        pb_id=config.get('id'),
-                        sbi_id=None,
-                        workflow=config.get('workflow'),
-                        parameters=config.get('parameters'),
-                        scan_parameters=config.get('scanParameters')))
+        # Check if device is in FAULT state
+        if self.get_state() == 'FAULT':
+            LOG.debug("Device in FAULT state")
         else:
-            LOG.warning('Not writing to SDP Config DB (%s)',
-                        ("package 'ska_sdp_config' package not found"
-                         if ConfigDbClient is None
-                         else 'disabled by feature toggle'))
+            LOG.info('-----------------------------------------------------')
+            LOG.info('Configure (%s)', self.get_name())
+            LOG.info('-----------------------------------------------------')
 
-        # 4. Evaluate the receive addresses.
-        self._generate_receive_addresses()
+            # 1. Check obsState is IDLE, and set to CONFIGURING
+            self._require_obs_state([ObsState.IDLE])
+            self._set_obs_state(ObsState.CONFIGURING)
+            self.set_state(DevState.ON)
 
-        # 5. Wait for receive addresses to be generated...
-        # FIXME(BMo) This is a hack for debugging and not a long term solution.
-        start_time = time.time()
-        if self._scanId:
-            while not self._receive_addresses.get('scanId') == self._scanId:
-                LOG.debug('%s', self._receive_addresses)
-                LOG.debug('%s == %s?',
-                          self._receive_addresses.get('scanId'),
-                          self._scanId)
-                time.sleep(1.0)
-                if time.time() - start_time > 3.0:
-                    self._raise_command_error('Timeout reached!!')
-                    break
+            # 2. Validate the Configure JSON object argument
+            config = self._validate_configure_json(json_config)
+            # LOG.debug('Configure JSON successfully validated.')
+            config = config.get('configure')
+            self._config = config  # Store local copy of the configuration dict
+            configured_scans = [int(scan_id) for scan_id in
+                                self._config['scanParameters'].keys()]
+            if configured_scans:
+                self._scanId = configured_scans[0]  # Store the current scan id
 
-        # 6. Set the obsState to ready.
-        self._set_obs_state(ObsState.READY)
+            # 3. Add the PB configuration to the SDP config database.
+            if self._config_db_client and \
+                    self.is_feature_active(FeatureToggle.CONFIG_DB):
+                for txn in self._config_db_client.txn():
+                    LOG.info('Creating Processing Block id: %s (SBI Id: %s)',
+                             config.get('id'), config.get('sbiId'))
+                    txn.create_processing_block(
+                        ProcessingBlock(
+                            pb_id=config.get('id'),
+                            sbi_id=None,
+                            workflow=config.get('workflow'),
+                            parameters=config.get('parameters'),
+                            scan_parameters=config.get('scanParameters')))
+            else:
+                LOG.warning('Not writing to SDP Config DB (%s)',
+                            ("package 'ska_sdp_config' package not found"
+                             if ConfigDbClient is None
+                             else 'disabled by feature toggle'))
+
+            # 4. Evaluate the receive addresses.
+            self._generate_receive_addresses()
+
+            # 5. Wait for receive addresses to be generated...
+            # FIXME(BMo) This is a hack for debugging and not a long term solution.
+            start_time = time.time()
+            if self._scanId:
+                while not self._receive_addresses.get('scanId') == self._scanId:
+                    LOG.debug('%s', self._receive_addresses)
+                    LOG.debug('%s == %s?',
+                              self._receive_addresses.get('scanId'),
+                              self._scanId)
+                    time.sleep(1.0)
+                    if time.time() - start_time > 3.0:
+                        self._raise_command_error('Timeout reached!!')
+                        break
+
+            # 6. Set the obsState to ready.
+            self._set_obs_state(ObsState.READY)
 
         LOG.info('-------------------------------------------------------')
         LOG.info('Configure successful!')
@@ -402,47 +439,53 @@ class SDPSubarray(Device):
         :param json_scan_config: Scan configuration JSON object.
 
         """
-        LOG.info('-------------------------------------------------------')
-        LOG.info('ConfigureScan (%s)', self.get_name())
-        LOG.info('-------------------------------------------------------')
+        if self.get_state() == 'FAULT':
+            LOG.debug("Device in FAULT state")
+        else:
+            LOG.info('-----------------------------------------------------')
+            LOG.info('ConfigureScan (%s)', self.get_name())
+            LOG.info('-----------------------------------------------------')
 
-        # Check the obsState is READY and set to CONFIGURING
-        self._require_obs_state([ObsState.READY])
-        self._set_obs_state(ObsState.CONFIGURING)
+            # Check the obsState is READY and set to CONFIGURING
+            self._require_obs_state([ObsState.READY])
+            self._set_obs_state(ObsState.CONFIGURING)
 
-        # Validate input scan configuration JSON object.
-        try:
-            schema_path = join(dirname(__file__), 'schema',
-                               'configure_scan.json')
-            with open(schema_path, 'r') as file:
-                schema = json.loads(file.read())
-            pb_config = json.loads(json_scan_config)
-            validate(pb_config, schema)
-        except json.JSONDecodeError:
-            pass
-        except exceptions.ValidationError:
-            pass
+            # Validate input scan configuration JSON object.
+            try:
+                schema_path = join(dirname(__file__), 'schema',
+                                   'configure_scan.json')
+                with open(schema_path, 'r') as file:
+                    schema = json.loads(file.read())
+                pb_config = json.loads(json_scan_config)
+                validate(pb_config, schema)
+            except json.JSONDecodeError:
+                pass
+            except exceptions.ValidationError:
+                pass
 
-        # TODO(BMo) Update receive addresses (if required)
-        # self._update_receive_addresses()
+            # TODO(BMo) Update receive addresses (if required)
+            # self._update_receive_addresses()
 
-        # Set the obsState to READY.
-        self._set_obs_state(ObsState.READY)
-        LOG.info('-------------------------------------------------------')
-        LOG.info('ConfigureScan Successful!')
-        LOG.info('-------------------------------------------------------')
+            # Set the obsState to READY.
+            self._set_obs_state(ObsState.READY)
+            LOG.info('-----------------------------------------------------')
+            LOG.info('ConfigureScan Successful!')
+            LOG.info('-----------------------------------------------------')
 
     @command
     def StartScan(self):
         """Command issued when a scan is started."""
-        LOG.info('-------------------------------------------------------')
-        LOG.info('Start Scan (%s)', self.get_name())
-        LOG.info('-------------------------------------------------------')
-        self._require_obs_state([ObsState.READY])
-        self._set_obs_state(ObsState.SCANNING)
-        LOG.info('-------------------------------------------------------')
-        LOG.info('Start Scan Successful')
-        LOG.info('-------------------------------------------------------')
+        if self.get_state() == 'FAULT':
+            LOG.debug("Device in FAULT state")
+        else:
+            LOG.info('-----------------------------------------------------')
+            LOG.info('Start Scan (%s)', self.get_name())
+            LOG.info('-----------------------------------------------------')
+            self._require_obs_state([ObsState.READY])
+            self._set_obs_state(ObsState.SCANNING)
+            LOG.info('-----------------------------------------------------')
+            LOG.info('Start Scan Successful')
+            LOG.info('-----------------------------------------------------')
 
     @command
     def Scan(self):
@@ -451,47 +494,56 @@ class SDPSubarray(Device):
         FIXME(BMo) duplicate of StartScan
 
         """
-        LOG.info('-------------------------------------------------------')
-        LOG.info('Start Scan (%s)', self.get_name())
-        LOG.info('-------------------------------------------------------')
-        self._require_obs_state([ObsState.READY])
-        self.set_state(DevState.ON)
-        self._set_obs_state(ObsState.SCANNING)
-        LOG.info('-------------------------------------------------------')
-        LOG.info('Start Scan Successful')
-        LOG.info('-------------------------------------------------------')
+        if self.get_state() == 'FAULT':
+            LOG.debug("Device in FAULT state")
+        else:
+            LOG.info('-----------------------------------------------------')
+            LOG.info('Start Scan (%s)', self.get_name())
+            LOG.info('-----------------------------------------------------')
+            self._require_obs_state([ObsState.READY])
+            self.set_state(DevState.ON)
+            self._set_obs_state(ObsState.SCANNING)
+            LOG.info('-----------------------------------------------------')
+            LOG.info('Start Scan Successful')
+            LOG.info('-----------------------------------------------------')
 
     @command
     def EndScan(self):
         """Command issued when the scan is ended."""
-        LOG.info('-------------------------------------------------------')
-        LOG.info('End Scan (%s)', self.get_name())
-        LOG.info('-------------------------------------------------------')
-        self._require_obs_state([ObsState.SCANNING])
-        self._receive_addresses = None
-        self._scanId = None
-        self._set_obs_state(ObsState.READY)
-        LOG.info('-------------------------------------------------------')
-        LOG.info('End Scan Successful')
-        LOG.info('-------------------------------------------------------')
+        if self.get_state() == 'FAULT':
+            LOG.debug("Device in FAULT state")
+        else:
+            LOG.info('-----------------------------------------------------')
+            LOG.info('End Scan (%s)', self.get_name())
+            LOG.info('-----------------------------------------------------')
+            self._require_obs_state([ObsState.SCANNING])
+            self._receive_addresses = None
+            self._scanId = None
+            self._set_obs_state(ObsState.READY)
+            LOG.info('-----------------------------------------------------')
+            LOG.info('End Scan Successful')
+            LOG.info('-----------------------------------------------------')
 
     @command
     def EndSB(self):
         """Command issued to end the scheduling block."""
-        LOG.info('-------------------------------------------------------')
-        LOG.info('EndSB (%s)', self.get_name())
-        LOG.info('-------------------------------------------------------')
-        self._require_obs_state([ObsState.READY])
-        self._receive_addresses = None
-        self._scanId = None
-        self._config = None
-        self._set_obs_state(ObsState.IDLE)
-        for event_id in list(self._events_telstate.keys()):
-            self._events_telstate[event_id].unsubscribe_event(event_id)
-        self._last_cbf_output_link = None
-        LOG.info('-------------------------------------------------------')
-        LOG.info('EndSB Successful')
-        LOG.info('-------------------------------------------------------')
+        if self.get_state() == 'FAULT':
+            LOG.debug("Device in FAULT state")
+        else:
+            LOG.info('-----------------------------------------------------')
+            LOG.info('EndSB (%s)', self.get_name())
+            LOG.info('-----------------------------------------------------')
+            self._require_obs_state([ObsState.READY])
+            self._receive_addresses = None
+            self._scanId = None
+            self._config = None
+            self._set_obs_state(ObsState.IDLE)
+            for event_id in list(self._events_telstate.keys()):
+                self._events_telstate[event_id].unsubscribe_event(event_id)
+            self._last_cbf_output_link = None
+            LOG.info('-----------------------------------------------------')
+            LOG.info('EndSB Successful')
+            LOG.info('-----------------------------------------------------')
 
     # -------------------------------------
     # Public methods
@@ -557,8 +609,22 @@ class SDPSubarray(Device):
         # LOG.debug('Setting obsState to: %s', value)
         self._obs_state = value
         self.push_change_event("obsState", self._obs_state)
-        # if value == ObsState.FAULT:
-        #     self.set_state(DevState.FAULT)
+        if value == ObsState.FAULT:
+            self.set_state(DevState.FAULT)
+
+    def _set_faulty(self, value, verbose=True):
+        """Set the faulty attribute and and issue a change event."""
+        if verbose:
+            LOG.debug('Setting faulty attribute to: %s', value)
+        self._faulty = value
+        self.push_change_event("faulty", self._faulty)
+        if value:
+            self.set_state(DevState.FAULT)
+            LOG.debug('Device state is set to FAULT')
+        else:
+            prev_state = self.get_prev_state()
+            if str(prev_state) != 'FAULT':
+                self.set_state(prev_state)
 
     def _validate_configure_json(self, json_str):
         """Validate the JSON object passed to the Configure command.
