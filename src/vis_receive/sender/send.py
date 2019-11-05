@@ -8,6 +8,13 @@ import numpy
 import spead2
 import spead2.send
 
+def read_coordinates(antenna_file):
+    coords    = []
+    with open(antenna_file) as file:
+        for line in file:
+            if(line[0] != '#'):
+                coords.append(line.split())
+    return(coords)
 
 def main():
     """Runs the test sender."""
@@ -17,8 +24,16 @@ def main():
     rate = 1.0e5   # Bytes/s
     target = ('127.0.0.1' if len(sys.argv) < 2 else sys.argv[1])
     target_port = int('41000' if len(sys.argv) < 3 else sys.argv[2])
+    antenna_file = ('' if len(sys.argv) < 4 else sys.argv[3])
+
+    if(len(antenna_file) > 1):
+        coords = read_coordinates(antenna_file)
+        num_stations = len(coords)
+
+    num_baselines = (num_stations * (num_stations + 1)) // 2
 
     print(f'no. stations      : {num_stations}')
+    print(f'no. baselines     : {num_baselines}')
     print(f'no. times (heaps) : {num_heaps}')
     print(f'host              : {target}')
     print(f'port              : {target_port}')
@@ -28,7 +43,6 @@ def main():
     item_group = spead2.send.ItemGroup(flavour=spead2.Flavour(4, 64, 48, 0))
 
     # Add item descriptors to the heap.
-    num_baselines = (num_stations * (num_stations + 1)) // 2
     dtype = [('TCI', 'i1'), ('FD', 'u1'), ('VIS', '<c8', 4)]
     item_group.add_item(
         id=0x6000, name='visibility_timestamp_count', description='',

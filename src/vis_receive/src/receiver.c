@@ -111,7 +111,7 @@ struct Buffer* receiver_buffer(struct Receiver* self, int heap, size_t length,
  * @param output_root
  * @return
  */
-struct Receiver* receiver_create(int max_num_buffers, int num_times_in_buffer,
+struct Receiver* receiver_create(int num_stations, int max_num_buffers, int num_times_in_buffer,
         int num_threads_recv, int num_threads_write, int num_streams,
         unsigned short int port_start, int num_channels_per_file,
         const char* output_root)
@@ -128,6 +128,7 @@ struct Receiver* receiver_create(int max_num_buffers, int num_times_in_buffer,
     cls->num_threads_write = num_threads_write;
     cls->num_streams = num_streams;
     cls->num_channels_per_file = num_channels_per_file;
+    cls->num_stations = num_stations;
     if (output_root && strlen(output_root) > 0)
     {
         cls->output_root = (char*) malloc(1 + strlen(output_root));
@@ -139,8 +140,8 @@ struct Receiver* receiver_create(int max_num_buffers, int num_times_in_buffer,
     for (int i = 0; i < num_streams; ++i)
         cls->streams[i] = stream_create(
                 port_start + (unsigned short int)i, i, cls);
+    cls->antennas = calloc(1, sizeof(struct Antenna));
     #ifdef WITH_MS
-        int num_stations = 4;
         int num_channels = num_streams;
         int num_pols = 4;
         double ref_freq_hz = 100.0e6;
@@ -170,6 +171,11 @@ void receiver_free(struct Receiver* self)
     for (int i = 0; i < self->num_streams; ++i) stream_free(self->streams[i]);
     for (int i = 0; i < self->num_buffers; ++i) buffer_free(self->buffers[i]);
     pthread_mutex_destroy(&self->lock);
+    free(self->coords_x);
+    free(self->coords_y);
+    free(self->coords_z);
+    free(self->diam);
+    free(self->name);
     free(self->streams);
     free(self->buffers);
     free(self->output_root);
@@ -303,18 +309,7 @@ static void* thread_write_buffer_ms(void* arg)
 {
     struct Buffer* buf = (struct Buffer*) arg;
     struct Receiver* receiver = buf->receiver;
-    int hour_angle = receiver->timestamp_count - receiver->ra;
-    int LX, LY, LZ;
-    LX = 1;
-    LY = 2;
-    LZ = 3;
-    *(buf->uu) = sin(hour_angle)*LX + cos(hour_angle)*LY;
-    *(buf->vv) = -sin(receiver->dec)*cos(hour_angle)*LX 
-                  + sin(receiver->dec)*sin(hour_angle)*LY
-                  + cos(receiver->dec)*LZ;
-    *(buf->ww) = cos(receiver->dec)*cos(hour_angle)*LX
-                  + cos(receiver->dec)*sin(hour_angle)*LY
-                  + sin(receiver->dec)*LZ;
+    double hour_angle = receiver->timestamp_count - receiver->ra;
     if (buf->byte_counter != buf->buffer_size)
         printf("WARNING: Buffer %d incomplete (%zu/%zu, %.1f%%)\n",
                buf->buffer_id, buf->byte_counter, buf->buffer_size,
@@ -332,6 +327,14 @@ static void* thread_write_buffer_ms(void* arg)
 
         for (unsigned int t = 0; t < buf->num_times; ++t)
         {
+            if(receiver->coords_x != 0)
+                calculate_uvw(buf);
+            unsigned int t_global = receiver->write_counter *
+                    buf->num_times + t;
+            unsigned int start_row = t_global * buf->num_baselines;
+            oskar_ms_write_coords_d(receiver->ms, start_row,
+                    buf->num_baselines, buf->uu, buf->vv, buf->ww,
+                    1.0, 1.0, 0.0);
             for (unsigned int c = 0; c < buf->num_channels; ++c)
             {
                 const struct DataType* block_start = buf->vis_data +
@@ -341,12 +344,6 @@ static void* thread_write_buffer_ms(void* arg)
                     memcpy(dst, (float*)&(block_start[i].vis),
                             8 * sizeof(float));
                 }
-                unsigned int t_global = receiver->write_counter *
-                        buf->num_times + t;
-                unsigned int start_row = t_global * buf->num_baselines;
-                oskar_ms_write_coords_d(receiver->ms, start_row,
-                        buf->num_baselines, buf->uu, buf->vv, buf->ww,
-                        1.0, 1.0, 0.0);
                 oskar_ms_write_vis_f(
                         receiver->ms, start_row,
                         c, 1, buf->num_baselines,
@@ -502,6 +499,54 @@ void receiver_start(struct Receiver* self)
 
 void receiver_set_phase(struct Receiver* self, double ra, double dec)
 {
-  self->ra = ra;
-	self->dec = dec;
+    self->ra = ra;
+    self->dec = dec;
+}
+
+void calculate_uvw(struct Buffer* arg)
+{
+    int i,j,k;
+    int num_stations;
+    double hour_angle, ra, dec, timestamp_count;
+    double dec_sin, dec_cos, ha_sin, ha_cos;
+    struct Buffer* buf = arg;
+    struct Receiver* recv = (struct Receiver*) buf->receiver;
+    ra = buf->receiver->ra;
+    dec = buf->receiver->dec;
+    timestamp_count = buf->receiver->timestamp_count;
+    hour_angle = timestamp_count - ra;
+    double *antenna_differences_x = malloc(buf->num_baselines*sizeof(double));
+    double *antenna_differences_y = malloc(buf->num_baselines*sizeof(double));
+    double *antenna_differences_z = malloc(buf->num_baselines*sizeof(double));
+    num_stations = recv->num_stations;
+    dec_sin = sin(dec);
+    dec_cos = cos(dec);
+    ha_sin = sin(hour_angle);
+    ha_cos = cos(hour_angle);
+    k = 0;
+    for(i = 0; i < num_stations - 1; i++)
+    {
+        for(j = i; j < num_stations; j++)
+        {
+            antenna_differences_x[k] = recv->coords_x[j] - recv->coords_x[i];
+            antenna_differences_y[k] = recv->coords_y[j] - recv->coords_y[i];
+            antenna_differences_z[k] = recv->coords_z[j] - recv->coords_z[i];
+                    k++;
+        }
+    }
+    for( i = 0; i < buf->num_baselines; i++)
+    {
+        (buf->uu[i]) = ha_sin*antenna_differences_x[i]
+              + ha_cos*antenna_differences_y[i];
+        (buf->vv[i]) = -dec_sin*ha_cos*antenna_differences_x[i]
+              + dec_sin*ha_sin*antenna_differences_y[i]
+              + dec_cos*antenna_differences_z[i];
+        (buf->ww[i]) = dec_cos*ha_cos*antenna_differences_x[i]
+              + dec_cos*ha_sin*antenna_differences_y[i]
+              + dec_sin*antenna_differences_z[i];
+    }
+
+    free(antenna_differences_x);
+    free(antenna_differences_y);
+    free(antenna_differences_z);
 }

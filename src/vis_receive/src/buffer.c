@@ -41,9 +41,9 @@ struct Buffer* buffer_create(int num_times, int num_channels,
 #ifdef WITH_MS
     // Unpacked visibility data for one channel and 1 time (all polarisations)
     cls->vis_unpacked = (float*)malloc(num_baselines * 4 * 2 * sizeof(float));
-    cls->uu = (float*)calloc(num_baselines, sizeof(float));
-    cls->vv = (float*)calloc(num_baselines, sizeof(float));
-    cls->ww = (float*)calloc(num_baselines, sizeof(float));
+    cls->uu = (double*)calloc(num_baselines, sizeof(double));
+    cls->vv = (double*)calloc(num_baselines, sizeof(double));
+    cls->ww = (double*)calloc(num_baselines, sizeof(double));
 #endif
     return cls;
 }

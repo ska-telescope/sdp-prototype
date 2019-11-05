@@ -18,6 +18,7 @@ struct ThreadPool;
 struct Timer;
 struct Stream;
 struct Buffer;
+struct Antenna;
 
 /**
  * Receiver data structure
@@ -30,7 +31,9 @@ struct Receiver
     struct Timer* tmr;
     struct Stream** streams;
     struct Buffer** buffers;
+    struct Antenna* antennas;
     char* output_root;
+    char** name;
     int completed_streams;
     int num_baselines;
     int num_times_in_buffer;
@@ -40,14 +43,29 @@ struct Receiver
     int num_streams;
     int num_buffers;
     int num_channels_per_file;
-    uint32_t timestamp_count;
+    int num_stations;
     unsigned short int port_start;
+    unsigned int timestamp_count;
     double ra;
     double dec;
+    double* coords_x;
+    double* coords_y;
+    double* coords_z;
+    double* diam;
 #ifdef WITH_MS
     int write_counter;
     oskar_MeasurementSet* ms;
 #endif
+};
+
+struct Antenna
+{
+    int count;
+    double* coords_x;
+    double* coords_y;
+    double* coords_z;
+    double* size;
+    char** name;
 };
 
 /**
@@ -59,10 +77,10 @@ struct Buffer* receiver_buffer(struct Receiver* self, int heap, size_t length,
 /**
  * @brief Creates a new receiver object.
  */
-struct Receiver* receiver_create(int max_num_buffers, int num_times_in_buffer,
-        int num_threads_recv, int num_threads_write, int num_streams,
-        unsigned short int port_start, int num_channels_per_file,
-        const char* output_root);
+struct Receiver* receiver_create(int num_stations, int max_num_buffers,
+        int num_times_in_buffer, int num_threads_recv, int num_threads_write,
+        int num_streams, unsigned short int port_start,
+        int num_channels_per_file, const char* output_root);
 
 /**
  * @brief Destroys the receiver object.
@@ -75,6 +93,8 @@ void receiver_free(struct Receiver* self);
 void receiver_start(struct Receiver* self);
 
 void receiver_set_phase(struct Receiver* self, double ra, double dec);
+
+void calculate_uvw(struct Buffer* self);
 
 #ifdef __cplusplus
 }

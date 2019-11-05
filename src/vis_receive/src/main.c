@@ -29,33 +29,91 @@ static char* construct_output_root(const char* output_location,
     return output_root;
 }
 
+int read_coordinates(const char* antenna_filename, struct Antenna* ants)
+{
+    int linecount = 0, i, j;
+    char line[128];
+    char antenna_name[64] = "";
+    char *tokens;
+    FILE* antenna_file = fopen(antenna_filename,"r");
+
+    if ( antenna_file == NULL)
+        return 0;
+
+    while(fgets( line, sizeof(line), antenna_file))
+        if(line[0] != '#')
+            ++linecount;
+    rewind(antenna_file);
+
+    ants->count = linecount;
+    ants->coords_x = (double*) malloc(linecount*sizeof(double));
+    ants->coords_y = (double*) malloc(linecount*sizeof(double));
+    ants->coords_z = (double*) malloc(linecount*sizeof(double));
+    ants->size = calloc(linecount,sizeof(double));
+    ants->name = calloc(linecount,sizeof(char[64]));
+    i = 0;
+    while(fgets( line, sizeof(line), antenna_file))
+    {
+        if(line[0] != '#')
+        {
+            j = 0;
+            tokens = strtok(line, " ");
+
+            while(tokens != NULL)
+            {
+              switch(j)
+              {
+                case(0):
+                  ants->coords_x[i] = atof(tokens);
+                  break;
+                case(1):
+                  ants->coords_y[i] = atof(tokens);
+                  break;
+                case(2):
+                  ants->coords_z[i] = atof(tokens);
+                  break;
+                case(3):
+                  ants->size[i] = atof(tokens);
+                  break;
+                case(4):
+                  ants->name[i] = tokens;
+                  break;
+                default:
+                  break;
+              }
+              tokens = strtok(NULL, " ");
+              j++;
+        }
+        i++;
+      }
+    }
+    fclose(antenna_file);
+
+    return linecount;
+}
+
 int main(int argc, char** argv)
 {
+    int num_stations = 4;
     int num_streams = 1;
     int num_threads_recv = num_streams;
     int num_threads_write = 1;
     int num_times_in_buffer = 50;
     int max_num_buffers = 4;
     int num_channels_per_file = 1;
-    double ra = 0;
-    double dec = 0;
-
-//    int write_autocorr = 0;
-//    int write_crosscorr = 1;
-//    int num_stations = 3;
+    int antenna_coord_count;
     int opt;
     unsigned int timeout = 5;
     unsigned short int port_start = 41000;
-//    double ref_freq_hz = 100e6;
-//    double freq_inc_hz = 100e3;
     const int num_cores = sysconf(_SC_NPROCESSORS_ONLN);
+    double ra = 0;
+    double dec = 0;
     const char* output_location = 0;
     const char* output_name = "vis_recv";
-//#ifdef WITH_MS
-//    oskar_MeasurementSet* ms;
-//#endif
-    while(1) {
+    const char* antenna_file = 0;
+    struct Antenna* antennas = 0;
 
+    while(1) {
         static struct option lopts[] =
         {
             {"streams", required_argument, 0, 's'},
@@ -68,10 +126,11 @@ int main(int argc, char** argv)
             {"output", required_argument, 0, 'o'},
             {"expire", required_argument, 0, 'e'},
             {"declination", optional_argument, 0, 'd'},
-            {"ascension", optional_argument, 0, 'a'}
+            {"ascension", optional_argument, 0, 'a'},
+            {"antenna", required_argument, 0, 'x'}
         };
         int opt_index = 0;
-        opt = getopt_long(argc, argv, "s:r:w:b:t:p:c:o:e:d:a:", lopts, &opt_index);
+        opt = getopt_long(argc, argv, "s:r:w:b:t:p:c:o:e:d:a:x:", lopts, &opt_index);
         if(opt == -1)
             break;
         switch(opt){
@@ -108,6 +167,18 @@ int main(int argc, char** argv)
             case 'a':
                 ra = atof(optarg);
                 break;
+            case 'x':
+                antenna_file = optarg;
+                antennas = calloc(1, sizeof(struct Antenna));
+                antenna_coord_count = read_coordinates(antenna_file,antennas);
+                if(antenna_coord_count == 0)
+                {
+                    printf("Antenna file empty, exiting.\n");
+                    antennas = 0;
+                }
+                else
+                    num_stations = antenna_coord_count;
+                break;
             default:
                 abort();
         }
@@ -136,39 +207,24 @@ int main(int argc, char** argv)
     printf(" + Output root                 : %s\n", output_root);
 
     // Create and start the receiver.
-    struct Receiver* receiver = receiver_create(
+    struct Receiver* receiver = receiver_create( num_stations,
             max_num_buffers, num_times_in_buffer, num_threads_recv,
             num_threads_write, num_streams, port_start,
             num_channels_per_file, output_root);
+
+    if(antennas != 0)
+    {
+        receiver->name = antennas->name;
+        receiver->diam = antennas->size;
+        receiver->coords_x = antennas->coords_x;
+        receiver->coords_y = antennas->coords_y;
+        receiver->coords_z = antennas->coords_z;
+    }
+
     receiver_start(receiver);
-
-//#ifdef WITH_MS
-//    ms = open_ms(oms_file_name);
-//    /* Create the empty Measurement Set if it doesn't exist. */
-//    if(ms == 0)
-//    {
-//        printf("MS file: error opening %s, doesn't exist or unreadable, "
-//               "creating one instead.\n", oms_file_name);
-//        ms = create_ms(oms_file_name, "C test main",
-//                       num_stations, 1, 4, ref_freq_hz, freq_inc_hz,
-//                       write_autocorr, write_crosscorr);
-//        if(ms == 0)
-//        {
-//            printf("Error creating MS file: %s\n", oms_file_name);
-//            return -1;
-//        }
-//    }
-//    struct Buffer** buf = malloc(sizeof(struct Buffer)*num_buffers);
-//    for (int i = 0; i < num_buffers; i++){
-//        buf[i] = receiver->buffers[i];
-//        buf[i]->vis_data = receiver->buffers[i]->vis_data;
-//        write_ms(ms, i, 4, buf[i]->num_channels, buf[i]->num_times,
-//                 buf[i]->num_baselines, &(buf[i]->vis_data));
-//    }
-//    close_ms(ms);
-//#endif
-
     receiver_free(receiver);
+    free(antennas);
     free(output_root);
+
     return 0;
 }

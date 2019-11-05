@@ -21,6 +21,7 @@
 
 static struct Receiver* create_test_receiver()
 {
+	  const int num_stations = 4;
     const int num_buffers_max = 1;
     const int num_times_in_buffer = 4;
     const int num_threads_recv = 1;
@@ -29,7 +30,7 @@ static struct Receiver* create_test_receiver()
     const unsigned short int port_start = 41000;
     const int num_channels_per_file = 1;
     const char* output_root = "";
-    struct Receiver* receiver = receiver_create(num_buffers_max,
+    struct Receiver* receiver = receiver_create(num_stations, num_buffers_max,
             num_times_in_buffer, num_threads_recv, num_threads_write,
             num_streams, port_start, num_channels_per_file, output_root);
     return receiver;
