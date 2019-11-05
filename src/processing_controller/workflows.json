@@ -3,7 +3,7 @@
     "SDP Processing Controller workflow image definitions"
   ],
   "version": {
-    "date-time": "2019-10-28T19:00:00Z"
+    "date-time": "2019-11-04T19:00:00Z"
   },
   "repositories": [
     {"name": "nexus", "path": "nexus.engageska-portugal.pt/sdp-prototype"}
@@ -12,6 +12,7 @@
     {"type": "realtime", "id":  "testdask", "repository": "nexus", "image": "workflow-testdask", "versions": ["0.1.0"]},
     {"type": "realtime", "id":  "testdeploy", "repository": "nexus", "image": "workflow-testdeploy", "versions": ["0.1.0"]},
     {"type": "realtime", "id":  "testdlg", "repository": "nexus", "image": "workflow-testdlg", "versions": ["0.1.0"]},
+    {"type": "realtime", "id":  "teststate", "repository": "nexus", "image": "workflow-teststate", "versions": ["0.2.7"]},
     {"type": "realtime", "id":  "vis_receive", "repository": "nexus", "image": "workflow-vis-receive", "versions": ["0.1.0"]}
   ]
 }

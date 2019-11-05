@@ -34,7 +34,7 @@ dsconfig:
 # Processing controller
 processing_controller:
     image: nexus.engageska-portugal.pt/sdp-prototype/processing-controller
-    version: 0.1.0
+    version: 0.2.7
     replicas: 1
     resources: {}
     imagePullPolicy: IfNotPresent
