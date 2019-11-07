@@ -1,0 +1,18 @@
+# Default values for daliuge
+# Declare variables to be passed into your templates.
+
+dlg:
+  container: nexus.engageska-portugal.pt/ska-docker/yanda-daliuge
+  version: latest
+  replicas: 1
+  imagePullPolicy: IfNotPresent
+
+dlg_dim:
+  resources: {}
+
+dlg_nm:
+  resources: {}
+
+nameOverride: ""
+fullnameOverride: ""
+

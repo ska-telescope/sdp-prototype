@@ -7,15 +7,17 @@ Launches workflows from processing blocks in the configuration database.
 # pylint: disable=C0103
 
 import subprocess
+import sys
 import signal
 import logging
 import ska_sdp_config
 
 # Dictionary defining mapping from workflow IDs to Python scripts.
 workflows_realtime = {
-    'testdeploy': 'testdeploy.py',
-    'testdask': 'testdask.py',
-    'vis_receive': 'test_vis_receive.py'
+    'testdeploy': 'testdeploy',
+    'testdask': 'testdask',
+    'vis_receive': 'test_vis_receive',
+    'testdlg': 'daliuge.main'
 }
 
 
@@ -47,7 +49,7 @@ def main():
                     log.info("Launching realtime workflow with id {0}".format(wf_id))
                     wf_script = workflows_realtime[wf_id]
                     # TODO: store return value and check for errors.
-                    subprocess.Popen(["python3", wf_script, pb_id])
+                    subprocess.Popen([sys.executable, '-m', wf_script, pb_id])
                 else:
                     # Unknown realtime workflow ID.
                     log.error("Unknown realtime workflow id: {0}".format(wf_id))
