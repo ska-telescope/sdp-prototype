@@ -117,8 +117,8 @@ class Etcd3():
 
         # Set up watcher
         watcher = self._client.Watcher(
-            tagged_path, start_revision=rev, prev_kv=True, prefix=prefix)
-        return Etc3Watcher(watcher, self)
+            tagged_path, start_revision=rev, prefix=prefix)
+        return Etcd3Watcher(watcher, self)
 
     def list_keys(self, path, recurse=0, revision=None):
         """
@@ -304,10 +304,10 @@ class Etcd3Revision():
 
     def __repr__(self):
         """Build string representation."""
-        return "Etc3Revision({},{})".format(self.revision, self.mod_revision)
+        return "Etcd3Revision({},{})".format(self.revision, self.mod_revision)
 
 
-class Etc3Watcher():
+class Etcd3Watcher():
     """Wrapper for etc3 watch requests.
 
     Entering the watcher using a `with` block yields a queue of `(key,

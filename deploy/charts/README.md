@@ -257,16 +257,30 @@ and changing attributes and issuing commands:
 
     In [3]: d.obsState
     Out[3]: <obsState.IDLE: 0>
+    
     In [4]: d.state()
     Out[4]: tango._tango.DevState.OFF
+    
     In [5]: d.adminMode = 'ONLINE'
-    
     In [6]: d.AssignResources('')
-    
     In [7]: d.state()
     Out[7]: tango._tango.DevState.ON
+    
     In [8]: d.obsState
     Out[8]: <obsState.IDLE: 0>
+    
+    In [9]: d.Configure('{ "configure": { "id": "xyz", "sbiId": "xyz", "workflow": { "type": "realtime", "version": "0.1.0", "id": "vis_receive" }, "parameters": {}, "scanParameters": { "1": {} } } }')
+    In [10]: d.obsState
+    Out[10]: <obsState.READY: 2>
+    
+    In [11]: d.StartScan()
+    In [12]: d.obsState
+    Out[12]: <obsState.SCANNING: 3>
+    
+    In [13]: d.EndScan()
+    In [14]: d.obsState
+    Out[14]: <obsState.READY: 2>
+
 
 
 Troubleshooting

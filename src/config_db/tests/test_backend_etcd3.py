@@ -212,11 +212,13 @@ def test_watch(etcd3):
         etcd3.update(key, "bla2")
         etcd3.update(key, "bla3")
         etcd3.update(key, "bla4")
+        etcd3.delete(key)
 
         assert watch.get()[1] == 'bla'
         assert watch.get()[1] == 'bla2'
         assert watch.get()[1] == 'bla3'
         assert watch.get()[1] == 'bla4'
+        assert watch.get()[1] is None
 
     # Check that we can watch all children
     with etcd3.watch(key+"/", prefix=True) as watch:
@@ -232,7 +234,7 @@ def test_watch(etcd3):
         assert watch.get()[0:2] == (key+"/ba", 'bla3')
         assert watch.get()[0:2] == (key+"/ad", 'bla4')
 
-    etcd3.delete(key, recursive=True)
+    etcd3.delete(key, must_exist=False, recursive=True)
 
     # Check that we can also watch multiple keys with the same PREFIX
     with etcd3.watch(key+"/a", prefix=True) as watch:
