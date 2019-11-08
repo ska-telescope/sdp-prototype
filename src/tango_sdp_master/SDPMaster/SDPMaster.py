@@ -12,7 +12,9 @@ from tango import (AttrWriteType, ConnectionFailed,
                    Database, DbDevInfo, DebugIt, DevState)
 from tango.server import Device, DeviceMeta, attribute, command, run
 
-LOG = logging.getLogger('ska.sdp.subarray_ds')
+from .release import VERSION as SERVER_VERSION
+
+LOG = logging.getLogger('ska.sdp.master_ds')
 
 
 @unique
@@ -48,6 +50,13 @@ class SDPMaster(Device):
     # ----------
     # Attributes
     # ----------
+
+    serverVersion = attribute(
+        label='Server Version',
+        dtype=str,
+        access=AttrWriteType.READ,
+        doc='The version of the SDP Master device'
+    )
 
     OperatingState = attribute(
         dtype='DevEnum',
@@ -90,6 +99,14 @@ class SDPMaster(Device):
     # ------------------
     # Attributes methods
     # ------------------
+
+    # pylint: disable=R0201
+    def read_serverVersion(self):
+        """Get the SDPMaster device server version attribute.
+
+        :returns: The Device Server version.
+        """
+        return SERVER_VERSION
 
     def read_OperatingState(self):
         """Read the SDP Operating State."""

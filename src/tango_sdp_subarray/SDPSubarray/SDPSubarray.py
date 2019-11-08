@@ -22,6 +22,8 @@ from tango import AttrWriteType, AttributeProxy, ConnectionFailed, Database, \
 from tango.server import Device, DeviceMeta, attribute, command, \
     device_property, run
 
+from .release import VERSION as SERVER_VERSION
+
 try:
     from ska_sdp_config.config import Config as ConfigDbClient
     from ska_sdp_config.entity import ProcessingBlock
@@ -104,14 +106,16 @@ class SDPSubarray(Device):
         default_value='mid_sdp/elt/master'
     )
 
-    Version = device_property(
-        dtype='str',
-        doc='Version of the SDP Subarray device'
-    )
-
     # ----------
     # Attributes
     # ----------
+
+    serverVersion = attribute(
+        label='Server Version',
+        dtype=str,
+        access=AttrWriteType.READ,
+        doc='The version of the SDP Subarray device'
+    )
 
     obsState = attribute(
         label='Obs State',
@@ -201,6 +205,13 @@ class SDPSubarray(Device):
     # ------------------
     # Attributes methods
     # ------------------
+
+    def read_serverVersion(self):
+        """Get the SDPSubarray device server version attribute.
+
+        :returns: The Device Server version.
+        """
+        return SERVER_VERSION
 
     def read_obsState(self):
         """Get the obsState attribute.
@@ -544,7 +555,7 @@ class SDPSubarray(Device):
         env_var = str('toggle_' + feature_name).upper()
         allowed = ['TOGGLE_' + toggle.name for toggle in FeatureToggle]
         if env_var not in allowed:
-            message = 'Unknown feature toggle: {} (allowed: {})'\
+            message = 'Unknown feature toggle: {} (allowed: {})' \
                 .format(env_var, allowed)
             LOG.error(message)
             raise ValueError(message)
@@ -647,7 +658,7 @@ class SDPSubarray(Device):
         # If this fails there may have been an error reading this attribute.
         if cbf_output_link['scanID'] not in configured_scans:
             message = "Unknown scan ID {} in channel link map. " \
-                      "Allowed values {}"\
+                      "Allowed values {}" \
                 .format(cbf_output_link['scanID'], configured_scans)
             LOG.error(message)
             self._set_obs_state(ObsState.FAULT)
@@ -906,7 +917,7 @@ class SDPSubarray(Device):
         #            bad assumption!
         for host_index in range(num_hosts):
             host_ip = '192.168.{}.{}'.format(
-                host_index//256, host_index - ((host_index//256) * 256))
+                host_index // 256, host_index - ((host_index // 256) * 256))
             host_num_channels = min(
                 num_channels - (max_channels_per_host * host_index),
                 max_channels_per_host)
@@ -969,8 +980,8 @@ class SDPSubarray(Device):
         if len(channels) > pb_num_channels:
             self._set_obs_state(ObsState.FAULT)
             msg = 'Vis Receive configured for fewer channels than defined in '\
-                  'the CSP channel link map! (link map: {}, workflow: {})'\
-                  .format(len(channels), pb_num_channels)
+                  'the CSP channel link map! (link map: {}, workflow: {})' \
+                .format(len(channels), pb_num_channels)
             self._raise_command_error(msg)
         if len(channels) < pb_num_channels:
             LOG.warning("Workflow '%s:%s' configured with more channels "
@@ -1169,7 +1180,7 @@ def main(args=None, **kwargs):
     if SDPSubarray.is_feature_active(FeatureToggle.AUTO_REGISTER):
         if len(sys.argv) > 1:
             # delete_device_server("*")
-            devices = ['mid_sdp/elt/subarray_{:d}'.format(i+1)
+            devices = ['mid_sdp/elt/subarray_{:d}'.format(i + 1)
                        for i in range(1)]
             register(sys.argv[1], *devices)
 
