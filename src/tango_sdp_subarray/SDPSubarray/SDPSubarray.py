@@ -22,7 +22,11 @@ from tango import AttrWriteType, AttributeProxy, ConnectionFailed, Database, \
 from tango.server import Device, DeviceMeta, attribute, command, \
     device_property, run
 
-from .release import VERSION as SERVER_VERSION
+# The version number import is commented out because it seems there is no way
+# of making it work in the CI tests (where the device server class is
+# imported) and also when the device server is run inside the container.
+#
+# from SDPSubarray.release import VERSION as SERVER_VERSION
 
 try:
     from ska_sdp_config.config import Config as ConfigDbClient
@@ -110,12 +114,12 @@ class SDPSubarray(Device):
     # Attributes
     # ----------
 
-    serverVersion = attribute(
-        label='Server Version',
-        dtype=str,
-        access=AttrWriteType.READ,
-        doc='The version of the SDP Subarray device'
-    )
+    # serverVersion = attribute(
+    #     label='Server Version',
+    #     dtype=str,
+    #     access=AttrWriteType.READ,
+    #     doc='The version of the SDP Subarray device'
+    # )
 
     obsState = attribute(
         label='Obs State',
@@ -148,6 +152,15 @@ class SDPSubarray(Device):
         doc="Host addresses for the visibility receive workflow given as a "
             "JSON object.",
         polling_period=1000
+    )
+
+    processingBlockState = attribute(
+        label='Status of Processing Block(s)',
+        dtype=str,
+        access=AttrWriteType.READ,
+        doc="Processing block status for current WorkFlows as a "
+            "JSON object",
+        polling_period=5000
     )
 
     # ---------------
@@ -206,12 +219,12 @@ class SDPSubarray(Device):
     # Attributes methods
     # ------------------
 
-    def read_serverVersion(self):
-        """Get the SDPSubarray device server version attribute.
-
-        :returns: The Device Server version.
-        """
-        return SERVER_VERSION
+    # def read_serverVersion(self):
+    #     """Get the SDPSubarray device server version attribute.
+    #
+    #     :returns: The Device Server version.
+    #     """
+    #     return SERVER_VERSION
 
     def read_obsState(self):
         """Get the obsState attribute.
@@ -243,6 +256,22 @@ class SDPSubarray(Device):
         :return: Health State of the device
         """
         return self._health_state
+
+    def read_processingBlockState(self):
+        """Return the Processing Block state.
+
+        :return: Processing block State as JSON string
+        """
+        pb_state = ""
+
+        if self._config_db_client and \
+                self._config and \
+                self.is_feature_active(FeatureToggle.CONFIG_DB):
+            for txn in self._config_db_client.txn():
+                pb_state = json.dumps(txn.get_processing_block_state(
+                    self._config['id']))
+
+        return pb_state
 
     def write_obsState(self, obs_state):
         """Set the obsState attribute.
