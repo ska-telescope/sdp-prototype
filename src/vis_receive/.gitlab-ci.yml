@@ -1,0 +1,74 @@
+# Local Gitlab-CI file for Visibility Receiver
+
+# ============================================================================
+# Building the docker image for testing
+# ============================================================================
+
+.build_vis_docker:
+  dependencies: []
+  image: ubuntu:bionic
+  before_script:
+    - apt update
+    - apt install -y --no-install-recommends cppcheck=1.82-1
+    - apt install -y cmake curl
+    - apt install -y python3-pip
+    - apt install -y git
+    - pip3 install urllib3==1.21.1
+    - pip3 install cpp-coveralls==0.4.2
+    - pip3 install pyyaml
+  artifacts:
+    paths:
+      - ./$BUILD_PATH/dist/
+
+# ============================================================================
+# Test the visibility receiver: Run CPP Check and Coveralls
+# ============================================================================
+
+test:vis_receive:
+  stage: test
+  extends: .build_vis_docker
+  script:
+    - ./scripts/run_c_tests.sh TEST
+#    - mv src/vis_receive/build/coveralls.json ./coveralls.json
+#  artifacts:
+#    paths: [./coveralls.json]
+#    expire_in: 1 day
+
+# ============================================================================
+# Test the visibility receiver: Run Undefinded Behaviour Sanitizer
+# ============================================================================
+
+test:vis_receive_usan:
+  stage: test
+  extends: .build_vis_docker
+  script:
+    - ./scripts/run_c_tests.sh USAN
+  only:
+    changes:
+      - src/vis_receive/**/*
+
+# ============================================================================
+# Test the visibility receiver: Run Thread Sanitizer
+# ============================================================================
+
+test:vis_receive_tsan:
+  stage: test
+  extends: .build_vis_docker
+  script:
+    - ./scripts/run_c_tests.sh TSAN
+  only:
+    changes:
+      - src/vis_receive/**/*
+
+# ============================================================================
+# Test the visibility receiver: Run the Address Sanitizer
+# ============================================================================
+
+test:vis_receive_asan:
+  stage: test
+  extends: .build_vis_docker
+  script:
+    - ./scripts/run_c_tests.sh ASAN
+  only:
+    changes:
+      - src/vis_receive/**/*
