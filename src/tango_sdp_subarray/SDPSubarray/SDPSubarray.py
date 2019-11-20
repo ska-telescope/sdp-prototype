@@ -2,6 +2,8 @@
 """Tango SDPSubarray device module."""
 # pylint: disable=invalid-name
 # pylint: disable=too-many-lines
+# pylint: disable=wrong-import-position
+# pylint: disable=too-many-public-methods
 # pylint: disable=fixme
 
 import json
@@ -22,11 +24,8 @@ from tango import AttrWriteType, AttributeProxy, ConnectionFailed, Database, \
 from tango.server import Device, DeviceMeta, attribute, command, \
     device_property, run
 
-# The version number import is commented out because it seems there is no way
-# of making it work in the CI tests (where the device server class is
-# imported) and also when the device server is run inside the container.
-#
-# from SDPSubarray.release import VERSION as SERVER_VERSION
+sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
+from release import VERSION as SERVER_VERSION   # noqa
 
 try:
     from ska_sdp_config.config import Config as ConfigDbClient
@@ -114,12 +113,12 @@ class SDPSubarray(Device):
     # Attributes
     # ----------
 
-    # serverVersion = attribute(
-    #     label='Server Version',
-    #     dtype=str,
-    #     access=AttrWriteType.READ,
-    #     doc='The version of the SDP Subarray device'
-    # )
+    serverVersion = attribute(
+        label='Server Version',
+        dtype=str,
+        access=AttrWriteType.READ,
+        doc='The version of the SDP Subarray device'
+    )
 
     obsState = attribute(
         label='Obs State',
@@ -219,12 +218,12 @@ class SDPSubarray(Device):
     # Attributes methods
     # ------------------
 
-    # def read_serverVersion(self):
-    #     """Get the SDPSubarray device server version attribute.
-    #
-    #     :returns: The Device Server version.
-    #     """
-    #     return SERVER_VERSION
+    def read_serverVersion(self):
+        """Get the SDPSubarray device server version attribute.
+
+        :returns: The Device Server version.
+        """
+        return SERVER_VERSION
 
     def read_obsState(self):
         """Get the obsState attribute.

@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 """Tango SDP Master device module."""
-# pylint: disable=invalid-name, import-error, no-name-in-module
+# pylint: disable=invalid-name
+# pylint: disable=import-error
+# pylint: disable=no-name-in-module
+# pylint: disable=wrong-import-position
 
 import os
 import logging
@@ -12,11 +15,9 @@ from tango import (AttrWriteType, ConnectionFailed,
                    Database, DbDevInfo, DebugIt, DevState)
 from tango.server import Device, DeviceMeta, attribute, command, run
 
-# The version number import is commented out because it seems there is no way
-# of making it work in the CI tests (where the device server class is
-# imported) and also when the device server is run inside the container.
-#
-# from SDPMaster.release import VERSION as SERVER_VERSION
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
+from release import VERSION as SERVER_VERSION   # noqa
 
 LOG = logging.getLogger('ska.sdp.master_ds')
 
@@ -55,12 +56,12 @@ class SDPMaster(Device):
     # Attributes
     # ----------
 
-    # serverVersion = attribute(
-    #     label='Server Version',
-    #     dtype=str,
-    #     access=AttrWriteType.READ,
-    #     doc='The version of the SDP Master device'
-    # )
+    serverVersion = attribute(
+        label='Server Version',
+        dtype=str,
+        access=AttrWriteType.READ,
+        doc='The version of the SDP Master device'
+    )
 
     OperatingState = attribute(
         dtype='DevEnum',
@@ -105,12 +106,12 @@ class SDPMaster(Device):
     # ------------------
 
     # pylint: disable=R0201
-    # def read_serverVersion(self):
-    #     """Get the SDPMaster device server version attribute.
-    #
-    #     :returns: The Device Server version.
-    #     """
-    #     return SERVER_VERSION
+    def read_serverVersion(self):
+        """Get the SDPMaster device server version attribute.
+
+        :returns: The Device Server version.
+        """
+        return SERVER_VERSION
 
     def read_OperatingState(self):
         """Read the SDP Operating State."""
