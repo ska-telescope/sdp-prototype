@@ -86,7 +86,7 @@ can also be run inside the `pytango_ska_dev` container with the following
 command:
 
 ```bash
-docker run -t --rm -v $(PWD):/app \
+docker run -t --rm -v $(pwd):/app \
     nexus.engageska-portugal.pt/sdp-prototype/pytango_ska_dev:latest \
     python -m pytest \
     --pylint \

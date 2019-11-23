@@ -73,3 +73,9 @@ docker run -t --rm \
 ```bash
 python3 send.py
 ```
+
+## API Documentation
+
+See [SKA developer
+portal](https://developer.skatelescope.org/projects/sdp-prototype/en/latest/vis_receive.html)
+for the API documentation.

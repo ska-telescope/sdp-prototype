@@ -18,16 +18,18 @@ VM that has limited resources. You might want to increase this to at
 least 3 GB. For Docker this can be found in the settings, for Minikube
 you need to specify it on the command line:
 
-    $ minikube --mem 4096 ...
+    $ minikube --memory='4096m' ...
     
 #### Micro8ks for Kubernetes
 
 Canonical supports **microk8s** for Ubuntu Linux distributions - and it 
 is also available for many other distributions (42 according to 
-[here](https://github.com/ubuntu/microk8s#accessing-kubernetes)). It gives a more-or-less 
-'one line' Kubernetes installation
+[here](https://github.com/ubuntu/microk8s#accessing-kubernetes)). It
+gives a more-or-less 'one line' Kubernetes installation
 
 - To install type 'sudo snap install microk8s --classic'
+    -   Make you to install 1.15 version. This can be done using the following
+        command 'snap refresh --classic --channel=1.15/stable microk8s'
 - 'microk8s.start' will start the Kubernetes system
 - 'microk8s.enable dns' is required for the SDP development system
 - 'microk8s.status' should show that things are active
@@ -47,8 +49,7 @@ microk8s works differently to minikube and does not need drivers or mem= options
 Furthermore you will need to install the Helm utility. It is available
 from most typical package managers, see [Using
 Helm](https://helm.sh/docs/using_helm/). Note that for the moment we
-are using Helm version 2, as at the time of writing version 3 is in
-early alpha.
+are using Helm version 2.
 
 It may be available in the 'snap' installation system (eg. on
 recent Ubuntu installations)
@@ -61,7 +62,7 @@ Once you have it available, you will typically need to initialise it
 Deploying SDP
 -------------
 
-### Creating etcd-operator
+### Create the configuration database server
 
 We are not creating an etcd cluster ourselves, but instead leave it to
 "operator" that needs to be installed first. Simply execute:
@@ -73,12 +74,16 @@ If you now execute:
     $ kubectl get pod --watch
 
 You should eventually see an pod called
-`etcdop-etcd-operator-etcd-operator-[...]` in "Running" state (yes,
+`etcd-etcd-operator-etcd-operator-[...]` in "Running" state (yes,
 Helm is exceedingly redundant with its names). If not wait a bit, if
 you try to go to the next step before this has completed there's a
 chance it will fail.
 
-### Deploy the prototype
+### Deploy the SDP components
+
+First start by creating the `sdp` namespace
+
+    $ kubectl create namespace sdp
 
 At this point you should be able to deploy
 
@@ -89,22 +94,24 @@ You can again watch the fireworks using `kubectl`:
 
     $ kubectl get pod --watch
 
-Pods asocciated with Tango might go down a couple times before they
+Pods associated with Tango might go down a couple times before they
 start correctly, this seems to be normal. You can check the logs of
 pods (copy the full name from `kubectl` output) to verify that they
 are doing okay:
 
-    $ kubectl logs sdp-prototype-workflow-testdeploy-[...]
-    INFO:main:Waiting for processing block...
+    $ kubectl logs sdp-prototype-sdp-devices-[...] sdp-subarray-1
+    2019-11-21 16:49:01,097 | INFO    | Initialising SDP Subarray: mid_sdp/elt/subarray_1
+    ...
+    2019-11-21 16:49:01,104 | INFO    | SDP Subarray initialised: mid_sdp/elt/subarray_1
+    $ kubectl logs sdp-prototype-processing-controller-[...]
+    ...
+    DEBUG:main:Waiting...
     $ kubectl logs sdp-prototype-helm-[...]
     ...
     INFO:main:Found 0 existing deployments.
-    $ kubectl logs sdp-protoype-sdp-master-[...]
-    ...
-    Ready to accept request
 
 Just to name a few. If it's looking like this, there's a good chance
-everything deployed correctly.
+everything has been deployed correctly.
 
 Testing it out
 --------------
@@ -142,84 +149,83 @@ This will allow you to connect with the `sdpcfg` utility:
 
 Which correctly shows that the configuration is currently empty.
 
-### Start a deployment test workflow
+### Start a workflow
 
 Assuming the configuration is prepared as explained in the previous
 section, we can now add a processing block to the configuration:
 
-    $ sdpcfg process realtime:testdeploy:0.0.7
-    OK, pb_id = realtime-20190807-0000
-    $ sdpcfg ls values -R /
-    Keys with / prefix:
-    /pb/realtime-20190807-0000 = {
+    $ sdpcfg process realtime:testdask:0.1.0
+    OK, pb_id = realtime-20191121-0000
+
+The processing block is created with the `/pb` prefix in the
+configuration:
+
+    $ sdpcfg ls values -R /pb
+    Keys with /pb prefix:
+    /pb/realtime-20191121-0000 = {
       "parameters": {},
-      "pb_id": "realtime-20190807-0000",
+      "pb_id": "realtime-20191121-0000",
       "sbi_id": null,
       "scan_parameters": {},
       "workflow": {
-        "id": "testdeploy",
+        "id": "testdask",
         "type": "realtime",
-        "version": "0.0.7"
+        "version": "0.1.0"
       }
     }
-    /pb/realtime-20190807-0000/owner = {
+    /pb/realtime-20191121-0000/owner = {
       "command": [
-        "dummy_workflow.py"
+        "testdask.py",
+        "realtime-20191121-0000"
       ],
-      "hostname": "sdp-prototype-workflow-testdeploy-[...]",
-      "pid": 6
+      "hostname": "realtime-20191121-0000-workflow-7bf947687f-9h9gz",
+      "pid": 1
     }
 
-Notice that the workflow was claimed immediately by one of the
-containers.
-
-### Use it to add a deployment
-
-The special property of the deployment test workflow is that it will
-create deployments automatically depending on workflow parameters. It
-even watches the processing block parameters and will add deployments
-while it is running. Let's try this out:
-
-    $ sdpcfg edit /pb/realtime-[...]
-
-At this point an editor should open with the processing block
-information formatted as YAML. Change the "`parameters: {}`" line to
-read as follows:
-
-    parameters:
-      mysql:
-        type: helm
-        args:
-          chart: stable/mysql
-
-This will cause the workflow to deploy a new mysql instance, as we can
-easily check:
+The processing block is detected by the processing controller which
+deploys the workflow. The workflow in turn deploys the execution engines
+(in this case, Dask). The deployments are requested by creating entries
+with `/deploy` prefix in the configuration, where they are detected by
+the Helm deployer which actually makes the deployments:
 
     $ sdpcfg ls values -R /deploy
     Keys with /deploy prefix:
-    /deploy/realtime-20190807-0000-mysql = {
+    /deploy/realtime-20191121-0000-dask = {
       "args": {
-        "chart": "stable/mysql"
+        "chart": "stable/dask",
+        "values": {
+          "jupyter.enabled": "false",
+          "scheduler.serviceType": "ClusterIP",
+          "worker.replicas": 2
+        }
       },
-      "deploy_id": "realtime-20190807-0000-mysql",
+      "deploy_id": "realtime-20191121-0000-dask",
+      "type": "helm"
+    }
+    /deploy/realtime-20191121-0000-workflow = {
+      "args": {
+        "chart": "workflow",
+        "values": {
+          "env.SDP_CONFIG_HOST": "sdp-prototype-etcd-client.default.svc.cluster.local",
+          "env.SDP_HELM_NAMESPACE": "sdp",
+          "pb_id": "realtime-20191121-0000",
+          "wf_image": "nexus.engageska-portugal.pt/sdp-prototype/workflow-testdask:0.1.0"
+        }
+      },
+      "deploy_id": "realtime-20191121-0000-workflow",
       "type": "helm"
     }
 
-This causes Helm to get called, so you should be able to check:
+The deployments associated with the processing block have been created
+in the `sdp` namespace, so to view the created pods we have to ask as
+follows:
 
-    $ helm list
-    NAME                        	REVISION	UPDATED                 	STATUS  	CHART              	APP VERSION	NAMESPACE
-    etcd                        	1       	Wed Aug  7 12:35:47 2019	DEPLOYED	etcd-operator-0.8.4	0.9.3      	default  
-    realtime-20190807-0000-mysql	1       	Wed Aug  7 13:45:33 2019	DEPLOYED	mysql-1.3.0        	5.7.14     	sdp-helm 
-    sdp-prototype               	1       	Wed Aug  7 13:38:42 2019	DEPLOYED	sdp-prototype-0.2.0	1.0        	default
-
-Note the deployment associated with the processing block. Note that it
-was deployed into the name space `sdp-helm`, so to view the created pod we
-have to ask as follows:
-
-    $ kubectl get pod -n sdp-helm
-    NAME                                           READY   STATUS    RESTARTS   AGE
-    realtime-20190807-0000-mysql-89f658f78-mfstr   1/1     Running   0          6m20s
+    $ kubectl get pod -n sdp
+    NAME                                                    READY   STATUS    RESTARTS   AGE
+    realtime-20191121-0000-dask-scheduler-6c7cc64c7-jfczn   1/1     Running   0          113s
+    realtime-20191121-0000-dask-worker-7cb8cdf6bd-mtc9w     1/1     Running   3          113s
+    realtime-20191121-0000-dask-worker-7cb8cdf6bd-tdzkp     1/1     Running   3          113s
+    realtime-20191121-0000-workflow-7bf947687f-9h9gz        1/1     Running   0          118s
 
 ### Cleaning up
 

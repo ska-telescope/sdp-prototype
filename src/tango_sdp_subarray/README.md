@@ -88,7 +88,7 @@ can also be run inside the `pytango_ska_dev` container with the following
 command:
 
 ```bash
-docker run -t --rm -v $(PWD):/app \
+docker run -t --rm -v $(pwd):/app \
     nexus.engageska-portugal.pt/sdp-prototype/pytango_ska_dev:latest \
     python -m pytest \
     --pylint \
@@ -127,6 +127,10 @@ make test
 - First, obtain a handle to the device with: 
   ```python
   d = DeviceProxy('mid_sdp/elt/subarray_1')
+  ```
+  To obtain handle for the second device:
+  ```
+  c = DeviceProxy('mid_sdp/elt/subarray_2')
   ```
 - Then query the state of the device with: 
   ```python
