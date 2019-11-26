@@ -7,7 +7,6 @@ metadata:
 {{ include "vis-receive.labels" . | indent 4 }}
 spec:
   completions: 1
-  replicas: {{ .Values.visreceive.replicas }}
   template:
     metadata:
       labels:

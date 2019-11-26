@@ -4,14 +4,12 @@
 visreceive:
   container: nexus.engageska-portugal.pt/sdp-prototype/vis-receive
   version: 0.1.0
-  replicas: 1
   resources: {}
   imagePullPolicy: IfNotPresent
 
 vissender:
   container: nexus.engageska-portugal.pt/sdp-prototype/vis-sender
   version: 0.1.0
-  replicas: 1
   resources: {}
   imagePullPolicy: IfNotPresent
 

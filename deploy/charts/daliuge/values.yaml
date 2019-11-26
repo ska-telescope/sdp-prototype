@@ -4,7 +4,6 @@
 dlg:
   container: nexus.engageska-portugal.pt/ska-docker/yanda-daliuge
   version: latest
-  replicas: 1
   imagePullPolicy: IfNotPresent
 
 dlg_dim:

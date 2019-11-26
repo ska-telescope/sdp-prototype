@@ -10,12 +10,10 @@ the SDP configuration.
 import os
 import time
 import subprocess
-import requests
 import signal
 import shutil
 import logging
 import ska_sdp_config
-import requests
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -24,7 +22,7 @@ HELM = shutil.which(os.getenv('SDP_HELM', 'helm'))
 HELM_TIMEOUT = int(os.getenv('SDP_HELM_TIMEOUT', str(300)))
 HELM_REPO = os.getenv('SDP_HELM_REPO')
 HELM_REPO_CA = os.getenv('SDP_HELM_REPO_CA')
-NAMESPACE = os.getenv('SDP_HELM_NAMESPACE', 'sdp-helm')
+NAMESPACE = os.getenv('SDP_HELM_NAMESPACE', 'sdp')
 LOGGER = os.getenv('SDP_LOGGER', 'main')
 LOG_LEVEL = int(os.getenv('SDP_LOG_LEVEL', str(logging.DEBUG)))
 
@@ -33,10 +31,6 @@ CHART_REPO = os.getenv('SDP_CHART_REPO', 'https://github.com/ska-telescope/sdp-p
 CHART_REPO_REF = os.getenv('SDP_CHART_REPO_REF', 'master')
 CHART_REPO_PATH = os.getenv('SDP_CHART_REPO_PATH', 'deploy/charts')
 CHART_REPO_REFRESH = int(os.getenv('SDP_CHART_REFRESH', '300'))
-
-TILLER = shutil.which(os.getenv('SDP_TILLER', 'tiller'))
-TILLER_TIMEOUT = int(os.getenv('SDP_TILLER_TIMEOUT', '10'))
-TILLER_HISTORY_MAX = int(os.getenv('SDP_TILLER_HSTORY_MAX', '100'))
 
 # Initialise logger
 logging.basicConfig()
@@ -47,36 +41,6 @@ log.setLevel(LOG_LEVEL)
 chart_base_path = 'chart-repo'
 chart_path = os.path.join(chart_base_path, CHART_REPO_PATH)
 
-
-def start_tiller():
-    """Start Tiller process to execute deployments."""
-    # Set tiller name space unless overridden
-    if 'TILLER_NAMESPACE' not in os.environ:
-        os.environ['TILLER_NAMESPACE'] = NAMESPACE
-
-    # Start tiller
-    cmd_line = [
-        TILLER,
-        '-listen', 'localhost:44134',
-        '-probe-listen', 'localhost:44135',
-        '-storage', 'secret',
-        '-history-max', str(TILLER_HISTORY_MAX),
-    ]
-    log.debug(" ".join(["$"] + list(cmd_line)))
-    process = subprocess.Popen(cmd_line)
-
-    # Wait for readiness by probing
-    t = time.time()
-    while time.time() - t < TILLER_TIMEOUT:
-        try:
-            if requests.get('http://localhost:44135/readiness'):
-                log.info("Tiller ready after {} s".format(time.time() - t))
-                return process
-        except requests.exceptions.ConnectionError:
-            pass
-        time.sleep(0.1)
-    log.error("Tiller not ready after {} s!".format(time.time() - t))
-    exit(1)
 
 def invoke(*cmd_line, cwd):
     """Invoke a command with the given command-line arguments
@@ -140,7 +104,7 @@ def delete_helm(txn, dpl_id):
     log.info("Delete deployment {}...".format(dpl_id))
 
     try:
-        helm_invoke('delete', dpl_id)
+        helm_invoke('uninstall', dpl_id, '-n', NAMESPACE)
         return True
     except subprocess.CalledProcessError:
         return False # Assume it was already gone
@@ -153,8 +117,8 @@ def create_helm(txn, dpl_id, deploy):
     log.info("Creating deployment {}...".format(dpl_id))
 
     # Build command line
-    cmd = ['install', deploy.args.get('chart'),
-           '-n', dpl_id, '--namespace', NAMESPACE]
+    cmd = ['install', dpl_id, deploy.args.get('chart'),
+           '-n', NAMESPACE]
     if HELM_REPO is not None:
         cmd.extend(['--repo', HELM_REPO])
     if HELM_REPO_CA is not None:
@@ -177,7 +141,7 @@ def create_helm(txn, dpl_id, deploy):
         if "already exists" in e.stdout.decode():
             try:
                 log.info("Purging deployment {}...".format(dpl_id))
-                helm_invoke('delete', '--purge', dpl_id)
+                helm_invoke('uninstall', dpl_id, '-n', NAMESPACE)
                 txn.loop()  # Force loop, this will cause a re-attempt
             except subprocess.CalledProcessError:
                 log.error("Could not purge deployment {}!".format(dpl_id))
@@ -196,25 +160,19 @@ def main():
 
     # TODO: Service lease + leader election
 
-    # Start local Tiller process unless HELM_HOST is set
-    tiller = None
-    if 'HELM_HOST' not in os.environ:
-        tiller = start_tiller()
-        os.environ['HELM_HOST'] = 'localhost:44134'
-
     # Obtain charts
     update_chart_repos()
     next_chart_refresh = time.time() + CHART_REPO_REFRESH
 
     # Load Helm repository
-    helm_invoke("init", "--client-only")
+    helm_invoke("repo", "add", "stable", "https://kubernetes-charts.storage.googleapis.com/")
     helm_invoke("repo", "update")
 
     # Show
     log.info("Loading helm deployments...")
 
     # Query helm for active deployments. Filter for active ones.
-    deploys = helm_invoke('list', '-q', '--namespace', NAMESPACE).split('\n')
+    deploys = helm_invoke('list', '-q', '-n', NAMESPACE).split('\n')
     deploys = set(deploys).difference(set(['']))
     log.info("Found {} existing deployments.".format(len(deploys)))
 

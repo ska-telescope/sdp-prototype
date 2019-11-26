@@ -48,16 +48,21 @@ microk8s works differently to minikube and does not need drivers or mem= options
 
 Furthermore you will need to install the Helm utility. It is available
 from most typical package managers, see [Using
-Helm](https://helm.sh/docs/using_helm/). Note that for the moment we
-are using Helm version 2.
+Helm](https://helm.sh/docs/using_helm/). You can use either version 2
+or version 3 of Helm. Instructions are given below for both.
 
 It may be available in the 'snap' installation system (eg. on
 recent Ubuntu installations)
 
-Once you have it available, you will typically need to initialise it
+If you are using Helm 2, you will typically need to initialise it
 (this will create the "Tiller" controller):
 
     $ helm init
+
+Helm 3 does not use Tiller, but if you are using it for the first time,
+you need to add the stable chart repository:
+
+    $ helm repo add stable https://kubernetes-charts.storage.googleapis.com/
 
 Deploying SDP
 -------------
@@ -65,9 +70,14 @@ Deploying SDP
 ### Create the configuration database server
 
 We are not creating an etcd cluster ourselves, but instead leave it to
-"operator" that needs to be installed first. Simply execute:
+an "operator" that needs to be installed first. For Helm 2, simply
+execute:
 
     $ helm install stable/etcd-operator -n etcd
+
+or for Helm 3:
+
+    $ helm install etcd stable/etcd-operator
 
 If you now execute:
 
@@ -81,14 +91,18 @@ chance it will fail.
 
 ### Deploy the SDP components
 
-First start by creating the `sdp` namespace
-
-    $ kubectl create namespace sdp
-
-At this point you should be able to deploy
+At this point you should be able to deploy the SDP components. First go
+to the charts directory:
 
     $ cd [sdp-prototype]/deploy/charts
+
+Then for Helm 2, execute:
+
     $ helm install sdp-prototype -n sdp-prototype
+
+or for Helm3, execute:
+
+    $ helm install sdp-prototype sdp-prototype
 
 You can again watch the fireworks using `kubectl`:
 
@@ -116,7 +130,7 @@ everything has been deployed correctly.
 Testing it out
 --------------
 
-### Connecting to configuration database
+### Connecting to the configuration database
 
 The deployment scripts should have exposed the SDP configuration
 database (i.e. etcd) via a NodePort service. For Docker Desktop, this
@@ -306,7 +320,7 @@ get a log. You might see something like this as the last three lines:
 This informs you that `etcd` tried to resolve its own address, and for
 some reason got two different answers both times. Interestingly, the 
 `92.242.132.24` address is not actually in-cluster, but from the Internet,
-and re-appears if we attempt to `ping` a nonexistant DNS name:
+and re-appears if we attempt to `ping` a nonexistent DNS name:
 
     $ ping does.not.exist
 	Pinging does.not.exist [92.242.132.24] with 32 bytes of data:
