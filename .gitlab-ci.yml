@@ -107,26 +107,26 @@ build_docs:
 # Generate test reports
 # ============================================================================
 
-# Generate combined test coverage report
-coverage_report:
-  stage: post_test
-  tags: [docker]
-  image: python:latest
-  variables:
-    TRAVIS_JOB_ID: $CI_PIPELINE_IID
-  before_script:
-    - pip install coverage
-    - pip install python-coveralls
-  script:
-    - coverage combine *.coverage
-    - coverage report
-    - coverage html
-  coverage: '/TOTAL\s+\d+\s+\d+\s+\d+\s+\d+\s+(\d+\%)/'
-#  after_script:
-#    - coveralls --merge=coveralls.json
-  artifacts:
-    paths: [htmlcov/]
-    expire_in: 1 week
+## Generate combined test coverage report
+#coverage_report:
+#  stage: post_test
+#  tags: [docker]
+#  image: python:latest
+#  variables:
+#    TRAVIS_JOB_ID: $CI_PIPELINE_IID
+#  before_script:
+#    - pip install coverage
+#    - pip install python-coveralls
+#  script:
+#    - coverage combine *.coverage
+#    - coverage report
+#    - coverage html
+#  coverage: '/TOTAL\s+\d+\s+\d+\s+\d+\s+\d+\s+(\d+\%)/'
+##  after_script:
+##    - coveralls --merge=coveralls.json
+#  artifacts:
+#    paths: [htmlcov/]
+#    expire_in: 1 week
 
 # ============================================================================
 # Publish reports
@@ -136,13 +136,29 @@ coverage_report:
 pages:
   stage: pages
   tags: [docker]
-  only: [master]
+#  only: [master]
   image: python:latest
-  dependencies: [coverage_report]
+#  dependencies: [coverage_report]
   script:
-    - cp -R htmlcov public
+    - cp -R build public
+    - mv build/sdp_subarray_htmlcov/* public
   artifacts:
     paths: [public/]
+
+create_ci_metrics:
+  stage: .post
+  image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
+  when: always
+  tags: [docker]
+  script:
+    # Gitlab CI badges creation: START
+    - apt-get -y update
+    - apt-get install -y curl --no-install-recommends
+    - curl -s https://gitlab.com/ska-telescope/ci-metrics-utilities/raw/master/scripts/ci-badges-func.sh | sh
+    # Gitlab CI badges creation: END
+  artifacts:
+    paths:
+      - ./build
 
 ## ============================================================================
 ## Publish documentation (master only)

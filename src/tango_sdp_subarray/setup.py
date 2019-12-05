@@ -41,7 +41,11 @@ setup(
         'pytest-codestyle',
         'pytest-pydocstyle',
         'pytest_bdd',
-        'pyassert'
+        'pyassert',
+        'pytest-cov',
+        'pytest-json-report',
+        'pylint2junit'
+
     ],
     zip_safe=False,
     classifiers=[
