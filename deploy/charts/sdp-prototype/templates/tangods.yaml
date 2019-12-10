@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: sdp-devices-configuration-json-{{ .Release.Name }}
+  name: {{ include "sdp-prototype.fullname" . }}-tangods-configuration
   namespace: {{ .Release.Namespace }}
   labels:
 {{ include "sdp-prototype.labels" . | indent 4 }}
@@ -15,7 +15,7 @@ data:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Release.Name }}-sdp-devices
+  name: {{ include "sdp-prototype.fullname" . }}-tangods
   namespace: {{ .Release.Namespace }}
   labels:
 {{ include "sdp-prototype.labels" . | indent 4 }}
@@ -23,7 +23,7 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: {{ .Release.Name }}-sdp-devices
+      app: {{ .Release.Name }}-tangods
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -32,7 +32,7 @@ spec:
   template:
     metadata:
       labels:
-        app: {{ .Release.Name }}-sdp-devices
+        app: {{ .Release.Name }}-tangods
         chart: {{ template "sdp-prototype.chart" . }}
         release: {{ .Release.Name }}
         heritage: {{ .Release.Service }}
@@ -40,7 +40,7 @@ spec:
       volumes:
         - name: configuration
           configMap:
-            name: sdp-devices-configuration-json-{{ .Release.Name }}
+            name: {{ include "sdp-prototype.fullname" . }}-tangods-configuration
       initContainers:
 {{- if index .Values "feature" "config-db" }}
 {{ include "sdp-prototype.wait-for-etcd" . | nindent 8 }}
@@ -70,13 +70,13 @@ spec:
           value: databaseds-tango-base-{{ .Release.Name }}:10000
         - name: TOGGLE_AUTO_REGISTER
           value: "0"
-        image: {{ .Values.tango.master.image }}:{{ .Values.tango.master.version }}
-        imagePullPolicy: {{ .Values.tango.master.imagePullPolicy }}
+        image: {{ .Values.tangods.master.image }}:{{ .Values.tangods.master.version }}
+        imagePullPolicy: {{ .Values.tangods.master.imagePullPolicy }}
         resources: {}
       - name: sdp-subarray-1
         args: ["1", "-v4"]
-        image: {{ .Values.tango.subarray.image }}:{{ .Values.tango.subarray.version }}
-        imagePullPolicy: {{ .Values.tango.subarray.imagePullPolicy }}
+        image: {{ .Values.tangods.subarray.image }}:{{ .Values.tangods.subarray.version }}
+        imagePullPolicy: {{ .Values.tangods.subarray.imagePullPolicy }}
         resources: {}
         env:
         - name: TANGO_HOST
@@ -93,8 +93,8 @@ spec:
 {{- end }}
       - name: sdp-subarray-2
         args: ["2", "-v4"]
-        image: {{ .Values.tango.subarray.image }}:{{ .Values.tango.subarray.version }}
-        imagePullPolicy: {{ .Values.tango.subarray.imagePullPolicy }}
+        image: {{ .Values.tangods.subarray.image }}:{{ .Values.tangods.subarray.version }}
+        imagePullPolicy: {{ .Values.tangods.subarray.imagePullPolicy }}
         resources: {}
         env:
         - name: TANGO_HOST

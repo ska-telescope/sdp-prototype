@@ -40,7 +40,7 @@ processing_controller:
     imagePullPolicy: IfNotPresent
 
 # Tango devices
-tango:
+tangods:
   master:
     image: nexus.engageska-portugal.pt/sdp-prototype/tangods_sdp_master
     version: 0.2.6
