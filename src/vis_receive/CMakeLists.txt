@@ -15,6 +15,7 @@ endif()
 # Declare the CMake project.
 project(vis_recv_c C CXX)
 
+set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 14)
 
 # Add local CMake module path.
@@ -87,8 +88,11 @@ endif()
 # -----------------------------------------------------------------------------
 
 include_directories(src)
+string(LENGTH "${CMAKE_SOURCE_DIR}/" SOURCE_PATH_SIZE)
+add_definitions(-DSOURCE_PATH_SIZE=${SOURCE_PATH_SIZE})
 set(recv_SRC
     ${PROJECT_SOURCE_DIR}/src/buffer.c
+    ${PROJECT_SOURCE_DIR}/src/log.c
     ${PROJECT_SOURCE_DIR}/src/receiver.c
     ${PROJECT_SOURCE_DIR}/src/stream.c
     ${PROJECT_SOURCE_DIR}/src/thread_barrier.c
@@ -100,17 +104,30 @@ if (OSKAR_MS_FOUND)
     list(APPEND recv_SRC ${PROJECT_SOURCE_DIR}/src/write_ms_access.c)
 endif(OSKAR_MS_FOUND)
 
+# -----------------------------------------------------------------------------
+# Automatically set the build type if not specified
+# -----------------------------------------------------------------------------
+if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    # Use debug mode if building in dbg or debug directory.
+    get_filename_component(dirname ${CMAKE_BINARY_DIR} NAME)
+    if (${dirname} MATCHES "dbg" OR ${dirname} MATCHES "debug")
+        set(CMAKE_BUILD_TYPE Debug)
+    else()
+        set(CMAKE_BUILD_TYPE Release)
+    endif()
+    message(STATUS "INFO: Setting CMAKE_BUILD_TYPE to ${CMAKE_BUILD_TYPE}")
+endif()
 
 # -----------------------------------------------------------------------------
 # Build
 # -----------------------------------------------------------------------------
 
-if(DEBUG)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
-endif(DEBUG)
-
 add_definitions(-DRECV_VERSION="${RECV_VERSION}")
+
+if ("${CMAKE_C_COMPILER_ID}" MATCHES ".*Clang.*"
+        OR "${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra")
+endif()
 
 # Build library.
 set(libname vis_recv)

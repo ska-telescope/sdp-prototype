@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "buffer.h"
+#include "log.h"
 
 void buffer_clear(struct Buffer* self)
 {
@@ -28,23 +29,22 @@ struct Buffer* buffer_create(int num_times, int num_channels,
     cls->num_times = num_times;
     cls->block_size = num_baselines * sizeof(struct DataType);
     cls->buffer_size = cls->block_size * num_channels * num_times;
-    printf("Allocating %.3f MB buffer.\n", cls->buffer_size * 1e-6);
+    LOG_INFO(0, "Allocating %.3f MB buffer.", cls->buffer_size * 1e-6);
     cls->vis_data = (struct DataType*) malloc(cls->buffer_size);
     if (!cls->vis_data)
     {
-        fprintf(stderr,
-                "malloc failed: requested %zu bytes\n", cls->buffer_size);
+        LOG_CRITICAL(0,
+                "malloc failed: requested %zu bytes", cls->buffer_size);
         exit(1);
     }
     // buffer_clear(cls);
     cls->receiver = receiver;
-#ifdef WITH_MS
+
     // Unpacked visibility data for one channel and 1 time (all polarisations)
     cls->vis_unpacked = (float*)malloc(num_baselines * 4 * 2 * sizeof(float));
     cls->uu = (double*)calloc(num_baselines, sizeof(double));
     cls->vv = (double*)calloc(num_baselines, sizeof(double));
     cls->ww = (double*)calloc(num_baselines, sizeof(double));
-#endif
     return cls;
 }
 
@@ -52,11 +52,9 @@ void buffer_free(struct Buffer* self)
 {
     if (!self) return;
     free(self->vis_data);
-#ifdef WITH_MS
     free(self->vis_unpacked);
     free(self->uu);
     free(self->vv);
     free(self->ww);
-#endif
     free(self);
 }

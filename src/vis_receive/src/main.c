@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <getopt.h>
 
+#include "log.h"
 #include "receiver.h"
 #ifdef WITH_MS
 #include "write_ms_access.h"
@@ -25,15 +26,15 @@ static char* construct_output_root(const char* output_location,
     snprintf(output_root, len, "%s/%s_%.2d%.2d%.2d.ms",
              output_location, output_name,
              timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
-    printf("Writing output to: %s\n", output_root);
+    LOG_INFO(0, "Writing output to: %s", output_root);
     return output_root;
 }
 
 int read_coordinates(const char* antenna_filename, struct Antenna* ants)
 {
+    /* This code is not robust or well formatted. */
     int linecount = 0, i, j;
     char line[128];
-    char antenna_name[64] = "";
     char *tokens;
     FILE* antenna_file = fopen(antenna_filename,"r");
 
@@ -173,8 +174,8 @@ int main(int argc, char** argv)
                 antenna_coord_count = read_coordinates(antenna_file,antennas);
                 if(antenna_coord_count == 0)
                 {
-                    printf("Antenna file empty, exiting.\n");
-                    antennas = 0;
+                    LOG_WARN(0, "Antenna file empty, exiting.");
+                    antennas = 0; /* FIXME Memory leak! */
                 }
                 else
                     num_stations = antenna_coord_count;
@@ -183,7 +184,7 @@ int main(int argc, char** argv)
                 abort();
         }
     }
-    printf("Running RECV_VERSION %s\n", RECV_VERSION);
+    LOG_INFO(0, "Running RECV_VERSION %s", RECV_VERSION);
     char* output_root = construct_output_root(output_location, output_name);
     if (num_threads_recv > num_cores - 2) num_threads_recv = num_cores - 2;
 #ifdef __linux__
@@ -195,16 +196,16 @@ int main(int argc, char** argv)
     }
     sched_setaffinity(0, sizeof(cpu_set_t), &my_set);
 #endif
-    printf(" + Number of system CPU cores  : %d\n", num_cores);
-    printf(" + Number of SPEAD streams     : %d\n", num_streams);
-    printf(" + Number of receiver threads  : %d\n", num_threads_recv);
-    printf(" + Number of writer threads    : %d\n", num_threads_write);
-    printf(" + Number of times in buffer   : %d\n", num_times_in_buffer);
-    printf(" + Maximum number of buffers   : %d\n", max_num_buffers);
-    printf(" + UDP port range              : %d-%d\n",
+    LOG_INFO(0, " + Number of system CPU cores  : %d", num_cores);
+    LOG_INFO(0, " + Number of SPEAD streams     : %d", num_streams);
+    LOG_INFO(0, " + Number of receiver threads  : %d", num_threads_recv);
+    LOG_INFO(0, " + Number of writer threads    : %d", num_threads_write);
+    LOG_INFO(0, " + Number of times in buffer   : %d", num_times_in_buffer);
+    LOG_INFO(0, " + Maximum number of buffers   : %d", max_num_buffers);
+    LOG_INFO(0, " + UDP port range              : %d-%d",
            (int) port_start, (int) port_start + num_streams - 1);
-    printf(" + Number of channels per file : %d\n", num_channels_per_file);
-    printf(" + Output root                 : %s\n", output_root);
+    LOG_INFO(0, " + Number of channels per file : %d", num_channels_per_file);
+    LOG_INFO(0, " + Output root                 : %s", output_root);
 
     // Create and start the receiver.
     struct Receiver* receiver = receiver_create( num_stations,
@@ -223,7 +224,7 @@ int main(int argc, char** argv)
 
     receiver_start(receiver);
     receiver_free(receiver);
-    free(antennas);
+    free(antennas); /* FIXME Memory leak! */
     free(output_root);
 
     return 0;

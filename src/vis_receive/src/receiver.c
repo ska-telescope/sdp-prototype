@@ -11,6 +11,7 @@
 #include <math.h>
 
 #include "buffer.h"
+#include "log.h"
 #include "receiver.h"
 #include "stream.h"
 #include "thread_barrier.h"
@@ -72,7 +73,7 @@ struct Buffer* receiver_buffer(struct Receiver* self, int heap, size_t length,
         {
             /* Re-purpose the oldest buffer, if it isn't in use. */
             buf = buf_test;
-            printf("Re-assigned buffer %d\n", buf->buffer_id);
+            LOG_INFO(0, "Re-assigned buffer %d", buf->buffer_id);
         }
     }
     if (!buf && (self->num_buffers < self->max_num_buffers))
@@ -80,7 +81,7 @@ struct Buffer* receiver_buffer(struct Receiver* self, int heap, size_t length,
         /* Create a new buffer. */
         buf = buffer_create(self->num_times_in_buffer, self->num_streams,
                 self->num_baselines, self->num_buffers, self);
-        printf("Created buffer %d\n", self->num_buffers);
+        LOG_INFO(0, "Created buffer %d", self->num_buffers);
         self->num_buffers++;
         self->buffers = (struct Buffer**) realloc(self->buffers,
                 self->num_buffers * sizeof(struct Buffer*));
@@ -141,18 +142,18 @@ struct Receiver* receiver_create(int num_stations, int max_num_buffers, int num_
         cls->streams[i] = stream_create(
                 port_start + (unsigned short int)i, i, cls);
     cls->antennas = calloc(1, sizeof(struct Antenna));
-    #ifdef WITH_MS
-        int num_channels = num_streams;
-        int num_pols = 4;
-        double ref_freq_hz = 100.0e6;
-        double freq_inc_hz = 100.0e3;
-        int write_autocorr = 1;
-        int write_crosscorr = 1;
-        cls->ms = oskar_ms_create(
-                cls->output_root, "vis_recv", num_stations, num_channels,
-                num_pols, ref_freq_hz, freq_inc_hz, write_autocorr,
-                write_crosscorr);
-    #endif
+#ifdef WITH_MS
+    int num_channels = num_streams;
+    int num_pols = 4;
+    double ref_freq_hz = 100.0e6;
+    double freq_inc_hz = 100.0e3;
+    int write_autocorr = 1;
+    int write_crosscorr = 1;
+    cls->ms = oskar_ms_create(
+            cls->output_root, "vis_recv", num_stations, num_channels,
+            num_pols, ref_freq_hz, freq_inc_hz, write_autocorr,
+            write_crosscorr);
+#endif
     return cls;
 }
 
@@ -227,7 +228,7 @@ static void* thread_write_parallel(void* arg)
                 S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
         if (file_handle < 0)
         {
-            printf("Unable to open file %s\n", filename);
+            LOG_ERROR(thread_id, "Unable to open file %s", filename);
             break;
         }
         for (int t = 0; t < buf->num_times; ++t)
@@ -254,16 +255,16 @@ static void* thread_write_buffer(void* arg)
     struct Buffer* buf = (struct Buffer*) arg;
     struct Receiver* receiver = buf->receiver;
     if (buf->byte_counter != buf->buffer_size)
-        printf("WARNING: Buffer %d incomplete (%zu/%zu, %.1f%%)\n",
+        LOG_WARN(0, "Buffer %d incomplete (%zu/%zu, %.1f%%)",
                 buf->buffer_id, buf->byte_counter, buf->buffer_size,
                 100 * buf->byte_counter / (float)buf->buffer_size);
     if (receiver->output_root)
     {
 #ifdef __linux__
         const int cpu_id = sched_getcpu();
-        printf("Writing buffer %d from CPU %d...\n", buf->buffer_id, cpu_id);
+        LOG_INFO(0, "Writing buffer %d from CPU %d...", buf->buffer_id, cpu_id);
 #else
-        printf("Writing buffer %d...\n", buf->buffer_id);
+        LOG_INFO(0, "Writing buffer %d...", buf->buffer_id);
 #endif
         const double start = tmr_get_timestamp();
         const int num_threads = receiver->num_threads_write;
@@ -288,7 +289,8 @@ static void* thread_write_buffer(void* arg)
         free(args);
         free(threads);
         const double time_taken = tmr_get_timestamp() - start;
-        printf("Writing buffer %d with %d threads took %.2f sec (%.2f MB/s)\n",
+        LOG_INFO(0,
+                "Writing buffer %d with %d threads took %.2f sec (%.2f MB/s)",
                 buf->buffer_id, num_threads, time_taken,
                 buf->buffer_size * 1e-6 / time_taken);
     }
@@ -311,16 +313,16 @@ static void* thread_write_buffer_ms(void* arg)
     struct Receiver* receiver = buf->receiver;
     double hour_angle = receiver->timestamp_count - receiver->ra;
     if (buf->byte_counter != buf->buffer_size)
-        printf("WARNING: Buffer %d incomplete (%zu/%zu, %.1f%%)\n",
+        LOG_WARN(0, "Buffer %d incomplete (%zu/%zu, %.1f%%)",
                buf->buffer_id, buf->byte_counter, buf->buffer_size,
                100 * buf->byte_counter / (float)buf->buffer_size);
     if (receiver->output_root)
     {
 #ifdef __linux__
         const int cpu_id = sched_getcpu();
-        printf("Writing buffer %d from CPU %d...\n", buf->buffer_id, cpu_id);
+        LOG_INFO(0, "Writing buffer %d from CPU %d...", buf->buffer_id, cpu_id);
 #else
-        printf("Writing buffer %d...\n", buf->buffer_id);
+        LOG_INFO(0, "Writing buffer %d...", buf->buffer_id);
 #endif
         const double start = tmr_get_timestamp();
         oskar_ms_set_phase_centre(receiver->ms, 0, receiver->ra, receiver->dec);
@@ -352,7 +354,7 @@ static void* thread_write_buffer_ms(void* arg)
         }
         receiver->write_counter++;
         const double time_taken = tmr_get_timestamp() - start;
-        printf("Writing buffer %d took %.2f sec (%.2f MB/s)\n",
+        LOG_INFO(0, "Writing buffer %d took %.2f sec (%.2f MB/s)",
                buf->buffer_id, time_taken,
                buf->buffer_size * 1e-6 / time_taken);
     }
@@ -376,7 +378,7 @@ static void* thread_receive(void* arg)
     const int thread_id = thread_args->thread_id;
     const int num_threads = receiver->num_threads_recv;
     const int num_streams = receiver->num_streams;
-    printf("Starting receiver thread %d (num streams = %d)\n",
+    LOG_DEBUG(0, "Starting receiver thread %d (num streams = %d)",
             thread_id, num_streams);
 
     // Wait for all streams handled by this thread to be completed.
@@ -386,8 +388,6 @@ static void* thread_receive(void* arg)
         for (int i = thread_id; i < num_streams; i += num_threads)
         {
             struct Stream* stream = receiver->streams[i];
-            // FIXME needs to loop until there is nothing left in
-            //  the socket buffer
             if (!stream->done)
                 stream_receive(stream);
         }
@@ -412,7 +412,8 @@ static void* thread_receive(void* arg)
                         (now - buf->last_updated >= 1.0))
                 {
                     buf->locked_for_write = 1;
-                    printf("Locked buffer %d for writing\n", buf->buffer_id);
+                    LOG_INFO(0,
+                            "Locked buffer %d for writing", buf->buffer_id);
 #ifdef WITH_MS
                     threadpool_enqueue(receiver->pool,
                             &thread_write_buffer_ms, buf);
@@ -449,13 +450,13 @@ static void* thread_receive(void* arg)
                     tmr_clear(stream->tmr_memcpy);
                 }
                 memcpy_total /= num_streams;
-                printf("Received %.3f MB in %.3f sec (%.2f MB/s), "
-                        "memcpy was %.2f%%\n",
+                LOG_INFO(0, "Received %.3f MB in %.3f sec (%.2f MB/s), "
+                        "memcpy was %.2f%%",
                         recv_byte_counter / 1e6, overall_time,
                         (recv_byte_counter / 1e6) / overall_time,
                         100 * (memcpy_total / overall_time));
                 if (dump_byte_counter > 0)
-                    printf("WARNING: Dumped %zu bytes\n", dump_byte_counter);
+                    LOG_WARN(0, "Dumped %zu bytes", dump_byte_counter);
                 tmr_start(receiver->tmr);
             }
         }
@@ -494,7 +495,7 @@ void receiver_start(struct Receiver* self)
     pthread_attr_destroy(&attr);
     free(args);
     free(threads);
-    printf("All %d stream(s) completed.\n", self->num_streams);
+    LOG_INFO(0, "All %d stream(s) completed.", self->num_streams);
 }
 
 void receiver_set_phase(struct Receiver* self, double ra, double dec)

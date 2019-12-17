@@ -4,6 +4,7 @@
 
 #include <oskar_measurement_set.h>
 #include "buffer.h"
+#include "log.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846264338327950288
@@ -11,20 +12,20 @@
 
 //*************************************************
 //* Open existing MS
-//* Return 0 if error 
+//* Return 0 if error
 //*************************************************
 
 
 oskar_MeasurementSet* open_ms(const char* file_name)
 {
-    printf("Opening Measurement Set: %s\n", file_name);
+    LOG_DEBUG(0, "Opening Measurement Set: %s", file_name);
     oskar_MeasurementSet* ms = oskar_ms_open(file_name);
     return ms;
 }
 
 //*************************************************
 //* Create new MS
-//* Return 0 if error 
+//* Return 0 if error
 //*************************************************
 
 oskar_MeasurementSet* create_ms(
@@ -108,7 +109,7 @@ int write_ms(oskar_MeasurementSet* ms, int buf_index, int num_pols,
         oskar_ms_write_coords_d(ms, base_row+start_row, num_baselines, uu, vv, ww,
                                 exposure_sec, interval_sec, time_stamp);
         vis2 = vis_data;
-        printf("vis2-> %d %d %d %p\n", base_row+start_row, num_channels, num_baselines, &((vis2->vis+vis_block_start)->x));
+        LOG_DEBUG(0, "vis2-> %d %d %d %p", base_row+start_row, num_channels, num_baselines, &((vis2->vis+vis_block_start)->x));
         oskar_ms_write_vis_f(ms, base_row+start_row, 0, num_channels, num_baselines,
                              &((vis2->vis + vis_block_start)->x));
 //                &((vis2->vis)->x));

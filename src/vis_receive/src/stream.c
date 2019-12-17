@@ -15,6 +15,7 @@
 #endif
 
 #include "buffer.h"
+#include "log.h"
 #include "receiver.h"
 #include "stream.h"
 #include "timer.h"
@@ -33,7 +34,7 @@ struct Stream* stream_create(unsigned short int port, int stream_id,
     cls->tmr_memcpy = tmr_create();
     if ((cls->socket_handle = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
     {
-        fprintf(stderr, "Cannot create socket.\n");
+        LOG_CRITICAL(0, "Cannot create socket.");
         return cls;
     }
     fcntl(cls->socket_handle, F_SETFL, O_NONBLOCK);
@@ -42,14 +43,10 @@ struct Stream* stream_create(unsigned short int port, int stream_id,
     uint32_t int_size = (uint32_t) sizeof(int);
     getsockopt(cls->socket_handle, SOL_SOCKET, SO_RCVBUF,
             &cls->buffer_len, &int_size);
-    if (int_size != (uint32_t) sizeof(int))
-    {
-        fprintf(stderr, "Error at line %d\n", __LINE__);
-        exit(1);
-    }
     if ((cls->buffer_len / 2) < requested_buffer_len)
     {
-        printf("Requested socket buffer of %d bytes; actual size is %d bytes\n",
+        LOG_WARN(0,
+                "Requested socket buffer of %d bytes; actual size is %d bytes",
                 requested_buffer_len, cls->buffer_len / 2);
     }
     struct sockaddr_in myaddr;
@@ -58,7 +55,7 @@ struct Stream* stream_create(unsigned short int port, int stream_id,
     myaddr.sin_port = htons(port);
     if (bind(cls->socket_handle, (struct sockaddr*)&myaddr, sizeof(myaddr)) < 0)
     {
-        fprintf(stderr, "Bind failed.\n");
+        LOG_CRITICAL(0, "Bind failed.");
         return cls;
     }
     cls->socket_buffer = (uchar*) malloc(cls->buffer_len);
@@ -190,29 +187,29 @@ int stream_decode(struct Stream* stream, const uchar* buf, int depth)
             vis_data_start = (size_t) item_addr;
             break;
         default:
-            /*printf("Heap %3d  ID: %#6llx, %s: %llu\n", self->heap_count,
+            /*LOG_DEBUG(0, "Heap %3d  ID: %#6llx, %s: %llu", self->heap_count,
                     item_id, immediate ? "VAL" : "ptr", item_addr);*/
             break;
         }
     }
     if (0 && !packet_has_stream_control)
-        printf("==== Packet in heap %3d "
-                "(heap offset %zu/%zu, payload length %zu)\n", stream->heap_count,
+        LOG_DEBUG(0, "==== Packet in heap %3d "
+                "(heap offset %zu/%zu, payload length %zu)", stream->heap_count,
                 heap_offset, heap_size, packet_payload_length);
     if (0 && packet_has_header_data)
     {
-        printf("     heap               : %d\n", stream->heap_count);
-        printf("     timestamp_count    : %" PRIu32 "\n", timestamp_count);
-        printf("     timestamp_fraction : %" PRIu32 "\n", timestamp_fraction);
-        printf("     scan_id            : %" PRIu64 "\n", scan_id);
-        printf("     num_baselines      : %d\n", stream->receiver->num_baselines);
+        LOG_DEBUG(0, "     heap               : %d", stream->heap_count);
+        LOG_DEBUG(0, "     timestamp_count    : %" PRIu32, timestamp_count);
+        LOG_DEBUG(0, "     timestamp_fraction : %" PRIu32, timestamp_fraction);
+        LOG_DEBUG(0, "     scan_id            : %" PRIu64, scan_id);
+        LOG_DEBUG(0, "     num_baselines      : %d", stream->receiver->num_baselines);
     }
     if (!packet_has_stream_control && stream->vis_data_heap_offset > 0 &&
             stream->receiver->num_baselines > 0)
     {
         const double timestamp = tmr_get_timestamp();
         const size_t vis_data_length = packet_payload_length - vis_data_start;
-        /*printf("Visibility data length: %zu bytes\n", vis_data_length);*/
+        /*LOG_DEBUG(0, "Visibility data length: %zu bytes", vis_data_length);*/
         struct Buffer* buf = receiver_buffer(
                 stream->receiver, stream->heap_count, vis_data_length, timestamp);
         if (buf)
