@@ -1,28 +1,54 @@
-SDP Prototype (PI#3)
-====================
+SDP Prototype
+=============
 
 This repository contains a set of packages for deploying a minimal SDP
-system capable of configuring and executing a simple visibility receive
-workflow.
-
-This work is being been carried out in PI#3 for
-`SP-244 <https://jira.skatelescope.org/browse/SP-244>`_
+system capable of configuring and executing workflows.
 
 .. toctree::
   :maxdepth: 1
-  :caption: Home
-  :hidden:
+
+  getting_started
 
 .. toctree::
   :maxdepth: 1
-  :caption: Contents:
+  :caption: SDP Prototype Design
 
-  Getting Started<getting_started>
-  SDP Master Device<sdp_master>
-  SDP Subarray Device<sdp_subarray>
-  SDP Configuration Database<config_db>
-  SDP Configuration Database Schema<config_db_schema>
-  Visibility Receive Workflow<vis_receive_workflow>
+  design/design
+
+.. toctree::
+  :maxdepth: 1
+  :caption: Running the SDP Prototype
+
+  running/running_standalone
+  running/running_integration
+
+.. toctree::
+  :maxdepth: 1
+  :caption: Tango Devices
+
+  tango_devices/sdp_master
+  tango_devices/sdp_subarray
+
+.. toctree::
+  :maxdepth: 1
+  :caption: Configuration
+
+  configuration/config_db
+  configuration/config_schema
+  configuration/config_api
+
+.. toctree::
+  :maxdepth: 1
+  :caption: Services
+
+  services/processing_controller
+  services/helm_deployer
+
+.. toctree::
+  :maxdepth: 1
+  :caption: Workflows
+
+  workflows/workflows
 
 Indices and tables
 ------------------

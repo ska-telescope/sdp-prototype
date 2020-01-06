@@ -1,5 +1,3 @@
-# Simple visibility receive workflow prototype
-
 This code was originally written for the 
 [SKA Science Data Processor Integration Prototype](https://github.com/SKA-ScienceDataProcessor/integration-prototype) and copied 
 to this repository.
@@ -73,9 +71,3 @@ docker run -t --rm \
 ```bash
 python3 send.py
 ```
-
-## API Documentation
-
-See [SKA developer
-portal](https://developer.skatelescope.org/projects/sdp-prototype/en/latest/vis_receive.html)
-for the API documentation.

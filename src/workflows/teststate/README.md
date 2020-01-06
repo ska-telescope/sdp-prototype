@@ -1,6 +1,9 @@
-# Propagation of error from workflow to PB state in configuration database
+Test State Workflow
+===================
 
-## Introduction
+## Propagation of error from workflow to PB state in configuration database
+
+### Introduction
 
 This workflow propagates Processing block states and adds it to the 
 configuration database.
@@ -21,7 +24,7 @@ it will be, so better to follow it.
 https://gitlab.com/ska-telescope/sdp-prototype/blob/master/src/config_db/SCHEMA.md
 ```
 
-## Testing
+### Testing
 
 It creates a workflow and creates the processing block states and loops around 
 for 3 minutes and then updates 
@@ -45,12 +48,12 @@ Make sure you find the appropriate command if using minikube.
 Also, once the processing controller branch is merged to master, not 
 required to set helm_Deploy.chat_repo...
 
-### Connecting to configuration database
+#### Connecting to configuration database
 
 Set the environment variable SDP_CONFIG_PORT according to the second part 
 of the PORTS(S) column:
 
-```
+```bash
 export SDP_CONFIG_PORT=32234
 ```
 
@@ -91,9 +94,3 @@ state has been changed to 'error'
 ```bash
 sdpcfg ls values -R /
 ```
-
-## API Documentation
-
-See [SKA developer
-portal](https://developer.skatelescope.org/projects/sdp-prototype/en/latest/test_state.html)
-for the API documentation.

@@ -1,2 +1,0 @@
-Visibility receive workflow
-===========================

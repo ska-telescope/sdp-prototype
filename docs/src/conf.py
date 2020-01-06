@@ -54,8 +54,8 @@ def setup(app):
 
 # -- Project information -----------------------------------------------------
 project = 'developer.skatelescope.org'
-copyright = '2019, ORCA team'
-author = 'ORCA team'
+copyright = '2019, ORCA Team, Sim Team'
+author = 'ORCA Team, Sim Team'
 
 
 # The version info for the project you're documenting, acts as replacement for

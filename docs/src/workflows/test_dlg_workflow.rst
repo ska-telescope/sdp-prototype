@@ -1,0 +1,1 @@
+.. mdinclude:: ../../../src/workflows/testdlg/README.md
