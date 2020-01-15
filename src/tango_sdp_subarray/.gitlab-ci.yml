@@ -67,15 +67,14 @@ test:ska-sdp-subarray:
     TOGGLE_CBF_OUTPUT_LINK: 1
   before_script:
     - pip install ska-sdp-config
+    - pip install ska-sdp-logging
   script:
     - cd src/tango_sdp_subarray
     - mkdir -p build/reports
     - python3 setup.py test
 #    - mv .coverage ../../$CI_JOB_NAME.coverage
-    - ls
     - mv htmlcov build/sdp_subarray_htmlcov
     - mv coverage.xml build/code-coverage.xml
-    - ls
     - mv build ../../build
   artifacts:
     paths:

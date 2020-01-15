@@ -7,14 +7,14 @@ database.
 
 import os
 import signal
-import logging
 import json
 import jsonschema
 import ska_sdp_config
+from ska_sdp_logging import core_logging
 
-logging.basicConfig()
-LOG = logging.getLogger('main')
-LOG.setLevel(logging.DEBUG)
+LOG_LEVEL = os.getenv('SDP_LOG_LEVEL', 'DEBUG')
+
+LOG = core_logging.init(name='processing_controller', level=LOG_LEVEL)
 
 # Location of workflow definition file and the schema file for validating it.
 

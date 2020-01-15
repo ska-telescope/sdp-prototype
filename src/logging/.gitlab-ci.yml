@@ -1,4 +1,4 @@
-# Local Gitlab-CI file for SDP Master
+# Local Gitlab-CI file for SDP Logging
 
 # ============================================================================
 # Build python packages
@@ -28,15 +28,15 @@
     - cd $BUILD_PATH
     - python setup.py sdist bdist_wheel
 
-build:ska-sdp-master_dev: # Executed on a commit
+build:ska-sdp-logging_dev: # Executed on a commit
   extends: .build_python_dev
   variables:
-    BUILD_PATH: src/tango_sdp_master
+    BUILD_PATH: src/logging
 
-build:ska-sdp-master:
+build:ska-sdp-logging:
   extends: .build_python_release
   variables:
-    BUILD_PATH: src/tango_sdp_master
+    BUILD_PATH: src/logging
   only: [master]
 
 # ============================================================================
@@ -48,18 +48,19 @@ build:ska-sdp-master:
   tags: [docker]
   image: nexus.engageska-portugal.pt/sdp-prototype/pytango_ska_dev:latest
 
-test:ska-sdp-master:
+test:ska-sdp-logging:
   extends: .tango_tests
   stage: test
-  before_script:
-    - pip install ska-sdp-logging
   script:
-    - cd src/tango_sdp_master
+    - cd src/logging
+    - mkdir -p build/reports
     - python3 setup.py test
-    - mv .coverage ../../$CI_JOB_NAME.coverage
+    - mv htmlcov build/sdp_logging_htmlcov
+    - mv coverage.xml build/code-coverage.xml
+    - mv build ../../build
   artifacts:
     paths:
-      - ./$CI_JOB_NAME.coverage
+      - build
     expire_in: 1 week
     when: always
 
@@ -94,61 +95,16 @@ test:ska-sdp-master:
     - twine upload --repository-url $PYPI_REPOSITORY_URL dist/* || true
     - twine upload --skip-existing -u $PYPI_USER -p $PYPI_PASS dist/* || true
 
-publish:ska-sdp-master-dev:
+publish:ska-sdp-logging-dev:
   extends: .publish_python_dev
   dependencies:
-    - build:ska-sdp-master_dev
+    - build:ska-sdp-logging_dev
   variables:
-    BUILD_PATH: src/tango_sdp_master
+    BUILD_PATH: src/logging
 
-publish:ska-sdp-master:
+publish:ska-sdp-logging:
   extends: .publish_python_release
   dependencies:
-    - build:ska-sdp-master
+    - build:ska-sdp-logging
   variables:
-    BUILD_PATH: src/tango_sdp_master
-
-## ============================================================================
-## Build, tag and push Docker development images
-## ============================================================================
-
-# This needs to be updated. Might be best to use Gitlab registry for
-# development images, otherwise it will load the nexus registry with lots of
-# development images.
-
-# Build and push `tangods_sdp_master` image.
-build:tangods_sdp_master:
-  stage: build
-  extends: .build_docker
-  variables:
-    BUILD_PATH: src/tango_sdp_master
-
-## ============================================================================
-## Test Docker development images
-## ============================================================================
-
-# Placeholder for testing. Currently not doing anything.
-test:tangods_sdp_master:
-  stage: test
-  extends: .pull_docker
-  variables:
-    BUILD_PATH: src/tango_sdp_master
-  script:
-    - echo "Placeholder for testing docker images"
-
-## ============================================================================
-## Tag and push Docker latest images (master only)
-## ============================================================================
-
-.tangods_master_template:
-  stage: publish
-  extends: .push_docker
-  when: always
-  dependencies:
-    - build:tangods_sdp_master
-  variables:
-    BUILD_PATH: src/tango_sdp_master
-
-publish:tangods_sdp_master:
-  extends: .tangods_master_template
-  only: [master]
+    BUILD_PATH: src/logging

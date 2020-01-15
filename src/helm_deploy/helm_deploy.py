@@ -12,8 +12,8 @@ import time
 import subprocess
 import signal
 import shutil
-import logging
 import ska_sdp_config
+from ska_sdp_logging import core_logging
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -23,8 +23,7 @@ HELM_TIMEOUT = int(os.getenv('SDP_HELM_TIMEOUT', str(300)))
 HELM_REPO = os.getenv('SDP_HELM_REPO')
 HELM_REPO_CA = os.getenv('SDP_HELM_REPO_CA')
 NAMESPACE = os.getenv('SDP_HELM_NAMESPACE', 'sdp')
-LOGGER = os.getenv('SDP_LOGGER', 'main')
-LOG_LEVEL = int(os.getenv('SDP_LOG_LEVEL', str(logging.DEBUG)))
+LOG_LEVEL = os.getenv('SDP_LOG_LEVEL', 'DEBUG')
 
 GIT = shutil.which(os.getenv("SDP_GIT", 'git'))
 CHART_REPO = os.getenv('SDP_CHART_REPO', 'https://github.com/ska-telescope/sdp-prototype.git')
@@ -33,9 +32,7 @@ CHART_REPO_PATH = os.getenv('SDP_CHART_REPO_PATH', 'deploy/charts')
 CHART_REPO_REFRESH = int(os.getenv('SDP_CHART_REFRESH', '300'))
 
 # Initialise logger
-logging.basicConfig()
-log = logging.getLogger(LOGGER)
-log.setLevel(LOG_LEVEL)
+log = core_logging.init(name='helm_deploy', level=LOG_LEVEL)
 
 # Where we are going to check out the charts
 chart_base_path = 'chart-repo'
@@ -59,7 +56,8 @@ def invoke(*cmd_line, cwd):
     # Log results
     log.debug("Code: {}".format(result.returncode))
     out = result.stdout.decode()
-    log.debug("-> " + out)
+    for line in out.splitlines():
+        log.debug("-> " + line)
     result.check_returncode()
     return out
 

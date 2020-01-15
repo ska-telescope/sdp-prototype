@@ -5,6 +5,7 @@ verify_ssl = true
 
 [packages]
 pytango = "*"
+ska-sdp-logging = ">=0.0.5"
 # ---- Inherited from base class, not installed again because of git dep ------
 # lmcbaseclasses = {git = "https://github.com/ska-telescope/lmc-base-classes.git", editable = true}
 

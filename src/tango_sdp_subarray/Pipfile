@@ -8,6 +8,7 @@ pytango = "*"
 pylint2junit = "*"
 jsonschema = "*"
 ska-sdp-config = ">=0.0.5"
+ska-sdp-logging = ">=0.0.5"
 # ---- Inherited from base class, not installed again here as depends on git ------
 # lmcbaseclasses = {git = "https://github.com/ska-telescope/lmc-base-classes.git", editable = true}
 

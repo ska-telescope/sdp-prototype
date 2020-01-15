@@ -18,6 +18,7 @@ import os
 from os.path import dirname, join
 
 from jsonschema import exceptions, validate
+from ska_sdp_logging import tango_logging
 import tango
 from tango import AttrWriteType, AttributeProxy, ConnectionFailed, Database, \
     DbDevInfo, DevState, Except
@@ -36,7 +37,7 @@ except ImportError:
 
 # from skabase.SKASubarray import SKASubarray
 
-LOG = logging.getLogger('ska.sdp.subarray_ds')
+LOG = logging.getLogger()
 
 
 # https://pytango.readthedocs.io/en/stable/data_types.html#devenum-pythonic-usage
@@ -1170,38 +1171,19 @@ def register(instance_name, *device_names):
         pass
 
 
-def init_logger(level='DEBUG', name='ska'):
-    """Initialise stdout logger for the ska.sdp logger.
-
-    :param level: Logging level, default: 'DEBUG'
-    :param name: Logger name to initialise. default: 'ska.sdp'.
-
-    """
-    log = logging.getLogger(name)
-    log.propagate = False
-    # make sure there are no duplicate handlers.
-    for handler in log.handlers:
-        log.removeHandler(handler)
-    formatter = logging.Formatter(
-        '%(asctime)s | %(levelname)-7s | %(message)s')
-    handler = logging.StreamHandler(stream=sys.stdout)
-    handler.setFormatter(formatter)
-    log.addHandler(handler)
-    log.setLevel(level)
-
-
 def main(args=None, **kwargs):
     """Run server."""
+    # Initialise logging
+    log_level = tango.LogLevel.LOG_INFO
+    if len(sys.argv) > 2 and '-v' in sys.argv[2]:
+        log_level = tango.LogLevel.LOG_DEBUG
+    tango_logging.init(device_name='SDPSubarray', level=log_level)
+
     # Set default values for feature toggles.
     SDPSubarray.set_feature_toggle_default(FeatureToggle.CONFIG_DB, False)
     SDPSubarray.set_feature_toggle_default(FeatureToggle.CBF_OUTPUT_LINK,
                                            False)
     SDPSubarray.set_feature_toggle_default(FeatureToggle.AUTO_REGISTER, True)
-
-    log_level = 'INFO'
-    if len(sys.argv) > 2 and '-v' in sys.argv[2]:
-        log_level = 'DEBUG'
-    init_logger(log_level)
 
     # If the feature is enabled, attempt to auto-register the device
     # with the tango db.

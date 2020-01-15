@@ -14,8 +14,7 @@ from tango import DevState
 import pytest
 from pytest_bdd import (given, parsers, scenarios, then, when)
 
-from SDPSubarray import AdminMode, HealthState, ObsState, SDPSubarray, \
-    init_logger
+from SDPSubarray import (AdminMode, HealthState, ObsState, SDPSubarray)
 
 try:
     from ska_sdp_config.config import Config as ConfigDbClient
@@ -35,11 +34,6 @@ except ImportError:
 
 # Load all scenarios from the specified feature file.
 scenarios('./1_XR-11.feature')
-
-
-# Initialise logger for cases where the python logging output is useful
-# to debug tests.
-init_logger(level='DEBUG')
 
 
 # -----------------------------------------------------------------------------

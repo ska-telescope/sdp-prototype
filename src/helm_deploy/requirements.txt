@@ -1,0 +1,3 @@
+python-dotenv
+ska-sdp-config>=0.0.5
+ska-sdp-logging>=0.0.5

@@ -6,20 +6,21 @@
 # pylint: disable=wrong-import-position
 
 import os
-import logging
 import sys
-from enum import IntEnum, unique
 import signal
+import logging
+from enum import IntEnum, unique
 
+from ska_sdp_logging import tango_logging
+import tango
 from tango import (AttrWriteType, ConnectionFailed,
                    Database, DbDevInfo, DebugIt, DevState)
 from tango.server import Device, DeviceMeta, attribute, command, run
 
-
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 from release import VERSION as SERVER_VERSION   # noqa
 
-LOG = logging.getLogger('ska.sdp.master_ds')
+LOG = logging.getLogger()
 
 
 @unique
@@ -261,40 +262,16 @@ def register(instance_name: str, device_name: str):
         pass
 
 
-def init_logger(level: str = 'DEBUG', name: str = 'ska.sdp'):
-    """Initialise stdout logger for the ska.sdp logger.
-
-    :param level: Logging level, default: 'DEBUG'
-    :param name: Logger name to initialise. default: 'ska.sdp'.
-    """
-    log = logging.getLogger(name)
-    log.propagate = False
-    # make sure there are no duplicate handlers.
-    for handler in log.handlers:
-        log.removeHandler(handler)
-    formatter = logging.Formatter(
-        '%(asctime)s | %(levelname)-6s | %(message)s')
-    handler = logging.StreamHandler(stream=sys.stdout)
-    handler.setFormatter(formatter)
-    log.addHandler(handler)
-    log.setLevel(level)
-
-
-# ----------
-# Run server
-# ----------
-
-
 def main(args=None, **kwargs):
     """Run server."""
-    # PROTECTED REGION ID(SDPMaster.main) ENABLED START #
+    # Initialise logging
+    log_level = tango.LogLevel.LOG_INFO
+    if len(sys.argv) > 2 and '-v' in sys.argv[2]:
+        log_level = tango.LogLevel.LOG_DEBUG
+    tango_logging.init(device_name='SDPMaster', level=log_level)
+
     # Set default values for feature toggles.
     SDPMaster.set_feature_toggle_default(FeatureToggle.AUTO_REGISTER, True)
-
-    log_level = 'INFO'
-    if len(sys.argv) > 2 and '-v' in sys.argv[2]:
-        log_level = 'DEBUG'
-    init_logger(log_level)
 
     # If the feature is enabled, attempt to auto-register the device
     # with the tango db.
@@ -304,7 +281,6 @@ def main(args=None, **kwargs):
             register(sys.argv[1], 'mid_sdp/elt/master')
 
     return run((SDPMaster,), args=args, **kwargs)
-    # PROTECTED REGION END #    //  SDPMaster.main
 
 
 def terminate(_sig, _frame):
