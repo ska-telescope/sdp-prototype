@@ -1,6 +1,5 @@
 {
   "sbiId": "SBI-20200101-0001",
-  "scanId": 12345,
   "processingBlocks": [
     {
       "id": "PB-20200101-0001-realtime-test",
@@ -15,8 +14,7 @@
           { "id": "0", "system": "ICRS", "ra": "02:31:50.91", "dec": "89:15:51.4" },
           { "id": "1", "system": "ICRS", "ra": "02:31:50.91", "dec": "89:15:51.4" }
         ]
-      },
-      "scanParameters": { "fieldId": "0", "interval": 0.14 }
+      }
     }
   ]
 }

@@ -51,23 +51,22 @@ build:ska-sdp-subarray:
 test:ska-sdp-subarray:
   extends: .tango_tests
   stage: test
-  services:
-    - name: quay.io/coreos/etcd:latest
-      alias: etcd
-      command:
-        - /usr/local/bin/etcd
-        - "--advertise-client-urls=http://0.0.0.0:2379"
-        - "--listen-client-urls=http://0.0.0.0:2379"
-        - "--initial-advertise-peer-urls=http://0.0.0.0:2380"
-        - "--listen-peer-urls=http://0.0.0.0:2380"
-        - "--initial-cluster=default=http://0.0.0.0:2380"
+#  services:
+#    - name: quay.io/coreos/etcd:latest
+#      alias: etcd
+#      command:
+#        - /usr/local/bin/etcd
+#        - "--advertise-client-urls=http://0.0.0.0:2379"
+#        - "--listen-client-urls=http://0.0.0.0:2379"
+#        - "--initial-advertise-peer-urls=http://0.0.0.0:2380"
+#        - "--listen-peer-urls=http://0.0.0.0:2380"
+#        - "--initial-cluster=default=http://0.0.0.0:2380"
   variables:
     SDP_CONFIG_HOST: etcd
-    TOGGLE_CONFIG_DB: 1
+    TOGGLE_CONFIG_DB: 0
     TOGGLE_CBF_OUTPUT_LINK: 1
   before_script:
-    - pip install ska-sdp-config
-    - pip install ska-sdp-logging
+    - pip install --upgrade ska-sdp-logging ska-sdp-config
   script:
     - cd src/tango_sdp_subarray
     - mkdir -p build/reports

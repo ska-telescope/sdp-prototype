@@ -52,7 +52,7 @@ test:ska-sdp-master:
   extends: .tango_tests
   stage: test
   before_script:
-    - pip install ska-sdp-logging
+    - pip install --upgrade ska-sdp-logging
   script:
     - cd src/tango_sdp_master
     - python3 setup.py test

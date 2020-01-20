@@ -1,43 +1,40 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title":"Configure Scan",
-  "description":"Schema for Configure Scan",
-  "version":"0.1.0",
+  "title": "SDP Subarray ConfigureScan schema",
+  "description": "Used by the SDP Subarray ConfigureScan command to validate configuration data",
+  "version": "0.2.0",
   "type": "object",
-  "required": ["configureScan"],
+  "required": ["scanId", "processingBlocks"],
+  "additionalProperties": false,
   "properties": {
-    "configureScan": {
-      "required": ["scanParameters"],
-      "type": "object",
-      "properties": {
-        "scanParameters": {
-          "$ref": "#/definitions/scanParameters"
-        }
-      }
+    "scanId": { "$ref": "#/definitions/scanId" },
+    "processingBlocks": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/processingBlock" }
     }
   },
   "definitions": {
-    "scanParameters":
-    {
+    "scanId": {
+      "description": "Scan ID",
+      "type": "integer"
+    },
+    "pbId": {
+      "description": "Processing Block ID",
+      "type": "string"
+    },
+    "processingBlock": {
+      "description": "Processing Block",
       "type": "object",
-      "required": ["scanId", "fieldId"],
-      "scanId": {
-        "type": "integer",
-        "description":"Scan ID. Schema TBD."
-      },
-      "fieldId": {
-        "type": "integer",
-        "description":"Field Id"
-      },
-      "interval": {
-        "type": "number",
-        "description": "Interval between visibility samples, in seconds."
-      },
-      "intervalMs": {
-        "type": "number",
-        "$comment": "DEPRECATED",
-        "description": "Interval between visibility samples, in milliseconds."
+      "required": ["id", "scanParameters"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/definitions/pbId" },
+        "scanParameters": { "$ref": "#/definitions/scanParameters" }
       }
+    },
+    "scanParameters": {
+      "description": "Scan-specific workflow parameters",
+      "type": "object"
     }
   }
 }

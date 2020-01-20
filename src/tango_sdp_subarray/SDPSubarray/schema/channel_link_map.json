@@ -1,0 +1,82 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CSP - SDP channel link map schema",
+  "description": "Used by SDP to validate CSP channel link map",
+  "version": "0.2.0",
+  "type": "object",
+  "required": ["scanID", "fsp"],
+  "additionalProperties": false,
+  "properties": {
+    "scanID": { "$ref": "#/definitions/scanID" },
+    "fsp": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/fsp" }
+    }
+  },
+  "definitions": {
+    "scanID": {
+      "description": "Scan identifier",
+      "type": "integer"
+    },
+    "fspID": {
+      "description": "CSP FSP identifier",
+      "type": "integer"
+    },
+    "frequencySliceID": {
+      "description": "Frequency slice identifier",
+      "type": "integer"
+    },
+    "linkID": {
+      "description": "Link identifier",
+      "type": "integer"
+    },
+    "chanID": {
+      "description": "Channel identifier",
+      "type": "integer"
+    },
+    "fsp": {
+      "description": "CSP FSP configuration",
+      "type": "object",
+      "required": ["fspID", "frequencySliceID", "cbfOutLink"],
+      "additionalProperties": false,
+      "properties": {
+        "fspID": { "$ref": "#/definitions/fspID" },
+        "frequencySliceID": { "$ref": "#/definitions/frequencySliceID" },
+        "cbfOutLink": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/cbfOutLink" }
+        }
+      }
+    },
+    "cbfOutLink": {
+      "description": "CBF output link specification",
+      "type": "object",
+      "required": ["linkID", "channel"],
+      "additionalProperties": false,
+      "properties": {
+        "linkID": { "$ref": "#/definitions/linkID" },
+        "channel": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/channel" }
+        }
+      }
+    },
+    "channel": {
+      "description": "Channel configuration",
+      "type": "object",
+      "required": ["bw", "cf", "chanID"],
+      "additionalProperties": false,
+      "properties": {
+        "bw": {
+          "description": "Channel bandwidth, in Hz",
+          "type": "number"
+        },
+        "cf": {
+          "description": "Channel centre frequency, in Hz",
+          "type": "number"
+        },
+        "chanID": { "$ref": "#/definitions/chanID" }
+      }
+    }
+  }
+}

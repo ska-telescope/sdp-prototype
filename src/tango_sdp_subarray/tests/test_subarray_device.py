@@ -1,5 +1,6 @@
 # coding: utf-8
 """SDP Subarray device tests."""
+# pylint: disable=invalid-name
 # pylint: disable=redefined-outer-name
 # pylint: disable=protected-access
 # pylint: disable=fixme
@@ -17,15 +18,9 @@ from pytest_bdd import (given, parsers, scenarios, then, when)
 from SDPSubarray import (AdminMode, HealthState, ObsState, SDPSubarray)
 
 try:
-    from ska_sdp_config.config import Config as ConfigDbClient
+    import ska_sdp_config
 except ImportError:
-    ConfigDbClient = None
-
-
-try:
-    from ska_sdp_config.config import Config as ConfigDbClient
-except ImportError:
-    ConfigDbClient = None
+    ska_sdp_config = None
 
 
 # -----------------------------------------------------------------------------
@@ -40,15 +35,14 @@ scenarios('./1_XR-11.feature')
 # Mock functions
 # -----------------------------------------------------------------------------
 
-def mock_read_cbf_output_link():
-    """Mock replacement of SDPSubarray device _read_channel_link_map method."""
-    filename = 'attr_cbfOutputLink-simple.json'
-    path = join(dirname(__file__), 'data', filename)
+def mock_get_channel_link_map(scan_id):
+    """Mock replacement for SDPSubarray device _get_channel_link_map method."""
+    config_file = 'attr_cbfOutputLink-simple.json'
+    path = join(dirname(__file__), 'data', config_file)
     with open(path, 'r') as file:
-        channel_link_map = file.read()
-    channel_link_map_dict = json.loads(channel_link_map)
-    channel_link_map_dict['scanID'] = 4
-    return json.dumps(channel_link_map_dict)
+        channel_link_map = json.load(file)
+    channel_link_map['scanID'] = scan_id
+    return channel_link_map
 
 
 # -----------------------------------------------------------------------------
@@ -63,10 +57,11 @@ def subarray_device(tango_context, admin_mode_value: str):
     :param tango_context: fixture providing a TangoTestContext
     :param admin_mode_value: adminMode value the device is created with
     """
-    # Mock the SDPSubarray._read_cbf_out_link() method so that
+    # Mock the SDPSubarray._get_channel_link_map() method so that
     # it does not need to connect to a CSP subarray device.
-    SDPSubarray._read_cbf_output_link = MagicMock(
-        side_effect=mock_read_cbf_output_link)
+    SDPSubarray._get_channel_link_map = MagicMock(
+        side_effect=mock_get_channel_link_map
+    )
     tango_context.device.Init()
     tango_context.device.adminMode = AdminMode[admin_mode_value]
     return tango_context.device
@@ -143,16 +138,11 @@ def command_configure(subarray_device):
 
     :param subarray_device: An SDPSubarray device.
     """
-    filename = join(dirname(__file__), 'data', 'command_Configure.json')
-    with open(filename, 'r') as file:
-        config_json = file.read()
-    config_dict = json.loads(config_json)
-    config_dict['configure']['scanParameters'] = {}
-    config_dict['configure']['scanParameters']["4"] = {}
-    # print('-------')
-    # print(json.dumps(config_dict, indent=2))
-    # print('-------')
-    subarray_device.Configure(json.dumps(config_dict))
+    config_file = 'command_Configure.json'
+    path = join(dirname(__file__), 'data', config_file)
+    with open(path, 'r') as file:
+        config_str = file.read()
+    subarray_device.Configure(config_str)
 
 
 @when('I call Configure with invalid JSON')
@@ -170,33 +160,42 @@ def command_configure_scan(subarray_device):
     """Call the Configure Scan command.
 
     :param subarray_device: An SDPSubarray device.
-    # """
+    """
+    config_file = 'command_ConfigureScan.json'
+    path = join(dirname(__file__), 'data', config_file)
+    with open(path, 'r') as file:
+        config_str = file.read()
+    subarray_device.ConfigureScan(config_str)
 
-    scan_config_path = join(dirname(__file__), 'data',
-                            'command_ConfigureScan.json')
-    with open(scan_config_path, 'r') as file:
-        scan_config = file.read()
-    subarray_device.ConfigureScan(scan_config)
 
-
-@when('I call StartScan')
-def command_start_scan(subarray_device):
-    """Call the Start Scan command.
+@when('I call Scan')
+def command_scan(subarray_device):
+    """Call the Scan command.
 
     :param subarray_device: An SDPSubarray device.
     # """
 
-    subarray_device.StartScan()
+    subarray_device.Scan()
 
 
 @when('I call EndScan')
 def command_end_scan(subarray_device):
-    """Call the End Scan command.
+    """Call the EndScan command.
 
     :param subarray_device: An SDPSubarray device.
     # """
 
     subarray_device.EndScan()
+
+
+@when('I call EndSB')
+def command_end_sb(subarray_device):
+    """Call the EndSB command.
+
+    :param subarray_device: An SDPSubarray device.
+    # """
+
+    subarray_device.EndSB()
 
 
 # -----------------------------------------------------------------------------
@@ -277,28 +276,25 @@ def dev_failed_error_raised_by_release_resources(subarray_device):
         subarray_device.ReleaseResources()
 
 
-@then('The configured Processing Block should be in the Config Db')
+@then('the configured Processing Blocks should be in the Config DB')
 def check_config_db():
-    """Check that the config db has the configured PB.
+    """Check that the config DB has the configured PBs.
 
-    Only run this step if the config db is enabled.
+    Only run this step if the config DB is enabled.
     """
-    if ConfigDbClient and SDPSubarray.is_feature_active('config_db'):
+    if ska_sdp_config is not None \
+            and SDPSubarray.is_feature_active('config_db'):
         filename = join(dirname(__file__), 'data', 'command_Configure.json')
         with open(filename, 'r') as file:
-            config_json = file.read()
-        config_dict = json.loads(config_json)
-        config_db_client = ConfigDbClient()
+            config = json.load(file)
+        config_db_client = ska_sdp_config.Config()
         for txn in config_db_client.txn():
             pb_ids = txn.list_processing_blocks()
-            # print()
-            # print('--------------')
-            # print(pb_ids)
-            # print('--------------')
-            assert config_dict['configure']['id'] in pb_ids
+        for pb in config['processingBlocks']:
+            assert pb['id'] in pb_ids
 
 
-@then('The receiveAddresses attribute returns expected values')
+@then('the receiveAddresses attribute should return the expected value')
 def receive_addresses_attribute_ok(subarray_device):
     """Check that the receiveAddresses attribute works as expected.
 
@@ -308,29 +304,32 @@ def receive_addresses_attribute_ok(subarray_device):
     # print(json.dumps(json.loads(receive_addresses), indent=2))
     data_path = join(dirname(__file__), 'data')
 
-    expected_output_file = ''
-    if not SDPSubarray.is_feature_active('cbf_output_link'):
-        expected_output_file = join(
-            data_path, 'attr_receiveAddresses-cbfOutputLink-disabled.json')
-    elif isinstance(SDPSubarray._read_cbf_output_link, MagicMock):
-        expected_output_file = join(
-            data_path, 'attr_receiveAddresses-simple.json')
-    else:
-        pytest.fail('Not yet able to test using a mock CSP Subarray device')
+    if ska_sdp_config is not None \
+            and SDPSubarray.is_feature_active('config_db'):
+        expected_output_file = ''
+        if not SDPSubarray.is_feature_active('cbf_output_link'):
+            expected_output_file = join(
+                data_path,
+                'attr_receiveAddresses-cbfOutputLink-disabled.json'
+                )
+        elif isinstance(SDPSubarray._get_channel_link_map, MagicMock):
+            expected_output_file = join(
+                data_path, 'attr_receiveAddresses-simple.json')
+        else:
+            pytest.fail('Not yet able to test using a mock CSP Subarray '
+                        'device')
 
-    with open(expected_output_file, 'r') as file:
-        expected = json.loads(file.read())
-
-    expected['scanId'] = 4
-    receive_addresses = json.loads(receive_addresses)
-    assert receive_addresses == expected
+        with open(expected_output_file, 'r') as file:
+            expected = json.loads(file.read())
+        receive_addresses = json.loads(receive_addresses)
+        assert receive_addresses == expected
 
 
-@then('The receiveAddresses attribute should return an empty JSON object')
+@then('the receiveAddresses attribute should return an empty JSON object')
 def receive_addresses_empty(subarray_device):
-    """Check that receiveAddresss attribute returns an empty JSON object.
+    """Check that receiveAddresses attribute returns an empty JSON object.
 
     :param subarray_device: An SDPSubarray device.
     """
     receive_addresses = subarray_device.receiveAddresses
-    assert str(receive_addresses) == 'null'
+    assert receive_addresses == 'null'
