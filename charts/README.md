@@ -109,7 +109,7 @@ At this point you should be able to deploy the SDP components. First go
 to the charts directory:
 
 ```bash
-    $ cd [sdp-prototype]/deploy/charts
+    $ cd [sdp-prototype]/charts
 ```
 
 Then for Helm 2, execute:

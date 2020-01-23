@@ -26,9 +26,9 @@ NAMESPACE = os.getenv('SDP_HELM_NAMESPACE', 'sdp')
 LOG_LEVEL = os.getenv('SDP_LOG_LEVEL', 'DEBUG')
 
 GIT = shutil.which(os.getenv("SDP_GIT", 'git'))
-CHART_REPO = os.getenv('SDP_CHART_REPO', 'https://github.com/ska-telescope/sdp-prototype.git')
+CHART_REPO = os.getenv('SDP_CHART_REPO', 'https://gitlab.com/ska-telescope/sdp-prototype.git')
 CHART_REPO_REF = os.getenv('SDP_CHART_REPO_REF', 'master')
-CHART_REPO_PATH = os.getenv('SDP_CHART_REPO_PATH', 'deploy/charts')
+CHART_REPO_PATH = os.getenv('SDP_CHART_REPO_PATH', 'src/helm_deploy/charts')
 CHART_REPO_REFRESH = int(os.getenv('SDP_CHART_REFRESH', '300'))
 
 # Initialise logger
