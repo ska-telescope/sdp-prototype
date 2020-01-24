@@ -1,1 +1,1 @@
-.. mdinclude:: ../../../deploy/charts/README.md
+.. mdinclude:: ../../../charts/README.md
