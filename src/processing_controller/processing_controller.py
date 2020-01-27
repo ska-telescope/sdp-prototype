@@ -8,18 +8,22 @@ database.
 import os
 import signal
 import json
+import time
+import urllib
 import jsonschema
 import ska_sdp_config
 from ska_sdp_logging import core_logging
 
 LOG_LEVEL = os.getenv('SDP_LOG_LEVEL', 'DEBUG')
+WORKFLOWS_URL = os.getenv('SDP_WORKFLOWS_URL',
+                          'https://gitlab.com/ska-telescope/sdp-prototype/raw/master/src/workflows/workflows.json')
+WORKFLOWS_REFRESH = int(os.getenv('SDP_WORKFLOWS_REFRESH', '300'))
+
+# Location of the schema file for validating the workflow definitions.
+
+WORKFLOWS_SCHEMA = 'workflows_schema.json'
 
 LOG = core_logging.init(name='processing_controller', level=LOG_LEVEL)
-
-# Location of workflow definition file and the schema file for validating it.
-
-WORKFLOW_DEFINITION = 'workflows.json'
-WORKFLOW_SCHEMA = 'workflows_schema.json'
 
 
 def get_environment_variables(var: list) -> dict:
@@ -32,16 +36,29 @@ def get_environment_variables(var: list) -> dict:
     return values
 
 
-def read_workflow_definition(definition_file, schema_file):
-    """Read workflow definitions from JSON file."""
+def update_workflow_definition(definition_url, schema_file):
+    """Update workflow definitions."""
 
+    # Read schema file.
     with open(schema_file, 'r') as f:
         schema = json.load(f)
-    with open(definition_file, 'r') as f:
-        definition = json.load(f)
 
-    # Validate the definitions against the schema.
-    jsonschema.validate(definition, schema)
+    # Fetch workflow definition file from URL, parse as JSON and validate
+    # against the schema.
+    LOG.debug('Fetching workflow definitions from %s', definition_url)
+    try:
+        with urllib.request.urlopen(definition_url) as f:
+            definition = json.loads(f.read())
+        jsonschema.validate(definition, schema)
+    except urllib.error.URLError as e:
+        LOG.error('Cannot fetch workflow definitions: %s', e.reason)
+        return {}, {}, {}
+    except json.JSONDecodeError as e:
+        LOG.error('Cannot decode workflow definitions as JSON: %s', e.msg)
+        return {}, {}, {}
+    except jsonschema.ValidationError as e:
+        LOG.error('Cannot validate workflow definitions: %s', e.message)
+        return {}, {}, {}
 
     # Get version of workflow definition file.
     version = definition['version']
@@ -110,15 +127,24 @@ def main():
     values_env = get_environment_variables(['SDP_CONFIG_HOST',
                                             'SDP_HELM_NAMESPACE'])
 
-    # Read workflow definitions.
+    # Fetch workflow definitions.
     workflows_version, workflows_realtime, workflows_batch = \
-        read_workflow_definition(WORKFLOW_DEFINITION, WORKFLOW_SCHEMA)
+        update_workflow_definition(WORKFLOWS_URL, WORKFLOWS_SCHEMA)
+    next_workflows_refresh = time.time() + WORKFLOWS_REFRESH
 
     # Connect to configuration database.
     client = ska_sdp_config.Config()
 
     LOG.debug("Starting main loop...")
     for txn in client.txn():
+
+        # Update workflow definitions if it is time to do so.
+
+        if time.time() >= next_workflows_refresh:
+            LOG.debug('Updating workflow definitions')
+            workflows_version, workflows_realtime, workflows_batch = \
+                update_workflow_definition(WORKFLOWS_URL, WORKFLOWS_SCHEMA)
+            next_workflows_refresh = time.time() + WORKFLOWS_REFRESH
 
         # Get lists of processing blocks and deployments.
 
@@ -177,8 +203,9 @@ def main():
                 LOG.warning("Batch workflows are not supported at present")
             else:
                 LOG.error("Unknown workflow type: {}".format(wf_type))
+
         LOG.debug("Waiting...")
-        txn.loop(wait=True)
+        txn.loop(wait=True, timeout=next_workflows_refresh - time.time())
 
 
 def terminate(signal, frame):

@@ -34,10 +34,13 @@ dsconfig:
 # Processing controller
 processing_controller:
   image: nexus.engageska-portugal.pt/sdp-prototype/processing-controller
-  version: 0.3.0
+  version: 0.4.0
   replicas: 1
   resources: {}
   imagePullPolicy: IfNotPresent
+  workflows:
+    url: https://gitlab.com/ska-telescope/sdp-prototype/raw/master/src/workflows/workflows.json
+    refresh: 300
 
 # Tango devices
 tangods:
