@@ -1,0 +1,75 @@
+kind: Job
+apiVersion: batch/v1
+metadata:
+  name: pss-receive
+spec:
+  activeDeadlineSeconds: {{ .Values.receiver.ttl }}
+  completions: {{ .Values.receiver.completions }}
+  template:
+    metadata:
+      labels:
+        app: receiver_demo_pod
+    spec:
+      containers:
+      - name: receiver
+        image: {{ .Values.receiver.image }}
+        imagePullPolicy: {{ .Values.receiver.imagePullPolicy }}
+        tty: True
+        volumeMounts:
+            - mountPath: "/home/pss2sdp/receive/output"
+              name: output
+        ports:
+        - containerPort: {{ .Values.receiver.containerPort }}
+          protocol: {{ .Values.receiver.protocol }}
+          name: receiver
+      restartPolicy: Never
+      volumes:
+          - name: output
+            persistentVolumeClaim:
+                claimName: receive-volume-claim-test
+---           
+kind: Service
+apiVersion: v1
+metadata:
+  name: pss-receive # DNS hostname that send.py is sending to
+spec:
+  selector:
+    app: receiver_demo_pod
+  ports:
+  - port: {{ .Values.service.port }}
+    protocol: {{ .Values.receiver.protocol }}
+    targetPort: receiver
+
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata: 
+    name: receive-volume-test
+    labels:
+        app: receive-volume-disk
+spec:
+    capacity: 
+        storage: 1Gi
+    volumeMode: Filesystem
+    accessModes:
+            - ReadWriteOnce
+    persistentVolumeReclaimPolicy: Recycle
+    storageClassName: standard
+    hostPath:
+        path: /home/pss2sdp/
+
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata: 
+    name: receive-volume-claim-test
+spec:    
+    storageClassName: standard
+    accessModes:
+        - ReadWriteOnce
+    resources:
+        requests:
+            storage: 1Gi
+    selector:
+        matchLabels:
+            app: receive-volume-disk

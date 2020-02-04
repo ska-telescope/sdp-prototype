@@ -1,0 +1,21 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+    name: sender
+    namespace: sdp
+spec:
+  template:
+    metadata:
+        labels:
+           app: sender-pod
+    spec:
+       restartPolicy: Never
+       containers:
+       - name: sender
+         image: nexus.engageska-portugal.pt/sdp-prototype/pss-send:0.1.0
+         imagePullPolicy: Always 
+         tty: True
+  completions: 1
+          
+   
+

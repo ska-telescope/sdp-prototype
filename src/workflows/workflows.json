@@ -13,6 +13,7 @@
     {"type": "realtime", "id":  "testdeploy", "repository": "nexus", "image": "workflow-testdeploy", "versions": ["0.1.0"]},
     {"type": "realtime", "id":  "testdlg", "repository": "nexus", "image": "workflow-testdlg", "versions": ["0.1.0"]},
     {"type": "realtime", "id":  "teststate", "repository": "nexus", "image": "workflow-teststate", "versions": ["0.2.7"]},
-    {"type": "realtime", "id":  "vis_receive", "repository": "nexus", "image": "workflow-vis-receive", "versions": ["0.1.0"]}
+    {"type": "realtime", "id":  "vis_receive", "repository": "nexus", "image": "workflow-vis-receive", "versions": ["0.1.0"]},
+    {"type": "realtime", "id":  "pss_receive", "repository": "nexus", "image": "workflow-pss-receive", "versions": ["0.1.0"]}
   ]
 }
