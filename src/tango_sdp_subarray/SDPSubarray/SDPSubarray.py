@@ -15,7 +15,8 @@ import json
 from enum import IntEnum, unique
 import jsonschema
 
-from ska_sdp_logging import tango_logging
+# Use LMC base classes and thus SKA logging
+from skabase.SKASubarray.SKASubarray import SKASubarray
 
 import tango
 from tango import AttrWriteType, AttributeProxy, ConnectionFailed, Database, \
@@ -78,13 +79,14 @@ class FeatureToggle(IntEnum):
     AUTO_REGISTER = 3  #: Enable / Disable tango db auto-registration
 
 
-# class SDPSubarray(SKASubarray):
-class SDPSubarray(Device):
+
+class SDPSubarray(SKASubarray):
     """SDP Subarray device class.
 
     .. note::
-        This should eventually inherit from SKASubarray but these need
-        some work before doing so would add any value to this device.
+        This now correctly inherits from SKASubarray and thus
+        will use ska_logging
+
 
     """
 
@@ -163,8 +165,8 @@ class SDPSubarray(Device):
 
     def init_device(self):
         """Initialise the device."""
-        # SKASubarray.init_device(self)
-        Device.init_device(self)
+        SKASubarray.init_device(self)
+        # Device.init_device(self)
 
         self.set_state(DevState.INIT)
         LOG.info('Initialising SDP Subarray: %s', self.get_name())
@@ -967,10 +969,10 @@ def register(instance_name, *device_names):
 def main(args=None, **kwargs):
     """Run server."""
     # Initialise logging
-    log_level = tango.LogLevel.LOG_INFO
-    if len(sys.argv) > 2 and '-v' in sys.argv[2]:
-        log_level = tango.LogLevel.LOG_DEBUG
-    tango_logging.init(device_name='SDPSubarray', level=log_level)
+    #log_level = tango.LogLevel.LOG_INFO
+    #if len(sys.argv) > 2 and '-v' in sys.argv[2]:
+    #    log_level = tango.LogLevel.LOG_DEBUG
+    #tango_logging.init(device_name='SDPSubarray', level=log_level)
 
     # Set default values for feature toggles.
     SDPSubarray.set_feature_toggle_default(FeatureToggle.CONFIG_DB, False)
