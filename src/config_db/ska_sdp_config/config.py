@@ -2,15 +2,14 @@
 
 import os
 import sys
-import functools
 from datetime import date
 import json
 from socket import gethostname
 
-from . import backend as backend_mod, entity, deploy
+from . import backend as backend_mod, entity
 
 
-class Config():
+class Config:
     """Connection to SKA SDP configuration."""
 
     def __init__(self, backend=None, global_prefix='', owner=None,
@@ -132,24 +131,8 @@ class Config():
         self.close()
         return False
 
-    # pylint: disable=R0201
-    def get_deployment_logs(self, dpl: entity.Deployment,
-                            max_lines: int = 500):
-        """
-        Retrieve logs (stdout) produced by a deployment.
 
-        Might not be supported by all deployment types, and not to all
-        processes (e.g. subprocess stdout is only available to the
-        spawning process).
-
-        :param dpl: Deployment to query for logs
-        :param max_lines: Maximum number of lines to return (log tail)
-        :returns: A list of the last log lines
-        """
-        return deploy.get_deployment_logs(dpl, max_lines)
-
-
-class TransactionFactory():
+class TransactionFactory:
     """Helper object for making transactions."""
 
     def __init__(self, config, txn):
@@ -179,7 +162,7 @@ def dict_to_json(obj):
         indent=2, separators=(',', ': '), sort_keys=True)
 
 
-class Transaction():
+class Transaction:
     """High-level configuration queries and updates to execute atomically."""
 
     def __init__(self, config, txn):
@@ -223,7 +206,7 @@ class Transaction():
 
         :param prefix: If given, only search for processing block IDs
            with the given prefix
-        :returns: Processing block ids, in lexographical order
+        :returns: Processing block ids, in lexicographical order
         """
         # List keys
         pb_path = self._pb_path
@@ -234,7 +217,7 @@ class Transaction():
         return list([key[len(pb_path):] for key in keys])
 
     def new_processing_block_id(self, workflow_type: str):
-        """Generate a new processing block ID that does not yet in use.
+        """Generate a new processing block ID that is not yet in use.
 
         :param workflow_type: Type of workflow / processing block to create
         :returns: Processing block id
@@ -311,7 +294,7 @@ class Transaction():
         Take ownership of the processing block.
 
         :param pb_id: Processing block ID to take ownership of
-        :raises: backend.Collision
+        :raises: backend.ConfigCollision
         """
         # Lease must be provided
         assert lease is not None
@@ -406,10 +389,6 @@ class Transaction():
         self._create(self._deploy_path + dpl.deploy_id,
                      dpl.to_dict())
 
-        # Apply deployment on successful deployment (this should
-        # eventually be done by a separate controller process!)
-        self._txn.on_commit(functools.partial(deploy.apply_deployment, dpl))
-
     def delete_deployment(self, dpl: entity.Deployment):
         """
         Undo a change to cluster configuration.
@@ -420,7 +399,3 @@ class Transaction():
         deploy_path = self._deploy_path + dpl.deploy_id
         for key in self._txn.list_keys(deploy_path, recurse=5):
             self._txn.delete(key)
-
-        # Apply deployment on successful deployment (this should
-        # eventually be done by a separate controller process!)
-        self._txn.on_commit(functools.partial(deploy.undo_deployment, dpl))

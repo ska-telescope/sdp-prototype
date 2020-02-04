@@ -56,7 +56,7 @@ def test_cli_simple(capsys):
 
     cli.main(['ls', PREFIX+'/'])
     out, err = capsys.readouterr()
-    assert out == "Keys with {pre}/ prefix: {pre}/foo, {pre}/test\n".format(
+    assert out == "Keys with {pre}/ prefix:\n{pre}/foo\n{pre}/test\n".format(
         pre=PREFIX)
     assert err == ""
 

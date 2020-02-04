@@ -12,7 +12,7 @@ Usage:
   sdpcfg --help
 
 Options:
-  -q, --quiet          Cut back on unneccesary output
+  -q, --quiet          Cut back on unnecessary output
   --prefix <prefix>    Path prefix for high-level API
 
 Environment Variables:
@@ -35,7 +35,7 @@ import json
 import subprocess
 import docopt
 import yaml
-from ska_sdp_config import entity, config
+from ska_sdp_config import config, entity
 
 
 def cmd_get(txn, path, args):
@@ -58,13 +58,14 @@ def cmd_list(txn, path, args):
         else:
             print(" ".join(keys))
     else:
+        print("Keys with {} prefix:".format(path))
         if args['values']:
-            print("Keys with {} prefix:".format(path))
             for key in keys:
                 value = txn.raw.get(key)
                 print("{} = {}".format(key, value))
         else:
-            print("Keys with {} prefix: {}".format(path, ", ".join(keys)))
+            for key in keys:
+                print(key)
 
 
 def cmd_create(txn, path, value, _args):
@@ -162,7 +163,7 @@ def main(argv):
             print("Key path must not end with '/'!", file=sys.stderr)
             success = False
         if not re.match('^[a-zA-Z0-9_\\-/]*$', path):
-            print("Path contains non-permissable characters!", file=sys.stderr)
+            print("Path contains non-permissible characters!", file=sys.stderr)
             success = False
     workflow = args['<workflow>']
     if workflow is not None:
@@ -187,7 +188,7 @@ def main(argv):
         parameters = sys.stdin.read()
     if not success:
         print(__doc__, file=sys.stderr)
-        exit(1)
+        sys.exit(1)
 
     cmd(args, path, value, workflow, parameters)
 
@@ -195,9 +196,8 @@ def main(argv):
 def cmd(args, path, value, workflow, parameters):
     """Execute command."""
     # Get configuration client, start transaction
-    import ska_sdp_config
     prefix = ('' if args['--prefix'] is None else args['--prefix'])
-    cfg = ska_sdp_config.Config(global_prefix=prefix)
+    cfg = config.Config(global_prefix=prefix)
     try:
         for txn in cfg.txn():
             if args['ls'] or args['list']:

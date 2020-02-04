@@ -4,14 +4,18 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
+pytest = "*"
+pytest-cov = "*"
+pytest-pycodestyle = "*"
+pytest-pydocstyle = "*"
+pytest-pylint = "*"
+pytest-timeout = "*"
+twine = "*"
 
 [packages]
-etcd3-py = "*"
-pytest = "*"
-pytest-timeout = "*"
 docopt-ng = "*"
-twine = "*"
-kubernetes = "*"
+etcd3-py = "*"
+pyyaml = "*"
 
 [requires]
-python_version = "3.6"
+python_version = "3.7"

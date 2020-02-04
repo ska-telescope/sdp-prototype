@@ -10,9 +10,9 @@ from ska_sdp_config import config, entity, backend
 PREFIX = "/__test_pb"
 
 WORKFLOW = {
+    'type': 'realtime',
     'id': 'test_rt_workflow',
-    'version': '0.0.1',
-    'type': 'realtime'
+    'version': '0.0.1'
 }
 
 
@@ -39,9 +39,8 @@ def test_simple_pb():
         entity.ProcessingBlock('foo/bar', None, WORKFLOW)
 
     pb = entity.ProcessingBlock('foo-bar', None, WORKFLOW)
-    # pylint: disable=W0123,W0611
-    from ska_sdp_config.entity import ProcessingBlock
-    assert pb == eval(repr(pb))
+    # pylint: disable=W0123
+    assert pb == eval('entity.' + repr(pb))
 
 
 def test_create_pb(cfg):
@@ -53,7 +52,7 @@ def test_create_pb(cfg):
         pb1 = entity.ProcessingBlock(pb1_id, None, WORKFLOW)
         assert txn.get_processing_block(pb1_id) is None
         txn.create_processing_block(pb1)
-        with pytest.raises(backend.Collision):
+        with pytest.raises(backend.ConfigCollision):
             txn.create_processing_block(pb1)
         assert txn.get_processing_block(pb1_id).pb_id == pb1_id
 
@@ -75,6 +74,10 @@ def test_create_pb(cfg):
         pb1.scan_parameters['12345'] = {
             'test_scan': 'asd'
         }
+        pb1.dependencies.append({
+            'pbId': pb2_id,
+            'type': []
+        })
         txn.update_processing_block(pb1)
 
     # Check that update worked
@@ -83,6 +86,7 @@ def test_create_pb(cfg):
         assert pb1x.sbi_id is None
         assert pb1x.parameters == pb1.parameters
         assert pb1x.scan_parameters == pb1.scan_parameters
+        assert pb1x.dependencies == pb1.dependencies
 
 
 def test_take_pb(cfg):
@@ -181,7 +185,7 @@ def test_pb_state(cfg):
 
     # Try to create PB state again and check it raises a collision exception
     for txn in cfg.txn():
-        with pytest.raises(backend.Collision):
+        with pytest.raises(backend.ConfigCollision):
             txn.create_processing_block_state(pb_id, state1)
 
     # Update PB state to state2
