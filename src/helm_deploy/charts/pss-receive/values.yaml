@@ -1,0 +1,16 @@
+receiver:
+        completions: 1
+        image: nexus.engageska-portugal.pt/sdp-prototype/pss-receive:0.1.0
+        imagePullPolicy: Always
+        containerPort: 9021
+        protocol: UDP
+        ttl: 86400
+
+service:
+        port: 9021
+
+sender:
+        image: pulsarben/pss2sdp-send
+        completions: 1
+        imagePullPolicy: Always
+

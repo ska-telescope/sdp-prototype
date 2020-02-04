@@ -1,0 +1,12 @@
+apiVersion: v1
+appVersion: "1.0"
+description: Helm chart to deploy the SDP Prototype pss receiver execution engine
+name: pss-receive
+version: 0.1.0
+home: https://developer.skatelescope.org/projects/sdp-prototype/
+sources:
+- https://gitlab.com/ska-telescope/sdp-prototype
+icon: http://www.skatelescope.org/wp-content/uploads/2016/07/09545_NEW_LOGO_2014.png
+maintainers:
+- name: Benjamin Shaw
+  email: benjamin.shaw@manchester.ac.uk
