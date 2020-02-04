@@ -25,7 +25,7 @@ from tango.server import Device, DeviceMeta, attribute, command, \
     device_property, run
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
-from release import VERSION as SERVER_VERSION   # noqa
+from release import VERSION as SERVER_VERSION  # noqa
 
 try:
     import ska_sdp_config
@@ -77,7 +77,6 @@ class FeatureToggle(IntEnum):
     CONFIG_DB = 1  #: Enable / Disable the Config DB
     CBF_OUTPUT_LINK = 2  #: Enable / Disable use of of the CBF OUTPUT LINK
     AUTO_REGISTER = 3  #: Enable / Disable tango db auto-registration
-
 
 
 class SDPSubarray(SKASubarray):
@@ -969,10 +968,10 @@ def register(instance_name, *device_names):
 def main(args=None, **kwargs):
     """Run server."""
     # Initialise logging
-    #log_level = tango.LogLevel.LOG_INFO
-    #if len(sys.argv) > 2 and '-v' in sys.argv[2]:
-    #    log_level = tango.LogLevel.LOG_DEBUG
-    #tango_logging.init(device_name='SDPSubarray', level=log_level)
+    # log_level = tango.LogLevel.LOG_INFO
+    # if len(sys.argv) > 2 and '-v' in sys.argv[2]:
+    #     log_level = tango.LogLevel.LOG_DEBUG
+    # tango_logging.init(device_name='SDPSubarray', level=log_level)
 
     # Set default values for feature toggles.
     SDPSubarray.set_feature_toggle_default(FeatureToggle.CONFIG_DB, False)
