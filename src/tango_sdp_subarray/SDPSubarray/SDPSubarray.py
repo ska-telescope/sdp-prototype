@@ -21,7 +21,7 @@ from skabase.SKASubarray.SKASubarray import SKASubarray
 import tango
 from tango import AttrWriteType, AttributeProxy, ConnectionFailed, Database, \
     DbDevInfo, DevState
-from tango.server import Device, DeviceMeta, attribute, command, \
+from tango.server import attribute, command, \
     device_property, run
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
@@ -93,7 +93,7 @@ class SDPSubarray(SKASubarray):
     # pylint: disable=too-many-instance-attributes
     # pylint: disable=no-self-use
 
-    __metaclass__ = DeviceMeta
+    # __metaclass__ = DeviceMeta
 
     # -----------------
     # Device Properties
@@ -295,7 +295,7 @@ class SDPSubarray(SKASubarray):
     # --------
 
     @command(dtype_in=str, doc_in='Resource configuration JSON string')
-    def AssignResources(self, config=''):
+    def AssAssignResources(self, config=''):
         """Assign resources to the subarray.
 
         This is currently a noop for SDP!
