@@ -16,32 +16,26 @@ build:helm_deploy:
   variables:
     BUILD_PATH: src/helm_deploy
 
-## ============================================================================
-## Test Docker development images
-## ============================================================================
-
-# Placeholder for testing. Currently not doing anything.
-test:helm_deploy:
-  stage: test
-  extends: .pull_docker
-  variables:
-    BUILD_PATH: src/helm_deploy
-  script:
-    - echo "Placeholder for testing docker images"
+### ============================================================================
+### Test Docker development images
+### ============================================================================
+#
+## Placeholder for testing. Currently not doing anything.
+# test:helm_deploy:
+#  stage: test
+#  extends: .pull_docker
+#  variables:
+#    BUILD_PATH: src/helm_deploy
+#  script:
+#    - echo "Placeholder for testing docker images"
 
 ## ============================================================================
 ## Tag and push Docker latest images (master only)
 ## ============================================================================
 
-.helm_deploy_template:
-  stage: publish
-  extends: .push_docker
-  when: always
+publish:helm_deploy:
+  extends: .publish_template
   dependencies:
     - build:helm_deploy
   variables:
     BUILD_PATH: src/helm_deploy
-
-publish:helm_deploy:
-  extends: .helm_deploy_template
-  only: [master]

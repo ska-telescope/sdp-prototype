@@ -15,32 +15,26 @@ build:processing_controller:
   variables:
     BUILD_PATH: src/processing_controller
 
-## ============================================================================
-## Test Docker development images
-## ============================================================================
-
-# Placeholder for testing. Currently not doing anything.
-test:processing_controller:
-  stage: test
-  extends: .pull_docker
-  variables:
-    BUILD_PATH: src/processing_controller
-  script:
-    - echo "Placeholder for testing docker images"
+### ============================================================================
+### Test Docker development images
+### ============================================================================
+#
+## Placeholder for testing. Currently not doing anything.
+# test:processing_controller:
+#  stage: test
+#  extends: .pull_docker
+#  variables:
+#    BUILD_PATH: src/processing_controller
+#  script:
+#    - echo "Placeholder for testing docker images"
 
 ## ============================================================================
 ## Tag and push Docker latest images (master only)
 ## ============================================================================
 
-.processing_controller_template:
-  stage: publish
-  extends: .push_docker
-  when: always
+publish:processing_controller:
+  extends: .publish_template
   dependencies:
     - build:processing_controller
   variables:
     BUILD_PATH: src/processing_controller
-
-publish:processing_controller:
-  extends: .processing_controller_template
-  only: [master]
