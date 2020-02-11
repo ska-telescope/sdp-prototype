@@ -1,5 +1,6 @@
-SKA SDP Configuration Database
-==============================
+
+Configuration Database
+======================
 
 This is the frontend module for accessing SKA SDP configuration
 information. It provides ways for SDP controller and processing
@@ -56,10 +57,3 @@ sdpcfg list values /pb/
 ```
 
 To query all processing blocks.
-
-Documentation
--------------
-
-See [SKA developer
-portal](https://developer.skatelescope.org/projects/sdp-prototype/en/latest/config_db.html)
-for the API documentation.

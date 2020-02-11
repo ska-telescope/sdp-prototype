@@ -5,8 +5,11 @@ to this repository.
 ## Introduction
 
 This is a simple C code for a visibility receiver capable of receiving UDP-based
-SPEAD streams containing the item identifiers specified in the of the SDP-CSP 
-ICD.
+SPEAD (Streaming Protocol for Exchanging Astronomical Data) streams containing 
+the item identifiers specified in the of the SDP-CSP ICD.
+
+More information about SPEAD can be found here 
+https://casper.ssl.berkeley.edu/astrobaki/images/9/93/SPEADsignedRelease.pdf 
 
 ## Dependencies
 
@@ -25,8 +28,8 @@ ICD.
 
 ## Build Instructions
 
-To build the code on a local machine, ensure `make` and `CMake` are both install
-ed and give the following commands from the current directory:
+To build the code on a local machine, ensure `make` and `CMake` are both installed 
+and give the following commands from the current directory:
 
 ```bash
 mkdir build

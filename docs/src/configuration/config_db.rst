@@ -1,2 +1,1 @@
-Configuration Database
-======================
+.. mdinclude:: ../../../src/config_db/README.md

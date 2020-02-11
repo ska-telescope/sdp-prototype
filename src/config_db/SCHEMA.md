@@ -7,8 +7,9 @@ This is the schema of the configuration database, effectively the control plane 
 Design Principles
 -----------------
 
-- We utilise a key-value store with watches
-- Most objects are represented as JSON objects
+- We utilise a key-value store
+- Uses watch on a key or range of keys to monitor for any updates
+- Most objects are represented as JSON
 - Exceptions are state and ownership fields, which we keep separate
 - We will likely want to define schemas and validation eventually, but
   for the moment this will be by example
@@ -40,6 +41,11 @@ Contents:
     }
 }
 ```
+There are two types of processing - Real-time processing and batch (offline) processing:
+Real-time processing starts immediately, as it directly correspond to an observation 
+that is about to start. Batch (offline) processing will be inserted into a 
+scheduling queue managed by the SDP, where they will typically be executed according to 
+resource availability.
 
 Valid types are `realtime` and `batch`. The workflow tag identifies
 the workflow script version as well as the required underlying

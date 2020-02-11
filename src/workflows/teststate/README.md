@@ -5,7 +5,7 @@ Test State Workflow
 
 ### Introduction
 
-This workflow propagates Processing block states and adds it to the 
+This workflow propagates Processing block states and adds them to the 
 configuration database.
 
 It uses following functions to get create, get and update PB states in the 

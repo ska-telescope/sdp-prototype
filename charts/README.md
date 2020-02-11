@@ -2,106 +2,8 @@
 Running the SDP Prototype stand-alone
 =====================================
 
-Prerequisites
--------------
-
-### Kubernetes
-
-You will need Kubernetes installed. [Docker for
-Desktop](https://www.docker.com/products/docker-desktop) includes a
-workable one-node Kubernetes installation - just need to activate it
-in the settings. Alternatively, you can install
-[Minikube](https://minikube.sigs.k8s.io) or
-[microk8s](https://microk8s.io).
-
-#### Docker and Minikube
-
-Docker runs containers in a VM on Windows and macOS, and by default Minikube
-does this on all systems. The VM needs at least 3 GB of memory to run the
-SDP prototype. In Docker this can be found in the settings. For Minikube you
-need to specify the amount of memory on the command line when starting a new
-instance:
-
-```bash
-    $ minikube start --memory='4096m'
-```
- 
-#### Micro8ks
-
-Canonical supports **microk8s** for Ubuntu Linux distributions - and it 
-is also available for many other distributions (42 according to 
-[this](https://github.com/ubuntu/microk8s#accessing-kubernetes)). It
-gives a more-or-less 'one line' Kubernetes installation
-
-- To install type `sudo snap install microk8s --classic`
-    -   Make you to install 1.15 version. This can be done using
-        `snap refresh --classic --channel=1.15/stable microk8s`
-- `microk8s.start` will start the Kubernetes system
-- `microk8s.enable dns` is required for the SDP prototype
-- `microk8s.status` should show that things are active
-- microk8s will install `kubectl` as `microk8s.kubectl`. Unless you have
-  another Kubernetes installation in parallel you may wish to set up an
-  alias with `sudo snap alias microk8s.kubectl kubectl`
-
-If you have problems with pods not communicating, you may need to do
-`sudo iptables -P FORWARD ACCEPT` (`microk8s.inspect` should be able
-to diagnose this for you).
-
-
-### Helm
-
-Furthermore you will need to install the Helm utility. It is available
-from most typical package managers, see [Using
-Helm](https://helm.sh/docs/using_helm/). You can use either version 2
-or version 3 of Helm. Instructions are given below for both.
-
-It may be available in the 'snap' installation system (eg. on
-recent Ubuntu installations)
-
-If you are using Helm 2, you will typically need to initialise it
-(this will create the 'Tiller' controller):
-
-```bash
-    $ helm init
-```
-
-Helm 3 does not use Tiller, but if you are using it for the first time,
-you need to add the stable chart repository:
-
-```bash
-    $ helm repo add stable https://kubernetes-charts.storage.googleapis.com/
-```
-
 Deploying SDP
 -------------
-
-### Install the etcd operator
-
-We are not creating an etcd cluster ourselves, but instead leave it to
-an 'operator' that needs to be installed first. For Helm 2, simply
-execute:
-
-```bash
-    $ helm install stable/etcd-operator -n etcd
-```
-
-or for Helm 3:
-
-```bash
-    $ helm install etcd stable/etcd-operator
-```
-
-If you now execute:
-
-```bash
-    $ kubectl get pod --watch
-```
-
-You should eventually see an pod called
-`etcd-etcd-operator-etcd-operator-[...]` in 'Running' state (yes,
-Helm is exceedingly redundant with its names). If not wait a bit, if
-you try to go to the next step before this has completed there's a
-chance it will fail.
 
 ### Deploy the SDP components
 
@@ -150,6 +52,59 @@ are doing okay:
 
 Just to name a few. If it's looking like this, there's a good chance
 everything has been deployed correctly.
+
+Deploying SDP on Windows
+----------
+
+### Starting up
+
+```bash
+    > minikube start
+    > helm install etcd stable/etcd-operator
+    > kubectl get pod --watch
+```
+
+In directory deploy/charts:
+
+```bash
+    > helm install sdp-prototype sdp-prototype
+    > kubectl get pod --watch
+```
+
+#### Configuration Database
+
+Find and set the host and port:
+
+```bash
+    > minikube service --url sdp-prototype-etcd-nodeport
+    > set SDP_CONFIG_HOST=...
+    > set SDP_CONFIG_PORT=...
+```
+
+This doesn't produce a (directly) runnable file on Windows:
+
+```bash
+    > pip install -U ska-sdp-config
+```
+
+But can do:
+
+```bash
+    > cd src\config_db\ska_sdp_config
+```
+
+Add to cli.py:
+
+```bash
+    if __name__ == "__main__":
+        main(sys.argv[1:])
+```
+
+Then run
+
+```bash
+    > python cli.py ...
+```
 
 Testing it out
 --------------
