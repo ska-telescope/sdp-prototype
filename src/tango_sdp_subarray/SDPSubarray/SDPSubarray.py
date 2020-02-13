@@ -295,7 +295,7 @@ class SDPSubarray(SKAObsDevice):
     # --------
 
     @command(dtype_in=str, doc_in='Resource configuration JSON string')
-    def AssAssignResources(self, config=''):
+    def AssignResources(self, config=''):
         """Assign resources to the subarray.
 
         This is currently a noop for SDP!
