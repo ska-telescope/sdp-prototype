@@ -83,8 +83,8 @@ class SDPSubarray(SKAObsDevice):
     """SDP Subarray device class.
 
     .. note::
-        Should inherit from SKASubArray but is using SKAObsDevice for now - and thus
-        will use ska_logging
+        Should inherit from SKASubArray but is using SKAObsDevice for now
+        - and thus will use ska_logging
 
 
     """
@@ -116,21 +116,21 @@ class SDPSubarray(SKAObsDevice):
         doc='The version of the SDP Subarray device'
     )
 
-    # obsState = attribute(
-    #     label='Obs State',
-    #     dtype=ObsState,
-    #     access=AttrWriteType.READ_WRITE,
-    #     doc='The device obs state.',
-    #     polling_period=1000
-    # )
+    obsState = attribute(
+        label='Obs State',
+        dtype=ObsState,
+        access=AttrWriteType.READ_WRITE,
+        doc='The device obs state.',
+        polling_period=1000
+    )
 
-    # adminMode = attribute(
-    #     label='Admin mode',
-    #     dtype=AdminMode,
-    #     access=AttrWriteType.READ_WRITE,
-    #     doc='The device admin mode.',
-    #     polling_period=1000
-    # )
+    adminMode = attribute(
+        label='Admin mode',
+        dtype=AdminMode,
+        access=AttrWriteType.READ_WRITE,
+        doc='The device admin mode.',
+        polling_period=1000
+    )
 
     healthState = attribute(
         label='Health state',
@@ -222,21 +222,21 @@ class SDPSubarray(SKAObsDevice):
         """
         return SERVER_VERSION
 
-    # def read_obsState(self):
-    #     """Get the obsState attribute.
-    #
-    #     :returns: The current obsState attribute value.
-    #
-    #     """
-    #     return self._obs_state
+    def read_obsState(self):
+        """Get the obsState attribute.
 
-    # def read_adminMode(self):
-    #     """Get the adminMode attribute.
-    #
-    #     :returns: The current adminMode attribute value.
-    #
-    #     """
-    #     return self._admin_mode
+        :returns: The current obsState attribute value.
+
+        """
+        return self._obs_state
+
+    def read_adminMode(self):
+        """Get the adminMode attribute.
+
+        :returns: The current adminMode attribute value.
+
+        """
+        return self._admin_mode
 
     def read_healthState(self):
         """Get the healthState attribute.
@@ -282,13 +282,13 @@ class SDPSubarray(SKAObsDevice):
         """
         self._set_obs_state(obs_state)
 
-    # def write_adminMode(self, admin_mode):
-    #     """Set the adminMode attribute.
-    #
-    #     :param admin_mode: An admin mode enum value.
-    #
-    #     """
-    #     self._set_admin_mode(admin_mode)
+    def write_adminMode(self, admin_mode):
+        """Set the adminMode attribute.
+
+        :param admin_mode: An admin mode enum value.
+
+        """
+        self._set_admin_mode(admin_mode)
 
     # --------
     # Commands
