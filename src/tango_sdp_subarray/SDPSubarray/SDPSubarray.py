@@ -16,7 +16,7 @@ from enum import IntEnum, unique
 import jsonschema
 
 # Use LMC base classes and thus SKA logging
-from skabase.SKASubarray.SKASubarray import SKASubarray
+from skabase.SKASubarray.SKASubarray import SKAObsDevice
 
 import tango
 from tango import AttrWriteType, AttributeProxy, ConnectionFailed, Database, \
@@ -79,11 +79,11 @@ class FeatureToggle(IntEnum):
     AUTO_REGISTER = 3  #: Enable / Disable tango db auto-registration
 
 
-class SDPSubarray(SKASubarray):
+class SDPSubarray(SKAObsDevice):
     """SDP Subarray device class.
 
     .. note::
-        This now correctly inherits from SKASubarray and thus
+        Should inherit from SKASubArray but is using SKAObsDevice for now - and thus
         will use ska_logging
 
 
@@ -116,21 +116,21 @@ class SDPSubarray(SKASubarray):
         doc='The version of the SDP Subarray device'
     )
 
-    obsState = attribute(
-        label='Obs State',
-        dtype=ObsState,
-        access=AttrWriteType.READ_WRITE,
-        doc='The device obs state.',
-        polling_period=1000
-    )
+    # obsState = attribute(
+    #     label='Obs State',
+    #     dtype=ObsState,
+    #     access=AttrWriteType.READ_WRITE,
+    #     doc='The device obs state.',
+    #     polling_period=1000
+    # )
 
-    adminMode = attribute(
-        label='Admin mode',
-        dtype=AdminMode,
-        access=AttrWriteType.READ_WRITE,
-        doc='The device admin mode.',
-        polling_period=1000
-    )
+    # adminMode = attribute(
+    #     label='Admin mode',
+    #     dtype=AdminMode,
+    #     access=AttrWriteType.READ_WRITE,
+    #     doc='The device admin mode.',
+    #     polling_period=1000
+    # )
 
     healthState = attribute(
         label='Health state',
@@ -164,7 +164,7 @@ class SDPSubarray(SKASubarray):
 
     def init_device(self):
         """Initialise the device."""
-        SKASubarray.init_device(self)
+        SKAObsDevice.init_device(self)
         # Device.init_device(self)
 
         self.set_state(DevState.INIT)
@@ -222,21 +222,21 @@ class SDPSubarray(SKASubarray):
         """
         return SERVER_VERSION
 
-    def read_obsState(self):
-        """Get the obsState attribute.
+    # def read_obsState(self):
+    #     """Get the obsState attribute.
+    #
+    #     :returns: The current obsState attribute value.
+    #
+    #     """
+    #     return self._obs_state
 
-        :returns: The current obsState attribute value.
-
-        """
-        return self._obs_state
-
-    def read_adminMode(self):
-        """Get the adminMode attribute.
-
-        :returns: The current adminMode attribute value.
-
-        """
-        return self._admin_mode
+    # def read_adminMode(self):
+    #     """Get the adminMode attribute.
+    #
+    #     :returns: The current adminMode attribute value.
+    #
+    #     """
+    #     return self._admin_mode
 
     def read_healthState(self):
         """Get the healthState attribute.
@@ -282,13 +282,13 @@ class SDPSubarray(SKASubarray):
         """
         self._set_obs_state(obs_state)
 
-    def write_adminMode(self, admin_mode):
-        """Set the adminMode attribute.
-
-        :param admin_mode: An admin mode enum value.
-
-        """
-        self._set_admin_mode(admin_mode)
+    # def write_adminMode(self, admin_mode):
+    #     """Set the adminMode attribute.
+    #
+    #     :param admin_mode: An admin mode enum value.
+    #
+    #     """
+    #     self._set_admin_mode(admin_mode)
 
     # --------
     # Commands
