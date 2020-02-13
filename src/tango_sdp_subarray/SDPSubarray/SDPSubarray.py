@@ -288,6 +288,7 @@ class SDPSubarray(SKAObsDevice):
         :param admin_mode: An admin mode enum value.
 
         """
+        # pylint: disable=arguments-differ
         self._set_admin_mode(admin_mode)
 
     # --------
