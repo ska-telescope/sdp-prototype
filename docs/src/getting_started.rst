@@ -4,43 +4,44 @@ Getting Started
 I want to..
 -----------
 
-Understand the Design of the SDP Prototype
+Understand the design of the SDP prototype
 ++++++++++++++++++++++++++++++++++++++++++
 
-Documentations can be found at:
+Documentation can be found at:
 
     - :doc:`design/design`
     - :doc:`design/components`
     - :doc:`design/module`
 
 
-Setup SDP Prototype in local development environment
+Set up the SDP prototype in a local development environment
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+Instructions can be found at :doc:`running/setting_up_local_dev_env`.
+
+Run the SDP prototype stand-alone
++++++++++++++++++++++++++++++++++
+
+First you need to make sure the local development environment is set up.
+The details on how to run the prototype stand-alone can be found at
+:doc:`running/running_standalone`.
+
+Run the SDP Prototype in the integration environment
 ++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-Instructions can be found at  :doc:`running/setting_up_local_dev_env`.
-
-Run SDP Prototype standalone
-+++++++++++++++++++++++++++++
-
-First need to make sure the local development environment is setup.
-The details to run the prototype standalone can be found at :doc:`running/running_standalone`.
-
-Integrate SDP Prototype into the integration environment
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 Details can be found at :doc:`running/running_integration`.
 
-Know about the SDP Tango Devices
-++++++++++++++++++++++++++++++++
+Find out about the SDP Tango devices
+++++++++++++++++++++++++++++++++++++
 
-Details on the interface and Python API for the SDP Master Device
+Details on the interface and Python API for the SDP Master device
 can be found at :doc:`tango_devices/sdp_master`.
 
-Details on the interface and Python API for the SDP Subarray Device can be found at
+Details on the interface and Python API for the SDP Subarray device can be found at
 :doc:`tango_devices/sdp_subarray`.
 
-Know about the SDP Configuration Database
-+++++++++++++++++++++++++++++++++++++++++
+Know more about the SDP configuration database
+++++++++++++++++++++++++++++++++++++++++++++++
 
 An overview on how to access SKA SDP configuration information can be found
 at :doc:`configuration/config_db`.
@@ -49,18 +50,23 @@ Details on the configuration schema can be found at :doc:`configuration/config_s
 
 API details of the configuration database can be found here :doc:`configuration/config_api`.
 
-Understand the Design of the Services
+Understand the design of the services
 +++++++++++++++++++++++++++++++++++++
 
 The documentation on the processing controller service can be found at :doc:`services/processing_controller`.
 
-The documentation on this helm deployer service can be found at :doc:`services/helm_deployer`.
+The documentation on the Helm deployer service can be found at :doc:`services/helm_deployer`.
 
-Run Workflows
+Run workflows
 +++++++++++++
 
-Instructions on how to run visibility receive workflow can be found at :doc:`workflows/vis_receive`.
+Instructions on how to run the visibility receive workflow can be found at :doc:`workflows/vis_receive`.
 
-Details on how to run PSS receive can be found at :doc:`workflows/pss_receive`.
+Details on how to run the PSS receive can be found at :doc:`workflows/pss_receive`.
 
-Instructions on how to run test workflows can be found at :doc:`workflows/test_workflows`.
+Instructions on how to run the test workflows can be found at :doc:`workflows/test_workflows`.
+
+Develop a workflow
+++++++++++++++++++
+
+Instructions on how to develop and test a workflow can be found at :doc:`workflows/workflow_development`.

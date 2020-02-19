@@ -78,13 +78,21 @@ you need to add the stable chart repository:
 
 Install the etcd operator
 -------------------------
-The SDP Configuration database is implemented on top of `etcd`, a highly-available
-database. While this is also the database system used by kubernetes it is currently necessary to
+The SDP Configuration database is implemented on top of `etcd`, a strongly consistent, distributed
+key-value store that provides a reliable way to store data that needs to be accessed by a
+distributed system or cluster of machines.  etcd is the primary datastore of Kubernetes; storing and
+replicating all Kubernetes cluster state. As a critical component of a Kubernetes cluster having a
+reliable automated approach to its configuration and management is imperative.
+
+While this is also the database system used by kubernetes it is currently necessary to
 install etcd using the instructions below.
 
 We are not creating an etcd cluster ourselves, but instead leave it to
-an 'operator' that needs to be installed first. For Helm 2, simply
-execute:
+an 'operator' that needs to be installed first. The etcd operator enables users to configure and
+manage the complexities of etcd using simple declarative configuration that will create, configure,
+and manage etcd clusters.
+
+For Helm 2, simply execute:
 
 .. code-block::
 

@@ -129,8 +129,9 @@ second part of the `PORTS(S)` column:
     $ export SDP_CONFIG_PORT=32234
 ```
 
-For Minikube, you need to set both `SDP_CONFIG_HOST` and
-`SDP_CONFIG_PORT`, but you can easily query both using
+For Minikube, you need to set both `SDP_CONFIG_HOST` and `SDP_CONFIG_PORT`, commands to 
+run to set these variables are printed to the console when running helm install on the 
+sdp-prototype so they can simply be copied and pasted or you can easily query both using 
 `minikube service`:
 
 ```bash
