@@ -17,7 +17,7 @@ setuptools.setup(
     url='http://gitlab.com/ska-telescope/sdp-prototype/src/'
         'config_db',
     install_requires=[
-        'etcd3-py', 'docopt-ng'
+        'etcd3-py', 'docopt-ng', 'pyyaml'
     ],
     classifiers=[
         'Topic :: Database :: Front-Ends',

@@ -2,6 +2,8 @@
 # Note: Tests can be run locally with
 #   gitlab-runner exec <executor, eg. docker> <job name>
 #
+variables:
+  GIT_STRATEGY: clone
 
 stages:
   - build

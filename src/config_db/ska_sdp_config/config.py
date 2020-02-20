@@ -59,6 +59,7 @@ class Config:
         # Prefixes
         assert global_prefix == '' or global_prefix[0] == '/'
         self.pb_path = global_prefix+"/pb/"
+        self.sb_path = global_prefix+"/sb/"
         self.deploy_path = global_prefix+"/deploy/"
 
         # Lease associated with client
@@ -170,6 +171,7 @@ class Transaction:
         self._cfg = config
         self._txn = txn
         self._pb_path = config.pb_path
+        self._sb_path = config.sb_path
         self._deploy_path = config.deploy_path
 
     @property
@@ -399,3 +401,46 @@ class Transaction:
         deploy_path = self._deploy_path + dpl.deploy_id
         for key in self._txn.list_keys(deploy_path, recurse=5):
             self._txn.delete(key)
+
+    def list_scheduling_blocks(self, prefix=""):
+        """Query scheduling block IDs from the configuration.
+
+        :param prefix: if given, only search for scheduling block IDs
+           with the given prefix
+        :returns: scheduling block IDs, in lexicographical order
+        """
+        # List keys
+        sb_path = self._sb_path
+        keys = self._txn.list_keys(sb_path + prefix)
+
+        # Return list, stripping the prefix
+        assert all([key.startswith(sb_path) for key in keys])
+        return list([key[len(sb_path):] for key in keys])
+
+    def get_scheduling_block(self, sb_id: str) -> dict:
+        """
+        Get scheduling block.
+
+        :param sb_id: scheduling block ID
+        :returns: scheduling block state
+        """
+        state = self._get(self._sb_path + sb_id)
+        return state
+
+    def create_scheduling_block(self, sb_id: str, state: dict):
+        """
+        Create scheduling block.
+
+        :param sb_id: scheduling block ID
+        :param state: scheduling block state
+        """
+        self._create(self._sb_path + sb_id, state)
+
+    def update_scheduling_block(self, sb_id: str, state: dict):
+        """
+        Update scheduling block.
+
+        :param sb_id: scheduling block ID
+        :param state: scheduling block state
+        """
+        self._update(self._sb_path + sb_id, state)
