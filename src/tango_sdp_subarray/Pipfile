@@ -16,7 +16,7 @@ ska-sdp-config = ">=0.0.5"
 #ska-sdp-logging = ">=0.0.5"
 # ---- Inherited from base class, not installed again here as depends on git ------
 #lmcbaseclasses = {git = "https://github.com/ska-telescope/lmc-base-classes.git", editable = true}
-lmcbaseclasses = "==0.3.1+f02bdee0"
+lmcbaseclasses = "==0.4.0+5bdedbed"
 
 [dev-packages]
 

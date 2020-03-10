@@ -16,7 +16,8 @@ from enum import IntEnum, unique
 import jsonschema
 
 # Use LMC base classes and thus SKA logging
-from skabase.SKASubarray.SKASubarray import SKAObsDevice
+from skabase.SKASubarray.SKASubarray import SKASubarray
+from skabase.control_model import AdminMode, ObsState, HealthState
 
 import tango
 from tango import AttrWriteType, AttributeProxy, ConnectionFailed, Database, \
@@ -34,40 +35,39 @@ except ImportError:
 
 LOG = logging.getLogger()
 
-
 # https://pytango.readthedocs.io/en/stable/data_types.html#devenum-pythonic-usage
-@unique
-class AdminMode(IntEnum):
-    """AdminMode enum."""
-
-    OFFLINE = 0
-    ONLINE = 1
-    MAINTENANCE = 2
-    NOT_FITTED = 3
-    RESERVED = 4
-
-
-@unique
-class HealthState(IntEnum):
-    """HealthState enum."""
-
-    OK = 0
-    DEGRADED = 1
-    FAILED = 2
-    UNKNOWN = 3
+# @unique
+# class AdminMode(IntEnum):
+#     """AdminMode enum."""
+#
+#     OFFLINE = 0
+#     ONLINE = 1
+#     MAINTENANCE = 2
+#     NOT_FITTED = 3
+#     RESERVED = 4
 
 
-@unique
-class ObsState(IntEnum):
-    """ObsState enum."""
+# @unique
+# class HealthState(IntEnum):
+#     """HealthState enum."""
+#
+#     OK = 0
+#     DEGRADED = 1
+#     FAILED = 2
+#     UNKNOWN = 3
 
-    IDLE = 0
-    CONFIGURING = 1
-    READY = 2
-    SCANNING = 3
-    PAUSED = 4
-    ABORTED = 5
-    FAULT = 6
+
+# @unique
+# class ObsState(IntEnum):
+#     """ObsState enum."""
+#
+#     IDLE = 0
+#     CONFIGURING = 1
+#     READY = 2
+#     SCANNING = 3
+#     PAUSED = 4
+#     ABORTED = 5
+#     FAULT = 6
 
 
 @unique
@@ -79,7 +79,7 @@ class FeatureToggle(IntEnum):
     AUTO_REGISTER = 3  #: Enable / Disable tango db auto-registration
 
 
-class SDPSubarray(SKAObsDevice):
+class SDPSubarray(SKASubarray):
     """SDP Subarray device class.
 
     .. note::
@@ -124,13 +124,13 @@ class SDPSubarray(SKAObsDevice):
         polling_period=1000
     )
 
-    adminMode = attribute(
-        label='Admin mode',
-        dtype=AdminMode,
-        access=AttrWriteType.READ_WRITE,
-        doc='The device admin mode.',
-        polling_period=1000
-    )
+    # adminMode = attribute(
+    #     label='Admin mode',
+    #     dtype=AdminMode,
+    #     access=AttrWriteType.READ_WRITE,
+    #     doc='The device admin mode.',
+    #     polling_period=1000
+    # )
 
     healthState = attribute(
         label='Health state',
@@ -164,8 +164,9 @@ class SDPSubarray(SKAObsDevice):
 
     def init_device(self):
         """Initialise the device."""
-        SKAObsDevice.init_device(self)
+
         # Device.init_device(self)
+        super().init_device()
 
         self.set_state(DevState.INIT)
         LOG.info('Initialising SDP Subarray: %s', self.get_name())
@@ -312,13 +313,15 @@ class SDPSubarray(SKAObsDevice):
         # pylint: disable=unused-argument
         LOG.info('-------------------------------------------------------')
         LOG.info('AssignResources (%s)', self.get_name())
+        LOG.info('AssignResources - currently a NOOP for SDP')
         LOG.info('-------------------------------------------------------')
         self._require_obs_state([ObsState.IDLE])
         self._require_admin_mode([AdminMode.ONLINE, AdminMode.MAINTENANCE,
                                   AdminMode.RESERVED])
-        LOG.warning('Assigning resources is currently a no-op!')
-        LOG.debug('Setting device state to ON')
-        self.set_state(DevState.ON)
+        LOG.warning('Assigning resources - calling SKASubarray')
+        super().AssignResources(config)
+    #   LOG.debug('Setting device state to ON') = Should be handled by SKASubarray
+    #   self.set_state(DevState.ON)
         LOG.info('-------------------------------------------------------')
         LOG.info('AssignResources Successful!')
         LOG.info('-------------------------------------------------------')
@@ -344,8 +347,10 @@ class SDPSubarray(SKAObsDevice):
         self._require_admin_mode([AdminMode.OFFLINE, AdminMode.NOT_FITTED],
                                  invert=True)
         LOG.warning('Release resources is currently a no-op!')
-        LOG.debug('Setting device state to OFF')
-        self.set_state(DevState.OFF)
+        LOG.warning('Release resources - calling SKASubarray')
+        super().AssignResources(config)
+        #LOG.debug('Setting device state to OFF')
+        #self.set_state(DevState.OFF) # Should be handled by SKASubarray
         LOG.info('-------------------------------------------------------')
         LOG.info('ReleaseResources Successful!')
         LOG.info('-------------------------------------------------------')
