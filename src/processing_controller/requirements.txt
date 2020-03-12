@@ -1,3 +1,3 @@
 jsonschema
-ska-sdp-config>=0.0.5
+ska-sdp-config>=0.0.7
 ska-sdp-logging>=0.0.5

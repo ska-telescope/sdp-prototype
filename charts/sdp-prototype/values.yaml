@@ -34,7 +34,7 @@ dsconfig:
 # Processing controller
 processing_controller:
   image: nexus.engageska-portugal.pt/sdp-prototype/processing-controller
-  version: 0.4.0
+  version: 0.5.0
   replicas: 1
   resources: {}
   imagePullPolicy: IfNotPresent
@@ -50,7 +50,7 @@ tangods:
     imagePullPolicy: IfNotPresent
   subarray:
     image: nexus.engageska-portugal.pt/sdp-prototype/tangods_sdp_subarray
-    version: 0.7.0
+    version: 0.7.1
     imagePullPolicy: IfNotPresent
 
 # Parameters for sub-chart

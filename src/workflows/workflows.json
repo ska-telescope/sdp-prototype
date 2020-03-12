@@ -9,6 +9,8 @@
     {"name": "nexus", "path": "nexus.engageska-portugal.pt/sdp-prototype"}
   ],
   "workflows": [
+    {"type": "batch", "id":  "test_batch", "repository": "nexus", "image": "workflow-test-batch", "versions": ["0.1.0"]},
+    {"type": "realtime", "id":  "test_realtime", "repository": "nexus", "image": "workflow-test-realtime", "versions": ["0.1.0"]},
     {"type": "realtime", "id":  "test_receive_addresses", "repository": "nexus", "image": "workflow-test-receive-addresses", "versions": ["0.1.0"]},
     {"type": "realtime", "id":  "testdask", "repository": "nexus", "image": "workflow-testdask", "versions": ["0.1.0"]},
     {"type": "realtime", "id":  "testdeploy", "repository": "nexus", "image": "workflow-testdeploy", "versions": ["0.1.0"]},

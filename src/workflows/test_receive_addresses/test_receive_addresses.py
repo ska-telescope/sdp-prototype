@@ -110,59 +110,86 @@ def main(argv):
     # Claim processing block
     for txn in config.txn():
         txn.take_processing_block(pb_id, config.client_lease)
-
+        pb = txn.get_processing_block(pb_id)
     LOG.info('Claimed processing block %s', pb_id)
 
-    # Loop over scans.
-    #
-    # At the moment there is no way for the workflow to find out if the
-    # real-time processing block has ended (i.e. the EndSB command has been
-    # called on the subarray device), so there is no exit from this loop.
+    sb_id = pb.get('sbi_id')
 
-    LOG.debug("Starting loop over scans")
+    # Set status to WAITING
+    for txn in config.txn():
+        state = txn.get_processing_block_state(pb_id)
+        state['status'] = 'WAITING'
+        txn.update_processing_block_state(pb_id, state)
+
+    # Wait for resources to be available
+    for txn in config.txn():
+        state = txn.get_processing_block_state(pb_id)
+        ra = state.get('resources_available')
+        if ra is None or not ra:
+            txn.loop(wait=True)
+
+    # Set status to RUNNING
+    for txn in config.txn():
+        state = txn.get_processing_block_state(pb_id)
+        state['status'] = 'RUNNING'
+        txn.update_processing_block_state(pb_id, state)
+
+    # Loop over scans.
+
+    LOG.info("Starting loop over scans")
     scan_id = None
 
     while True:
 
-        # Wait for change to scan ID in processing block
-        LOG.debug("Waiting for new scan ID")
+        # If SB has finished, exit loop over scans.
         for txn in config.txn():
-            pb = txn.get_processing_block(pb_id)
-            if 'scanId' in pb.scan_parameters:
-                pb_scan_id = pb.scan_parameters['scanId']
-            else:
-                pb_scan_id = None
-            if pb_scan_id == scan_id:
+            sb = txn.get_scheduling_block(sb_id)
+        if sb.get('status') == 'FINISHED':
+            LOG.info('Exiting loop over scans')
+            break
+
+        # Wait for change to scan ID in scheduling block
+        LOG.info("Waiting for new scan ID")
+        for txn in config.txn():
+            sb = txn.get_scheduling_block(sb_id)
+            sb_scan_id = sb.get('scan_id')
+            if sb_scan_id == scan_id:
                 txn.loop(wait=True)
-        scan_id = pb_scan_id
-        LOG.debug("Scan ID set to %d", scan_id)
+        scan_id = sb_scan_id
+        LOG.info("Scan ID set to %d", scan_id)
 
         # Wait for channel link map with matching scan ID in processing
         # block state
-        LOG.debug("Waiting for new channel map")
+        LOG.info("Waiting for new channel map")
         for txn in config.txn():
-            pb_state = txn.get_processing_block_state(pb_id)
-            if pb_state is None or 'channel_link_map' not in pb_state:
-                LOG.debug('Channel map not found in PB state')
+            state = txn.get_processing_block_state(pb_id)
+            if state is None or 'channel_link_map' not in state:
+                LOG.info('Channel map not found in PB state')
                 txn.loop(wait=True)
                 continue
-            LOG.debug('Channel map found in PB state')
-            channel_link_map = pb_state['channel_link_map']
+            LOG.info('Channel map found in PB state')
+            channel_link_map = state['channel_link_map']
             clm_scan_id = channel_link_map['scanID']
-            LOG.debug('Channel map scan ID: %d', clm_scan_id)
+            LOG.info('Channel map scan ID: %d', clm_scan_id)
             if clm_scan_id != scan_id:
                 txn.loop(wait=True)
 
         # Generate receive addresses
-        LOG.debug("Generating receive addresses")
+        LOG.info("Generating receive addresses")
         receive_addresses = generate_receive_addresses(channel_link_map)
 
         # Update receive addresses in processing block state
-        LOG.debug("Updating receive addresses in processing block state")
+        LOG.info("Updating receive addresses in processing block state")
         for txn in config.txn():
-            pb_state = txn.get_processing_block_state(pb_id)
-            pb_state['receive_addresses'] = receive_addresses
-            txn.update_processing_block_state(pb_id, pb_state)
+            state = txn.get_processing_block_state(pb_id)
+            state['receive_addresses'] = receive_addresses
+            txn.update_processing_block_state(pb_id, state)
+
+    # Set status to FINISHED
+    for txn in config.txn():
+        state = txn.get_processing_block_state(pb_id)
+        state['status'] = 'FINISHED'
+        txn.update_processing_block_state(pb_id, state)
 
     # Close connection to config DB.
     config.close()
