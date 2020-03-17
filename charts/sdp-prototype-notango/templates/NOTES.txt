@@ -20,10 +20,3 @@ and from there you can use the ska_sdp_config package, e.g.:
     config = ska_sdp_config.Config()
 
 {{- end }}
-{{- if index .Values "tango-base" "itango" "enabled" }}
-
-To connect to the Tango interface via iTango, use:
-
-    $ kubectl exec -it itango-tango-base-{{ .Release.Name }} /venv/bin/itango3
-
-{{ end }}

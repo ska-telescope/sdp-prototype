@@ -2,7 +2,7 @@ FROM python:3.7
 
 RUN apt-get update && apt-get install -y curl git && rm -rf /var/lib/apt/lists/*
 
-ARG HELMVER=3.0.2
+ARG HELMVER=3.1.1
 RUN \
   curl https://get.helm.sh/helm-v${HELMVER}-linux-amd64.tar.gz | tar xz  && \
   mv linux-amd64/helm /usr/local/bin/helm

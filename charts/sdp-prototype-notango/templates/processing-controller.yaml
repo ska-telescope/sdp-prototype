@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "sdp-prototype.fullname" . }}-processing-controller
+  namespace: {{ .Release.Namespace }}
+  labels:
+{{ include "sdp-prototype.labels" . | indent 4 }}
+spec:
+  replicas: {{ .Values.processing_controller.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "sdp-prototype.name" . }}-processing-controller
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "sdp-prototype.name" . }}-processing-controller
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      initContainers:
+      {{ include "sdp-prototype.wait-for-etcd" . | nindent 6 }}
+      containers:
+      - image: {{ .Values.processing_controller.image }}:{{ .Values.processing_controller.version }}
+        imagePullPolicy: {{ .Values.processing_controller.imagePullPolicy }}
+        name: {{ .Chart.Name }}
+        env:
+        - name: SDP_CONFIG_HOST
+          value: {{ include "sdp-prototype.etcd-host" . }}
+        - name: SDP_HELM_NAMESPACE
+          value: {{ quote .Values.helm_deploy.namespace }}
+        - name: SDP_WORKFLOWS_URL
+          value: {{ quote .Values.processing_controller.workflows.url }}
+        - name: SDP_WORKFLOWS_REFRESH
+          value: {{ quote .Values.processing_controller.workflows.refresh }}
+        {{- with .Values.processing_controller.resources }}
+        resources:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
