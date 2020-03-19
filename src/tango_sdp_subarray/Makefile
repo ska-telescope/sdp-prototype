@@ -76,9 +76,16 @@ start:  ## Start the device from the current Docker image
 stop:  ## Stop the device
 	@docker stop $(NAME)
 
-.PHONY: test lint ci_test test_shell
+.PHONY: test_image test lint ci_test test_shell
 
-test:  ## Run tests for the device
+test_image:
+	$(eval override DEV_IMAGE=pytango_sdp_test)
+    ifeq ($(shell docker images -q pytango_sdp_test 2>/dev/null),)
+	@docker build -t pytango_sdp_test tests
+    endif
+
+
+test: test_image  ## Run tests for the device
 	docker run --rm -t \
 		-v $(PWD):/app \
 		$(DEV_IMAGE) \
