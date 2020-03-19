@@ -399,7 +399,7 @@ class SDPSubarray(SKASubarray):
         receive_addresses = self._get_receive_addresses(scan_id)
         self._set_receive_addresses(receive_addresses)
 
-        # Set the obsState to READY
+        # Set the obsState to
         self._set_obs_state(ObsState.READY)
 
         LOG.info('-------------------------------------------------------')
