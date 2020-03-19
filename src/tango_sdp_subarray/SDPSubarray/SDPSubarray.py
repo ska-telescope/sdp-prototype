@@ -164,7 +164,6 @@ class SDPSubarray(SKASubarray):
 
     def init_device(self):
         """Initialise the device."""
-
         # Device.init_device(self)
         super().init_device()
 
@@ -311,6 +310,8 @@ class SDPSubarray(SKASubarray):
 
         """
         # pylint: disable=unused-argument
+        # pylint: disable=arguments-differ
+        # FIXME Look more at these issues
         LOG.info('-------------------------------------------------------')
         LOG.info('AssignResources (%s)', self.get_name())
         LOG.info('AssignResources - currently a NOOP for SDP')
@@ -320,7 +321,7 @@ class SDPSubarray(SKASubarray):
                                   AdminMode.RESERVED])
         LOG.warning('Assigning resources - calling SKASubarray')
         super().AssignResources(config)
-    #   LOG.debug('Setting device state to ON') = Should be handled by SKASubarray
+    #   LOG.debug('Setting device state to ON') In SKASubarray?
     #   self.set_state(DevState.ON)
         LOG.info('-------------------------------------------------------')
         LOG.info('AssignResources Successful!')
@@ -339,7 +340,9 @@ class SDPSubarray(SKASubarray):
         :param config: Resource specification (currently ignored).
 
         """
+        # pylint: disable=arguments-differ
         # pylint: disable=unused-argument
+        # FIXME: Look more at these issues
         LOG.info('-------------------------------------------------------')
         LOG.info('ReleaseResources (%s)', self.get_name())
         LOG.info('-------------------------------------------------------')
@@ -349,8 +352,9 @@ class SDPSubarray(SKASubarray):
         LOG.warning('Release resources is currently a no-op!')
         LOG.warning('Release resources - calling SKASubarray')
         super().AssignResources(config)
-        #LOG.debug('Setting device state to OFF')
-        #self.set_state(DevState.OFF) # Should be handled by SKASubarray
+        LOG.debug('Setting device state to OFF')
+        self.set_state(DevState.OFF)
+        # FIXME: Should this be handled by SKASubarray?
         LOG.info('-------------------------------------------------------')
         LOG.info('ReleaseResources Successful!')
         LOG.info('-------------------------------------------------------')
@@ -453,6 +457,8 @@ class SDPSubarray(SKASubarray):
     @command
     def Scan(self):
         """Command issued to start scan."""
+        # pylint: disable=arguments-differ
+        # FIXME Look more at these issues
         LOG.info('-------------------------------------------------------')
         LOG.info('Scan (%s)', self.get_name())
         LOG.info('-------------------------------------------------------')
@@ -705,6 +711,7 @@ class SDPSubarray(SKASubarray):
         except jsonschema.ValidationError as error:
             LOG.error('Unable to validate JSON configuration: %s',
                       error.message)
+            LOG.info('%s', config)
             config = None
 
         if config is not None:
