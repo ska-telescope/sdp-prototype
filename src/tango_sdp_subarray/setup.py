@@ -29,7 +29,8 @@ setup(
     ],
     install_requires=[
         'pytango',
-        'jsonschema'
+        'jsonschema',
+        'lmcbaseclasses'
     ],
     entry_points={
         'console_scripts': ['SDPSubarray = SDPSubarray:main']

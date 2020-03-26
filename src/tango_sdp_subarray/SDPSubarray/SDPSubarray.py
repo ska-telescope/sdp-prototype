@@ -35,40 +35,6 @@ except ImportError:
 
 LOG = logging.getLogger()
 
-# https://pytango.readthedocs.io/en/stable/data_types.html#devenum-pythonic-usage
-# @unique
-# class AdminMode(IntEnum):
-#     """AdminMode enum."""
-#
-#     OFFLINE = 0
-#     ONLINE = 1
-#     MAINTENANCE = 2
-#     NOT_FITTED = 3
-#     RESERVED = 4
-
-
-# @unique
-# class HealthState(IntEnum):
-#     """HealthState enum."""
-#
-#     OK = 0
-#     DEGRADED = 1
-#     FAILED = 2
-#     UNKNOWN = 3
-
-
-# @unique
-# class ObsState(IntEnum):
-#     """ObsState enum."""
-#
-#     IDLE = 0
-#     CONFIGURING = 1
-#     READY = 2
-#     SCANNING = 3
-#     PAUSED = 4
-#     ABORTED = 5
-#     FAULT = 6
-
 
 @unique
 class FeatureToggle(IntEnum):
@@ -83,9 +49,7 @@ class SDPSubarray(SKASubarray):
     """SDP Subarray device class.
 
     .. note::
-        Should inherit from SKASubArray but is using SKAObsDevice for now
-        - and thus will use ska_logging
-
+        Inherits from SKASubArray - and thus will use ska_logging
 
     """
 
@@ -120,17 +84,8 @@ class SDPSubarray(SKASubarray):
         label='Obs State',
         dtype=ObsState,
         access=AttrWriteType.READ_WRITE,
-        doc='The device obs state.',
-        polling_period=1000
+        doc='The device obs state.'
     )
-
-    # adminMode = attribute(
-    #     label='Admin mode',
-    #     dtype=AdminMode,
-    #     access=AttrWriteType.READ_WRITE,
-    #     doc='The device admin mode.',
-    #     polling_period=1000
-    # )
 
     healthState = attribute(
         label='Health state',
@@ -167,6 +122,8 @@ class SDPSubarray(SKASubarray):
         # Device.init_device(self)
         super().init_device()
 
+        # self.write_loggingLevel(LoggingLevel.DEBUG)
+        # LOG.setLevel(logging.DEBUG)
         self.set_state(DevState.INIT)
         LOG.info('Initialising SDP Subarray: %s', self.get_name())
 
@@ -570,7 +527,7 @@ class SDPSubarray(SKASubarray):
     def _set_obs_state(self, value, verbose=True):
         """Set the obsState and issue a change event."""
         if verbose:
-            LOG.debug('Setting obsState to: %s', repr(ObsState(value)))
+            LOG.info('Setting obsState to: %s', repr(ObsState(value)))
         self._obs_state = value
         self.push_change_event('obsState', self._obs_state)
 
