@@ -37,7 +37,8 @@ test:ska-sdp-subarray:
     TOGGLE_CBF_OUTPUT_LINK: 1
   before_script:
     - pip install --upgrade ska-sdp-logging ska-sdp-config
-    - pip install --extra-index-url https://nexus.engageska-portugal.pt/repository/pypi/simple lmcbaseclasses==0.4.1+14ff4f1b
+    - pip install future
+    - pip install --index-url https://nexus.engageska-portugal.pt/repository/pypi/simple lmcbaseclasses==0.4.1+14ff4f1b
   script:
     - cd src/tango_sdp_subarray
     - mkdir -p build/reports
