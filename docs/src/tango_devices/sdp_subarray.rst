@@ -23,7 +23,7 @@ present partial implementation is as follows:
 Behaviour
 ---------
 
-The interaction between TMC and the SDP Subarray device is shown below. The
+The interaction between TMC (Telescope Manager Control) and the SDP Subarray device is shown below. The
 SDP Subarray device receives commands from the TMC SDP Subarray leaf node,
 and the consequent changes to the state of SDP are reported in the device
 attributes.

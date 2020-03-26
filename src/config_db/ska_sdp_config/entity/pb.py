@@ -12,15 +12,15 @@ class ProcessingBlock:
 
     Collects configuration information relating to a processing job
     for the SDP. This might be either real-time (supporting a running
-    observation) or offline (to process data after the fact).
+    observation) or batch (to process data after the fact).
 
     Actual execution of processing steps will be performed by a
-    (parametrised) workflow interpreting processing block information.
+    (parameterised) workflow interpreting processing block information.
     """
 
     # pylint: disable=W0102
     def __init__(self, pb_id, sbi_id, workflow,
-                 parameters={}, scan_parameters={},
+                 parameters={}, scan_parameters={}, dependencies=[],
                  **kwargs):
         """
         Create a new processing block structure.
@@ -30,6 +30,8 @@ class ProcessingBlock:
         :param workflow: Workflow description (dictionary for now)
         :param parameters: Workflow parameters
         :param scan_parameters: Scan parameters (not for batch processing)
+        :param dependencies: Dependencies on other processing blocks (not for
+        real-time processing)
         :param dct: Dictionary to load from (will ignore other parameters)
         :returns: ProcessingBlock object
         """
@@ -39,15 +41,16 @@ class ProcessingBlock:
             'sbi_id': None if sbi_id is None else str(sbi_id),
             'workflow': dict(copy.deepcopy(workflow)),
             'parameters': dict(copy.deepcopy(parameters)),
-            'scan_parameters': dict(copy.deepcopy(scan_parameters))
+            'scan_parameters': dict(copy.deepcopy(scan_parameters)),
+            'dependencies': list(copy.deepcopy(dependencies))
         }
         self._dict.update(kwargs)
 
         # Validate
-        if set(self.workflow) != set(['id', 'type', 'version']):
-            raise ValueError("Workflow must specify name, type and version!")
+        if set(self.workflow) != {'type', 'id', 'version'}:
+            raise ValueError("Workflow must specify type, ID and version!")
         if not _PB_ID_RE.match(self.pb_id):
-            raise ValueError("Processing block ID {} not permissable!".format(
+            raise ValueError("Processing block ID {} not permissible!".format(
                 self.pb_id))
 
     def to_dict(self):
@@ -78,6 +81,11 @@ class ProcessingBlock:
     def scan_parameters(self):
         """Workflow-specific scan parameters."""
         return self._dict['scan_parameters']
+
+    @property
+    def dependencies(self):
+        """Dependencies on other processing blocks."""
+        return self._dict['dependencies']
 
     def __repr__(self):
         """Build string representation."""

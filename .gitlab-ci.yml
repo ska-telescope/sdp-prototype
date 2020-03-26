@@ -2,6 +2,8 @@
 # Note: Tests can be run locally with
 #   gitlab-runner exec <executor, eg. docker> <job name>
 #
+variables:
+  GIT_STRATEGY: clone
 
 stages:
   - build
@@ -10,77 +12,11 @@ stages:
   - publish
   - pages
 
-## ============================================================================
-## Common settings for building docker images
-## ============================================================================
-
-.build_docker:
-  dependencies: []
-  variables:
-    DOCKER_REGISTRY_HOST: $DOCKER_REGISTRY_HOST
-    DOCKER_REGISTRY_USER: $CI_PROJECT_NAME
-    GIT_VERSION: ${CI_COMMIT_SHA:0:8}
-  tags:
-    - docker
-    - engageska
-  image: docker:stable
-  services:
-    - docker:dind
-  before_script:
-    - apk add make git
-    - docker login -u $DOCKER_REGISTRY_USERNAME -p $DOCKER_REGISTRY_PASSWORD $DOCKER_REGISTRY_HOST
-  script:
-    - cd $BUILD_PATH
-    - make DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME pull
-    - make DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME build
-    - make DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push
-  retry: 2
-
-.pull_docker:
-  dependencies: []
-  variables:
-    DOCKER_REGISTRY_HOST: $DOCKER_REGISTRY_HOST
-    DOCKER_REGISTRY_USER: $CI_PROJECT_NAME
-    GIT_VERSION: ${CI_COMMIT_SHA:0:8}
-  tags:
-    - docker
-    - engageska
-  image: docker:stable
-  services:
-    - docker:dind
-  before_script:
-    - apk add make git
-    - docker login -u $DOCKER_REGISTRY_USERNAME -p $DOCKER_REGISTRY_PASSWORD $DOCKER_REGISTRY_HOST
-  script:
-    - cd $BUILD_PATH
-    - make DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME pull_default
-  retry: 2
-
-.push_docker:
-  dependencies: []
-  variables:
-    DOCKER_REGISTRY_HOST: $DOCKER_REGISTRY_HOST
-    DOCKER_REGISTRY_USER: $CI_PROJECT_NAME
-    GIT_VERSION: ${CI_COMMIT_SHA:0:8}
-  tags:
-    - docker
-    - engageska
-  image: docker:stable
-  services:
-    - docker:dind
-  before_script:
-    - apk add make git
-    - docker login -u $DOCKER_REGISTRY_USERNAME -p $DOCKER_REGISTRY_PASSWORD $DOCKER_REGISTRY_HOST
-  script:
-    - cd $BUILD_PATH
-    - make DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME pull_default
-    - make DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push_version
-  retry: 2
-
 # ============================================================================
 # Local Include Gitlab-CI Files
 # ============================================================================
 include:
+  - local: /scripts/.gitlab-ci-common.yml
   - local: /src/tango_sdp_master/.gitlab-ci.yml
   - local: /src/tango_sdp_subarray/.gitlab-ci.yml
   - local: /src/config_db/.gitlab-ci.yml
@@ -137,7 +73,6 @@ build_docs:
 pages:
   stage: pages
   tags: [docker]
-#  only: [master]
   image: python:latest
 #  dependencies: [coverage_report]
   script:

@@ -1,6 +1,11 @@
-# SDP Prototype
+
+Getting Started
+===============
+
+Introduction
+------------
 
 Prototype of minimal SDP components required for configuration and execution of
-a simple receive workflow. 
+workflows. 
 
 This work is part of the SKA Evolutionary prototype.

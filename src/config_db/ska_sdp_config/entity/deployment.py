@@ -1,17 +1,13 @@
 """Deployment configuration entities."""
 
-
 import re
 import copy
-
 
 # Permit identifiers up to 96 bytes in length
 _DEPLOY_ID_RE = re.compile("^[A-Za-z0-9\\-]{1,96}$")
 
 # Supported deployment types
 DEPLOYMENT_TYPES = {
-    'process-direct',  # Directly spawn local processes
-    'kubernetes-direct',  # Workflow directly changes Kubernetes configuration
     'helm'  # Use helm controller process
 }
 
@@ -43,9 +39,9 @@ class Deployment:
 
         # Validate
         if type not in DEPLOYMENT_TYPES:
-            raise ValueError("Unkown deployment type {}!".format(type))
+            raise ValueError("Unknown deployment type {}!".format(type))
         if not _DEPLOY_ID_RE.match(self.deploy_id):
-            raise ValueError("Deployment ID {} not permissable!".format(
+            raise ValueError("Deployment ID {} not permissible!".format(
                 self.deploy_id))
 
     def to_dict(self):

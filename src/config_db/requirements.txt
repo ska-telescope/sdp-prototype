@@ -1,6 +1,5 @@
 etcd3-py
+docopt-ng
+pyyaml
 pytest
 pytest-timeout
-docopt-ng
-kubernetes
-python-dotenv

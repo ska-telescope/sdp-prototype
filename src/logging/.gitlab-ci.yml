@@ -4,30 +4,6 @@
 # Build python packages
 # ============================================================================
 
-.build_python:
-  stage: build
-  dependencies: []
-  image: nexus.engageska-portugal.pt/sdp-prototype/pytango_ska_dev:latest
-  tags:
-    - docker
-    - engageska
-  artifacts:
-    paths:
-      - ./$BUILD_PATH/dist/
-
-.build_python_dev:
-  extends: .build_python
-  dependencies: []
-  script:
-    - cd $BUILD_PATH
-    - python setup.py egg_info -b+dev.$CI_COMMIT_SHORT_SHA sdist bdist_wheel
-
-.build_python_release:
-  extends: .build_python
-  script:
-    - cd $BUILD_PATH
-    - python setup.py sdist bdist_wheel
-
 build:ska-sdp-logging_dev: # Executed on a commit
   extends: .build_python_dev
   variables:
@@ -37,16 +13,10 @@ build:ska-sdp-logging:
   extends: .build_python_release
   variables:
     BUILD_PATH: src/logging
-  only: [master]
 
 # ============================================================================
 # Testing built python package
 # ============================================================================
-
-.tango_tests:
-  stage: test
-  tags: [docker]
-  image: nexus.engageska-portugal.pt/sdp-prototype/pytango_ska_dev:latest
 
 test:ska-sdp-logging:
   extends: .tango_tests
@@ -67,33 +37,6 @@ test:ska-sdp-logging:
 ## ============================================================================
 ## Publish python packages
 ## ============================================================================
-
-.publish_python:
-  stage: publish
-  image: nexus.engageska-portugal.pt/sdp-prototype/pytango_ska_dev:latest
-  variables:
-    TWINE_USERNAME: $TWINE_USERNAME
-    TWINE_PASSWORD: $TWINE_PASSWORD
-  tags:
-    - docker
-    - engageska
-  before_script:
-    - pip install twine
-
-.publish_python_dev:
-  extends: .publish_python
-  except: [master]
-  script:
-    - cd $BUILD_PATH
-    - twine upload --repository-url $PYPI_REPOSITORY_URL dist/* || true
-
-.publish_python_release:
-  extends: .publish_python
-  only: [master]
-  script:
-    - cd $BUILD_PATH
-    - twine upload --repository-url $PYPI_REPOSITORY_URL dist/* || true
-    - twine upload --skip-existing -u $PYPI_USER -p $PYPI_PASS dist/* || true
 
 publish:ska-sdp-logging-dev:
   extends: .publish_python_dev

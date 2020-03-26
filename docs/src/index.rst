@@ -14,11 +14,14 @@ system capable of configuring and executing workflows.
   :caption: SDP Prototype Design
 
   design/design
+  design/components
+  design/module
 
 .. toctree::
   :maxdepth: 1
   :caption: Running the SDP Prototype
 
+  running/setting_up_local_dev_env
   running/running_standalone
   running/running_integration
 

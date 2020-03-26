@@ -44,7 +44,7 @@ def test_create(etcd3):
     key = PREFIX + "/test_create"
 
     etcd3.create(key, "foo")
-    with pytest.raises(backend.Collision):
+    with pytest.raises(backend.ConfigCollision):
         etcd3.create(key, "foo")
 
     # Check value
@@ -60,7 +60,7 @@ def test_create(etcd3):
 
     # Check that we cannot update the original key if we provide the
     # wrong revision
-    with pytest.raises(backend.Vanished):
+    with pytest.raises(backend.ConfigVanished):
         etcd3.update(key, 'baz', must_be_rev=ver)
     v2b, ver2b = etcd3.get(key)
     assert v2b == 'bar'
@@ -73,7 +73,7 @@ def test_create(etcd3):
 
     # Delete key
     etcd3.delete(key)
-    with pytest.raises(backend.Vanished):
+    with pytest.raises(backend.ConfigVanished):
         etcd3.delete(key)
 
 
@@ -141,11 +141,11 @@ def test_lease(etcd3):
     key = PREFIX + "/test_lease"
     with etcd3.lease(ttl=5) as lease:
         etcd3.create(key, "blub", lease=lease)
-        with pytest.raises(backend.Collision):
+        with pytest.raises(backend.ConfigCollision):
             etcd3.create(key, "blub", lease=lease)
         assert lease.alive()
     # Key should have been removed by lease expiring
-    with pytest.raises(backend.Vanished):
+    with pytest.raises(backend.ConfigVanished):
         etcd3.delete(key)
 
 
@@ -175,7 +175,7 @@ def test_delete(etcd3):
         assert etcd3.get(key + "x/x")[0] == "keep!"
 
         # This should fail now
-        with pytest.raises(backend.Vanished):
+        with pytest.raises(backend.ConfigVanished):
             etcd3.delete(key, recursive=True, must_exist=True,
                          prefix=del_PREFIX)
         for n, child in enumerate(childs):
@@ -303,24 +303,24 @@ def test_transaction_delete(etcd3):
 
     etcd3.create(key, "1")
     for txn in etcd3.txn():
-        with pytest.raises(backend.Collision):
+        with pytest.raises(backend.ConfigCollision):
             txn.create(key, "2")
         txn.delete(key)
-        with pytest.raises(backend.Vanished):
+        with pytest.raises(backend.ConfigVanished):
             txn.update(key, "3")
-        with pytest.raises(backend.Vanished):
+        with pytest.raises(backend.ConfigVanished):
             txn.delete(key)
         txn.create(key, "4")
     assert etcd3.get(key)[0] == "4"
 
     etcd3.delete(key)
     for txn in etcd3.txn():
-        with pytest.raises(backend.Vanished):
+        with pytest.raises(backend.ConfigVanished):
             txn.update(key, "3")
-        with pytest.raises(backend.Vanished):
+        with pytest.raises(backend.ConfigVanished):
             txn.delete(key)
         txn.create(key, "4")
-        with pytest.raises(backend.Collision):
+        with pytest.raises(backend.ConfigCollision):
             txn.create(key, "2")
         txn.update(key, "3")
         txn.delete(key)
@@ -334,7 +334,7 @@ def test_transaction_lease(etcd3):
     with etcd3.lease(ttl=5) as lease:
         for txn in etcd3.txn():
             txn.create(key, "blub", lease=lease)
-            with pytest.raises(backend.Collision):
+            with pytest.raises(backend.ConfigCollision):
                 txn.create(key, "blub", lease=lease)
         for txn in etcd3.txn():
             assert txn.get(key) == "blub"
@@ -407,7 +407,7 @@ def test_transaction_conc(etcd3):
             txn.create(key4, "2")
             etcd3.create(key4, "1")
         if i == 1:
-            with pytest.raises(backend.Collision):
+            with pytest.raises(backend.ConfigCollision):
                 txn.create(key4, "2")
     assert i == 1
     assert counter['i'] == 0  # No commit

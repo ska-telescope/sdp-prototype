@@ -37,7 +37,7 @@ def _untag_depth(path):
     return path[slash_ix:]
 
 
-class Etcd3():
+class Etcd3:
     """
     Highly consistent database backend store.
 
@@ -173,7 +173,7 @@ class Etcd3():
         :param path: Path to create
         :param value: Value to set
         :param lease: Lease to associate
-        :raises: Collision
+        :raises: ConfigCollision
         """
         # Prepare parameters
         if path and path[-1] == '/':
@@ -187,7 +187,7 @@ class Etcd3():
         txn.compare(txn.key(tagged_path).version == 0)
         txn.success(txn.put(tagged_path, value, lease_id))
         if not txn.commit().succeeded:
-            raise Collision(
+            raise ConfigCollision(
                 path, "Cannot create {}, as it already exists!".format(path))
 
     def update(self, path, value, must_be_rev=None):
@@ -198,7 +198,7 @@ class Etcd3():
         :param value: Value to set
         :param must_be_rev: Fail if found value does not match given
             revision (atomic update)
-        :raises: Vanished
+        :raises: ConfigVanished
         """
         # Validate parameters
         if path and path[-1] == '/':
@@ -214,7 +214,7 @@ class Etcd3():
             txn.compare(txn.key(tagged_path).mod == must_be_rev.mod_revision)
         txn.success(txn.put(tagged_path, value))
         if not txn.commit().succeeded:
-            raise Vanished(
+            raise ConfigVanished(
                 path, "Cannot update {}, as it does not exist!".format(path))
 
     def delete(self, path,
@@ -248,7 +248,7 @@ class Etcd3():
 
         # Execute
         if not txn.commit().succeeded:
-            raise Vanished(
+            raise ConfigVanished(
                 path, "Cannot delete {}, as it does not exist!".format(path))
 
     def close(self):
@@ -265,7 +265,7 @@ class Etcd3():
         return False
 
 
-class Collision(RuntimeError):
+class ConfigCollision(RuntimeError):
     """Exception generated if key to create already exists."""
 
     def __init__(self, path, message):
@@ -274,7 +274,7 @@ class Collision(RuntimeError):
         super().__init__(message)
 
 
-class Vanished(RuntimeError):
+class ConfigVanished(RuntimeError):
     """Exception generated if key to update that does not exist."""
 
     def __init__(self, path, message):
@@ -283,7 +283,7 @@ class Vanished(RuntimeError):
         super().__init__(message)
 
 
-class Etcd3Revision():
+class Etcd3Revision:
     """Identifies the revision of the database.
 
     This has two parts:
@@ -307,7 +307,7 @@ class Etcd3Revision():
         return "Etcd3Revision({},{})".format(self.revision, self.mod_revision)
 
 
-class Etcd3Watcher():
+class Etcd3Watcher:
     """Wrapper for etc3 watch requests.
 
     Entering the watcher using a `with` block yields a queue of `(key,
@@ -355,7 +355,7 @@ class Etcd3Watcher():
 
 
 # pylint: disable=R0902
-class Etcd3Transaction():
+class Etcd3Transaction:
     """A series of queries and updates to be executed atomically.
 
     Note that this uses an optimistic STM-style implementation, which
@@ -512,7 +512,7 @@ class Etcd3Transaction():
         :param path: Path to create
         :param value: Value to set
         :param lease: Lease to associate
-        :raises: Collision
+        :raises: ConfigCollision
         """
         self._ensure_uncommitted()
 
@@ -520,7 +520,7 @@ class Etcd3Transaction():
         # and put it into the query log
         result = self.get(path)
         if result is not None:
-            raise Collision(
+            raise ConfigCollision(
                 path, "Cannot create {}, as it already exists!".format(path))
 
         # Add update request
@@ -532,14 +532,14 @@ class Etcd3Transaction():
 
         :param path: Path to update
         :param value: Value to set
-        :raises: Vanished
+        :raises: ConfigVanished
         """
         self._ensure_uncommitted()
 
         # As with "update"
         result = self.get(path)
         if result is None:
-            raise Vanished(
+            raise ConfigVanished(
                 path, "Cannot update {}, as it does not exist!".format(path))
 
         # Add update request
@@ -556,7 +556,7 @@ class Etcd3Transaction():
             # As with "update"
             result = self.get(path)
             if result is None:
-                raise Vanished(
+                raise ConfigVanished(
                     path, "Cannot delete {}, it does not exist!".format(path))
 
         # Add delete request
