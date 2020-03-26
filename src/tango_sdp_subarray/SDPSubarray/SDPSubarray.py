@@ -16,8 +16,8 @@ from enum import IntEnum, unique
 import jsonschema
 
 # Use LMC base classes and thus SKA logging
-from skabase.SKASubarray.SKASubarray import SKASubarray
-from skabase.control_model import AdminMode, ObsState, HealthState
+from ska.base import SKASubarray
+from ska.base.control_model import AdminMode, ObsState, HealthState
 
 import tango
 from tango import AttrWriteType, AttributeProxy, ConnectionFailed, Database, \

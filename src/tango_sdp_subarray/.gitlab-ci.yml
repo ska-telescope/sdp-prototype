@@ -38,7 +38,7 @@ test:ska-sdp-subarray:
   before_script:
     - pip install --upgrade ska-sdp-logging ska-sdp-config
     - pip install future
-    - pip install --index-url https://nexus.engageska-portugal.pt/repository/pypi/simple lmcbaseclasses==0.4.1+14ff4f1b
+    - pip install --index-url https://nexus.engageska-portugal.pt/repository/pypi/simple lmcbaseclasses==0.5.1
   script:
     - cd src/tango_sdp_subarray
     - mkdir -p build/reports
