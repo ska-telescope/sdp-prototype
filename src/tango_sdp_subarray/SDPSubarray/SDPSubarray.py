@@ -135,10 +135,7 @@ class SDPSubarray(SKASubarray):
 
         # Initialise instance variables
         self._sbi_id = None
-        self._pb_realtime = []
-        self._pb_batch = []
         self._cbf_outlink_address = None
-        self._pb_receive_addresses = None
 
         if ska_sdp_config is not None \
                 and self.is_feature_active(FeatureToggle.CONFIG_DB):
@@ -756,7 +753,7 @@ class SDPSubarray(SKASubarray):
             workflow = pbc.get('workflow')
             wf_type = workflow.get('type')
             if wf_type == 'realtime':
-                self._pb_realtime.append(pb_id)
+                sb['pb_realtime'].append(pb_id)
             elif wf_type == 'batch':
                 sb['pb_batch'].append(pb_id)
             else:
