@@ -36,7 +36,7 @@ test:ska-sdp-subarray:
     TOGGLE_CONFIG_DB: 0
     TOGGLE_CBF_OUTPUT_LINK: 1
   before_script:
-    - pip install --upgrade ska-sdp-logging ska-sdp-config
+    - python3 -m pip install --upgrade ska-sdp-logging ska-sdp-config
   script:
     - cd src/tango_sdp_subarray
     - mkdir -p build/reports

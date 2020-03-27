@@ -13,7 +13,6 @@ import signal
 import logging
 import json
 from enum import IntEnum, unique
-import jsonschema
 
 from ska_sdp_logging import tango_logging
 
@@ -22,6 +21,8 @@ from tango import AttrWriteType, AttributeProxy, ConnectionFailed, Database, \
     DbDevInfo, DevState
 from tango.server import Device, DeviceMeta, attribute, command, \
     device_property, run
+
+import jsonschema
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 from release import VERSION as SERVER_VERSION   # noqa
