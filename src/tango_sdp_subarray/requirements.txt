@@ -1,3 +1,5 @@
+pytango
+pylint2junit
 jsonschema
 ska-sdp-config>=0.0.7
 ska-sdp-logging>=0.0.5

@@ -222,10 +222,12 @@ class SDPSubarray(SKASubarray):
         """
         pb_state_list = []
 
-        if self._config_db_client is not None:
-            for pb_id in self._pb_realtime:
-                for txn in self._config_db_client.txn():
-                    pb_state = txn.get_processing_block_state(pb_id).copy()
+        if self._config_db_client is not None and self._sbi_id is not None:
+            for txn in self._config_db_client.txn():
+                sb = txn.get_scheduling_block(self._sbi_id)
+                pb_realtime = sb.get('pb_realtime')
+                for pb_id in pb_realtime:
+                    pb_state = txn.get_processing_block_state(pb_id)
                     pb_state['id'] = pb_id
                     pb_state_list.append(pb_state)
 
@@ -348,7 +350,7 @@ class SDPSubarray(SKASubarray):
             self._raise_command_error('Configuration validation failed')
             return
 
-        # Create the processing blocks in the config DB
+        # Create the scheduling block and processing blocks in the config DB
         self._create_processing_blocks(config)
 
         # Set the receive addresses for the first scan
@@ -356,7 +358,10 @@ class SDPSubarray(SKASubarray):
         receive_addresses = self._get_receive_addresses(scan_id)
         self._set_receive_addresses(receive_addresses)
 
-        # Set the obsState to
+        # Set SB status to READY
+        self._update_sb_status('READY')
+
+        # Set the obsState to READY
         self._set_obs_state(ObsState.READY)
 
         LOG.info('-------------------------------------------------------')
@@ -423,7 +428,8 @@ class SDPSubarray(SKASubarray):
         # Check obsState is READY
         self._require_obs_state([ObsState.READY])
 
-        # self.set_state(DevState.ON)
+        # Set SB status to SCANNING
+        self._update_sb_status('SCANNING')
 
         # Set obsState to SCANNING
         self._set_obs_state(ObsState.SCANNING)
@@ -445,6 +451,9 @@ class SDPSubarray(SKASubarray):
         # Clear receiveAddresses
         self._set_receive_addresses(None)
 
+        # Set SB status to READY
+        self._update_sb_status('READY')
+
         # Set obsState to READY
         self._set_obs_state(ObsState.READY)
 
@@ -461,6 +470,9 @@ class SDPSubarray(SKASubarray):
 
         # Check obsState is READY
         self._require_obs_state([ObsState.READY])
+
+        # Set SB status to FINISHED
+        self._update_sb_status('FINISHED')
 
         # End the real-time processing associated with this subarray
         self._end_realtime_processing()
@@ -527,7 +539,7 @@ class SDPSubarray(SKASubarray):
     def _set_obs_state(self, value, verbose=True):
         """Set the obsState and issue a change event."""
         if verbose:
-            LOG.info('Setting obsState to: %s', repr(ObsState(value)))
+            LOG.debug('Setting obsState to: %s', repr(ObsState(value)))
         self._obs_state = value
         self.push_change_event('obsState', self._obs_state)
 
@@ -668,7 +680,6 @@ class SDPSubarray(SKASubarray):
         except jsonschema.ValidationError as error:
             LOG.error('Unable to validate JSON configuration: %s',
                       error.message)
-            LOG.info('%s', config)
             config = None
 
         if config is not None:
@@ -677,26 +688,68 @@ class SDPSubarray(SKASubarray):
         return config
 
     def _create_processing_blocks(self, config):
-        """Create processing blocks in the configuration database.
+        """Create the SB and PBs in the config DB.
 
         :param config: dict containing configuration data
 
         """
         # pylint: disable=too-many-branches
+        # pylint: disable=too-many-locals
+        # pylint: disable=too-many-statements
+        # Log IDs found in configuration
         sbi_id = config.get('sbiId')
         scan_id = config.get('scanId')
-        LOG.info('Scheduling block instance: %s', sbi_id)
-        LOG.info('Scan: %s', scan_id)
+        pb_ids = [pb.get('id') for pb in config.get('processingBlocks')]
+        LOG.info('Scheduling block instance %s', sbi_id)
+        LOG.info('Processing blocks %s', pb_ids)
+        LOG.info('Scan %s', scan_id)
+
+        # Get lists of existing scheduling blocks and processing blocks
+        if self._config_db_client is not None:
+            for txn in self._config_db_client.txn():
+                existing_sb_ids = txn.list_scheduling_blocks()
+                existing_pb_ids = txn.list_processing_blocks()
+        else:
+            existing_sb_ids = []
+            existing_pb_ids = []
+
+        # Check for duplicate IDs
+        error = False
+        if sbi_id in existing_sb_ids:
+            error = True
+            LOG.error('Scheduling block instance %s already exists', sbi_id)
+        pb_dup = [pb_id for pb_id in pb_ids if pb_id in existing_pb_ids]
+        if pb_dup != []:
+            error = True
+            for pb_id in pb_dup:
+                LOG.error('Processing block %s already exists', pb_id)
+        if error:
+            self._set_obs_state(ObsState.READY)
+            self._raise_command_error(
+                'Duplicate scheduling block instance ID or processing block'
+                ' ID in configuration'
+            )
+            return
+
         self._sbi_id = sbi_id
+
+        # Scheduling block.
+
+        sb = {
+            'scan_id': scan_id,
+            'pb_realtime': [],
+            'pb_batch': [],
+            'pb_receive_addresses': None
+        }
 
         # Loop over the processing block configurations.
 
+        processing_blocks = []
         cbf_outlink_address = None
-        pb_receive_addresses = None
 
         for pbc in config.get('processingBlocks'):
             pb_id = pbc.get('id')
-            LOG.info('Creating processing block %s', pb_id)
+            LOG.info('Parsing processing block %s', pb_id)
 
             # Get type of workflow and add the processing block ID to the
             # appropriate list.
@@ -705,7 +758,7 @@ class SDPSubarray(SKASubarray):
             if wf_type == 'realtime':
                 self._pb_realtime.append(pb_id)
             elif wf_type == 'batch':
-                self._pb_batch.append(pb_id)
+                sb['pb_batch'].append(pb_id)
             else:
                 LOG.error('Unknown workflow type: %s', wf_type)
 
@@ -714,22 +767,17 @@ class SDPSubarray(SKASubarray):
                     LOG.error('cspCbfOutlinkAddress attribute must not '
                               'appear in batch processing block '
                               'configuration')
-                elif pb_receive_addresses is not None:
+                elif sb['pb_receive_addresses'] is not None:
                     LOG.error('cspCbfOutlinkAddress attribute must not '
                               'appear in more than one real-time processing '
                               'block configuration')
                 else:
                     cbf_outlink_address = pbc.get('cspCbfOutlinkAddress')
-                    pb_receive_addresses = pb_id
+                    sb['pb_receive_addresses'] = pb_id
 
             if 'scanParameters' in pbc:
                 if wf_type == 'realtime':
                     scan_parameters = pbc.get('scanParameters')
-                    if scan_parameters is not None:
-                        scan_parameters = scan_parameters.copy()
-                        scan_parameters['scanId'] = scan_id
-                    else:
-                        scan_parameters = {}
                 elif wf_type == 'batch':
                     LOG.error('scanParameters attribute must not appear '
                               'in batch processing block configuration')
@@ -737,56 +785,77 @@ class SDPSubarray(SKASubarray):
             else:
                 scan_parameters = {}
 
-            if 'dependencies' in pbc and wf_type == 'realtime':
-                LOG.error('dependencies attribute must not appear in '
-                          'real-time processing block configuration')
+            if 'dependencies' in pbc:
+                if wf_type == 'realtime':
+                    LOG.error('dependencies attribute must not appear in '
+                              'real-time processing block configuration')
+                    dependencies = []
+                if wf_type == 'batch':
+                    dependencies = pbc.get('dependencies')
+            else:
+                dependencies = []
 
-            # Create processing block with empty state
-            if self._config_db_client is not None:
-                pb = ska_sdp_config.ProcessingBlock(
+            # Add processing block to list
+            processing_blocks.append(
+                ska_sdp_config.ProcessingBlock(
                     pb_id=pb_id,
                     sbi_id=sbi_id,
                     workflow=workflow,
                     parameters=pbc.get('parameters'),
-                    scan_parameters=scan_parameters
+                    scan_parameters=scan_parameters,
+                    dependencies=dependencies
                 )
-                for txn in self._config_db_client.txn():
+            )
+
+        # Create scheduling block and processing blocks in the config DB.
+        # This is done in a single transaction.
+        if self._config_db_client is not None:
+            for txn in self._config_db_client.txn():
+                txn.create_scheduling_block(sbi_id, sb)
+                for pb in processing_blocks:
+                    pb_id = pb.pb_id
                     txn.create_processing_block(pb)
                     txn.create_processing_block_state(pb_id, {})
 
         if self.is_feature_active(FeatureToggle.CBF_OUTPUT_LINK) \
                 and self._config_db_client is not None:
             self._cbf_outlink_address = cbf_outlink_address
-            self._pb_receive_addresses = pb_receive_addresses
 
     def _update_scan_parameters(self, config):
-        """Update scan parameters in real-time processing blocks.
+        """Update scan parameters in the SB and real-time PBs.
 
         :param config: dict containing configuration data
 
         """
         scan_id = config.get('scanId')
         LOG.info('Scan: %s', scan_id)
-        for pbc in config.get('processingBlocks'):
-            pb_id = pbc.get('id')
-            if pb_id not in self._pb_realtime:
-                LOG.error('Processing block %s is not a real-time PB '
-                          'associated with this subarray', pb_id)
-                continue
-            LOG.info('Updating scan parameters in processing block %s', pb_id)
-            scan_parameters = pbc.get('scanParameters').copy()
-            scan_parameters['scanId'] = scan_id
-            if self._config_db_client is not None:
-                for txn in self._config_db_client.txn():
+
+        if self._config_db_client is not None:
+            for txn in self._config_db_client.txn():
+
+                sb = txn.get_scheduling_block(self._sbi_id)
+                pb_realtime = sb.get('pb_realtime')
+
+                for pbc in config.get('processingBlocks'):
+                    pb_id = pbc.get('id')
+                    if pb_id not in pb_realtime:
+                        LOG.error('Processing block %s is not a real-time PB '
+                                  'associated with this subarray', pb_id)
+                        continue
+                    LOG.info('Updating scan parameters in processing block '
+                             '%s', pb_id)
                     pb_old = txn.get_processing_block(pb_id)
                     pb_new = ska_sdp_config.ProcessingBlock(
                         pb_id=pb_old.pb_id,
                         sbi_id=pb_old.sbi_id,
                         workflow=pb_old.workflow,
                         parameters=pb_old.parameters,
-                        scan_parameters=scan_parameters
+                        scan_parameters=pbc.get('scanParameters')
                     )
                     txn.update_processing_block(pb_new)
+
+                sb['scan_id'] = scan_id
+                txn.update_scheduling_block(self._sbi_id, sb)
 
     def _get_receive_addresses(self, scan_id):
         """Get the receive addresses for the next scan.
@@ -804,7 +873,10 @@ class SDPSubarray(SKASubarray):
                 or self._config_db_client is None:
             return None
 
-        pb_id = self._pb_receive_addresses
+        # Get ID of PB that is generating the receive addresses
+        for txn in self._config_db_client.txn():
+            sb = txn.get_scheduling_block(self._sbi_id)
+        pb_id = sb.get('pb_receive_addresses')
 
         # Get channel link map with the same scan ID from CSP device
         channel_link_map = self._get_channel_link_map(scan_id)
@@ -874,16 +946,21 @@ class SDPSubarray(SKASubarray):
     def _end_realtime_processing(self):
         """End real-time processing associated with this subarray.
 
-        Presently this only resets the internal state of the subarray. The
-        processing blocks are not updated in any way. Eventually it will
-        need to tell the real-time processing blocks to stop.
-
+        This resets the internal state of the subarray.
         """
         self._sbi_id = None
-        self._pb_realtime = []
-        self._pb_batch = []
         self._cbf_outlink_address = None
-        self._pb_receive_addresses = None
+
+    def _update_sb_status(self, status):
+        """Update scheduling block status field.
+
+        :param status: status
+        """
+        if self._config_db_client is not None:
+            for txn in self._config_db_client.txn():
+                sb = txn.get_scheduling_block(self._sbi_id)
+                sb['status'] = status
+                txn.update_scheduling_block(self._sbi_id, sb)
 
 
 def delete_device_server(instance_name='*'):

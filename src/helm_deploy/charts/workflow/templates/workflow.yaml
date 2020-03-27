@@ -1,16 +1,12 @@
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: batch/v1
+kind: Job
 metadata:
   name: {{ include "workflow.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels:
 {{ include "workflow.labels" . | indent 4 }}
 spec:
-  replicas: {{ .Values.workflow.replicas }}
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: {{ include "workflow.name" . }}
-      app.kubernetes.io/instance: {{ .Release.Name }}
+  completions: 1
   template:
     metadata:
       labels:
@@ -34,3 +30,5 @@ spec:
         {{- end }}
         args:
           - {{ .Values.pb_id }}
+      restartPolicy: Never
+  backoffLimit: 4
