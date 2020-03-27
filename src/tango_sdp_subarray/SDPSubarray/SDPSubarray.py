@@ -122,8 +122,7 @@ class SDPSubarray(SKASubarray):
         # Device.init_device(self)
         super().init_device()
 
-        # self.write_loggingLevel(LoggingLevel.DEBUG)
-        # LOG.setLevel(logging.DEBUG)
+        # self.write_loggingLevel(LoggingLevel.DEBUG
         self.set_state(DevState.INIT)
         LOG.info('Initialising SDP Subarray: %s', self.get_name())
 
