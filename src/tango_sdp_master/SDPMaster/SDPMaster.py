@@ -4,6 +4,7 @@
 # pylint: disable=import-error
 # pylint: disable=no-name-in-module
 # pylint: disable=wrong-import-position
+# pylint: disable=consider-using-sys-exit
 
 import os
 import sys

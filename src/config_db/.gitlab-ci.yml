@@ -6,11 +6,15 @@
 
 build:ska-sdp-config_dev: # Executed on a commit
   extends: .build_python_dev
+  before_script:
+    - python3 -m pip install etcd3-py
   variables:
     BUILD_PATH: src/config_db
 
 build:ska-sdp-config:
   extends: .build_python_release
+  before_script:
+    - python3 -m pip install etcd3-py
   variables:
     BUILD_PATH: src/config_db
 
@@ -33,8 +37,10 @@ test:ska-sdp-config:
         - "--initial-cluster=default=http://0.0.0.0:2380"
   variables:
     SDP_TEST_HOST: etcd
+  before_script:
+    - python3 -m pip install pytest-pycodestyle pytest-pydocstyle
   script:
-    - pipenv install -r src/config_db/requirements.txt
+    - python3 -m pip install -r src/config_db/requirements.txt
     - ./scripts/run_test.sh src/config_db
     - mv .coverage $CI_JOB_NAME.coverage
   artifacts:

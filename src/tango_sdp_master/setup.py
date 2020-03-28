@@ -37,7 +37,7 @@ setup(
     tests_require=[
         'pytest',
         'pytest-pylint',
-        'pytest-codestyle',
+        'pytest-pycodestyle',
         'pytest-pydocstyle',
         'pytest_bdd',
         'pyassert'

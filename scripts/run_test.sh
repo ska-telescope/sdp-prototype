@@ -37,8 +37,8 @@ else
     full_test_options="
     --pylint
     --pylint-rcfile=./scripts/.pylintrc
-    --codestyle
-    --docstyle
+    --pycodestyle
+    --pydocstyle
     --cov-config=./scripts/setup.cfg
     --cov-report=term
     --no-cov-on-fail
