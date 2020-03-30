@@ -36,6 +36,8 @@ test:ska-sdp-subarray:
     TOGGLE_CONFIG_DB: 0
     TOGGLE_CBF_OUTPUT_LINK: 1
   before_script:
+    - apt-get -y update
+    - apt-get install -y python3-setuptools
     - pip install --upgrade ska-sdp-logging ska-sdp-config
     - pip install future
     - pip install --index-url https://nexus.engageska-portugal.pt/repository/pypi/simple lmcbaseclasses==0.5.1
