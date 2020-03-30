@@ -42,7 +42,7 @@ test:ska-sdp-subarray:
   script:
     - cd src/tango_sdp_subarray
     - mkdir -p build/reports
-    - python setup.py test
+    - python3 setup.py test
 #    - mv .coverage ../../$CI_JOB_NAME.coverage
     - mv htmlcov build/sdp_subarray_htmlcov
     - mv coverage.xml build/code-coverage.xml
