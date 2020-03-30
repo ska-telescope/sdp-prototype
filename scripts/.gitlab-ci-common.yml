@@ -74,7 +74,10 @@
 .build_python:
   stage: build
   dependencies: []
-  image: nexus.engageska-portugal.pt/sdp-prototype/pytango_ska_dev:latest
+  image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
+  script:
+      - apt-get -y update
+      - apt-get install -y python3-setuptools
   tags:
     - docker
     - engageska
@@ -87,14 +90,14 @@
   dependencies: []
   script:
     - cd $BUILD_PATH
-    - python setup.py egg_info -b+dev.$CI_COMMIT_SHORT_SHA sdist bdist_wheel
+    - python3 setup.py egg_info -b+dev.$CI_COMMIT_SHORT_SHA sdist bdist_wheel
   except: [master]
 
 .build_python_release:
   extends: .build_python
   script:
     - cd $BUILD_PATH
-    - python setup.py sdist bdist_wheel
+    - python3 setup.py sdist bdist_wheel
   only: [master]
 
 ## ============================================================================
@@ -103,7 +106,7 @@
 
 .publish_python:
   stage: publish
-  image: nexus.engageska-portugal.pt/sdp-prototype/pytango_ska_dev:latest
+  image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
   variables:
     TWINE_USERNAME: $TWINE_USERNAME
     TWINE_PASSWORD: $TWINE_PASSWORD
@@ -111,7 +114,7 @@
     - docker
     - engageska
   before_script:
-    - pip install twine
+    - python3 -m pip install twine
 
 .publish_python_dev:
   extends: .publish_python
@@ -135,7 +138,8 @@
 .tango_tests:
   stage: test
   tags: [docker]
-  image: nexus.engageska-portugal.pt/sdp-prototype/pytango_ska_dev:latest
+  image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
+
 
 ## ============================================================================
 ## Common settings to publish to master
