@@ -3,11 +3,12 @@
 
 # from unittest.mock import MagicMock
 
-import pytest
 from tango.test_context import DeviceTestContext
 
 from SDPSubarray import SDPSubarray
 from SDPSubarray.release import VERSION
+
+import pytest
 
 
 @pytest.fixture(scope='session', autouse=True)

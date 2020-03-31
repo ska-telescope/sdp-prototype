@@ -81,6 +81,8 @@ class SDPSubarray(SKASubarray):
         doc='The version of the SDP Subarray device'
     )
 
+    # FIXME: The CS guidelines say that obsState should not be writable!
+    # We have to override the attribute inherited from ska.base just for now!
     obsState = attribute(
         label='Obs State',
         dtype=ObsState,
@@ -88,21 +90,12 @@ class SDPSubarray(SKASubarray):
         doc='The device obs state.'
     )
 
-    healthState = attribute(
-        label='Health state',
-        dtype=HealthState,
-        access=AttrWriteType.READ,
-        doc='The health state reported for this device.',
-        polling_period=1000
-    )
-
     receiveAddresses = attribute(
         label='Receive Addresses',
         dtype=str,
         access=AttrWriteType.READ,
         doc='Host addresses for the visibility receive workflow as a '
-            'JSON string.',
-        polling_period=1000
+            'JSON string.'
     )
 
     processingBlockState = attribute(
@@ -125,7 +118,7 @@ class SDPSubarray(SKASubarray):
 
         # self.write_loggingLevel(LoggingLevel.DEBUG
         self.set_state(DevState.INIT)
-        LOG.info('Initialising SDP Subarray: %s', self.get_name())
+        self.logger.info('Initialising SDP Subarray: %s', self.get_name())
 
         # Initialise attributes
         self._set_obs_state(ObsState.IDLE)
@@ -140,29 +133,29 @@ class SDPSubarray(SKASubarray):
         if ska_sdp_config is not None \
                 and self.is_feature_active(FeatureToggle.CONFIG_DB):
             self._config_db_client = ska_sdp_config.Config()
-            LOG.debug('SDP Config DB enabled')
+            self.logger.debug('SDP Config DB enabled')
         else:
             self._config_db_client = None
-            LOG.warning('SDP Config DB disabled %s',
-                        '(ska_sdp_config package not found)'
-                        if ska_sdp_config is None
-                        else 'by feature toggle')
+            self.logger.warning('SDP Config DB disabled %s',
+                                '(ska_sdp_config package not found)'
+                                if ska_sdp_config is None
+                                else 'by feature toggle')
 
         if self.is_feature_active(FeatureToggle.CBF_OUTPUT_LINK):
-            LOG.debug('CBF output link enabled')
+            self.logger.debug('CBF output link enabled')
         else:
-            LOG.debug('CBF output link disabled')
+            self.logger.debug('CBF output link disabled')
 
         # The subarray device is initialised in the OFF state.
         self.set_state(DevState.OFF)
-        LOG.info('SDP Subarray initialised: %s', self.get_name())
+        self.logger.info('SDP Subarray initialised: %s', self.get_name())
 
     def always_executed_hook(self):
         """Run for on each call."""
 
     def delete_device(self):
         """Device destructor."""
-        LOG.info('Deleting subarray device: %s', self.get_name())
+        self.logger.info('Deleting subarray device: %s', self.get_name())
 
     # ------------------
     # Attributes methods
@@ -268,20 +261,21 @@ class SDPSubarray(SKASubarray):
         # pylint: disable=unused-argument
         # pylint: disable=arguments-differ
         # FIXME Look more at these issues
-        LOG.info('-------------------------------------------------------')
-        LOG.info('AssignResources (%s)', self.get_name())
-        LOG.info('AssignResources - currently a NOOP for SDP')
-        LOG.info('-------------------------------------------------------')
+        log = self.logger
+        log.info('-------------------------------------------------------')
+        log.info('AssignResources (%s)', self.get_name())
+        log.info('AssignResources - currently a NOOP for SDP')
+        log.info('-------------------------------------------------------')
         self._require_obs_state([ObsState.IDLE])
         self._require_admin_mode([AdminMode.ONLINE, AdminMode.MAINTENANCE,
                                   AdminMode.RESERVED])
-        LOG.warning('Assigning resources - calling SKASubarray')
+        log.warning('Assigning resources - calling SKASubarray')
         super().AssignResources(config)
-    #   LOG.debug('Setting device state to ON') In SKASubarray?
+    #   log.debug('Setting device state to ON') In SKASubarray?
     #   self.set_state(DevState.ON)
-        LOG.info('-------------------------------------------------------')
-        LOG.info('AssignResources Successful!')
-        LOG.info('-------------------------------------------------------')
+        log.info('-------------------------------------------------------')
+        log.info('AssignResources Successful!')
+        log.info('-------------------------------------------------------')
 
     @command(dtype_in=str, doc_in='Resource configuration JSON string')
     def ReleaseResources(self, config=''):
@@ -299,21 +293,22 @@ class SDPSubarray(SKASubarray):
         # pylint: disable=arguments-differ
         # pylint: disable=unused-argument
         # FIXME: Look more at these issues
-        LOG.info('-------------------------------------------------------')
-        LOG.info('ReleaseResources (%s)', self.get_name())
-        LOG.info('-------------------------------------------------------')
+        log = self.logger
+        log.info('-------------------------------------------------------')
+        log.info('ReleaseResources (%s)', self.get_name())
+        log.info('-------------------------------------------------------')
         self._require_obs_state([ObsState.IDLE])
         self._require_admin_mode([AdminMode.OFFLINE, AdminMode.NOT_FITTED],
                                  invert=True)
-        LOG.warning('Release resources is currently a no-op!')
-        LOG.warning('Release resources - calling SKASubarray')
+        log.warning('Release resources is currently a no-op!')
+        log.warning('Release resources - calling SKASubarray')
         super().AssignResources(config)
-        LOG.debug('Setting device state to OFF')
+        log.debug('Setting device state to OFF')
         self.set_state(DevState.OFF)
         # FIXME: Should this be handled by SKASubarray?
-        LOG.info('-------------------------------------------------------')
-        LOG.info('ReleaseResources Successful!')
-        LOG.info('-------------------------------------------------------')
+        log.info('-------------------------------------------------------')
+        log.info('ReleaseResources Successful!')
+        log.info('-------------------------------------------------------')
 
     @command(dtype_in=str, doc_in='Processing block configuration JSON string')
     def Configure(self, config_str):
@@ -327,9 +322,10 @@ class SDPSubarray(SKASubarray):
         :param config_str: Processing block configuration JSON string.
 
         """
-        LOG.info('-------------------------------------------------------')
-        LOG.info('Configure (%s)', self.get_name())
-        LOG.info('-------------------------------------------------------')
+        log = self.logger
+        log.info('-------------------------------------------------------')
+        log.info('Configure (%s)', self.get_name())
+        log.info('-------------------------------------------------------')
 
         # Check obsState is IDLE, and set to CONFIGURING
         self._require_obs_state([ObsState.IDLE])
@@ -361,9 +357,9 @@ class SDPSubarray(SKASubarray):
         # Set the obsState to READY
         self._set_obs_state(ObsState.READY)
 
-        LOG.info('-------------------------------------------------------')
-        LOG.info('Configure successful!')
-        LOG.info('-------------------------------------------------------')
+        log.info('-------------------------------------------------------')
+        log.info('Configure successful!')
+        log.info('-------------------------------------------------------')
 
     @command(dtype_in=str, doc_in='Scan configuration JSON string')
     def ConfigureScan(self, config_str):
@@ -380,9 +376,10 @@ class SDPSubarray(SKASubarray):
         :param config_str: Scan configuration JSON string.
 
         """
-        LOG.info('-------------------------------------------------------')
-        LOG.info('ConfigureScan (%s)', self.get_name())
-        LOG.info('-------------------------------------------------------')
+        log = self.logger
+        log.info('-------------------------------------------------------')
+        log.info('ConfigureScan (%s)', self.get_name())
+        log.info('-------------------------------------------------------')
 
         # Check the obsState is READY and set to CONFIGURING
         self._require_obs_state([ObsState.READY])
@@ -409,18 +406,19 @@ class SDPSubarray(SKASubarray):
         # Set the obsState to READY
         self._set_obs_state(ObsState.READY)
 
-        LOG.info('-------------------------------------------------------')
-        LOG.info('ConfigureScan Successful!')
-        LOG.info('-------------------------------------------------------')
+        log.info('-------------------------------------------------------')
+        log.info('ConfigureScan Successful!')
+        log.info('-------------------------------------------------------')
 
     @command
     def Scan(self):
         """Command issued to start scan."""
         # pylint: disable=arguments-differ
         # FIXME Look more at these issues
-        LOG.info('-------------------------------------------------------')
-        LOG.info('Scan (%s)', self.get_name())
-        LOG.info('-------------------------------------------------------')
+        log = self.logger
+        log.info('-------------------------------------------------------')
+        log.info('Scan (%s)', self.get_name())
+        log.info('-------------------------------------------------------')
 
         # Check obsState is READY
         self._require_obs_state([ObsState.READY])
@@ -431,16 +429,17 @@ class SDPSubarray(SKASubarray):
         # Set obsState to SCANNING
         self._set_obs_state(ObsState.SCANNING)
 
-        LOG.info('-------------------------------------------------------')
-        LOG.info('Scan Successful')
-        LOG.info('-------------------------------------------------------')
+        log.info('-------------------------------------------------------')
+        log.info('Scan Successful')
+        log.info('-------------------------------------------------------')
 
     @command
     def EndScan(self):
         """Command issued to end scan."""
-        LOG.info('-------------------------------------------------------')
-        LOG.info('EndScan (%s)', self.get_name())
-        LOG.info('-------------------------------------------------------')
+        log = self.logger
+        log.info('-------------------------------------------------------')
+        log.info('EndScan (%s)', self.get_name())
+        log.info('-------------------------------------------------------')
 
         # Check obsState is SCANNING
         self._require_obs_state([ObsState.SCANNING])
@@ -454,16 +453,17 @@ class SDPSubarray(SKASubarray):
         # Set obsState to READY
         self._set_obs_state(ObsState.READY)
 
-        LOG.info('-------------------------------------------------------')
-        LOG.info('EndScan Successful')
-        LOG.info('-------------------------------------------------------')
+        log.info('-------------------------------------------------------')
+        log.info('EndScan Successful')
+        log.info('-------------------------------------------------------')
 
     @command
     def EndSB(self):
         """Command issued to end the scheduling block."""
-        LOG.info('-------------------------------------------------------')
-        LOG.info('EndSB (%s)', self.get_name())
-        LOG.info('-------------------------------------------------------')
+        log = self.logger
+        log.info('-------------------------------------------------------')
+        log.info('EndSB (%s)', self.get_name())
+        log.info('-------------------------------------------------------')
 
         # Check obsState is READY
         self._require_obs_state([ObsState.READY])
@@ -477,9 +477,9 @@ class SDPSubarray(SKASubarray):
         # Set obsState to IDLE
         self._set_obs_state(ObsState.IDLE)
 
-        LOG.info('-------------------------------------------------------')
-        LOG.info('EndSB Successful')
-        LOG.info('-------------------------------------------------------')
+        log.info('-------------------------------------------------------')
+        log.info('EndSB Successful')
+        log.info('-------------------------------------------------------')
 
     # -------------------------------------
     # Public methods
@@ -536,21 +536,24 @@ class SDPSubarray(SKASubarray):
     def _set_obs_state(self, value, verbose=True):
         """Set the obsState and issue a change event."""
         if verbose:
-            LOG.debug('Setting obsState to: %s', repr(ObsState(value)))
+            self.logger.debug('Setting obsState to: %s',
+                              repr(ObsState(value)))
         self._obs_state = value
         self.push_change_event('obsState', self._obs_state)
 
     def _set_admin_mode(self, value, verbose=True):
         """Set the adminMode and issue a change event."""
         if verbose:
-            LOG.debug('Setting adminMode to: %s', repr(AdminMode(value)))
+            self.logger.debug('Setting adminMode to: %s',
+                              repr(AdminMode(value)))
         self._admin_mode = value
         self.push_change_event('adminMode', self._admin_mode)
 
     def _set_health_state(self, value, verbose=True):
         """Set the healthState and issue a change event."""
         if verbose:
-            LOG.debug('Setting healthState to: %s', repr(HealthState(value)))
+            self.logger.debug('Setting healthState to: %s',
+                              repr(HealthState(value)))
         self._health_state = value
         self.push_change_event('healthState', self._health_state)
 
@@ -610,14 +613,14 @@ class SDPSubarray(SKASubarray):
         if not invert and self._admin_mode not in allowed_modes:
             msg = 'adminMode ({}) must be in: {}'.format(
                 repr(self._admin_mode), allowed_modes)
-            LOG.error(msg)
+            self.logger.error(msg)
             self._raise_command_error(msg)
 
         # Fail if obsState is in one of the allowed_obs_states
         if invert and self._admin_mode in allowed_modes:
             msg = 'adminMode ({}) must NOT be in: {}'.format(
                 repr(self._admin_mode), allowed_modes)
-            LOG.error(msg)
+            self.logger.error(msg)
             self._raise_command_error(msg)
 
     def _raise_command_error(self, desc, origin=''):
@@ -638,10 +641,10 @@ class SDPSubarray(SKASubarray):
 
         """
         if reason != '':
-            LOG.error(reason)
-        LOG.error(desc)
+            self.logger.error(reason)
+        self.logger.error(desc)
         if origin != '':
-            LOG.error(origin)
+            self.logger.error(origin)
         tango.Except.throw_exception(reason, desc, origin,
                                      tango.ErrSeverity.ERR)
 
@@ -696,10 +699,11 @@ class SDPSubarray(SKASubarray):
         # Log IDs found in configuration
         sbi_id = config.get('sbiId')
         scan_id = config.get('scanId')
+        log = self.logger
         pb_ids = [pb.get('id') for pb in config.get('processingBlocks')]
-        LOG.info('Scheduling block instance %s', sbi_id)
-        LOG.info('Processing blocks %s', pb_ids)
-        LOG.info('Scan %s', scan_id)
+        log.info('Scheduling block instance %s', sbi_id)
+        log.info('Processing blocks %s', pb_ids)
+        log.info('Scan %s', scan_id)
 
         # Get lists of existing scheduling blocks and processing blocks
         if self._config_db_client is not None:
@@ -714,12 +718,12 @@ class SDPSubarray(SKASubarray):
         error = False
         if sbi_id in existing_sb_ids:
             error = True
-            LOG.error('Scheduling block instance %s already exists', sbi_id)
+            log.error('Scheduling block instance %s already exists', sbi_id)
         pb_dup = [pb_id for pb_id in pb_ids if pb_id in existing_pb_ids]
         if pb_dup != []:
             error = True
             for pb_id in pb_dup:
-                LOG.error('Processing block %s already exists', pb_id)
+                self.logger.error('Processing block %s already exists', pb_id)
         if error:
             self._set_obs_state(ObsState.READY)
             self._raise_command_error(
@@ -746,7 +750,7 @@ class SDPSubarray(SKASubarray):
 
         for pbc in config.get('processingBlocks'):
             pb_id = pbc.get('id')
-            LOG.info('Parsing processing block %s', pb_id)
+            self.logger.info('Parsing processing block %s', pb_id)
 
             # Get type of workflow and add the processing block ID to the
             # appropriate list.
@@ -757,15 +761,15 @@ class SDPSubarray(SKASubarray):
             elif wf_type == 'batch':
                 sb['pb_batch'].append(pb_id)
             else:
-                LOG.error('Unknown workflow type: %s', wf_type)
+                log.error('Unknown workflow type: %s', wf_type)
 
             if 'cspCbfOutlinkAddress' in pbc:
                 if wf_type == 'batch':
-                    LOG.error('cspCbfOutlinkAddress attribute must not '
+                    log.error('cspCbfOutlinkAddress attribute must not '
                               'appear in batch processing block '
                               'configuration')
                 elif sb['pb_receive_addresses'] is not None:
-                    LOG.error('cspCbfOutlinkAddress attribute must not '
+                    log.error('cspCbfOutlinkAddress attribute must not '
                               'appear in more than one real-time processing '
                               'block configuration')
                 else:
@@ -776,7 +780,7 @@ class SDPSubarray(SKASubarray):
                 if wf_type == 'realtime':
                     scan_parameters = pbc.get('scanParameters')
                 elif wf_type == 'batch':
-                    LOG.error('scanParameters attribute must not appear '
+                    log.error('scanParameters attribute must not appear '
                               'in batch processing block configuration')
                     scan_parameters = {}
             else:
@@ -784,7 +788,7 @@ class SDPSubarray(SKASubarray):
 
             if 'dependencies' in pbc:
                 if wf_type == 'realtime':
-                    LOG.error('dependencies attribute must not appear in '
+                    log.error('dependencies attribute must not appear in '
                               'real-time processing block configuration')
                     dependencies = []
                 if wf_type == 'batch':
@@ -825,7 +829,7 @@ class SDPSubarray(SKASubarray):
 
         """
         scan_id = config.get('scanId')
-        LOG.info('Scan: %s', scan_id)
+        self.logger.info('Scan: %s', scan_id)
 
         if self._config_db_client is not None:
             for txn in self._config_db_client.txn():
@@ -836,11 +840,12 @@ class SDPSubarray(SKASubarray):
                 for pbc in config.get('processingBlocks'):
                     pb_id = pbc.get('id')
                     if pb_id not in pb_realtime:
-                        LOG.error('Processing block %s is not a real-time PB '
-                                  'associated with this subarray', pb_id)
+                        self.logger.error('Processing block %s is not a '
+                                          'real-time PB associated with '
+                                          'this subarray', pb_id)
                         continue
-                    LOG.info('Updating scan parameters in processing block '
-                             '%s', pb_id)
+                    self.logger.info('Updating scan parameters in processing '
+                                     'block %s', pb_id)
                     pb_old = txn.get_processing_block(pb_id)
                     pb_new = ska_sdp_config.ProcessingBlock(
                         pb_id=pb_old.pb_id,
@@ -906,12 +911,13 @@ class SDPSubarray(SKASubarray):
         :returns: Validated channel link map as dict
 
         """
-        LOG.debug('Reading channel link map from %s',
+        log = self.logger
+        log.debug('Reading channel link map from %s',
                   self._cbf_outlink_address)
         attribute_proxy = AttributeProxy(self._cbf_outlink_address)
         attribute_proxy.ping()
 
-        LOG.debug('Waiting for CSP attribute to provide channel link map for '
+        log.debug('Waiting for CSP attribute to provide channel link map for '
                   'scan ID %s', scan_id)
         # This is a horrendous hack to poll the CSP device until the scan
         # ID matches. It needs to refactored to use events.
@@ -928,7 +934,7 @@ class SDPSubarray(SKASubarray):
             if channel_link_map.get('scanID') == scan_id:
                 break
             elapsed = time.time() - start_time
-            LOG.debug('Waiting for scan ID on CSP attribute '
+            log.debug('Waiting for scan ID on CSP attribute '
                       '(elapsed: %2.4f s)', elapsed)
             if elapsed > timeout:
                 self._set_obs_state(ObsState.FAULT)
