@@ -12,8 +12,8 @@ from unittest.mock import MagicMock
 import tango
 from tango import DevState
 
-from pytest_bdd import (given, parsers, scenarios, then, when)
 import pytest
+from pytest_bdd import (given, parsers, scenarios, then, when)
 
 from SDPSubarray import (AdminMode, HealthState, ObsState, SDPSubarray)
 
