@@ -5,10 +5,10 @@
 
 from tango.test_context import DeviceTestContext
 
+import pytest
+
 from SDPSubarray import SDPSubarray
 from SDPSubarray.release import VERSION
-
-import pytest
 
 
 @pytest.fixture(scope='session', autouse=True)

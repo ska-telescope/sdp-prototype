@@ -13,10 +13,10 @@ import tango
 from tango import DevState
 
 from pytest_bdd import (given, parsers, scenarios, then, when)
+import pytest
 
 from SDPSubarray import (AdminMode, HealthState, ObsState, SDPSubarray)
 
-import pytest
 
 try:
     import ska_sdp_config
