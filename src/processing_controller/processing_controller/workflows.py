@@ -4,7 +4,7 @@ Class to handle workflow definitions.
 
 import json
 import logging
-import urllib
+import requests
 import jsonschema
 
 LOG = logging.getLogger('processing_controller')
@@ -91,12 +91,11 @@ class Workflows:
 
         :param workflows_url: URL of workflow definition file
         """
-        try:
-            with urllib.request.urlopen(workflows_url) as url:
-                workflows_str = url.read()
-        except urllib.error.URLError as error:
-            LOG.error('Cannot read workflows from URL: %s', error.reason)
-            return
+        with requests.get(workflows_url) as req:
+            if not req.ok:
+                LOG.error('Cannot read workflows from URL: %s', req.reason)
+                return
+            workflows_str = req.text
 
         self._update(workflows_str)
 

@@ -12,7 +12,7 @@ processing_controller:
   replicas: 1
   resources: {}
   workflows:
-    url: https://gitlab.com/ska-telescope/sdp-prototype/raw/master/src/workflows/workflows.json
+    url: https://gitlab.com/ska-telescope/sdp-prototype/-/raw/master/src/workflows/workflows.json
     refresh: 300
 
 # Helm deployment controller
