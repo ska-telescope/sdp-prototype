@@ -7,106 +7,115 @@ This is the schema of the configuration database, effectively the control plane 
 Design Principles
 -----------------
 
-- We utilise a key-value store
-- Uses watch on a key or range of keys to monitor for any updates
-- Most objects are represented as JSON
-- Exceptions are state and ownership fields, which we keep separate
+- Uses a key-value store
+- Uses watches on a key or range of keys to monitor for any updates
+- Objects are represented as JSON
 - We will likely want to define schemas and validation eventually, but
   for the moment this will be by example
+
+Scheduling Block
+----------------
+
+Path `/sb/[sbi_id]`
+
+Dynamic state information of the scheduling block instance.
+
+Contents:
+```javascript
+{
+    "id": "sbi-mvp01-20200330-0001",
+    "max_length": 21600.0
+    "scan_types": [
+        { "id": "science", ... },
+        { "id": "calibration", ... }
+    ]
+    "pb_realtime": [ "pb-mvp01-20200330-0001", ... ]
+    "pb_batch": [ ... ]
+    "pb_receive_addresses": "pb-mvp01-20200330-0001"
+    "current_scan_type": "science"
+    "status": "SCANNING"
+    "scan_id": 12345
+}
+```
+
+When the scheduling block instance is being executed, the `status` field is
+set to the observation state (`obsState`) of the subarray. When the scheduling
+block is ended, `status` is set to `FINISHED`.
+
 
 Processing Block
 ----------------
 
 Path: `/pb/[pb_id]`
 
-Static definition of processing block information. We might allow
-appending additional scan information, but most workflows will likely
-not support this.
+Static definition of processing block information.
 
 Contents:
 ```javascript
 {
-    "id": "realtime-27062019-0001",
-    "sbiId": "27062019_0001",
+    "pb_id": "pb-mvp01-20200330-0001",
+    "sbi_id": "sb-mvp01-20200330-0001",
     "workflow": {
         "type": "realtime",
-        "id": "vis_ingest",
+        "id": "vis_receive",
         "version": "0.1.0"
     }
     "parameters": { ... }
-    "scanParameters":
-    { 
-        "12345": { ... },
-        "12346": { ... }
-    }
+    "scan_parameters": {}
 }
 ```
-There are two types of processing - Real-time processing and batch (offline) processing:
-Real-time processing starts immediately, as it directly correspond to an observation 
-that is about to start. Batch (offline) processing will be inserted into a 
-scheduling queue managed by the SDP, where they will typically be executed according to 
-resource availability.
 
-Valid types are `realtime` and `batch`. The workflow tag identifies
-the workflow script version as well as the required underlying
-software (e.g. processing components, execution engines). `...` stands
-for arbitrary workflow-defined parameters.
+There are two types of processing, real-time processing and batch (offline)
+processing. Real-time processing starts immediately, as it directly
+corresponds to an observation that is about to start. Batch processing will
+be inserted into a scheduling queue managed by the SDP, where it will
+typically be executed according to resource availability.
+
+Valid types are `realtime` and `batch`. The workflow tag identifies the
+workflow script version as well as the required underlying software (e.g.
+execution engines, processing components). `...` stands for arbitrary
+workflow-defined parameters. The `scan_parameters` field is now redundant; it
+will be removed in a future release.
 
 ### Processing Block State
 
 Path: `/pb/[pb_id]/state`
 
-Dynamic state information of the Processing Block. If it doesn't
-exist, the processing block is still in "startup" state.
+Dynamic state information of the processing block. If it does not exist, the
+processing block is still starting up.
 
 Contents:
 ```javascript
 {
-    "state": "executing",
-    "subarray": "ON",
-    "obsState": "SCANNING",
-    "receiveAddresses": {
-        "<phase_bin>": {
-            "<channel_id>": ["<ip>", <port>],
-            ...
-        }
-    }
+    "resources_available": True
+    "status": "RUNNING",
+    "receive_addresses": [
+        { "id": "science", ... },
+        { "id": "calibration", ... },
+    ]
 }
 ```
 
-Tracks the current state of the Processing Block. This covers both the
-SDP-internal state (as defined by the Execution Control Data Model) as
-well as the subarray state to report via Tango for real-time
-processing blocks (as defined by SDP-to-TM ICD).
-
-This is also where further attributes to publish via Tango are going
-to get populated, such as receiver addresses for ingest.
+Tracks the current state of the processing block. This covers both the
+SDP-internal state (as defined by the Execution Control Data Model) as well as
+information to publish via Tango for real-time workflows, such as the status
+and receive addresses (for ingest).
 
 ### Processing Block Owner
 
 Path: `/pb/[pb_id]/owner`
 
-Processing Block Controller process identification. Used for leader election/lock as well as a debugging aid.
-
-Contents: `controller-node-XYZ:123`
-
-Subarray
---------
-
-Path: `/subarray/[subarray_id]`
-
-Definition and state of a telescope sub-array. Especially used for
-tracking attributes that might be required even if the subarray is not
-currently active (like `adminMode`).
+Identifies the process executing the workflow. Used for leader election/lock
+as well as a debugging aid.
 
 Contents:
 ```javascript
 {
-    "adminState": "ONLINE",
-    "command": "Scan",
-    "currentPb": "[pb_id]",
+  "command": [
+    "vis_receive.py",
+    "pb-mvp01-20200330-0001"
+  ],
+  "hostname": "pb-mvp01-20200330-0001-workflow-2kxfz",
+  "pid": 1
 }
 ```
-
-The command is the last command given by the TANGO interface. This
-might cause a state change of the associated processing block.

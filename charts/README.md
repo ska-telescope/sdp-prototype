@@ -129,9 +129,9 @@ second part of the `PORTS(S)` column:
     $ export SDP_CONFIG_PORT=32234
 ```
 
-For Minikube, you need to set both `SDP_CONFIG_HOST` and `SDP_CONFIG_PORT`, commands to 
-run to set these variables are printed to the console when running helm install on the 
-sdp-prototype so they can simply be copied and pasted or you can easily query both using 
+For Minikube, you need to set both `SDP_CONFIG_HOST` and `SDP_CONFIG_PORT`, commands to
+run to set these variables are printed to the console when running helm install on the
+sdp-prototype so they can simply be copied and pasted or you can easily query both using
 `minikube service`:
 
 ```bash
@@ -265,44 +265,104 @@ You should be able to query the SDP Tango devices:
     In [1]: lsdev
     Device                                   Alias                     Server                    Class
     ---------------------------------------- ------------------------- ------------------------- --------------------
-    mid_sdp/elt/master                                                 SDPMaster/1               SDPMaster
-    sys/tg_test/1                                                      TangoTest/test            TangoTest
-    sys/database/2                                                     DataBaseds/2              DataBase
+    mid_sdp/elt/master                                                 SdpMaster/1               SdpMaster
+    mid_sdp/elt/subarray_1                                             SdpSubarray/1             SdpSubarray
+    mid_sdp/elt/subarray_2                                             SdpSubarray/2             SdpSubarray
     sys/access_control/1                                               TangoAccessControl/1      TangoAccessControl
-    mid_sdp/elt/subarray_1                                             SDPSubarray/1             SDPSubarray
+    sys/database/2                                                     DataBaseds/2              DataBase
+    sys/rest/0                                                         TangoRestServer/rest      TangoRestServer
+    sys/tg_test/1                                                      TangoTest/test            TangoTest
 ```
 
-This allows direction interaction with the devices, such as querying and
+This allows direct interaction with the devices, such as querying and
 and changing attributes and issuing commands:
 
-```bash
+```python
     In [2]: d = DeviceProxy('mid_sdp/elt/subarray_1')
 
     In [3]: d.obsState
     Out[3]: <obsState.IDLE: 0>
-    
+
     In [4]: d.state()
     Out[4]: tango._tango.DevState.OFF
-    
-    In [5]: d.adminMode = 'ONLINE'
-    In [6]: d.AssignResources('')
+
+    In [5]: config_sbi = '''
+        ...: {
+        ...:   "id": "sbi-mvp01-20200318-0001",
+        ...:   "max_length": 21600.0,
+        ...:   "scan_types": [
+        ...:     {
+        ...:       "id": "science",
+        ...:       "coordinate_system": "ICRS", "ra": "00:00:00.00", "dec": "00:00:00.0",
+        ...:       "freq_min": 0.0, "freq_max": 0.0, "nchan": 1000
+        ...:     }
+        ...:   ],
+        ...:   "processing_blocks": [
+        ...:     {
+        ...:       "id": "pb-mvp01-20200318-0001",
+        ...:       "workflow": {"type": "realtime", "id": "test_realtime", "version": "0.1.0"},
+        ...:       "parameters": {}
+        ...:     },
+        ...:     {
+        ...:       "id": "pb-mvp01-20200318-0002",
+        ...:       "workflow": {"type": "realtime", "id": "test_realtime", "version": "0.1.0"},
+        ...:       "parameters": {}
+        ...:     },
+        ...:     {
+        ...:       "id": "pb-mvp01-20200318-0003",
+        ...:       "workflow": {"type": "batch", "id": "ical", "version": "0.1.0"},
+        ...:       "parameters": {},
+        ...:       "dependencies": [
+        ...:         {"pb_id": "pb-mvp01-20200318-0001", "type": ["visibilities"]}
+        ...:       ]
+        ...:     },
+        ...:     {
+        ...:       "id": "pb-mvp01-20200318-0004",
+        ...:       "workflow": {"type": "batch", "id": "dpreb", "version": "0.1.0"},
+        ...:       "parameters": {},
+        ...:       "dependencies": [
+        ...:         {"pb_id": "pb-mvp01-20200318-0003", "type": ["calibration"]}
+        ...:       ]
+        ...:     }
+        ...:   ]
+        ...: }
+        ...: '''
+
+    In [6]: d.AssignResources(config_sbi)
+
     In [7]: d.state()
     Out[7]: tango._tango.DevState.ON
-    
+
     In [8]: d.obsState
     Out[8]: <obsState.IDLE: 0>
-    
-    In [9]: d.Configure('{ "configure": { "id": "xyz", "sbiId": "xyz", "workflow": { "type": "realtime", "version": "0.1.0", "id": "vis_receive" }, "parameters": {}, "scanParameters": { "1": {} } } }')
+
+    In [9]: d.Configure('{"scan_type": "science"}')
+
     In [10]: d.obsState
     Out[10]: <obsState.READY: 2>
-    
-    In [11]: d.StartScan()
+
+    In [11]: d.Scan('{"id": 1}')
+
     In [12]: d.obsState
     Out[12]: <obsState.SCANNING: 3>
-    
+
     In [13]: d.EndScan()
+
     In [14]: d.obsState
     Out[14]: <obsState.READY: 2>
+
+    In [15]: d.Reset()
+
+    In [16]: d.obsState
+    Out[16]: <obsState.IDLE: 0>
+
+    In [17]: d.ReleaseResources()
+
+    In [18]: d.obsState
+    Out[18]: <obsState.IDLE: 0>
+
+    In [19]: d.state()
+    Out[19]: tango._tango.DevState.OFF
 ```
 
 Troubleshooting
@@ -322,7 +382,7 @@ get a log. You might see something like this as the last three lines:
 ```
 
 This informs you that `etcd` tried to resolve its own address, and for
-some reason got two different answers both times. Interestingly, the 
+some reason got two different answers both times. Interestingly, the
 `92.242.132.24` address is not actually in-cluster, but from the Internet,
 and re-appears if we attempt to `ping` a nonexistent DNS name:
 

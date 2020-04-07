@@ -18,11 +18,9 @@ def tango_context():
     # Set default feature toggle values for the test.
     # Note: these are ignored if the env variables are already set. ie:
     #       TOGGLE_CONFIG_DB
-    #       TOGGLE_CBF_OUTPUT_LINK
     # Note: if these, or the env variables are not set, use the
     #       SDPSubarray device defaults.
     SDPSubarray.set_feature_toggle_default('config_db', False)
-    SDPSubarray.set_feature_toggle_default('cbf_output_link', False)
 
     device_name = 'mid_sdp/elt/subarray_1'
     properties = dict(Version=VERSION)

@@ -58,7 +58,7 @@ def setup(app):
 # -- Project information -----------------------------------------------------
 project = 'developer.skatelescope.org'
 copyright = '2019, ORCA Team, Sim Team'
-author = 'ORCA Team, Sim Team'
+author = 'Sim Team'
 
 
 # The version info for the project you're documenting, acts as replacement for
@@ -66,9 +66,9 @@ author = 'ORCA Team, Sim Team'
 # built documents.
 #
 # The short X.Y.Z version.
-version = '0.1.0'
+version = '0.1.1'
 # The full version, including alpha/beta/rc pre-release tags.
-release = '0.1.0-beta'
+release = '0.1.1-beta'
 
 # -- General configuration ------------------------------------------------
 

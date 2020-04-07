@@ -1,0 +1,17 @@
+{
+  "id": "sbi-mvp01-20200318-0001",
+  "max_length": 21600.0,
+  "scan_types": [
+    {
+      "id": "science_A",
+      "coordinate_system": "ICRS", "ra": "00:00:00.00", "dec": "00:00:00.0",
+      "freq_min": 0.0, "freq_max": 0.0, "nchan": 1000
+    },
+    {
+      "id": "calibration_B",
+      "coordinate_system": "ICRS", "ra": "00:00:00.00", "dec": "00:00:00.0",
+      "freq_min": 0.0, "freq_max": 0.0, "nchan": 1000
+    }
+  ],
+  "processing_blocks": []
+}

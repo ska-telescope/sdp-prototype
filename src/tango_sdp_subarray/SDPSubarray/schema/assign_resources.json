@@ -1,0 +1,99 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SDP subarray AssignResources schema",
+  "description": "Used by the SDP subarray AssignResources command to validate configuration data",
+  "version": "0.1.0",
+  "type": "object",
+  "required": ["id", "max_length", "scan_types", "processing_blocks"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "$ref": "#/definitions/sbi_id" },
+    "max_length": { "$ref": "#/definitions/max_length" },
+    "scan_types": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/scan_type" }
+    },
+    "processing_blocks": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/processing_block" }
+    }
+  },
+  "definitions": {
+    "sbi_id": {
+      "description": "Scheduling block instance ID",
+      "type": "string"
+    },
+    "pb_id": {
+      "description": "Processing block ID",
+      "type": "string"
+    },
+    "scantype_id": {
+      "description": "Scan type ID",
+      "type": "string"
+    },
+    "semantic_version": {
+      "description": "Semantic version number",
+      "type": "string"
+    },
+    "max_length": {
+      "description": "Maximum length of scheduling block (in seconds)",
+      "type": "number"
+    },
+    "scan_type": {
+      "description": "Scan type",
+      "type": "object",
+      "required": ["id"],
+      "additionalProperties": true,
+      "properties": {
+        "id": { "$ref": "#/definitions/scantype_id" }
+      }
+    },
+    "processing_block": {
+      "description": "Processing block",
+      "type": "object",
+      "required": ["id", "workflow", "parameters"],
+      "optional": ["dependencies"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/definitions/pb_id" },
+        "workflow": { "$ref": "#/definitions/workflow" },
+        "parameters": { "$ref": "#/definitions/parameters" },
+        "dependencies": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/dependency" }
+        }
+      }
+    },
+    "workflow": {
+      "description": "Workflow",
+      "type": "object",
+      "required": ["type", "id", "version"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "type": "string" },
+        "id": { "type": "string" },
+        "version": { "$ref": "#/definitions/semantic_version" }
+      }
+    },
+    "parameters": {
+      "description": "Workflow parameters",
+      "type": "object"
+    },
+    "dependency": {
+      "description": "Processing block dependency",
+      "type": "object",
+      "required": ["pb_id", "type"],
+      "additionalProperties": false,
+      "properties": {
+        "pb_id": { "$ref": "#/definitions/pb_id" },
+        "type": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}

@@ -1,4 +1,5 @@
 import os
+import re
 import time
 import logging
 import ska_sdp_config
@@ -6,6 +7,16 @@ from .workflows import Workflows
 
 LOG = logging.getLogger('processing_controller')
 
+# Regular expression to match processing block ID as substring
+_RE_PB = 'pb(-[0-9a-zA-Z]*){3}'
+
+# Compiled regular expressions to match processing deployments associated with
+# processing blocks
+#
+# This one matches workflow deployments only
+_RE_DEPLOY_PROC_WF = re.compile('^proc-(?P<pb_id>{})$'.format(_RE_PB))
+# This one matches any processing deployment
+_RE_DEPLOY_PROC_ANY = re.compile('^proc-(?P<pb_id>{}).*$'.format(_RE_PB))
 
 class ProcessingController:
     """
@@ -16,20 +27,6 @@ class ProcessingController:
         self._workflows = Workflows(schema)
         self._url = url
         self._refresh = refresh
-
-    @staticmethod
-    def _get_pb_id_from_deploy_id(deploy_id: str) -> str:
-        """
-        Get processing block ID from deployment ID.
-
-        This assumes that all deployments associated with a processing
-        block of ID `[type]-[date]-[number]` have a deployment ID of the
-        form `[type]-[date]-[number]-*`.
-
-        :param deploy_id: deployment ID
-        :returns: processing block ID
-        """
-        return '-'.join(deploy_id.split('-')[0:3])
 
     @staticmethod
     def _get_pb_status(txn, pb_id: str) -> str:
@@ -52,11 +49,17 @@ class ProcessingController:
         pb_ids = txn.list_processing_blocks()
         deploy_ids = txn.list_deployments()
 
-        pbs_with_deployment = list(set(map(self._get_pb_id_from_deploy_id, deploy_ids)))
+        # Get list of processing blocks that have a workflow deployed
+        pbs_with_wf_deployed = []
+        for i in deploy_ids:
+            match = _RE_DEPLOY_PROC_WF.match(i)
+            if match is not None:
+                pbs_with_wf_deployed.append(match.group('pb_id'))
+        pbs_with_wf_deployed = list(set(pbs_with_wf_deployed))
 
         for pb_id in pb_ids:
             status = self._get_pb_status(txn, pb_id)
-            if status is None and pb_id not in pbs_with_deployment:
+            if status is None and pb_id not in pbs_with_wf_deployed:
                 self._start_workflow(txn, pb_id)
 
     def _start_workflow(self, txn, pb_id):
@@ -91,7 +94,7 @@ class ProcessingController:
             # Make the deployment
             LOG.info('Deploying %s workflow %s, version %s', wf_type, wf_id,
                     wf_version)
-            deploy_id = '{}-workflow'.format(pb_id)
+            deploy_id = 'proc-{}'.format(pb_id)
             values = {}
             for v in ['SDP_CONFIG_HOST', 'SDP_HELM_NAMESPACE']:
                 values['env.' + v] = os.environ[v]
@@ -129,7 +132,7 @@ class ProcessingController:
                 # Check status of dependencies.
                 pb = txn.get_processing_block(pb_id)
                 dependencies = pb.dependencies
-                dep_ids = [dep['pbId'] for dep in dependencies]
+                dep_ids = [dep['pb_id'] for dep in dependencies]
                 dep_finished = map(lambda x: self._get_pb_status(txn, x) == 'FINISHED', dep_ids)
                 all_finished = all(dep_finished)
                 if all_finished:
@@ -147,11 +150,13 @@ class ProcessingController:
         deploy_ids = txn.list_deployments()
 
         for deploy_id in deploy_ids:
-            pb_id = self._get_pb_id_from_deploy_id(deploy_id)
-            if pb_id not in pb_ids:
-                LOG.info('Deleting deployment %s', deploy_id)
-                deploy = txn.get_deployment(deploy_id)
-                txn.delete_deployment(deploy)
+            match = _RE_DEPLOY_PROC_ANY.match(deploy_id)
+            if match is not None:
+                pb_id = match.group('pb_id')
+                if pb_id not in pb_ids:
+                    LOG.info('Deleting deployment %s', deploy_id)
+                    deploy = txn.get_deployment(deploy_id)
+                    txn.delete_deployment(deploy)
 
     def main(self):
         """

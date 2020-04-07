@@ -8,7 +8,6 @@
 
 import os
 import sys
-import time
 import signal
 import logging
 import json
@@ -17,7 +16,7 @@ from enum import IntEnum, unique
 from ska_sdp_logging import tango_logging
 
 import tango
-from tango import AttrWriteType, AttributeProxy, ConnectionFailed, Database, \
+from tango import AttrWriteType, ConnectionFailed, Database, \
     DbDevInfo, DevState
 from tango.server import Device, DeviceMeta, attribute, command, \
     device_property, run
@@ -75,8 +74,7 @@ class FeatureToggle(IntEnum):
     """Feature Toggles."""
 
     CONFIG_DB = 1  #: Enable / Disable the Config DB
-    CBF_OUTPUT_LINK = 2  #: Enable / Disable use of of the CBF OUTPUT LINK
-    AUTO_REGISTER = 3  #: Enable / Disable tango db auto-registration
+    AUTO_REGISTER = 2  #: Enable / Disable Tango DB auto-registration
 
 
 # class SDPSubarray(SKASubarray):
@@ -120,24 +118,22 @@ class SDPSubarray(Device):
         label='Obs State',
         dtype=ObsState,
         access=AttrWriteType.READ_WRITE,
-        doc='The device obs state.',
-        polling_period=1000
+        doc='The device obs state.'
+        # polling_period=1000
     )
 
     adminMode = attribute(
         label='Admin mode',
         dtype=AdminMode,
         access=AttrWriteType.READ_WRITE,
-        doc='The device admin mode.',
-        polling_period=1000
+        doc='The device admin mode.'
     )
 
     healthState = attribute(
         label='Health state',
         dtype=HealthState,
         access=AttrWriteType.READ,
-        doc='The health state reported for this device.',
-        polling_period=1000
+        doc='The health state reported for this device.'
     )
 
     receiveAddresses = attribute(
@@ -145,8 +141,7 @@ class SDPSubarray(Device):
         dtype=str,
         access=AttrWriteType.READ,
         doc='Host addresses for the visibility receive workflow as a '
-            'JSON string.',
-        polling_period=1000
+            'JSON string.'
     )
 
     processingBlockState = attribute(
@@ -154,8 +149,14 @@ class SDPSubarray(Device):
         dtype=str,
         access=AttrWriteType.READ,
         doc='Processing block states for real-time workflows as a '
-            'JSON string.',
-        polling_period=5000
+            'JSON string.'
+    )
+
+    schedulingBlockInstance = attribute(
+        label='Scheduling block instance',
+        dtype=str,
+        access=AttrWriteType.READ,
+        doc='Scheduling block instance as a JSON string.'
     )
 
     # ---------------
@@ -178,7 +179,6 @@ class SDPSubarray(Device):
 
         # Initialise instance variables
         self._sbi_id = None
-        self._cbf_outlink_address = None
 
         if ska_sdp_config is not None \
                 and self.is_feature_active(FeatureToggle.CONFIG_DB):
@@ -190,11 +190,6 @@ class SDPSubarray(Device):
                         '(ska_sdp_config package not found)'
                         if ska_sdp_config is None
                         else 'by feature toggle')
-
-        if self.is_feature_active(FeatureToggle.CBF_OUTPUT_LINK):
-            LOG.debug('CBF output link enabled')
-        else:
-            LOG.debug('CBF output link disabled')
 
         # The subarray device is initialised in the OFF state.
         self.set_state(DevState.OFF)
@@ -273,6 +268,20 @@ class SDPSubarray(Device):
 
         return json.dumps(pb_state_list)
 
+    def read_schedulingBlockInstance(self):
+        """Get the scheduling block instance.
+
+        :returns: JSON describing scheduling block instance
+
+        """
+        sb = None
+
+        if self._config_db_client is not None and self._sbi_id is not None:
+            for txn in self._config_db_client.txn():
+                sb = txn.get_scheduling_block(self._sbi_id)
+
+        return json.dumps(sb)
+
     def write_obsState(self, obs_state):
         """Set the obsState attribute.
 
@@ -294,102 +303,141 @@ class SDPSubarray(Device):
     # --------
 
     @command(dtype_in=str, doc_in='Resource configuration JSON string')
-    def AssignResources(self, config=''):
+    def AssignResources(self, config_str):
         """Assign resources to the subarray.
 
-        This is currently a noop for SDP!
+        This creates the processing blocks associated with the
+        scheduling block instance.
 
-        Following the description of the SKA subarray device model,
-        resources can only be assigned to the subarray device when the
-        obsState attribute is IDLE. Once resources are assigned to the
-        subarray device, the device state transitions to ON.
-
-        :param config: Resource specification (currently ignored)
+        :param config_str: Resource configuration JSON string
 
         """
-        # pylint: disable=unused-argument
         LOG.info('-------------------------------------------------------')
         LOG.info('AssignResources (%s)', self.get_name())
         LOG.info('-------------------------------------------------------')
+
         self._require_obs_state([ObsState.IDLE])
         self._require_admin_mode([AdminMode.ONLINE, AdminMode.MAINTENANCE,
                                   AdminMode.RESERVED])
-        LOG.warning('Assigning resources is currently a no-op!')
+
         LOG.debug('Setting device state to ON')
         self.set_state(DevState.ON)
+
+        # Log the JSON configuration string
+        LOG.info('Configuration string:')
+        for line in config_str.splitlines():
+            LOG.info(line)
+
+        # Validate the JSON configuration string
+        config = self._validate_json_config(
+            config_str, 'assign_resources.json')
+
+        if config is None:
+            # Validation has failed, so raise error
+            self._raise_command_error('Configuration validation failed')
+            return
+
+        # Check IDs against existing IDs in the config DB
+        ok = self._config_check_ids(config)
+
+        if not ok:
+            self._raise_command_error(
+                'Duplicate scheduling block instance ID or processing block'
+                ' ID in configuration'
+            )
+            return
+
+        # Create SB and PBs in config DB
+        ok = self._config_create_sb_and_pbs(config)
+
+        if not ok:
+            self._raise_command_error(
+                'Creation of scheduling block and processing blocks failed'
+            )
+            return
+
+        # Set the scheduling block instance ID
+        self._sbi_id = config.get('id')
+
         LOG.info('-------------------------------------------------------')
         LOG.info('AssignResources Successful!')
         LOG.info('-------------------------------------------------------')
 
-    @command(dtype_in=str, doc_in='Resource configuration JSON string')
-    def ReleaseResources(self, config=''):
+    @command
+    def ReleaseResources(self):
         """Release resources assigned to the subarray.
 
-        This is currently a noop for SDP!
-
-        Following the description of the SKA subarray device model,
-        when all resources are released the device state should transition to
-        OFF. Releasing resources is only allowed when the obsState is IDLE.
-
-        :param config: Resource specification (currently ignored).
+        This ends the real-time processing blocks associated with the
+        sceduling block instance.
 
         """
-        # pylint: disable=unused-argument
         LOG.info('-------------------------------------------------------')
         LOG.info('ReleaseResources (%s)', self.get_name())
         LOG.info('-------------------------------------------------------')
+
         self._require_obs_state([ObsState.IDLE])
         self._require_admin_mode([AdminMode.OFFLINE, AdminMode.NOT_FITTED],
                                  invert=True)
-        LOG.warning('Release resources is currently a no-op!')
+
+        # Set status to FINISHED
+        self._update_sb({'status': 'FINISHED'})
+
+        # Clear the scheduling block instance ID
+        self._sbi_id = None
+
         LOG.debug('Setting device state to OFF')
         self.set_state(DevState.OFF)
+
         LOG.info('-------------------------------------------------------')
         LOG.info('ReleaseResources Successful!')
         LOG.info('-------------------------------------------------------')
 
-    @command(dtype_in=str, doc_in='Processing block configuration JSON string')
+    @command(dtype_in=str, doc_in='Scan type configuration JSON string')
     def Configure(self, config_str):
-        """Configure processing associated with this subarray.
+        """Configure SDP scan type.
 
-        This is achieved by providing a JSON string containing an array of
-        processing block definitions that specify the workflows to
-        execute and their parameters. The workflows may be real-time or
-        batch.
-
-        :param config_str: Processing block configuration JSON string.
+        :param config_str: Scan type configuration JSON string
 
         """
         LOG.info('-------------------------------------------------------')
         LOG.info('Configure (%s)', self.get_name())
         LOG.info('-------------------------------------------------------')
 
-        # Check obsState is IDLE, and set to CONFIGURING
-        self._require_obs_state([ObsState.IDLE])
+        # Check obsState is IDLE or READY, and set to CONFIGURING
+        self._require_obs_state([ObsState.IDLE, ObsState.READY])
         self._set_obs_state(ObsState.CONFIGURING)
 
-        # self.set_state(DevState.ON)
+        # Log the JSON configuration string
+        LOG.info('Configuration string:')
+        for line in config_str.splitlines():
+            LOG.info(line)
 
         # Validate the JSON configuration string
         config = self._validate_json_config(config_str, 'configure.json')
 
         if config is None:
-            # Validation has failed, so set obsState back to IDLE and raise
+            # Validation has failed, so set obsState to IDLE and raise
             # an error
             self._set_obs_state(ObsState.IDLE)
             self._raise_command_error('Configuration validation failed')
             return
 
-        # Create the scheduling block and processing blocks in the config DB
-        self._create_processing_blocks(config)
+        # Append new scan types if supplied, and set the scan type
+        ok = self._config_set_scan_type(config)
 
-        # Set the receive addresses for the first scan
-        scan_id = config.get('scanId')
-        receive_addresses = self._get_receive_addresses(scan_id)
+        if not ok:
+            # Scan type configuration has failed, so set obsState to IDLE
+            # and raise an error
+            self._set_obs_state(ObsState.IDLE)
+            self._raise_command_error('Scan type configuration failed')
+            return
+
+        # Get the receive addresses and publish them on the attribute
+        receive_addresses = self._get_receive_addresses()
         self._set_receive_addresses(receive_addresses)
 
-        # Set SB status to READY
-        self._update_sb_status('READY')
+        # Set status to READY
+        self._update_sb({'status': 'READY'})
 
         # Set the obsState to READY
         self._set_obs_state(ObsState.READY)
@@ -398,57 +446,13 @@ class SDPSubarray(Device):
         LOG.info('Configure successful!')
         LOG.info('-------------------------------------------------------')
 
-    @command(dtype_in=str, doc_in='Scan configuration JSON string')
-    def ConfigureScan(self, config_str):
-        """Configure the subarray device to execute a scan.
+    @command(dtype_in=str, doc_in='Scan ID configuration JSON string')
+    def Scan(self, config_str):
+        """Command issued to start scan.
 
-        This allows scan specific, late-binding information to be provided
-        to the configured real-time workflows.
-
-        ConfigureScan is only allowed in the READY obsState and should
-        leave the Subarray device in the READY obsState when configuring
-        is complete. While Configuring the Scan the obsState is set to
-        CONFIGURING.
-
-        :param config_str: Scan configuration JSON string.
+        :param config_str: Scan ID configuration JSON string
 
         """
-        LOG.info('-------------------------------------------------------')
-        LOG.info('ConfigureScan (%s)', self.get_name())
-        LOG.info('-------------------------------------------------------')
-
-        # Check the obsState is READY and set to CONFIGURING
-        self._require_obs_state([ObsState.READY])
-        self._set_obs_state(ObsState.CONFIGURING)
-
-        # Validate JSON configuration string
-        config = self._validate_json_config(config_str, 'configure_scan.json')
-
-        if config is None:
-            # Validation has failed, so set obsState back to READY and raise
-            # an error.
-            self._set_obs_state(ObsState.READY)
-            self._raise_command_error('Configuration validation failed')
-            return
-
-        # Update scan parameters
-        self._update_scan_parameters(config)
-
-        # Set the receive addresses for the next scan
-        scan_id = config.get('scanId')
-        receive_addresses = self._get_receive_addresses(scan_id)
-        self._set_receive_addresses(receive_addresses)
-
-        # Set the obsState to READY
-        self._set_obs_state(ObsState.READY)
-
-        LOG.info('-------------------------------------------------------')
-        LOG.info('ConfigureScan Successful!')
-        LOG.info('-------------------------------------------------------')
-
-    @command
-    def Scan(self):
-        """Command issued to start scan."""
         LOG.info('-------------------------------------------------------')
         LOG.info('Scan (%s)', self.get_name())
         LOG.info('-------------------------------------------------------')
@@ -456,8 +460,25 @@ class SDPSubarray(Device):
         # Check obsState is READY
         self._require_obs_state([ObsState.READY])
 
-        # Set SB status to SCANNING
-        self._update_sb_status('SCANNING')
+        # Log the JSON configuration string
+        LOG.info('Configuration string:')
+        for line in config_str.splitlines():
+            LOG.info(line)
+
+        # Validate the JSON configuration string
+        config = self._validate_json_config(config_str, 'scan.json')
+
+        if config is None:
+            # Validation has failed, so set obsState back to IDLE and raise
+            # an error
+            self._raise_command_error('Configuration validation failed')
+            return
+
+        # Get the scan ID
+        scan_id = config.get('id')
+
+        # Set scan ID and set status to SCANNING
+        self._update_sb({'scan_id': scan_id, 'status': 'SCANNING'})
 
         # Set obsState to SCANNING
         self._set_obs_state(ObsState.SCANNING)
@@ -476,11 +497,8 @@ class SDPSubarray(Device):
         # Check obsState is SCANNING
         self._require_obs_state([ObsState.SCANNING])
 
-        # Clear receiveAddresses
-        self._set_receive_addresses(None)
-
-        # Set SB status to READY
-        self._update_sb_status('READY')
+        # Clear scan ID and set status to READY
+        self._update_sb({'scan_id': None, 'status': 'READY'})
 
         # Set obsState to READY
         self._set_obs_state(ObsState.READY)
@@ -490,26 +508,26 @@ class SDPSubarray(Device):
         LOG.info('-------------------------------------------------------')
 
     @command
-    def EndSB(self):
-        """Command issued to end the scheduling block."""
+    def Reset(self):
+        """Command issued to reset to IDLE."""
         LOG.info('-------------------------------------------------------')
-        LOG.info('EndSB (%s)', self.get_name())
+        LOG.info('Reset (%s)', self.get_name())
         LOG.info('-------------------------------------------------------')
 
         # Check obsState is READY
         self._require_obs_state([ObsState.READY])
 
-        # Set SB status to FINISHED
-        self._update_sb_status('FINISHED')
+        # Set scan type to None and status to 'IDLE'
+        self._update_sb({'current_scan_type': None, 'status': 'IDLE'})
 
-        # End the real-time processing associated with this subarray
-        self._end_realtime_processing()
+        # Clear receive addresses
+        self._set_receive_addresses(None)
 
         # Set obsState to IDLE
         self._set_obs_state(ObsState.IDLE)
 
         LOG.info('-------------------------------------------------------')
-        LOG.info('EndSB Successful')
+        LOG.info('Reset Successful')
         LOG.info('-------------------------------------------------------')
 
     # -------------------------------------
@@ -715,22 +733,19 @@ class SDPSubarray(Device):
 
         return config
 
-    def _create_processing_blocks(self, config):
-        """Create the SB and PBs in the config DB.
+    def _config_check_ids(self, config):
+        """Parse the configuration to check IDs against existing ones.
 
-        :param config: dict containing configuration data
+        :param config: configuration data
+        :returns: True if the configuration is good, False if an ID
+            duplicates one in the config DB
 
         """
-        # pylint: disable=too-many-branches
-        # pylint: disable=too-many-locals
-        # pylint: disable=too-many-statements
-        # Log IDs found in configuration
-        sbi_id = config.get('sbiId')
-        scan_id = config.get('scanId')
-        pb_ids = [pb.get('id') for pb in config.get('processingBlocks')]
+        # Log the IDs found in the configuration
+        sbi_id = config.get('id')
+        pb_ids = [pb.get('id') for pb in config.get('processing_blocks')]
         LOG.info('Scheduling block instance %s', sbi_id)
         LOG.info('Processing blocks %s', pb_ids)
-        LOG.info('Scan %s', scan_id)
 
         # Get lists of existing scheduling blocks and processing blocks
         if self._config_db_client is not None:
@@ -742,40 +757,47 @@ class SDPSubarray(Device):
             existing_pb_ids = []
 
         # Check for duplicate IDs
-        error = False
+        ok = True
         if sbi_id in existing_sb_ids:
-            error = True
+            ok = False
             LOG.error('Scheduling block instance %s already exists', sbi_id)
         pb_dup = [pb_id for pb_id in pb_ids if pb_id in existing_pb_ids]
         if pb_dup != []:
-            error = True
+            ok = False
             for pb_id in pb_dup:
                 LOG.error('Processing block %s already exists', pb_id)
-        if error:
-            self._set_obs_state(ObsState.READY)
-            self._raise_command_error(
-                'Duplicate scheduling block instance ID or processing block'
-                ' ID in configuration'
-            )
-            return
 
-        self._sbi_id = sbi_id
+        return ok
 
-        # Scheduling block.
+    def _config_create_sb_and_pbs(self, config):
+        """Parse the configuration and create the SB and PBs.
+
+        :param config: configuration data
+        :returns: True if the configuration is good, False if there is an
+            error
+
+        """
+        # Initialise scheduling block
+
+        sbi_id = config.get('id')
 
         sb = {
-            'scan_id': scan_id,
+            'id': sbi_id,
+            'max_length': config.get('max_length'),
+            'scan_types': config.get('scan_types'),
             'pb_realtime': [],
             'pb_batch': [],
-            'pb_receive_addresses': None
+            'pb_receive_addresses': None,
+            'current_scan_type': None,
+            'status': 'IDLE',
+            'scan_id': None
         }
 
-        # Loop over the processing block configurations.
+        # Loop over the processing block configurations
 
-        processing_blocks = []
-        cbf_outlink_address = None
+        pbs = []
 
-        for pbc in config.get('processingBlocks'):
+        for pbc in config.get('processing_blocks'):
             pb_id = pbc.get('id')
             LOG.info('Parsing processing block %s', pb_id)
 
@@ -790,28 +812,7 @@ class SDPSubarray(Device):
             else:
                 LOG.error('Unknown workflow type: %s', wf_type)
 
-            if 'cspCbfOutlinkAddress' in pbc:
-                if wf_type == 'batch':
-                    LOG.error('cspCbfOutlinkAddress attribute must not '
-                              'appear in batch processing block '
-                              'configuration')
-                elif sb['pb_receive_addresses'] is not None:
-                    LOG.error('cspCbfOutlinkAddress attribute must not '
-                              'appear in more than one real-time processing '
-                              'block configuration')
-                else:
-                    cbf_outlink_address = pbc.get('cspCbfOutlinkAddress')
-                    sb['pb_receive_addresses'] = pb_id
-
-            if 'scanParameters' in pbc:
-                if wf_type == 'realtime':
-                    scan_parameters = pbc.get('scanParameters')
-                elif wf_type == 'batch':
-                    LOG.error('scanParameters attribute must not appear '
-                              'in batch processing block configuration')
-                    scan_parameters = {}
-            else:
-                scan_parameters = {}
+            parameters = pbc.get('parameters')
 
             if 'dependencies' in pbc:
                 if wf_type == 'realtime':
@@ -824,171 +825,129 @@ class SDPSubarray(Device):
                 dependencies = []
 
             # Add processing block to list
-            processing_blocks.append(
+            pbs.append(
                 ska_sdp_config.ProcessingBlock(
                     pb_id=pb_id,
                     sbi_id=sbi_id,
                     workflow=workflow,
-                    parameters=pbc.get('parameters'),
-                    scan_parameters=scan_parameters,
+                    parameters=parameters,
                     dependencies=dependencies
                 )
             )
 
-        # Create scheduling block and processing blocks in the config DB.
-        # This is done in a single transaction.
+        # Write the SB and PBs to the config DB
+        self._create_sb_and_pbs(sb, pbs)
+
+        return True
+
+    def _config_set_scan_type(self, config):
+        """Parse the configuration and set the scan type.
+
+        If new scan types are supplied, they are appended to the current
+        list.
+
+        :param config: configuration data
+        :returns: True if the configuration is good, False if there is an
+            error
+
+        """
+        if self._config_db_client is not None:
+
+            new_scan_types = config.get('new_scan_types')
+            scan_type = config.get('scan_type')
+
+            # Get the existing scan types from SB
+            for txn in self._config_db_client.txn():
+                sb = txn.get_scheduling_block(self._sbi_id)
+            scan_types = sb.get('scan_types')
+
+            # Extend the list of scan types with new ones, if supplied
+            if new_scan_types is not None:
+                scan_types.extend(new_scan_types)
+
+            # Check scan type is in the list of scan types
+            scan_type_ids = [st.get('id') for st in scan_types]
+            if scan_type not in scan_type_ids:
+                LOG.error('Unknown scan_type: %s', scan_type)
+                return False
+
+            # Set current scan type, and update list of scan types if it has
+            # been extended
+            if new_scan_types is not None:
+                self._update_sb({'current_scan_type': scan_type,
+                                 'scan_types': scan_types})
+            else:
+                self._update_sb({'current_scan_type': scan_type})
+
+        return True
+
+    def _create_sb_and_pbs(self, sb, pbs):
+        """Create SB and PBs in the config DB.
+
+        This is done in a single transaction. The processing blocks are
+        created with an empty state.
+
+        :param sb: scheduling block
+        :param pbs: list of processing blocks
+
+        """
         if self._config_db_client is not None:
             for txn in self._config_db_client.txn():
+                sbi_id = sb.get('id')
                 txn.create_scheduling_block(sbi_id, sb)
-                for pb in processing_blocks:
+                for pb in pbs:
                     pb_id = pb.pb_id
                     txn.create_processing_block(pb)
                     txn.create_processing_block_state(pb_id, {})
 
-        if self.is_feature_active(FeatureToggle.CBF_OUTPUT_LINK) \
-                and self._config_db_client is not None:
-            self._cbf_outlink_address = cbf_outlink_address
+    def _update_sb(self, new_values):
+        """Update SB in the config DB.
 
-    def _update_scan_parameters(self, config):
-        """Update scan parameters in the SB and real-time PBs.
-
-        :param config: dict containing configuration data
+        :param new_values: dict containing key/value pairs to update
 
         """
-        scan_id = config.get('scanId')
-        LOG.info('Scan: %s', scan_id)
-
         if self._config_db_client is not None:
             for txn in self._config_db_client.txn():
-
                 sb = txn.get_scheduling_block(self._sbi_id)
-                pb_realtime = sb.get('pb_realtime')
-
-                for pbc in config.get('processingBlocks'):
-                    pb_id = pbc.get('id')
-                    if pb_id not in pb_realtime:
-                        LOG.error('Processing block %s is not a real-time PB '
-                                  'associated with this subarray', pb_id)
-                        continue
-                    LOG.info('Updating scan parameters in processing block '
-                             '%s', pb_id)
-                    pb_old = txn.get_processing_block(pb_id)
-                    pb_new = ska_sdp_config.ProcessingBlock(
-                        pb_id=pb_old.pb_id,
-                        sbi_id=pb_old.sbi_id,
-                        workflow=pb_old.workflow,
-                        parameters=pb_old.parameters,
-                        scan_parameters=pbc.get('scanParameters')
-                    )
-                    txn.update_processing_block(pb_new)
-
-                sb['scan_id'] = scan_id
+                sb.update(new_values)
                 txn.update_scheduling_block(self._sbi_id, sb)
 
-    def _get_receive_addresses(self, scan_id):
-        """Get the receive addresses for the next scan.
+    def _get_receive_addresses(self):
+        """Get the receive addresses for the current scan type.
 
-         The channel link map is read from the CSP device attribute and
-         passed to the workflow that was configured to provide the receive
-         addresses. The workflow responds by generating the addresses.
-         This communication happens via the processing block state.
+        The channel link map for each scan type is contained in the
+        list of scan types in the SB. The workflow generates the receive
+        addresses for each scan type and writes them to the processing
+        block state. This function retrieves the
 
-        :param scan_id: scan ID for which to get receive addresses
         :returns: receive address as dict
 
         """
-        if self._cbf_outlink_address is None \
-                or self._config_db_client is None:
+        if self._config_db_client is None:
             return None
 
-        # Get ID of PB that is generating the receive addresses
+        # Get ID of PB that is generating the receive addresses and scan type
         for txn in self._config_db_client.txn():
             sb = txn.get_scheduling_block(self._sbi_id)
         pb_id = sb.get('pb_receive_addresses')
+        scan_type = sb.get('current_scan_type')
 
-        # Get channel link map with the same scan ID from CSP device
-        channel_link_map = self._get_channel_link_map(scan_id)
+        # If no PB is configured to generate the receive addresses, return None
+        if pb_id is None:
+            return None
 
-        # Update channel link map in the PB state
+        # Get the list of receive address configurations for all scan types
+        # and pick out the right one
         for txn in self._config_db_client.txn():
             pb_state = txn.get_processing_block_state(pb_id)
-            pb_state['channel_link_map'] = channel_link_map
-            txn.update_processing_block_state(pb_id, pb_state)
-
-        # Wait for receive addresses with same scan ID to be available in the
-        # PB state
-        for txn in self._config_db_client.txn():
-            pb_state = txn.get_processing_block_state(pb_id)
-            receive_addresses = pb_state.get('receive_addresses')
-            if receive_addresses is None:
-                ra_scan_id = None
-            else:
-                ra_scan_id = receive_addresses.get('scanId')
-            if ra_scan_id != scan_id:
-                txn.loop(wait=True)
+        receive_addresses_list = pb_state.get('receive_addresses')
+        receive_addresses = None
+        for ra in receive_addresses_list:
+            if ra.get('id') == scan_type:
+                receive_addresses = ra
+                break
 
         return receive_addresses
-
-    def _get_channel_link_map(self, scan_id, timeout=30.0):
-        """Get channel link map from the CSP Tango device attribute.
-
-        :param scan_id: Scan ID to match
-        :param timeout: Timeout in seconds
-        :returns: Validated channel link map as dict
-
-        """
-        LOG.debug('Reading channel link map from %s',
-                  self._cbf_outlink_address)
-        attribute_proxy = AttributeProxy(self._cbf_outlink_address)
-        attribute_proxy.ping()
-
-        LOG.debug('Waiting for CSP attribute to provide channel link map for '
-                  'scan ID %s', scan_id)
-        # This is a horrendous hack to poll the CSP device until the scan
-        # ID matches. It needs to refactored to use events.
-        start_time = time.time()
-        while True:
-            channel_link_map_str = attribute_proxy.read().value
-            channel_link_map = self._validate_json_config(
-                channel_link_map_str, 'channel_link_map.json')
-            if channel_link_map is None:
-                self._set_obs_state(ObsState.FAULT)
-                self._raise_command_error('Channel link map validation '
-                                          'failed')
-                break
-            if channel_link_map.get('scanID') == scan_id:
-                break
-            elapsed = time.time() - start_time
-            LOG.debug('Waiting for scan ID on CSP attribute '
-                      '(elapsed: %2.4f s)', elapsed)
-            if elapsed > timeout:
-                self._set_obs_state(ObsState.FAULT)
-                self._raise_command_error('Timeout reached while waiting for '
-                                          'scan ID on CSP attribute')
-                channel_link_map = None
-                break
-            time.sleep(1.0)
-
-        return channel_link_map
-
-    def _end_realtime_processing(self):
-        """End real-time processing associated with this subarray.
-
-        This resets the internal state of the subarray.
-        """
-        self._sbi_id = None
-        self._cbf_outlink_address = None
-
-    def _update_sb_status(self, status):
-        """Update scheduling block status field.
-
-        :param status: status
-        """
-        if self._config_db_client is not None:
-            for txn in self._config_db_client.txn():
-                sb = txn.get_scheduling_block(self._sbi_id)
-                sb['status'] = status
-                txn.update_scheduling_block(self._sbi_id, sb)
 
 
 def delete_device_server(instance_name='*'):
@@ -1050,8 +1009,6 @@ def main(args=None, **kwargs):
 
     # Set default values for feature toggles.
     SDPSubarray.set_feature_toggle_default(FeatureToggle.CONFIG_DB, False)
-    SDPSubarray.set_feature_toggle_default(FeatureToggle.CBF_OUTPUT_LINK,
-                                           False)
     SDPSubarray.set_feature_toggle_default(FeatureToggle.AUTO_REGISTER, True)
 
     # If the feature is enabled, attempt to auto-register the device

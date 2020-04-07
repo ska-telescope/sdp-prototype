@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SDP subarray Scan schema",
+  "description": "Used by the SDP subarray Scan command to validate configuration data",
+  "version": "0.1.0",
+  "type": "object",
+  "required": ["id"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "$ref": "#/definitions/scan_id" }
+  },
+  "definitions": {
+    "scan_id": {
+      "description": "Scan ID",
+      "type": "integer"
+    }
+  }
+}

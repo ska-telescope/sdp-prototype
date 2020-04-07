@@ -5,7 +5,19 @@ LINE:=$(shell printf '=%.0s' {1..70})
 
 # Set default docker registry user.
 ifeq ($(strip $(DOCKER_REGISTRY_USER)),)
-  DOCKER_REGISTRY_USER:=skaorca
+	DOCKER_REGISTRY_USER=sdp-prototype
+#  	DOCKER_REGISTRY_USER:=skaorca
+endif
+
+ifeq ($(strip $(DOCKER_REGISTRY_HOST)),)
+	DOCKER_REGISTRY_HOST=nexus.engageska-portugal.pt
+#	DOCKER_REGISTRY_HOST=index.docker.io
+endif
+
+ifeq ($(DOCKER_REGISTRY_HOST),index.docker.io)
+	IMAGE_PREFIX:=$(DOCKER_REGISTRY_USER)
+else
+	IMAGE_PREFIX:=$(DOCKER_REGISTRY_HOST)/$(DOCKER_REGISTRY_USER)
 endif
 
 # Get image name and version from the release file

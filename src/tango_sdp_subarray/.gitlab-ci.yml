@@ -34,7 +34,6 @@ test:ska-sdp-subarray:
   variables:
     SDP_CONFIG_HOST: etcd
     TOGGLE_CONFIG_DB: 0
-    TOGGLE_CBF_OUTPUT_LINK: 1
   before_script:
     - python3 -m pip install --upgrade ska-sdp-logging ska-sdp-config
   script:

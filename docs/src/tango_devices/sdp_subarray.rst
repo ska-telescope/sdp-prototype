@@ -5,8 +5,7 @@ Introduction
 ------------
 
 The SDP Subarray Tango device is the principal means by which processing is
-initiated in SDP. The present implementation only performs real-time
-processing.
+initiated in SDP.
 
 
 State Model
@@ -23,10 +22,10 @@ present partial implementation is as follows:
 Behaviour
 ---------
 
-The interaction between TMC (Telescope Manager Control) and the SDP Subarray device is shown below. The
-SDP Subarray device receives commands from the TMC SDP Subarray leaf node,
-and the consequent changes to the state of SDP are reported in the device
-attributes.
+The interaction between TMC (Telescope Manager Control) and the SDP Subarray
+device is shown below. The SDP Subarray device receives commands from the TMC
+SDP Subarray leaf node, and the consequent changes to the state of SDP are
+reported in the device attributes.
 
 .. image:: ../images/sdp_subarray_interaction_tango.svg
    :align: center
@@ -38,21 +37,23 @@ Interface
 Attributes
 ^^^^^^^^^^
 
-==================== ====== ========== =========================== ===========
-Attribute            Type   Read/Write Values                      Description
-==================== ====== ========== =========================== ===========
-serverVersion        String Read       Semantic version            Subarray device server version
--------------------- ------ ---------- --------------------------- -----------
-obsState             Enum   Read-write :ref:`subarray_obsstate`    Subarray observation state
--------------------- ------ ---------- --------------------------- -----------
-adminMode            Enum   Read-write :ref:`subarray_adminmode`   Subarray admin mode
--------------------- ------ ---------- --------------------------- -----------
-healthState          Enum   Read       :ref:`subarray_healthstate` Subarray health state
--------------------- ------ ---------- --------------------------- -----------
-receiveAddresses     String Read       JSON object                 Host addresses for receiving visibilities
--------------------- ------ ---------- --------------------------- -----------
-processingBlockState String Read       JSON object                 State of associated real-time Processing Block
-==================== ====== ========== =========================== ===========
+======================= ====== ========== =========================== ===========
+Attribute               Type   Read/Write Values                      Description
+======================= ====== ========== =========================== ===========
+serverVersion           String Read       Semantic version            Subarray device server version
+----------------------- ------ ---------- --------------------------- -----------
+obsState                Enum   Read-write :ref:`subarray_obsstate`    Subarray observation state
+----------------------- ------ ---------- --------------------------- -----------
+adminMode               Enum   Read-write :ref:`subarray_adminmode`   Subarray admin mode
+----------------------- ------ ---------- --------------------------- -----------
+healthState             Enum   Read       :ref:`subarray_healthstate` Subarray health state
+----------------------- ------ ---------- --------------------------- -----------
+receiveAddresses        String Read       JSON object                 Host addresses for receiving visibilities
+----------------------- ------ ---------- --------------------------- -----------
+schedulingBlockInstance String Read       JSON object                 State of Scheduling Block Instance
+----------------------- ------ ---------- --------------------------- -----------
+processingBlockState    String Read       JSON object                 State of associated real-time Processing Blocks
+======================= ====== ========== =========================== ===========
 
 .. _subarray_obsstate:
 
@@ -120,77 +121,119 @@ Commands
 ================ ============= =========== ======
 Command          Argument type Return type Action
 ================ ============= =========== ======
-AssignResources  String        None        Assign resources to this Subarray. This sets DeviceState to ON, but it is otherwise a no-op for SDP.
-ReleaseResources String        None        Release resources assigned to the Subarray. This sets DeviceState to OFF, but it is otherwise a no-op for SDP.
-Configure        String (JSON) None        :ref:`Configure processing for this Subarray<subarray_configure>`.
-ConfigureScan    String (JSON) None        :ref:`Update processing configuration for the next scan<subarray_configurescan>`.
-Scan             None          None        Begin a scan. Sets obsState to SCANNING. (BeginScan is a duplicate of this command.)
-EndScan          None          None        End a scan. Sets obsState to READY.
-EndSB            None          None        End the Scheduling Block. Sets obsState to IDLE.
+AssignResources  String (JSON) None        :ref:`Assigns processing resources to the SBI. Sets DeviceState to ON <subarray_assign_resources>`.
+ReleaseResources None          None        Releases all real-time processing in the SBI. Sets DeviceState to OFF.
+Configure        String (JSON) None        :ref:`Configures scan type for the next scans. Sets obsState to READY <subarray_configure>`.
+Reset            None          None        Clears the scan type. Sets obsState to IDLE.
+Scan             String (JSON) None        :ref:`Begins a scan of the configured type. Sets obsState to SCANNING <subarray_scan>`.
+EndScan          None          None        Ends the scan. Sets obsState to READY.
 ================ ============= =========== ======
+
+.. _subarray_assign_resources:
+
+AssignResources command
+"""""""""""""""""""""""
+
+The argument of the AssignResources command is a JSON object describing the processing to be done
+for the scheduling block instance (SBI). It contains a set of scan types and processing blocks.
+The scan types contain information about the frequency channels output by CSP, which is important
+for configuring the receive processes in SDP. The processing blocks define the workflows to be run
+and the parameters to be passed to the workflows.
+
+An example of the argument is below. Note that:
+
+- ``max_length`` specifies the maximum length of the SBI in seconds.
+- In ``scan_types``, the frequency and channel information are for example only, they will be more detailed.
+- In ``processing_blocks``, the workflow parameters will not actually be empty. Each workflow will have its
+  own schema for its parameters.
+
+.. code-block:: json
+
+    {
+      "id": "sbi-mvp01-20200318-0001",
+      "max_length": 21600.0,
+      "scan_types": [
+        {
+          "id": "science_A",
+          "coordinate_system": "ICRS", "ra": "00:00:00.00", "dec": "00:00:00.0",
+          "freq_min": 0.0, "freq_max": 0.0, "nchan": 1000
+        },
+        {
+          "id": "calibration_B",
+          "coordinate_system": "ICRS", "ra": "00:00:00.00", "dec": "00:00:00.0",
+          "freq_min": 0.0, "freq_max": 0.0, "nchan": 1000
+        }
+      ],
+      "processing_blocks": [
+        {
+          "id": "pb-mvp01-20200318-0001",
+          "workflow": {"type": "realtime", "id": "vis_receive", "version": "0.1.0"},
+          "parameters": {}
+        },
+        {
+          "id": "pb-mvp01-20200318-0002",
+          "workflow": {"type": "realtime", "id": "test_realtime", "version": "0.1.0"},
+          "parameters": {}
+        },
+        {
+          "id": "pb-mvp01-20200318-0003",
+          "workflow": {"type": "batch", "id": "ical", "version": "0.1.0"},
+          "parameters": {},
+          "dependencies": [
+            {"pb_id": "pb-mvp01-20200318-0001", "type": ["visibilities"]}
+          ]
+        },
+        {
+          "id": "pb-mvp01-20200318-0004",
+          "workflow": {"type": "batch", "id": "dpreb", "version": "0.1.0"},
+          "parameters": {},
+          "dependencies": [
+            {"pb_id": "pb-mvp01-20200318-0003", "type": ["calibration"]}
+          ]
+        }
+      ]
+    }
+
 
 .. _subarray_configure:
 
 Configure command
 """""""""""""""""
 
-The argument of the Configure command is a JSON object describing the
-processing to be done for the Subarray. It contains a Processing Block
-that defines the workflow to be run and the parameters to be passed
-to the workflow.
+The argument of the Configure command is a JSON object specifying the scan type for the next scans.
+``new_scan_types`` is optional, it is only present if a new scan type needs to be declared. This
+would only happen for special SBIs (and underlying SDP workflows) meant to support dynamic
+reconfiguration.
 
 An example of the argument:
 
 .. code-block:: json
 
     {
-        "configure": {
-            "id": "PB_27062019_0001_ingest",
-            "sbiId": "SBI_27062019_0001",
-            "cspCbfOutlinkAddress": "mid_csp/elt/subarray01/cbfOutLink",
-            "workflow": {
-                "type": "realtime",
-                "id": "vis_receive",
-                "version": "0.1.0"
-            },
-            "parameters": {
-                "numAntennas": 4,
-                "numChannels": 372,
-                "numPolarisations": 4,
-                "freqStartHz": 0.35e9,
-                "freqEndHz": 1.05e9,
-                "fields": {
-                    "0": { "system": "ICRS", "name": "", "ra": "", "dec": "" },
-                    "1": { "system": "ICRS", "name": "", "ra": "", "dec": "" }
-                }
-            },
-            "scanParameters": {
-                "12345": {
-                    "fieldId": 0,
-                    "interval": 0.140
-                }
-            }
+      "new_scan_types": [
+        {
+          "id": "calibration_C",
+          "coordinate_system": "ICRS", "ra": "00:00:00.00", "dec": "00:00:00.0",
+          "freq_min": 0.0, "freq_max": 0.0, "nchan": 1000
         }
+      ],
+      "scan_type": "calibration_C"
     }
 
-.. _subarray_configurescan:
 
-ConfigureScan command
-"""""""""""""""""""""
+.. _subarray_scan:
 
-The ConfigureScan command is interpreted as passing late-binding scan-specific
-information to the workflow that was instantiated in response to the Configure
-command. The argument is a JSON object containing the an entry to be added to
-the scanParameters in the Processing Block.
+Scan command
+""""""""""""
+
+The argument of the Scan command is a JSON object which specifies the scan ID.
 
 An example of the argument:
 
 .. code-block:: json
 
     {
-        "scanId": 12346,
-        "fieldId": 1,
-        "interval": 0.140
+      "id": 1
     }
 
 

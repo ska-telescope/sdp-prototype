@@ -7,7 +7,6 @@
 
 import json
 from os.path import dirname, join
-from unittest.mock import MagicMock
 
 import tango
 from tango import DevState
@@ -32,20 +31,6 @@ scenarios('./1_XR-11.feature')
 
 
 # -----------------------------------------------------------------------------
-# Mock functions
-# -----------------------------------------------------------------------------
-
-def mock_get_channel_link_map(scan_id):
-    """Mock replacement for SDPSubarray device _get_channel_link_map method."""
-    config_file = 'attr_cbfOutputLink-simple.json'
-    path = join(dirname(__file__), 'data', config_file)
-    with open(path, 'r') as file:
-        channel_link_map = json.load(file)
-    channel_link_map['scanID'] = scan_id
-    return channel_link_map
-
-
-# -----------------------------------------------------------------------------
 # Given Steps : Used to describe the initial context of the system.
 # -----------------------------------------------------------------------------
 
@@ -57,11 +42,6 @@ def subarray_device(tango_context, admin_mode_value: str):
     :param tango_context: fixture providing a TangoTestContext
     :param admin_mode_value: adminMode value the device is created with
     """
-    # Mock the SDPSubarray._get_channel_link_map() method so that
-    # it does not need to connect to a CSP subarray device.
-    SDPSubarray._get_channel_link_map = MagicMock(
-        side_effect=mock_get_channel_link_map
-    )
     tango_context.device.Init()
     tango_context.device.adminMode = AdminMode[admin_mode_value]
     return tango_context.device
@@ -81,22 +61,20 @@ def init_device(subarray_device):
     subarray_device.Init()
 
 
-@when(parsers.parse('I set adminMode to {value}'))
-def set_admin_mode(subarray_device, value: str):
-    """Set the adminMode to the specified value.
+@when(parsers.parse('obsState is {value}'))
+@when('obsState is <value>')
+def set_obs_state(subarray_device, value):
+    """Set the obsState attribute to the specified value.
 
     :param subarray_device: An SDPSubarray device.
-    :param value: Value to set the adminMode attribute to.
+    :param value: An SDPSubarray ObsState enum string.
     """
-    subarray_device.adminMode = AdminMode[value]
+    subarray_device.obsState = ObsState[value]
 
 
 @when('I call AssignResources')
 def command_assign_resources(subarray_device):
     """Call the AssignResources command.
-
-    This requires that the device exists, takes a string, and does not
-    return a value.
 
     :param subarray_device: An SDPSubarray device.
     """
@@ -105,8 +83,27 @@ def command_assign_resources(subarray_device):
     assert command_info.in_type == tango.DevString
     assert command_info.out_type == tango.DevVoid
 
-    # For SDP assign resources is a noop so can be called with an empty string.
-    subarray_device.AssignResources('')
+    config_file = 'command_AssignResources.json'
+    path = join(dirname(__file__), 'data', config_file)
+    with open(path, 'r') as file:
+        config_str = file.read()
+
+    subarray_device.AssignResources(config_str)
+
+
+@when('I call AssignResources with invalid JSON')
+def command_assign_resources_invalid_json(subarray_device):
+    """Call the AssignResources command with invalid JSON.
+
+    :param subarray_device: An SDPSubarray device.
+    """
+    config_file = 'invalid_AssignResources.json'
+    path = join(dirname(__file__), 'data', config_file)
+    with open(path, 'r') as file:
+        config_str = file.read()
+
+    with pytest.raises(tango.DevFailed):
+        subarray_device.AssignResources(config_str)
 
 
 @when('I call ReleaseResources')
@@ -116,20 +113,11 @@ def command_release_resources(subarray_device):
     :param subarray_device: An SDPSubarray device.
     """
     assert 'ReleaseResources' in subarray_device.get_command_list()
-    # For SDP release resources is a noop so can be called with an empty
-    # string.
-    subarray_device.ReleaseResources('')
+    command_info = subarray_device.get_command_config('ReleaseResources')
+    assert command_info.in_type == tango.DevVoid
+    assert command_info.out_type == tango.DevVoid
 
-
-@when(parsers.parse('obsState is {value}'))
-@when('obsState is <value>')
-def set_obs_state(subarray_device, value):
-    """Set the obsState attribute to the {commanded state}.
-
-    :param subarray_device: An SDPSubarray device.
-    :param value: An SDPSubarray ObsState enum string.
-    """
-    subarray_device.obsState = ObsState[value]
+    subarray_device.ReleaseResources()
 
 
 @when('I call Configure')
@@ -138,34 +126,46 @@ def command_configure(subarray_device):
 
     :param subarray_device: An SDPSubarray device.
     """
+    assert 'Configure' in subarray_device.get_command_list()
+    command_info = subarray_device.get_command_config('Configure')
+    assert command_info.in_type == tango.DevString
+    assert command_info.out_type == tango.DevVoid
+
     config_file = 'command_Configure.json'
     path = join(dirname(__file__), 'data', config_file)
     with open(path, 'r') as file:
         config_str = file.read()
+
     subarray_device.Configure(config_str)
 
 
 @when('I call Configure with invalid JSON')
 def command_configure_invalid_json(subarray_device):
-    """Call the Configure command with invalid json.
+    """Call the Configure command with invalid JSON.
 
     :param subarray_device: An SDPSubarray device.
     """
-    with pytest.raises(tango.DevFailed):
-        subarray_device.Configure('{}')
-
-
-@when('I call ConfigureScan')
-def command_configure_scan(subarray_device):
-    """Call the Configure Scan command.
-
-    :param subarray_device: An SDPSubarray device.
-    """
-    config_file = 'command_ConfigureScan.json'
+    config_file = 'invalid_Configure.json'
     path = join(dirname(__file__), 'data', config_file)
     with open(path, 'r') as file:
         config_str = file.read()
-    subarray_device.ConfigureScan(config_str)
+
+    with pytest.raises(tango.DevFailed):
+        subarray_device.Configure(config_str)
+
+
+@when('I call Reset')
+def command_reset(subarray_device):
+    """Call the Reset command.
+
+    :param subarray_device: An SDPSubarray device.
+    """
+    assert 'Reset' in subarray_device.get_command_list()
+    command_info = subarray_device.get_command_config('Reset')
+    assert command_info.in_type == tango.DevVoid
+    assert command_info.out_type == tango.DevVoid
+
+    subarray_device.Reset()
 
 
 @when('I call Scan')
@@ -173,9 +173,29 @@ def command_scan(subarray_device):
     """Call the Scan command.
 
     :param subarray_device: An SDPSubarray device.
-    # """
+    """
+    assert 'Scan' in subarray_device.get_command_list()
+    command_info = subarray_device.get_command_config('Scan')
+    assert command_info.in_type == tango.DevString
+    assert command_info.out_type == tango.DevVoid
 
-    subarray_device.Scan()
+    config_file = 'command_Scan.json'
+    path = join(dirname(__file__), 'data', config_file)
+    with open(path, 'r') as file:
+        config_str = file.read()
+
+    subarray_device.Scan(config_str)
+
+
+@when('I call Scan with invalid JSON')
+def command_scan_invalid_json(subarray_device):
+    """Call the Scan command with invalid JSON.
+
+    :param subarray_device: An SDPSubarray device.
+    """
+
+    with pytest.raises(tango.DevFailed):
+        subarray_device.Scan('{}')
 
 
 @when('I call EndScan')
@@ -183,19 +203,13 @@ def command_end_scan(subarray_device):
     """Call the EndScan command.
 
     :param subarray_device: An SDPSubarray device.
-    # """
+    """
+    assert 'EndScan' in subarray_device.get_command_list()
+    command_info = subarray_device.get_command_config('EndScan')
+    assert command_info.in_type == tango.DevVoid
+    assert command_info.out_type == tango.DevVoid
 
     subarray_device.EndScan()
-
-
-@when('I call EndSB')
-def command_end_sb(subarray_device):
-    """Call the EndSB command.
-
-    :param subarray_device: An SDPSubarray device.
-    # """
-
-    subarray_device.EndSB()
 
 
 # -----------------------------------------------------------------------------
@@ -234,16 +248,6 @@ def admin_mode_equals(subarray_device, expected):
         "actual != expected"
 
 
-@then('adminMode should be ONLINE or MAINTENANCE')
-def admin_mode_online_or_maintenance(subarray_device):
-    """Check the Subarray adminMode is ONLINE or in MAINTENANCE mode.
-
-    :param subarray_device: An SDPSubarray device.
-    """
-    assert subarray_device.adminMode in (AdminMode.ONLINE,
-                                         AdminMode.MAINTENANCE)
-
-
 @then(parsers.parse('healthState should be {expected}'))
 def health_state_equals(subarray_device, expected):
     """Check the Subarray healthState value.
@@ -263,7 +267,7 @@ def dev_failed_error_raised_by_assign_resources(subarray_device):
     :param subarray_device: An SDPSubarray device.
     """
     with pytest.raises(tango.DevFailed):
-        subarray_device.AssignResources()
+        subarray_device.AssignResources('{}')
 
 
 @then('calling ReleaseResources raises tango.DevFailed')
@@ -276,6 +280,46 @@ def dev_failed_error_raised_by_release_resources(subarray_device):
         subarray_device.ReleaseResources()
 
 
+@then('calling Configure raises tango.DevFailed')
+def dev_failed_error_raised_by_configure(subarray_device):
+    """Check that calling Configure raises a tango.DevFailed error.
+
+    :param subarray_device: An SDPSubarray device.
+    """
+    with pytest.raises(tango.DevFailed):
+        subarray_device.Configure('{}')
+
+
+@then('calling Reset raises tango.DevFailed')
+def dev_failed_error_raised_by_reset(subarray_device):
+    """Check that calling Reset raises a tango.DevFailed error.
+
+    :param subarray_device: An SDPSubarray device.
+    """
+    with pytest.raises(tango.DevFailed):
+        subarray_device.Reset()
+
+
+@then('calling Scan raises tango.DevFailed')
+def dev_failed_error_raised_by_scan(subarray_device):
+    """Check that calling Scan raises a tango.DevFailed error.
+
+    :param subarray_device: An SDPSubarray device.
+    """
+    with pytest.raises(tango.DevFailed):
+        subarray_device.Scan('{}')
+
+
+@then('calling EndScan raises tango.DevFailed')
+def dev_failed_error_raised_by_end_scan(subarray_device):
+    """Check that calling EndScan raises a tango.DevFailed error.
+
+    :param subarray_device: An SDPSubarray device.
+    """
+    with pytest.raises(tango.DevFailed):
+        subarray_device.EndScan()
+
+
 @then('the configured Processing Blocks should be in the Config DB')
 def check_config_db():
     """Check that the config DB has the configured PBs.
@@ -284,13 +328,14 @@ def check_config_db():
     """
     if ska_sdp_config is not None \
             and SDPSubarray.is_feature_active('config_db'):
-        filename = join(dirname(__file__), 'data', 'command_Configure.json')
+        filename = join(dirname(__file__), 'data',
+                        'command_AssignResources.json')
         with open(filename, 'r') as file:
             config = json.load(file)
         config_db_client = ska_sdp_config.Config()
         for txn in config_db_client.txn():
             pb_ids = txn.list_processing_blocks()
-        for pb in config['processingBlocks']:
+        for pb in config['processing_blocks']:
             assert pb['id'] in pb_ids
 
 
@@ -306,19 +351,10 @@ def receive_addresses_attribute_ok(subarray_device):
 
     if ska_sdp_config is not None \
             and SDPSubarray.is_feature_active('config_db'):
-        expected_output_file = ''
-        if not SDPSubarray.is_feature_active('cbf_output_link'):
-            expected_output_file = join(
-                data_path,
-                'attr_receiveAddresses-cbfOutputLink-disabled.json'
-                )
-        elif isinstance(SDPSubarray._get_channel_link_map, MagicMock):
-            expected_output_file = join(
-                data_path, 'attr_receiveAddresses-simple.json')
-        else:
-            pytest.fail('Not yet able to test using a mock CSP Subarray '
-                        'device')
-
+        expected_output_file = join(
+            data_path,
+            'attr_receiveAddresses-cbfOutputLink-disabled.json'
+            )
         with open(expected_output_file, 'r') as file:
             expected = json.loads(file.read())
         receive_addresses = json.loads(receive_addresses)

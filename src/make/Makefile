@@ -23,6 +23,7 @@ endif
 IMAGE=$(IMAGE_PREFIX)/$(NAME)
 BASE_IMAGE:=$(IMAGE_PREFIX)/pytango_ska_base:latest
 DEV_IMAGE:=$(IMAGE_PREFIX)/pytango_ska_dev:latest
+TEST_IMAGE:=$(IMAGE_PREFIX)/pytango_ska_test:latest
 
 ifeq ($(strip $(GIT_VERSION)),)
 	GIT_VERSION=$(shell git rev-parse --verify --short=8 HEAD)

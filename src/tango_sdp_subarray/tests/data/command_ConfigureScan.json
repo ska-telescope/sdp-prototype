@@ -1,9 +1,0 @@
-{
-  "scanId": 12346,
-  "processingBlocks": [
-    {
-      "id": "PB-20200101-0001-realtime-test",
-      "scanParameters": { "fieldId": "1", "interval": 0.14 }
-    }
-  ]
-}

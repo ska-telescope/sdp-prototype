@@ -3,7 +3,6 @@
 feature:
   # Tango devices connect to configuration DB?
   config-db: "1"
-  cbf-output-link: "0"
 
 # Helm deployment controller
 helm_deploy:

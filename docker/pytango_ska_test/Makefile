@@ -2,9 +2,8 @@
 #  Makefile utility functions for the SDP Subarray Tango device
 #
 
-NAME=tangods_sdp_subarray
-CLASS=SDPSubarray
-VERSION=$(patsubst "%",%, $(shell awk -F= '/^VERSION = ".*"/{print $$2}' $(CLASS)/release.py))
+NAME=sdp_test_image
+VERSION=$(patsubst "%",%, $(shell awk -F= '/^VERSION = ".*"/{print $$2}' release.py))
 
 include ../make/Makefile
 
@@ -81,12 +80,12 @@ stop:  ## Stop the device
 test:  ## Run tests for the device
 	docker run --rm -t \
 		-v $(PWD):/app \
-		$(TEST_IMAGE) \
-		python3 -m pytest \
+		$(DEV_IMAGE) \
+		python -m pytest \
 		--color=yes \
 		--pylint \
-		--pycodestyle \
-		--pydocstyle \
+		--codestyle \
+		--docstyle \
 		--cov=SDPSubarray \
 		--cov-report=term \
 		--cov-config=./setup.cfg \
@@ -97,7 +96,7 @@ test:  ## Run tests for the device
 test_only:  ## Run tests for the device
 	docker run --rm -t \
 		-v $(PWD):/app \
-		$(TEST_IMAGE) \
+		$(DEV_IMAGE) \
 		python -m pytest \
 		-vv -s \
 		--gherkin-terminal-reporter \

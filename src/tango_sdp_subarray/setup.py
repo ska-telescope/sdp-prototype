@@ -29,7 +29,7 @@ setup(
     ],
     install_requires=[
         'pytango',
-        'jsonschema'
+        'jsonschema',
     ],
     entry_points={
         'console_scripts': ['SDPSubarray = SDPSubarray:main']
@@ -44,7 +44,7 @@ setup(
         'pyassert',
         'pytest-cov',
         'pytest-json-report',
-        'pylint2junit'
+        'pylint2junit',
 
     ],
     zip_safe=False,

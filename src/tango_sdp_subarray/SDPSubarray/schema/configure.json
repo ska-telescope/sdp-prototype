@@ -1,90 +1,32 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "SDP Subarray Configure schema",
-  "description": "Used by the SDP Subarray Configure command to validate configuration data",
-  "version": "0.2.0",
+  "title": "SDP subarray Configure schema",
+  "description": "Used by the SDP subarray Configure command to validate configuration data",
+  "version": "0.1.0",
   "type": "object",
-  "required": ["sbiId", "scanId", "processingBlocks"],
+  "required": ["scan_type"],
+  "optional": ["new_scan_types"],
   "additionalProperties": false,
   "properties": {
-    "sbiId": { "$ref": "#/definitions/sbiId" },
-    "scanId": { "$ref": "#/definitions/scanId" },
-    "processingBlocks": {
+    "new_scan_types": {
       "type": "array",
       "minItems": 1,
-      "items": { "$ref": "#/definitions/processingBlock" }
-    }
+      "items": { "$ref": "#/definitions/scan_type" }
+    },
+    "scan_type": { "$ref": "#/definitions/scantype_id" }
   },
   "definitions": {
-    "sbiId": {
-      "description": "Scheduling Block Instance ID",
+    "scantype_id": {
+      "description": "Scan type ID",
       "type": "string"
     },
-    "scanId": {
-      "description": "Scan ID",
-      "type": "integer"
-    },
-    "pbId": {
-      "description": "Processing Block ID",
-      "type": "string"
-    },
-    "semanticVersion": {
-      "description": "Semantic version number",
-      "type": "string"
-    },
-    "processingBlock": {
-      "description": "Processing Block",
+    "scan_type": {
+      "description": "Scan type",
       "type": "object",
-      "required": ["id", "workflow", "parameters"],
-      "optional": ["cspCbfOutlinkAddress", "scanParameters", "dependencies"],
-      "additionalProperties": false,
+      "required": ["id"],
+      "additionalProperties": true,
       "properties": {
-        "id": { "$ref": "#/definitions/pbId" },
-        "workflow": { "$ref": "#/definitions/workflow" },
-        "parameters": { "$ref": "#/definitions/parameters" },
-        "cspCbfOutlinkAddress": { "$ref": "#/definitions/cspAddress" },
-        "scanParameters": { "$ref": "#/definitions/scanParameters" },
-        "dependencies": {
-          "type": "array",
-          "items": { "$ref": "#/definitions/dependency" }
-        }
-      }
-    },
-    "workflow": {
-      "description": "Workflow",
-      "type": "object",
-      "required": ["type", "id", "version"],
-      "additionalProperties": false,
-      "properties": {
-        "type": { "type": "string" },
-        "id": { "type": "string" },
-        "version": { "$ref": "#/definitions/semanticVersion" }
-      }
-    },
-    "parameters": {
-      "description": "Workflow parameters",
-      "type": "object"
-    },
-    "cspAddress": {
-      "description": "Name of CSP Tango attribute from which to read addresses",
-      "type": "string"
-    },
-    "scanParameters": {
-      "description": "Scan-specific workflow parameters",
-      "type": "object"
-    },
-    "dependency": {
-      "description": "Processing Block dependency",
-      "type": "object",
-      "required": ["pbId", "type"],
-      "additionalProperties": false,
-      "properties": {
-        "pbId": { "$ref": "#/definitions/pbId" },
-        "type": {
-          "type": "array",
-          "minItems": 1,
-          "items": { "type": "string" }
-        }
+        "id": { "$ref": "#/definitions/scantype_id" }
       }
     }
   }
