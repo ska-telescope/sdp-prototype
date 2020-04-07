@@ -7,7 +7,7 @@ etcd:
 # Processing controller
 processing_controller:
   image: nexus.engageska-portugal.pt/sdp-prototype/processing-controller
-  version: 0.5.0
+  version: 0.5.2
   imagePullPolicy: IfNotPresent
   replicas: 1
   resources: {}
