@@ -27,6 +27,13 @@ system capable of configuring and executing workflows.
 
 .. toctree::
   :maxdepth: 1
+  :caption: Building and testing
+
+  building/building_tango_devices
+  building/testing_tango_devices
+
+.. toctree::
+  :maxdepth: 1
   :caption: Tango Devices
 
   tango_devices/sdp_master
