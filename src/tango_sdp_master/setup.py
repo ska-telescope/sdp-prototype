@@ -36,11 +36,14 @@ setup(
     setup_requires=['pytest-runner'],
     tests_require=[
         'pytest',
-        'pytest-pylint',
+        'pytest-cov',
+        'pytest-json-report',
         'pytest-pycodestyle',
         'pytest-pydocstyle',
-        'pytest_bdd',
-        'pyassert'
+        'pyassert',
+        'pytest-json-report',
+        'pylint2junit'
+
     ],
     zip_safe=False,
     classifiers=[

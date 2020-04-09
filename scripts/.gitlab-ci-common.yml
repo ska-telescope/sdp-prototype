@@ -139,6 +139,8 @@
   stage: test
   tags: [docker]
   image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
+  before_script:
+    - python3 -m pip install --upgrade ska-sdp-logging ska-sdp-config
 
 
 ## ============================================================================
