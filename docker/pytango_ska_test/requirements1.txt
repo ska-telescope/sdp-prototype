@@ -1,0 +1,2 @@
+--extra-index-url=https://nexus.engageska-portugal.pt/repository/pypi/simple
+lmcbaseclasses

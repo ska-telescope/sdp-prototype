@@ -1,0 +1,12 @@
+jsonschema
+pyassert
+pytest
+pytest-bdd
+pytest-cov
+pytest-json-report
+pytest-pycodestyle
+pytest-pydocstyle
+pytest-pylint
+pylint2junit
+ska-sdp-logging>=0.0.5
+ska-sdp-config>=0.0.7
