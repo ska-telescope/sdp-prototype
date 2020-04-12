@@ -35,7 +35,8 @@ test:ska-sdp-subarray:
     SDP_CONFIG_HOST: etcd
     TOGGLE_CONFIG_DB: 0
   before_script:
-    - python3 -m pip install --upgrade ska-sdp-logging ska-sdp-config
+    - python3 -m pip install --extra-index-url=https://nexus.engageska-portugal.pt/repository/pypi/simple lmcbaseclasses==0.5.1
+    - python3 -m pip install ska-sdp-config
   script:
     - cd src/tango_sdp_subarray
     - mkdir -p build/reports

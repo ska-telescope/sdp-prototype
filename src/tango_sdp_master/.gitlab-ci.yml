@@ -21,6 +21,8 @@ build:ska-sdp-master:
 test:ska-sdp-master:
   extends: .tango_tests
   stage: test
+  before_script:
+    - python3 -m pip install --extra-index-url=https://nexus.engageska-portugal.pt/repository/pypi/simple lmcbaseclasses==0.5.1
   script:
     - cd src/tango_sdp_master
     - python3 setup.py test
