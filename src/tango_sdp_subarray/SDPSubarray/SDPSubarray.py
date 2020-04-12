@@ -13,18 +13,18 @@ import logging
 import json
 from enum import IntEnum, unique
 
-from ska_sdp_logging import tango_logging
-
 import tango
 from tango import AttrWriteType, ConnectionFailed, Database, \
     DbDevInfo, DevState
-from tango.server import Device, DeviceMeta, attribute, command, \
-    device_property, run
+from tango.server import attribute, command, device_property, run
+
+from ska.base import SKASubarray
+from ska.base.control_model import AdminMode, HealthState, ObsState
 
 import jsonschema
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
-from release import VERSION as SERVER_VERSION   # noqa
+from release import VERSION
 
 try:
     import ska_sdp_config
@@ -32,41 +32,6 @@ except ImportError:
     ska_sdp_config = None
 
 LOG = logging.getLogger()
-
-
-# https://pytango.readthedocs.io/en/stable/data_types.html#devenum-pythonic-usage
-@unique
-class AdminMode(IntEnum):
-    """AdminMode enum."""
-
-    OFFLINE = 0
-    ONLINE = 1
-    MAINTENANCE = 2
-    NOT_FITTED = 3
-    RESERVED = 4
-
-
-@unique
-class HealthState(IntEnum):
-    """HealthState enum."""
-
-    OK = 0
-    DEGRADED = 1
-    FAILED = 2
-    UNKNOWN = 3
-
-
-@unique
-class ObsState(IntEnum):
-    """ObsState enum."""
-
-    IDLE = 0
-    CONFIGURING = 1
-    READY = 2
-    SCANNING = 3
-    PAUSED = 4
-    ABORTED = 5
-    FAULT = 6
 
 
 @unique
@@ -77,21 +42,12 @@ class FeatureToggle(IntEnum):
     AUTO_REGISTER = 2  #: Enable / Disable Tango DB auto-registration
 
 
-# class SDPSubarray(SKASubarray):
-class SDPSubarray(Device):
-    """SDP Subarray device class.
-
-    .. note::
-        This should eventually inherit from SKASubarray but these need
-        some work before doing so would add any value to this device.
-
-    """
+class SDPSubarray(SKASubarray):
+    """SDP Subarray device class."""
 
     # pylint: disable=attribute-defined-outside-init
     # pylint: disable=too-many-instance-attributes
     # pylint: disable=no-self-use
-
-    __metaclass__ = DeviceMeta
 
     # -----------------
     # Device Properties
@@ -107,37 +63,15 @@ class SDPSubarray(Device):
     # Attributes
     # ----------
 
-    serverVersion = attribute(
-        label='Server Version',
-        dtype=str,
-        access=AttrWriteType.READ,
-        doc='The version of the SDP Subarray device'
-    )
-
     obsState = attribute(
-        label='Obs State',
+        label='Observing state',
         dtype=ObsState,
         access=AttrWriteType.READ_WRITE,
-        doc='The device obs state.'
-        # polling_period=1000
-    )
-
-    adminMode = attribute(
-        label='Admin mode',
-        dtype=AdminMode,
-        access=AttrWriteType.READ_WRITE,
-        doc='The device admin mode.'
-    )
-
-    healthState = attribute(
-        label='Health state',
-        dtype=HealthState,
-        access=AttrWriteType.READ,
-        doc='The health state reported for this device.'
+        doc='Observing state'
     )
 
     receiveAddresses = attribute(
-        label='Receive Addresses',
+        label='Receive addresses',
         dtype=str,
         access=AttrWriteType.READ,
         doc='Host addresses for the visibility receive workflow as a '
@@ -165,13 +99,13 @@ class SDPSubarray(Device):
 
     def init_device(self):
         """Initialise the device."""
-        # SKASubarray.init_device(self)
-        Device.init_device(self)
+        SKASubarray.init_device(self)
 
         self.set_state(DevState.INIT)
-        LOG.info('Initialising SDP Subarray: %s', self.get_name())
+        self.logger.info('Starting initialising SDPSubarray: %s',
+                         self.get_name())
 
-        # Initialise attributes
+        self._version_id = VERSION
         self._set_obs_state(ObsState.IDLE)
         self._set_admin_mode(AdminMode.ONLINE)
         self._set_health_state(HealthState.OK)
@@ -183,36 +117,29 @@ class SDPSubarray(Device):
         if ska_sdp_config is not None \
                 and self.is_feature_active(FeatureToggle.CONFIG_DB):
             self._config_db_client = ska_sdp_config.Config()
-            LOG.debug('SDP Config DB enabled')
+            self.logger.debug('SDP Config DB enabled')
         else:
             self._config_db_client = None
-            LOG.warning('SDP Config DB disabled %s',
-                        '(ska_sdp_config package not found)'
-                        if ska_sdp_config is None
-                        else 'by feature toggle')
+            self.logger.warning('SDP Config DB disabled %s',
+                                '(ska_sdp_config package not found)'
+                                if ska_sdp_config is None
+                                else 'by feature toggle')
 
         # The subarray device is initialised in the OFF state.
         self.set_state(DevState.OFF)
-        LOG.info('SDP Subarray initialised: %s', self.get_name())
+        self.logger.info('Finished initialising SDPSubarray: %s',
+                         self.get_name())
 
     def always_executed_hook(self):
         """Run for on each call."""
 
     def delete_device(self):
         """Device destructor."""
-        LOG.info('Deleting subarray device: %s', self.get_name())
+        self.logger.info('Deleting subarray device: %s', self.get_name())
 
     # ------------------
     # Attributes methods
     # ------------------
-
-    def read_serverVersion(self):
-        """Get the SDPSubarray device server version attribute.
-
-        :returns: The SDP subarray device server version.
-
-        """
-        return SERVER_VERSION
 
     def read_obsState(self):
         """Get the obsState attribute.
@@ -221,22 +148,6 @@ class SDPSubarray(Device):
 
         """
         return self._obs_state
-
-    def read_adminMode(self):
-        """Get the adminMode attribute.
-
-        :returns: The current adminMode attribute value.
-
-        """
-        return self._admin_mode
-
-    def read_healthState(self):
-        """Get the healthState attribute.
-
-        :returns: The current healthState attribute value.
-
-        """
-        return self._health_state
 
     def read_receiveAddresses(self):
         """Get the receive addresses.
@@ -290,18 +201,11 @@ class SDPSubarray(Device):
         """
         self._set_obs_state(obs_state)
 
-    def write_adminMode(self, admin_mode):
-        """Set the adminMode attribute.
-
-        :param admin_mode: An admin mode enum value.
-
-        """
-        self._set_admin_mode(admin_mode)
-
     # --------
     # Commands
     # --------
 
+    # pylint: disable=arguments-differ
     @command(dtype_in=str, doc_in='Resource configuration JSON string')
     def AssignResources(self, config_str):
         """Assign resources to the subarray.
@@ -312,21 +216,21 @@ class SDPSubarray(Device):
         :param config_str: Resource configuration JSON string
 
         """
-        LOG.info('-------------------------------------------------------')
-        LOG.info('AssignResources (%s)', self.get_name())
-        LOG.info('-------------------------------------------------------')
+        self.logger.info('--------------------------------------------------')
+        self.logger.info('AssignResources (%s)', self.get_name())
+        self.logger.info('--------------------------------------------------')
 
         self._require_obs_state([ObsState.IDLE])
         self._require_admin_mode([AdminMode.ONLINE, AdminMode.MAINTENANCE,
                                   AdminMode.RESERVED])
 
-        LOG.debug('Setting device state to ON')
+        self.logger.debug('Setting device state to ON')
         self.set_state(DevState.ON)
 
         # Log the JSON configuration string
-        LOG.info('Configuration string:')
+        self.logger.info('Configuration string:')
         for line in config_str.splitlines():
-            LOG.info(line)
+            self.logger.info(line)
 
         # Validate the JSON configuration string
         config = self._validate_json_config(
@@ -359,10 +263,11 @@ class SDPSubarray(Device):
         # Set the scheduling block instance ID
         self._sbi_id = config.get('id')
 
-        LOG.info('-------------------------------------------------------')
-        LOG.info('AssignResources Successful!')
-        LOG.info('-------------------------------------------------------')
+        self.logger.info('--------------------------------------------------')
+        self.logger.info('AssignResources Successful!')
+        self.logger.info('--------------------------------------------------')
 
+    # pylint: disable=arguments-differ
     @command
     def ReleaseResources(self):
         """Release resources assigned to the subarray.
@@ -371,9 +276,9 @@ class SDPSubarray(Device):
         sceduling block instance.
 
         """
-        LOG.info('-------------------------------------------------------')
-        LOG.info('ReleaseResources (%s)', self.get_name())
-        LOG.info('-------------------------------------------------------')
+        self.logger.info('--------------------------------------------------')
+        self.logger.info('ReleaseResources (%s)', self.get_name())
+        self.logger.info('--------------------------------------------------')
 
         self._require_obs_state([ObsState.IDLE])
         self._require_admin_mode([AdminMode.OFFLINE, AdminMode.NOT_FITTED],
@@ -385,12 +290,12 @@ class SDPSubarray(Device):
         # Clear the scheduling block instance ID
         self._sbi_id = None
 
-        LOG.debug('Setting device state to OFF')
+        self.logger.debug('Setting device state to OFF')
         self.set_state(DevState.OFF)
 
-        LOG.info('-------------------------------------------------------')
-        LOG.info('ReleaseResources Successful!')
-        LOG.info('-------------------------------------------------------')
+        self.logger.info('--------------------------------------------------')
+        self.logger.info('ReleaseResources Successful!')
+        self.logger.info('--------------------------------------------------')
 
     @command(dtype_in=str, doc_in='Scan type configuration JSON string')
     def Configure(self, config_str):
@@ -399,18 +304,18 @@ class SDPSubarray(Device):
         :param config_str: Scan type configuration JSON string
 
         """
-        LOG.info('-------------------------------------------------------')
-        LOG.info('Configure (%s)', self.get_name())
-        LOG.info('-------------------------------------------------------')
+        self.logger.info('--------------------------------------------------')
+        self.logger.info('Configure (%s)', self.get_name())
+        self.logger.info('--------------------------------------------------')
 
         # Check obsState is IDLE or READY, and set to CONFIGURING
         self._require_obs_state([ObsState.IDLE, ObsState.READY])
         self._set_obs_state(ObsState.CONFIGURING)
 
         # Log the JSON configuration string
-        LOG.info('Configuration string:')
+        self.logger.info('Configuration string:')
         for line in config_str.splitlines():
-            LOG.info(line)
+            self.logger.info(line)
 
         # Validate the JSON configuration string
         config = self._validate_json_config(config_str, 'configure.json')
@@ -442,10 +347,11 @@ class SDPSubarray(Device):
         # Set the obsState to READY
         self._set_obs_state(ObsState.READY)
 
-        LOG.info('-------------------------------------------------------')
-        LOG.info('Configure successful!')
-        LOG.info('-------------------------------------------------------')
+        self.logger.info('--------------------------------------------------')
+        self.logger.info('Configure successful!')
+        self.logger.info('--------------------------------------------------')
 
+    # pylint: disable=arguments-differ
     @command(dtype_in=str, doc_in='Scan ID configuration JSON string')
     def Scan(self, config_str):
         """Command issued to start scan.
@@ -453,17 +359,17 @@ class SDPSubarray(Device):
         :param config_str: Scan ID configuration JSON string
 
         """
-        LOG.info('-------------------------------------------------------')
-        LOG.info('Scan (%s)', self.get_name())
-        LOG.info('-------------------------------------------------------')
+        self.logger.info('--------------------------------------------------')
+        self.logger.info('Scan (%s)', self.get_name())
+        self.logger.info('--------------------------------------------------')
 
         # Check obsState is READY
         self._require_obs_state([ObsState.READY])
 
         # Log the JSON configuration string
-        LOG.info('Configuration string:')
+        self.logger.info('Configuration string:')
         for line in config_str.splitlines():
-            LOG.info(line)
+            self.logger.info(line)
 
         # Validate the JSON configuration string
         config = self._validate_json_config(config_str, 'scan.json')
@@ -483,16 +389,16 @@ class SDPSubarray(Device):
         # Set obsState to SCANNING
         self._set_obs_state(ObsState.SCANNING)
 
-        LOG.info('-------------------------------------------------------')
-        LOG.info('Scan Successful')
-        LOG.info('-------------------------------------------------------')
+        self.logger.info('--------------------------------------------------')
+        self.logger.info('Scan Successful')
+        self.logger.info('--------------------------------------------------')
 
     @command
     def EndScan(self):
         """Command issued to end scan."""
-        LOG.info('-------------------------------------------------------')
-        LOG.info('EndScan (%s)', self.get_name())
-        LOG.info('-------------------------------------------------------')
+        self.logger.info('--------------------------------------------------')
+        self.logger.info('EndScan (%s)', self.get_name())
+        self.logger.info('--------------------------------------------------')
 
         # Check obsState is SCANNING
         self._require_obs_state([ObsState.SCANNING])
@@ -503,16 +409,16 @@ class SDPSubarray(Device):
         # Set obsState to READY
         self._set_obs_state(ObsState.READY)
 
-        LOG.info('-------------------------------------------------------')
-        LOG.info('EndScan Successful')
-        LOG.info('-------------------------------------------------------')
+        self.logger.info('--------------------------------------------------')
+        self.logger.info('EndScan Successful')
+        self.logger.info('--------------------------------------------------')
 
     @command
     def Reset(self):
         """Command issued to reset to IDLE."""
-        LOG.info('-------------------------------------------------------')
-        LOG.info('Reset (%s)', self.get_name())
-        LOG.info('-------------------------------------------------------')
+        self.logger.info('--------------------------------------------------')
+        self.logger.info('Reset (%s)', self.get_name())
+        self.logger.info('--------------------------------------------------')
 
         # Check obsState is READY
         self._require_obs_state([ObsState.READY])
@@ -526,9 +432,9 @@ class SDPSubarray(Device):
         # Set obsState to IDLE
         self._set_obs_state(ObsState.IDLE)
 
-        LOG.info('-------------------------------------------------------')
-        LOG.info('Reset Successful')
-        LOG.info('-------------------------------------------------------')
+        self.logger.info('--------------------------------------------------')
+        self.logger.info('Reset Successful')
+        self.logger.info('--------------------------------------------------')
 
     # -------------------------------------
     # Public methods
@@ -585,21 +491,24 @@ class SDPSubarray(Device):
     def _set_obs_state(self, value, verbose=True):
         """Set the obsState and issue a change event."""
         if verbose:
-            LOG.debug('Setting obsState to: %s', repr(ObsState(value)))
+            self.logger.debug('Setting obsState to: %s',
+                              repr(ObsState(value)))
         self._obs_state = value
         self.push_change_event('obsState', self._obs_state)
 
     def _set_admin_mode(self, value, verbose=True):
         """Set the adminMode and issue a change event."""
         if verbose:
-            LOG.debug('Setting adminMode to: %s', repr(AdminMode(value)))
+            self.logger.debug('Setting adminMode to: %s',
+                              repr(AdminMode(value)))
         self._admin_mode = value
         self.push_change_event('adminMode', self._admin_mode)
 
     def _set_health_state(self, value, verbose=True):
         """Set the healthState and issue a change event."""
         if verbose:
-            LOG.debug('Setting healthState to: %s', repr(HealthState(value)))
+            self.logger.debug('Setting healthState to: %s',
+                              repr(HealthState(value)))
         self._health_state = value
         self.push_change_event('healthState', self._health_state)
 
@@ -659,14 +568,14 @@ class SDPSubarray(Device):
         if not invert and self._admin_mode not in allowed_modes:
             msg = 'adminMode ({}) must be in: {}'.format(
                 repr(self._admin_mode), allowed_modes)
-            LOG.error(msg)
+            self.logger.error(msg)
             self._raise_command_error(msg)
 
         # Fail if obsState is in one of the allowed_obs_states
         if invert and self._admin_mode in allowed_modes:
             msg = 'adminMode ({}) must NOT be in: {}'.format(
                 repr(self._admin_mode), allowed_modes)
-            LOG.error(msg)
+            self.logger.error(msg)
             self._raise_command_error(msg)
 
     def _raise_command_error(self, desc, origin=''):
@@ -687,15 +596,14 @@ class SDPSubarray(Device):
 
         """
         if reason != '':
-            LOG.error(reason)
-        LOG.error(desc)
+            self.logger.error(reason)
+        self.logger.error(desc)
         if origin != '':
-            LOG.error(origin)
+            self.logger.error(origin)
         tango.Except.throw_exception(reason, desc, origin,
                                      tango.ErrSeverity.ERR)
 
-    @staticmethod
-    def _validate_json_config(config_str, schema_filename):
+    def _validate_json_config(self, config_str, schema_filename):
         """Validate a JSON configuration against a schema.
 
         :param config_str: JSON configuration string
@@ -705,31 +613,31 @@ class SDPSubarray(Device):
             validation fails
 
         """
-        LOG.debug('Validating JSON configuration against schema %s',
-                  schema_filename)
+        self.logger.debug('Validating JSON configuration against schema %s',
+                          schema_filename)
 
         schema_path = os.path.join(os.path.dirname(__file__), 'schema',
                                    schema_filename)
         config = None
 
         if config_str == '':
-            LOG.error('Empty configuration string')
+            self.logger.error('Empty configuration string')
         try:
             config = json.loads(config_str)
             with open(schema_path, 'r') as file:
                 schema = json.load(file)
             jsonschema.validate(config, schema)
         except json.JSONDecodeError as error:
-            LOG.error('Unable to decode configuration string as JSON: %s',
-                      error.msg)
+            self.logger.error('Unable to decode configuration string'
+                              ' as JSON: %s', error.msg)
             config = None
         except jsonschema.ValidationError as error:
-            LOG.error('Unable to validate JSON configuration: %s',
-                      error.message)
+            self.logger.error('Unable to validate JSON configuration: %s',
+                              error.message)
             config = None
 
         if config is not None:
-            LOG.debug('Successfully validated JSON configuration')
+            self.logger.debug('Successfully validated JSON configuration')
 
         return config
 
@@ -744,8 +652,8 @@ class SDPSubarray(Device):
         # Log the IDs found in the configuration
         sbi_id = config.get('id')
         pb_ids = [pb.get('id') for pb in config.get('processing_blocks')]
-        LOG.info('Scheduling block instance %s', sbi_id)
-        LOG.info('Processing blocks %s', pb_ids)
+        self.logger.info('Scheduling block instance %s', sbi_id)
+        self.logger.info('Processing blocks %s', pb_ids)
 
         # Get lists of existing scheduling blocks and processing blocks
         if self._config_db_client is not None:
@@ -760,12 +668,13 @@ class SDPSubarray(Device):
         ok = True
         if sbi_id in existing_sb_ids:
             ok = False
-            LOG.error('Scheduling block instance %s already exists', sbi_id)
+            self.logger.error('Scheduling block instance %s already exists',
+                              sbi_id)
         pb_dup = [pb_id for pb_id in pb_ids if pb_id in existing_pb_ids]
         if pb_dup != []:
             ok = False
             for pb_id in pb_dup:
-                LOG.error('Processing block %s already exists', pb_id)
+                self.logger.error('Processing block %s already exists', pb_id)
 
         return ok
 
@@ -799,7 +708,7 @@ class SDPSubarray(Device):
 
         for pbc in config.get('processing_blocks'):
             pb_id = pbc.get('id')
-            LOG.info('Parsing processing block %s', pb_id)
+            self.logger.info('Parsing processing block %s', pb_id)
 
             # Get type of workflow and add the processing block ID to the
             # appropriate list.
@@ -810,14 +719,15 @@ class SDPSubarray(Device):
             elif wf_type == 'batch':
                 sb['pb_batch'].append(pb_id)
             else:
-                LOG.error('Unknown workflow type: %s', wf_type)
+                self.logger.error('Unknown workflow type: %s', wf_type)
 
             parameters = pbc.get('parameters')
 
             if 'dependencies' in pbc:
                 if wf_type == 'realtime':
-                    LOG.error('dependencies attribute must not appear in '
-                              'real-time processing block configuration')
+                    self.logger.error('dependencies attribute must not appear'
+                                      ' in real-time processing block'
+                                      ' configuration')
                     dependencies = []
                 if wf_type == 'batch':
                     dependencies = pbc.get('dependencies')
@@ -868,7 +778,7 @@ class SDPSubarray(Device):
             # Check scan type is in the list of scan types
             scan_type_ids = [st.get('id') for st in scan_types]
             if scan_type not in scan_type_ids:
-                LOG.error('Unknown scan_type: %s', scan_type)
+                self.logger.error('Unknown scan_type: %s', scan_type)
                 return False
 
             # Set current scan type, and update list of scan types if it has
@@ -1001,12 +911,6 @@ def register(instance_name, *device_names):
 
 def main(args=None, **kwargs):
     """Run server."""
-    # Initialise logging
-    log_level = tango.LogLevel.LOG_INFO
-    if len(sys.argv) > 2 and '-v' in sys.argv[2]:
-        log_level = tango.LogLevel.LOG_DEBUG
-    tango_logging.init(device_name='SDPSubarray', level=log_level)
-
     # Set default values for feature toggles.
     SDPSubarray.set_feature_toggle_default(FeatureToggle.CONFIG_DB, False)
     SDPSubarray.set_feature_toggle_default(FeatureToggle.AUTO_REGISTER, True)

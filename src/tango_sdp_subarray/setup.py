@@ -28,24 +28,25 @@ setup(
         'SDPSubarray'
     ],
     install_requires=[
-        'pytango',
         'jsonschema',
+        'lmcbaseclasses',
+        'ska-sdp-config',
+        'pytango'
     ],
     entry_points={
         'console_scripts': ['SDPSubarray = SDPSubarray:main']
     },
     setup_requires=['pytest-runner'],
     tests_require=[
-        'pytest',
-        'pytest-pylint',
-        'pytest-pycodestyle',
-        'pytest-pydocstyle',
-        'pytest_bdd',
         'pyassert',
+        'pylint2junit',
+        'pytest',
+        'pytest-bdd',
         'pytest-cov',
         'pytest-json-report',
-        'pylint2junit',
-
+        'pytest-pycodestyle',
+        'pytest-pydocstyle',
+        'pytest-pylint'
     ],
     zip_safe=False,
     classifiers=[

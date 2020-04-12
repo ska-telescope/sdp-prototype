@@ -81,17 +81,24 @@ stop:  ## Stop the device
 test:  ## Run tests for the device
 	@docker run --rm -t \
 		-v $(PWD):/app \
-		$(DEV_IMAGE) \
-		python -m pytest \
+		$(TEST_IMAGE) \
+		python3 -m pytest \
+		-p no:pytest-bdd \
+		--color=yes \
 		--pylint \
-		--codestyle \
-		--docstyle \
+		--pycodestyle \
+		--pydocstyle \
 		--cov=SDPMaster \
 	    --cov-report=term \
     	--cov-config=./setup.cfg \
 		-vv \
-		--gherkin-terminal-reporter \
 		.
+
+test_setup:  ## Run tests for the device using setup.py
+	@docker run --rm -t \
+		-v $(PWD):/app \
+		$(TEST_IMAGE) \
+		python3 setup.py test
 
 test_shell:  ## Provide a test shell with the current code
 	@docker run --rm -it \

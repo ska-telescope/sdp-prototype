@@ -94,6 +94,12 @@ test:  ## Run tests for the device
 		--gherkin-terminal-reporter \
 		.
 
+test_setup: ## Run tests for the device using setup.py
+	docker run --rm -t \
+		-v $(PWD):/app \
+		$(TEST_IMAGE) \
+		python3 setup.py test
+
 test_only:  ## Run tests for the device
 	docker run --rm -t \
 		-v $(PWD):/app \

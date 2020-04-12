@@ -28,6 +28,7 @@ setup(
         'SDPMaster'
     ],
     install_requires=[
+        'lmcbaseclasses',
         'pytango'
     ],
     entry_points={
@@ -35,15 +36,14 @@ setup(
     },
     setup_requires=['pytest-runner'],
     tests_require=[
+        'pyassert',
+        'pylint2junit',
         'pytest',
         'pytest-cov',
         'pytest-json-report',
         'pytest-pycodestyle',
         'pytest-pydocstyle',
-        'pyassert',
-        'pytest-json-report',
-        'pylint2junit'
-
+        'pytest-pylint'
     ],
     zip_safe=False,
     classifiers=[

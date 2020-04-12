@@ -3,7 +3,7 @@
 # pylint: disable=invalid-name
 
 from . import release
-from .SDPSubarray import (AdminMode, HealthState, ObsState, SDPSubarray, main)
+from .SDPSubarray import (SDPSubarray, AdminMode, HealthState, ObsState, main)
 
 __version__ = release.VERSION
 __version_info__ = release.VERSION_INFO

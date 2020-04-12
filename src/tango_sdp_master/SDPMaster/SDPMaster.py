@@ -4,7 +4,6 @@
 # pylint: disable=import-error
 # pylint: disable=no-name-in-module
 # pylint: disable=wrong-import-position
-# pylint: disable=consider-using-sys-exit
 
 import os
 import sys
@@ -12,26 +11,31 @@ import signal
 import logging
 from enum import IntEnum, unique
 
-from ska_sdp_logging import tango_logging
-import tango
-from tango import (AttrWriteType, ConnectionFailed,
-                   Database, DbDevInfo, DebugIt, DevState)
-from tango.server import Device, DeviceMeta, attribute, command, run
+from tango import (AttrWriteType, ConnectionFailed, Database, DbDevInfo,
+                   DebugIt)
+from tango.server import attribute, command, run
+
+from ska.base import SKAMaster
+from ska.base.control_model import HealthState
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
-from release import VERSION as SERVER_VERSION   # noqa
+from release import VERSION
 
 LOG = logging.getLogger()
 
 
 @unique
-class HealthState(IntEnum):
-    """HealthState enum."""
+class OperatingState(IntEnum):
+    """Operating state."""
 
-    OK = 0
-    DEGRADED = 1
-    FAILED = 2
-    UNKNOWN = 3
+    INIT = 0
+    ON = 1
+    DISABLE = 2
+    STANDBY = 3
+    ALARM = 4
+    FAULT = 5
+    OFF = 6
+    UNKNOWN = 7
 
 
 @unique
@@ -41,12 +45,11 @@ class FeatureToggle(IntEnum):
     AUTO_REGISTER = 1  #: Enable / Disable tango db auto-registration
 
 
-class SDPMaster(Device):
+class SDPMaster(SKAMaster):
     """SDP Master device class."""
 
     # pylint: disable=attribute-defined-outside-init
 
-    __metaclass__ = DeviceMeta
     # PROTECTED REGION ID(SDPMaster.class_variable) ENABLED START #
     # PROTECTED REGION END #    //  SDPMaster.class_variable
 
@@ -58,26 +61,12 @@ class SDPMaster(Device):
     # Attributes
     # ----------
 
-    serverVersion = attribute(
-        label='Server Version',
-        dtype=str,
+    operatingState = attribute(
+        label='Operating state',
+        dtype=OperatingState,
         access=AttrWriteType.READ,
-        doc='The version of the SDP Master device'
+        doc='Operating state'
     )
-
-    OperatingState = attribute(
-        dtype='DevEnum',
-        enum_labels=["INIT", "ON", "DISABLE", "STANDBY", "ALARM", "FAULT",
-                     "OFF", "UNKNOWN", ],
-        access=AttrWriteType.READ
-    )
-
-    healthState = attribute(dtype=HealthState,
-                            doc='The health state reported for this device. '
-                                'It interprets the current device condition '
-                                'and condition of all managed devices to set '
-                                'this. Most possibly an aggregate attribute.',
-                            access=AttrWriteType.READ)
 
     # ---------------
     # General methods
@@ -85,12 +74,19 @@ class SDPMaster(Device):
 
     def init_device(self):
         """Initialise the device."""
-        Device.init_device(self)
+        SKAMaster.init_device(self)
         # PROTECTED REGION ID(SDPMaster.init_device) ENABLED START #
+        self._operating_state = OperatingState.INIT
+        self.logger.info('Starting initialising SDPMaster: %s',
+                         self.get_name())
+
         # Initialise Attributes
-        self._operating_state = 0
-        self.set_state(DevState.ON)
+        self._version_id = VERSION
         self._health_state = HealthState.OK
+
+        self.logger.info('Finished initialising SDPMaster: %s',
+                         self.get_name())
+        self._operating_state = OperatingState.ON
         # PROTECTED REGION END #    //  SDPMaster.init_device
 
     def always_executed_hook(self):
@@ -107,26 +103,11 @@ class SDPMaster(Device):
     # Attributes methods
     # ------------------
 
-    # pylint: disable=R0201
-    def read_serverVersion(self):
-        """Get the SDPMaster device server version attribute.
-
-        :returns: The Device Server version.
-        """
-        return SERVER_VERSION
-
-    def read_OperatingState(self):
+    def read_operatingState(self):
         """Read the SDP Operating State."""
         # PROTECTED REGION ID(SDPMaster.OperatingState_read) ENABLED START #
         return self._operating_state
         # PROTECTED REGION END #    //  SDPMaster.OperatingState_read
-
-    def read_healthState(self):
-        """Read Health State of the device.
-
-        :return: Health State of the device
-        """
-        return self._health_state
 
     # --------
     # Commands
@@ -134,34 +115,34 @@ class SDPMaster(Device):
 
     @command()
     @DebugIt()
-    def on(self):
+    def On(self):
         """SDP if fully operational and will accept commands."""
         # PROTECTED REGION ID(SDPMaster.on) ENABLED START #
-        self._operating_state = 1
+        self._operating_state = OperatingState.ON
         # PROTECTED REGION END #    //  SDPMaster.on
 
     @command()
     @DebugIt()
-    def disable(self):
+    def Disable(self):
         """SDP is in a drain state with respect to processing.."""
         # PROTECTED REGION ID(SDPMaster.disable) ENABLED START #
-        self._operating_state = 2
+        self._operating_state = OperatingState.DISABLE
         # PROTECTED REGION END #    //  SDPMaster.disable
 
     @command()
     @DebugIt()
-    def standby(self):
+    def Standby(self):
         """SDP is in low-power mode."""
         # PROTECTED REGION ID(SDPMaster.standby) ENABLED START #
-        self._operating_state = 3
+        self._operating_state = OperatingState.STANDBY
         # PROTECTED REGION END #    //  SDPMaster.standby
 
     @command()
     @DebugIt()
-    def off(self):
+    def Off(self):
         """Only SDP Master device running but rest powered off."""
         # PROTECTED REGION ID(SDPMaster.off) ENABLED START #
-        self._operating_state = 6
+        self._operating_state = OperatingState.OFF
         # PROTECTED REGION END #    //  SDPMaster.off
 
     # ---------------
@@ -265,12 +246,6 @@ def register(instance_name: str, device_name: str):
 
 def main(args=None, **kwargs):
     """Run server."""
-    # Initialise logging
-    log_level = tango.LogLevel.LOG_INFO
-    if len(sys.argv) > 2 and '-v' in sys.argv[2]:
-        log_level = tango.LogLevel.LOG_DEBUG
-    tango_logging.init(device_name='SDPMaster', level=log_level)
-
     # Set default values for feature toggles.
     SDPMaster.set_feature_toggle_default(FeatureToggle.AUTO_REGISTER, True)
 
@@ -287,7 +262,7 @@ def main(args=None, **kwargs):
 def terminate(_sig, _frame):
     """Terminate the program."""
     LOG.info("Asked to terminate")
-    exit(0)
+    sys.exit(0)
 
 
 if __name__ == '__main__':

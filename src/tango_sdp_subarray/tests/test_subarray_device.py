@@ -14,7 +14,7 @@ from tango import DevState
 import pytest
 from pytest_bdd import (given, parsers, scenarios, then, when)
 
-from SDPSubarray import (AdminMode, HealthState, ObsState, SDPSubarray)
+from SDPSubarray import (SDPSubarray, AdminMode, HealthState, ObsState)
 
 try:
     import ska_sdp_config
@@ -354,7 +354,7 @@ def receive_addresses_attribute_ok(subarray_device):
         expected_output_file = join(
             data_path,
             'attr_receiveAddresses-cbfOutputLink-disabled.json'
-            )
+        )
         with open(expected_output_file, 'r') as file:
             expected = json.loads(file.read())
         receive_addresses = json.loads(receive_addresses)
