@@ -15,7 +15,7 @@ from enum import IntEnum, unique
 from ska_sdp_logging import tango_logging
 import tango
 from tango import (AttrWriteType, ConnectionFailed,
-                   Database, DbDevInfo, DebugIt, DevState)
+                   Database, DbDevInfo, DevState)
 from tango.server import Device, DeviceMeta, attribute, command, run
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
@@ -86,12 +86,13 @@ class SDPMaster(Device):
     def init_device(self):
         """Initialise the device."""
         Device.init_device(self)
-        # PROTECTED REGION ID(SDPMaster.init_device) ENABLED START #
+        LOG.info('Initialising SDP Master: %s', self.get_name())
+
         # Initialise Attributes
         self._operating_state = 0
         self.set_state(DevState.ON)
         self._health_state = HealthState.OK
-        # PROTECTED REGION END #    //  SDPMaster.init_device
+        LOG.info('SDP Master initialised: %s', self.get_name())
 
     def always_executed_hook(self):
         """Run for on each call."""
@@ -133,36 +134,48 @@ class SDPMaster(Device):
     # --------
 
     @command()
-    @DebugIt()
     def on(self):
         """SDP if fully operational and will accept commands."""
-        # PROTECTED REGION ID(SDPMaster.on) ENABLED START #
+        LOG.info('-------------------------------------------------------')
+        LOG.info('On (%s)', self.get_name())
+        LOG.info('-------------------------------------------------------')
         self._operating_state = 1
-        # PROTECTED REGION END #    //  SDPMaster.on
+        LOG.info('-------------------------------------------------------')
+        LOG.info('On Successful!')
+        LOG.info('-------------------------------------------------------')
 
     @command()
-    @DebugIt()
     def disable(self):
         """SDP is in a drain state with respect to processing.."""
-        # PROTECTED REGION ID(SDPMaster.disable) ENABLED START #
+        LOG.info('-------------------------------------------------------')
+        LOG.info('Disable (%s)', self.get_name())
+        LOG.info('-------------------------------------------------------')
         self._operating_state = 2
-        # PROTECTED REGION END #    //  SDPMaster.disable
+        LOG.info('-------------------------------------------------------')
+        LOG.info('Disable Successful!')
+        LOG.info('-------------------------------------------------------')
 
     @command()
-    @DebugIt()
     def standby(self):
         """SDP is in low-power mode."""
-        # PROTECTED REGION ID(SDPMaster.standby) ENABLED START #
+        LOG.info('-------------------------------------------------------')
+        LOG.info('Standby (%s)', self.get_name())
+        LOG.info('-------------------------------------------------------')
         self._operating_state = 3
-        # PROTECTED REGION END #    //  SDPMaster.standby
+        LOG.info('-------------------------------------------------------')
+        LOG.info('Standby Successful!')
+        LOG.info('-------------------------------------------------------')
 
     @command()
-    @DebugIt()
     def off(self):
         """Only SDP Master device running but rest powered off."""
-        # PROTECTED REGION ID(SDPMaster.off) ENABLED START #
+        LOG.info('-------------------------------------------------------')
+        LOG.info('Off (%s)', self.get_name())
+        LOG.info('-------------------------------------------------------')
         self._operating_state = 6
-        # PROTECTED REGION END #    //  SDPMaster.off
+        LOG.info('-------------------------------------------------------')
+        LOG.info('Off Successful!')
+        LOG.info('-------------------------------------------------------')
 
     # ---------------
     # Public methods
