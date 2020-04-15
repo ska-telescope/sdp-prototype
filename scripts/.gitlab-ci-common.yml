@@ -152,3 +152,21 @@
   extends: .push_docker
   when: always
   only: [master]
+
+
+## ============================================================================
+## Common settings for XRay tests
+## ============================================================================
+
+# Create an XRay test execution report
+# (currently only for the SDPSubarray tests)
+.xray_report:
+  stage: publish
+  tags: [docker]
+  image: python:latest
+  script:
+    - 'curl -X POST -H "Content-Type: application/json" --fail
+         -H "Authorization: Basic $JIRA_AUTH"
+         --data @build/cucumber.json
+         https://jira.skatelescope.org/rest/raven/1.0/import/execution/cucumber'
+  retry: 2 # In case JIRA doesn't work first time

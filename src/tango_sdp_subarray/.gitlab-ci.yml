@@ -40,9 +40,9 @@ test:ska-sdp-subarray:
     - cd src/tango_sdp_subarray
     - mkdir -p build/reports
     - python3 setup.py test
-#    - mv .coverage ../../$CI_JOB_NAME.coverage
     - mv htmlcov build/sdp_subarray_htmlcov
     - mv coverage.xml build/code-coverage.xml
+    - mv cucumber.json build/cucumber.json
     - mv build ../../build
   artifacts:
     paths:
@@ -107,23 +107,12 @@ publish:tangods_sdp_subarray:
   variables:
     BUILD_PATH: src/tango_sdp_subarray
 
+## ============================================================================
+## Update XRay links in JIRA automatically (master only)
+## ============================================================================
 
-## Create an XRay test execution report
-## (currently only for the SDPSubarray tests)
-#.xray_report:
-#  stage: post_test
-#  tags: [docker]
-#  image: python:latest
-#  script:
-#    - 'curl -X POST -H "Content-Type: application/json" --fail
-#         -H "Authorization: Basic $JIRA_AUTH"
-#         --data @cucumber.json
-#         https://jira.skatelescope.org/rest/raven/1.0/import/execution/cucumber'
-#  retry: 2 # In case JIRA doesn't work first time
-#
-## Update XRay links in JIRA automatically This is done only for the master
-#xray_report:
-#  extends: .xray_report
-#  when: always
-#  only: [master]
-#  allow_failure: true
+xray_report:
+  extends: .xray_report
+  when: always
+  only: [master]
+  allow_failure: true

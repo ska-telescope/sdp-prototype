@@ -27,7 +27,7 @@ except ImportError:
 # -----------------------------------------------------------------------------
 
 # Load all scenarios from the specified feature file.
-scenarios('./1_XR-11.feature')
+scenarios('./1_VTS-223.feature')
 
 
 # -----------------------------------------------------------------------------
