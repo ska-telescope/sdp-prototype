@@ -218,24 +218,24 @@ class Transaction:
         assert all([key.startswith(pb_path) for key in keys])
         return list([key[len(pb_path):] for key in keys])
 
-    def new_processing_block_id(self, workflow_type: str):
+    def new_processing_block_id(self, generator: str):
         """Generate a new processing block ID that is not yet in use.
 
-        :param workflow_type: Type of workflow / processing block to create
-        :returns: Processing block id
+        :param generator: Name of the generator
+        :returns: Processing block ID
         """
         # Find existing processing blocks with same prefix
-        pb_id_prefix = "{}-{}-".format(
-            workflow_type,
+        pb_id_prefix = "pb-{}-{}".format(
+            generator,
             date.today().strftime('%Y%m%d'))
         existing_ids = self.list_processing_blocks(pb_id_prefix)
 
         # Choose ID that doesn't exist
-        for pb_ix in range(9999):
-            pb_id = pb_id_prefix + "{:04}".format(pb_ix)
+        for pb_ix in range(100000):
+            pb_id = "{}-{:05}".format(pb_id_prefix, pb_ix)
             if pb_id not in existing_ids:
                 break
-        if pb_ix >= 9999:
+        if pb_ix >= 100000:
             raise RuntimeError("Exceeded daily number of processing blocks!")
         return pb_id
 
@@ -258,7 +258,7 @@ class Transaction:
         :param obj: Processing block to create
         """
         assert isinstance(pb, entity.ProcessingBlock)
-        self._create(self._pb_path + pb.pb_id, pb.to_dict())
+        self._create(self._pb_path + pb.id, pb.to_dict())
 
     def update_processing_block(self, pb: entity.ProcessingBlock):
         """
@@ -267,7 +267,7 @@ class Transaction:
         :param obj: Processing block to update
         """
         assert isinstance(pb, entity.ProcessingBlock)
-        self._update(self._pb_path + pb.pb_id, pb.to_dict())
+        self._update(self._pb_path + pb.id, pb.to_dict())
 
     def get_processing_block_owner(self, pb_id: str) -> dict:
         """
@@ -303,29 +303,6 @@ class Transaction:
 
         # Provide information identifying this process
         self._create(self._pb_path + pb_id + "/owner", self._cfg.owner, lease)
-
-    def take_processing_block_by_workflow(self, workflow: dict, lease) \
-            -> entity.ProcessingBlock:
-        """
-        Take ownership of unclaimed processing block matching a workflow.
-
-        :param workflow: Workflow description. Must exactly match the
-            workflow description used to create the processing block.
-        :returns: Processing block, or None if no match was found
-        """
-        # Look for matching processing block
-        for pb_id in self.list_processing_blocks(workflow['type']):
-            pb = self.get_processing_block(pb_id)
-            if pb.workflow == workflow and \
-               self.get_processing_block_owner(pb_id) is None:
-
-                # Take ownership
-                self.take_processing_block(pb_id, lease)
-
-                # Return
-                return pb
-
-        return None
 
     def get_processing_block_state(self, pb_id: str) -> dict:
         """
@@ -388,7 +365,7 @@ class Transaction:
         """
         # Add to database
         assert isinstance(dpl, entity.Deployment)
-        self._create(self._deploy_path + dpl.deploy_id,
+        self._create(self._deploy_path + dpl.id,
                      dpl.to_dict())
 
     def delete_deployment(self, dpl: entity.Deployment):
@@ -398,7 +375,7 @@ class Transaction:
         :param dpl: Deployment to remove
         """
         # Delete all data associated with deployment
-        deploy_path = self._deploy_path + dpl.deploy_id
+        deploy_path = self._deploy_path + dpl.id
         for key in self._txn.list_keys(deploy_path, recurse=5):
             self._txn.delete(key)
 

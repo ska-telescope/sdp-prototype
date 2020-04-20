@@ -354,7 +354,6 @@ class Etcd3Watcher:
         self.stop()
 
 
-# pylint: disable=R0902
 class Etcd3Transaction:
     """A series of queries and updates to be executed atomically.
 
@@ -372,6 +371,8 @@ class Etcd3Transaction:
     This can also be used to loop a transaction manually, possibly
     waiting for read values to change (see :meth:`Etcd3Transaction.loop`).
     """
+
+    # pylint: disable=too-many-instance-attributes
 
     # Ideas:
     #

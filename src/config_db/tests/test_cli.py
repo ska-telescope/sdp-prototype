@@ -67,7 +67,7 @@ def test_cli_simple(capsys):
 
     cli.main(['--prefix', PREFIX, 'process', 'realtime:test:0.1'])
     out, err = capsys.readouterr()
-    assert out == "OK, pb_id = realtime-{}-0000\n".format(
+    assert out == "OK, pb_id = pb-sdpcfg-{}-00000\n".format(
         date.today().strftime('%Y%m%d'))
     assert err == ""
 
