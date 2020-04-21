@@ -2,12 +2,14 @@
 # Note: Tests can be run locally with
 #   gitlab-runner exec <executor, eg. docker> <job name>
 #
+
 variables:
   GIT_STRATEGY: clone
 
 stages:
   - build
   - test
+  - post_test
   - build_docker
   - publish
   - pages
@@ -46,25 +48,39 @@ build_docs:
 # ============================================================================
 
 ## Generate combined test coverage report
-#coverage_report:
-#  stage: post_test
-#  tags: [docker]
-#  image: python:latest
+coverage_report:
+  stage: post_test
+  tags: [docker]
+  image: python:latest
 #  variables:
 #    TRAVIS_JOB_ID: $CI_PIPELINE_IID
-#  before_script:
-#    - pip install coverage
-#    - pip install python-coveralls
-#  script:
-#    - coverage combine *.coverage
-#    - coverage report
-#    - coverage html
-#  coverage: '/TOTAL\s+\d+\s+\d+\s+\d+\s+\d+\s+(\d+\%)/'
-##  after_script:
-##    - coveralls --merge=coveralls.json
-#  artifacts:
-#    paths: [htmlcov/]
-#    expire_in: 1 week
+  before_script:
+    # The sub-projects run with this version so enforce it. There should be a better way of handling this.
+    #- pip install -Iv coverage==4.5.4
+    - pip install coverage
+    - pip install coveralls
+    - pip install pyyaml
+    # This would install the latest coverage.
+    #- pip install coverage
+    #- pip install python-coveralls
+  script:
+    # Combine the coverage reports into a single report.
+    - coverage --version
+    - coverage combine *.coverage
+    - coverage report
+    - coverage html
+    - coverage xml
+    - mkdir -p build/reports
+    - mv coverage.xml ./build/reports/code-coverage.xml
+  coverage: '/TOTAL\s+\d+\s+\d+\s+\d+\s+\d+\s+(\d+\%)/'
+  after_script:
+    # FIXME: this is not working but doesn't break the build.
+    - coveralls --merge=coveralls.json
+  artifacts:
+    paths:
+    - htmlcov
+    - ./build
+    expire_in: 1 week
 
 # ============================================================================
 # Publish reports
@@ -75,10 +91,10 @@ pages:
   stage: pages
   tags: [docker]
   image: python:latest
-#  dependencies: [coverage_report]
+  dependencies: [coverage_report]
   script:
-    - cp -R build public
-    - mv build/sdp_subarray_htmlcov/* public
+    # Publish the output of coverage_report
+    - mv htmlcov public
   artifacts:
     paths: [public/]
 
@@ -88,6 +104,7 @@ create_ci_metrics:
   when: always
   tags: [docker]
   script:
+    # I (Steve) would like to point the coverage badge to the coverage pages.
     # Gitlab CI badges creation: START
     - apt-get -y update
     - apt-get install -y curl --no-install-recommends
@@ -100,7 +117,3 @@ create_ci_metrics:
 ## ============================================================================
 ## Publish documentation (master only)
 ## ============================================================================
-
-
-
-

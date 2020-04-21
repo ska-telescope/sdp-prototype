@@ -25,6 +25,7 @@ setuptools.setup(
     # ],
     setup_requires=['pytest-runner'],
     tests_require=[
+        'python-coveralls',
         'pytest',
         'pytest-pylint',
         'pytest-pycodestyle',

@@ -105,6 +105,7 @@ class SkaStreamHandler(logging.StreamHandler):
         """
         super().__init__(stream=stream)
 
+
 def init(*tags: str, name=None, level=logging.INFO,
          formatter=None) -> logging.Logger:
     """

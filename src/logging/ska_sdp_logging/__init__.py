@@ -2,4 +2,4 @@
 """SDP Logging device package."""
 # pylint: disable=invalid-name
 
-__version__ = '0.0.5'
+__version__ = '0.0.6'

@@ -22,15 +22,14 @@ test:ska-sdp-logging:
   extends: .tango_tests
   stage: test
   script:
+    - coverage --version
     - cd src/logging
-    - mkdir -p build/reports
     - python3 setup.py test
-    - mv htmlcov build/sdp_logging_htmlcov
-    - mv coverage.xml build/code-coverage.xml
-    - mv build ../../build
+    # Make the coverage report available at the top level, which will merge it.
+    - mv .coverage ../../$CI_JOB_NAME.coverage
   artifacts:
     paths:
-      - build
+      - ./$CI_JOB_NAME.coverage
     expire_in: 1 week
     when: always
 

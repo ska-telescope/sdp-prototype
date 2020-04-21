@@ -1,17 +1,39 @@
 """Standard logging for TANGO devices."""
 # pylint: disable=invalid-name
 # pylint: disable=too-few-public-methods
-# pylint: disable=fixme
 
+import enum
 import inspect
 import logging
 import pathlib
+import sys
 import threading
 import typing
 
-import tango.server
+# Be able to cope if tango is not installed.
+try:
+    import tango.server
+    _device_class = tango.server.Device
+except ImportError:
+    class _NoDev:
+        pass
+    _device_class = _NoDev
+    tango = sys.modules[__name__]
 
 from . import core_logging
+
+
+class LogLevel(enum.Enum):
+    """
+    Fallback enum for the case where tango is not installed.
+    """
+    LOG_FATAL = logging.CRITICAL
+    LOG_ERROR = logging.ERROR
+    LOG_WARN = logging.WARNING
+    LOG_INFO = logging.INFO
+    LOG_DEBUG = logging.DEBUG
+    LOG_OFF = logging.NOTSET
+
 
 _TANGO_TO_PYTHON = {
     tango.LogLevel.LOG_FATAL: logging.CRITICAL,
@@ -73,15 +95,19 @@ class TangoFormatter(core_logging.SkaFormatter):
     def format(self, record: logging.LogRecord) -> str:
         # If the record originates from this module, insert the right frame info.
         if record.pathname == __file__:
-            frame = self.log_man.frames[threading.current_thread()]
-            record.funcName = frame.function
-            record.filename = pathlib.Path(frame.filename).name
-            record.lineno = frame.lineno
+            thread = threading.current_thread()
+            # The thread should be in the dictionary, but may not be if the
+            # module has been reloaded e.g. by unit test.
+            if thread in self.log_man.frames:
+                frame = self.log_man.frames[thread]
+                record.funcName = frame.function
+                record.filename = pathlib.Path(frame.filename).name
+                record.lineno = frame.lineno
         return super().format(record)
 
 
 def init(level=tango.LogLevel.LOG_INFO, name=None, device_name='',
-         device_class=tango.server.Device) -> logging.Logger:
+         device_class=_device_class) -> logging.Logger:
     """Initialise logging for a TANGO device.
 
     This modifies the logging behaviour of the device class.
