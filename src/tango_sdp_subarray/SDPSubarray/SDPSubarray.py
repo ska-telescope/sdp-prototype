@@ -627,14 +627,12 @@ class SDPSubarray(Device):
         """
         # Fail if obsState is NOT in one of the allowed_obs_states
         if not invert and self._obs_state not in allowed_states:
-            self._set_obs_state(ObsState.FAULT)
             msg = 'obsState ({}) must be in {}'.format(
                 self._obs_state, allowed_states)
             self._raise_command_error(msg)
 
         # Fail if obsState is in one of the allowed_obs_states
         if invert and self._obs_state in allowed_states:
-            self._set_obs_state(ObsState.FAULT)
             msg = 'The device must NOT be in one of the ' \
                   'following obsState values: {}'.format(allowed_states)
             self._raise_command_error(msg)
@@ -915,38 +913,16 @@ class SDPSubarray(Device):
     def _get_receive_addresses(self):
         """Get the receive addresses for the current scan type.
 
-        The channel link map for each scan type is contained in the
-        list of scan types in the SB. The workflow generates the receive
-        addresses for each scan type and writes them to the processing
-        block state. This function retrieves the
+        This version returns a fixed set of receive addresses read from
+        a JSON file.
 
         :returns: receive address as dict
 
         """
-        if self._config_db_client is None:
-            return None
-
-        # Get ID of PB that is generating the receive addresses and scan type
-        for txn in self._config_db_client.txn():
-            sb = txn.get_scheduling_block(self._sbi_id)
-        pb_id = sb.get('pb_receive_addresses')
-        scan_type = sb.get('current_scan_type')
-
-        # If no PB is configured to generate the receive addresses, return None
-        if pb_id is None:
-            return None
-
-        # Get the list of receive address configurations for all scan types
-        # and pick out the right one
-        for txn in self._config_db_client.txn():
-            pb_state = txn.get_processing_block_state(pb_id)
-        receive_addresses_list = pb_state.get('receive_addresses')
-        receive_addresses = None
-        for ra in receive_addresses_list:
-            if ra.get('id') == scan_type:
-                receive_addresses = ra
-                break
-
+        ra_file = os.path.join(os.path.dirname(__file__),
+                               'receive_addresses.json')
+        with open(ra_file, 'r') as file:
+            receive_addresses = json.load(file)
         return receive_addresses
 
 
