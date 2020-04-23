@@ -89,6 +89,7 @@ linting:
     - docker
   stage: linting
   script:
+    - ls -l
     - cd src
     - pylint --output-format=pylint2junit.JunitReporter logging tango_sdp_master tango_sdp_subarray > ../build/reports/linting.xml
   when: always
