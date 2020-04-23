@@ -84,7 +84,7 @@ coverage_report:
     expire_in: 1 week
 
 linting:
-  image: http://nexus.engageska-portugal.pt/ska-docker/ska-python-runtime:latest
+  image: nexus.engageska-portugal.pt/ska-docker/ska-python-runtime:latest
   tags:
     - docker
   stage: linting
