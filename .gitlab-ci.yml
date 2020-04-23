@@ -10,6 +10,7 @@ stages:
   - build
   - test
   - post_test
+  - linting
   - build_docker
   - publish
   - pages
@@ -81,6 +82,19 @@ coverage_report:
     - htmlcov
     - ./build
     expire_in: 1 week
+
+linting:
+  image: http://nexus.engageska-portugal.pt/ska-docker/ska-python-runtime:latest
+  tags:
+    - docker-executor
+  stage: linting
+  script:
+    - cd src
+    - pylint --output-format=pylint2junit.JunitReporter logging tango_sdp_master tango_sdp_subarray > ../build/reports/linting.xml
+  when: always
+  artifacts:
+    paths:
+      - ./build
 
 # ============================================================================
 # Publish reports
