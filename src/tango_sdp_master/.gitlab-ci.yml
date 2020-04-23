@@ -31,6 +31,7 @@ test:ska-sdp-master:
   artifacts:
     paths:
       - build
+      - ./$CI_JOB_NAME.coverage
     expire_in: 1 week
     when: always
 
