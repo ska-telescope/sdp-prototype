@@ -86,7 +86,7 @@ coverage_report:
 linting:
   image: http://nexus.engageska-portugal.pt/ska-docker/ska-python-runtime:latest
   tags:
-    - docker-executor
+    - docker
   stage: linting
   script:
     - cd src
