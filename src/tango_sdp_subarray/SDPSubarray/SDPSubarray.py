@@ -943,7 +943,7 @@ class SDPSubarray(Device):
         receive_addresses_list = pb_state.get('receive_addresses')
         receive_addresses = None
         for ra in receive_addresses_list:
-            if ra.get('id') == scan_type:
+            if ra.get('scanType') == scan_type:
                 receive_addresses = ra
                 break
 
