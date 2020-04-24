@@ -91,7 +91,6 @@ linting:
   before_script:
     - pip install pylint_junit pylint2junit
   script:
-    - logname
     - cd src
     - ls -l ../build
     - ls -l ../build/reports
