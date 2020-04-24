@@ -1,12 +1,21 @@
 import logging
+from pathlib import Path
 from processing_controller import processing_controller
 
 LOG = logging.getLogger(__name__)
-LOG.info(processing_controller.__file__)
+ROOT = str(Path(processing_controller.__file__).parent)
 
 
-def test_stuff():
-    wf = processing_controller.Workflows("schema/workflows.json")
-    print(wf.version)
-    print(wf._batch)
+def test_without_json():
+    wf = processing_controller.Workflows("not_there.json")
+    assert wf.version == {}
 
+
+def test_bad_json():
+    wf = processing_controller.Workflows(ROOT+"/workflows.py")
+    assert wf.version == {}
+
+
+def test_with_json():
+    wf = processing_controller.Workflows(ROOT+"/schema/workflows.json")
+    assert wf.version == {}
