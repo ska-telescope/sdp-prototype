@@ -91,10 +91,10 @@ linting:
   before_script:
     - pip install pylint_junit pylint2junit
   script:
-    - cd src
-    - ls -l ../build
+    - ls -l build
+    - chmod +w build/reports
     - ls -l ../build/reports
-    - touch ../build/reports/temp.txt
+    - cd src
     - pylint --output-format=pylint2junit.JunitReporter logging tango_sdp_master tango_sdp_subarray > ../build/reports/linting.xml
   when: always
   artifacts:
