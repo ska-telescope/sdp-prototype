@@ -29,6 +29,7 @@ class Workflows:
 
         :param schema_file: name of schema file.
         """
+        LOG.info('Using schema file: %s', schema_file)
         try:
             with open(schema_file, 'r') as file:
                 schema = json.load(file)

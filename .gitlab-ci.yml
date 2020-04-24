@@ -88,9 +88,14 @@ linting:
   tags:
     - docker
   stage: linting
+  before_script:
+    - pip install pylint_junit pylint2junit
   script:
-    - ls -l build
+    - logname
     - cd src
+    - ls -l ../build
+    - ls -l ../build/reports
+    - touch ../build/reports/temp.txt
     - pylint --output-format=pylint2junit.JunitReporter logging tango_sdp_master tango_sdp_subarray > ../build/reports/linting.xml
   when: always
   artifacts:
