@@ -72,6 +72,7 @@ coverage_report:
     - coverage html
     - coverage xml
     - mkdir -p build/reports
+    - chmod 777 build/reports
     - mv coverage.xml ./build/reports/code-coverage.xml
   coverage: '/TOTAL\s+\d+\s+\d+\s+\d+\s+\d+\s+(\d+\%)/'
   after_script:
@@ -92,8 +93,7 @@ linting:
     - pip install pylint_junit pylint2junit
   script:
     - ls -l build
-    - chmod +w build/reports
-    - ls -l ../build/reports
+    - ls -l build/reports
     - cd src
     - pylint --output-format=pylint2junit.JunitReporter logging tango_sdp_master tango_sdp_subarray > ../build/reports/linting.xml
   when: always
