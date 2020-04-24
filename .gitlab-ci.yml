@@ -90,7 +90,7 @@ linting:
     - docker
   stage: linting
   before_script:
-    - pip install pylint_junit pylint2junit
+    - pip install pylint pylint_junit pylint2junit
   script:
     - ls -l build
     - ls -l build/reports
