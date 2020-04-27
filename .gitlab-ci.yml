@@ -85,12 +85,12 @@ coverage_report:
     expire_in: 1 week
 
 linting:
-  image: nexus.engageska-portugal.pt/ska-docker/ska-python-runtime:latest
+  image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
   tags:
     - docker
   stage: linting
   before_script:
-    - pip install pylint pylint_junit pylint2junit
+    - pip install pylint_junit pylint2junit
   script:
     - ls -l build
     - ls -l build/reports
