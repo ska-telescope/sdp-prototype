@@ -1,12 +1,5 @@
 # -*- coding: utf-8 -*-
 """Tests for the core of SDP logging."""
-# pylint: disable=redefined-outer-name
-# pylint: disable=invalid-name
-# pylint: disable-msg=E0611
-# pylint: disable-msg=E0401
-# pylint: disable-msg=C1801
-# pylint: disable-msg=C0111
-
 import logging
 import typing
 
