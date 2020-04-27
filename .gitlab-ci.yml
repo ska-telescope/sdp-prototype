@@ -92,11 +92,17 @@ linting:
   before_script:
     - pip install pylint_junit pylint2junit
   script:
-    - ls -l build
-    - ls -l build/reports
     - cd src
-    - touch ../build/reports/temp.txt
-    - pylint -v --exit-zero --output-format=pylint2junit.JunitReporter logging/ska_sdp_logging tango_sdp_master/SDPMaster tango_sdp_subarray/SDPSubarray > ../build/reports/linting.xml
+    - pylint -v --exit-zero --output-format=pylint2junit.JunitReporter
+      config_db/ska_sdp_config
+      helm_deploy
+      logging/ska_sdp_logging
+      processing_controller/processing_controller
+      pss_receive/pss-receive
+      pss_receive/pss-send
+      tango_sdp_master/SDPMaster
+      tango_sdp_subarray/SDPSubarray
+      > ../build/reports/linting.xml
   when: always
   artifacts:
     paths:
