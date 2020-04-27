@@ -96,7 +96,7 @@ linting:
     - ls -l build/reports
     - cd src
     - touch ../build/reports/temp.txt
-    - pylint --output-format=pylint2junit.JunitReporter logging/ska_sdp_logging tango_sdp_master/SDPMaster tango_sdp_subarray/SDPSubarray > ../build/reports/linting.xml
+    - pylint -v --exit-zero --output-format=pylint2junit.JunitReporter logging/ska_sdp_logging tango_sdp_master/SDPMaster tango_sdp_subarray/SDPSubarray > ../build/reports/linting.xml
   when: always
   artifacts:
     paths:
