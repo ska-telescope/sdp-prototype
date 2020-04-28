@@ -2,11 +2,11 @@
 Workflow to test generation of receive addresses.
 
 The purpose of this workflow is to test the mechanism for generating SDP
-receive addresses from the channel link map published by CSP. The subarray
-device reads the channel link map from an attribute on the CSP subarray device
-and writes it to the processing block state. The workflow picks it up from
-there, uses it to generate the receive addresses, and writes them to the PB
-state. The subarray device picks the addresses from there and publishes them
+receive addresses from the channel link map for each scan type which is
+contained in the list of scan types in the SB. The workflow picks it up
+from there, uses it to generate the receive addresses for each scan type
+and writes them to the processing block state. The subarray device picks
+the addresses from there through Configure command and publishes them
 on the appropriate attribute.
 
 This workflow does not generate any deployments.
@@ -16,6 +16,7 @@ import sys
 import logging
 import signal
 import ska_sdp_config
+import random
 
 logging.basicConfig()
 LOG = logging.getLogger('test_receive_addresses')
@@ -27,76 +28,71 @@ def channel_list(channel_link_map):
     Generate flat list of channels from the channel link map.
 
     :param channel_link_map: channel link map.
-    :returns: list of channels, sorted by channel ID.
+    :returns: list of channels.
     """
     channels = []
-    for fsp in channel_link_map['fsp']:
-        for link in fsp['cbfOutLink']:
-            for channel in link['channel']:
-                channel = dict(
-                    chan_id=channel['chanID'],
-                    bw=channel['bw'],
-                    cf=channel['cf'],
-                    fsp_id=fsp['fspID'],
-                    link_id=link['linkID'],
-                )
-                channels.append(channel)
-
-    # Sort by channel ID.
-    channels = sorted(channels, key=lambda chan: chan['chan_id'])
-
+    for channel in channel_link_map['channels']:
+        channel = dict(
+            numchan=channel['count'],
+            startchan=channel['start'],
+            scan_type=channel_link_map.get('id')
+        )
+        channels.append(channel)
     return channels
 
-def minimal_receive_addresses(scan_id, channels):
+
+def minimal_receive_addresses(channels):
     """
     Provide a minimal version of the receive addresses.
 
-    :param scan_id: the scan ID
     :param channels: list of channels
     :returns: receive addresses
     """
+
     # Get first channel and number of channels for each FSP.
     fsp = {}
+
     for chan in channels:
-        chan_id = chan['chan_id']
-        fsp_id = chan['fsp_id']
-        if fsp_id not in fsp:
-            fsp[fsp_id] = (chan_id, 1)
-        else:
-            fstchan, numchan = fsp[fsp_id]
-            fstchan = min(fstchan, chan_id)
-            numchan += 1
-            fsp[fsp_id] = (fstchan, numchan)
+        scan_type = chan['scan_type']
+        if scan_type not in fsp:
+            fstchan = chan['startchan']
+            numchan = chan['numchan']
+            fsp_id = 1
+            fsp[scan_type] = (fsp_id, fstchan, numchan)
 
     # Total number of channels.
-    totchan = sum(f[1] for f in fsp.values())
+    totchan = sum(f[2] for f in fsp.values())
 
     # Construct receive addresses.
     ralist = []
-    for fsp_id, (fstchan, numchan) in fsp.items():
-        host = '192.168.0.{}'.format(fsp_id)
-        clist = [dict(portOffset=9000, startChannel=fstchan,
+    for scan_type, (fsp_id, fstchan, numchan) in fsp.items():
+        host = '192.168.0.{}'.format(random.randint(1, 20))
+        clist = [dict(portOffset=random.randint(9000, 9050), startChannel=fstchan,
                       numChannels=numchan)]
         hlist = [dict(host=host, channels=clist)]
         ralist.append(dict(phaseBinId=0, fspId=fsp_id, hosts=hlist))
-    receive_addresses = dict(scanId=scan_id, totalChannels=totchan,
+    receive_addresses = dict(scanType=scan_type, totalChannels=totchan,
                              receiveAddresses=ralist)
 
     return receive_addresses
 
 
-def generate_receive_addresses(channel_link_map):
+def generate_receive_addresses(scan_types):
     """
     Generate receive addresses based on channel link map.
 
     This function generates a minimal fake response.
-    :param channel_link_map: channel link map from CSP
+    :param scan_types: scan types from SB
     :return: receive addresses
     """
-    scan_id = channel_link_map.get("scanID")
-    channels = channel_list(channel_link_map)
-    receive_addresses = minimal_receive_addresses(scan_id, channels)
-    return receive_addresses
+
+    receive_addresses_list = []
+    for channel_link_map in scan_types:
+        channels = channel_list(channel_link_map)
+        receive_addresses = minimal_receive_addresses(channels)
+        receive_addresses_list.append(receive_addresses)
+
+    return receive_addresses_list
 
 
 def main(argv):
@@ -105,6 +101,7 @@ def main(argv):
     pb_id = argv[0]
 
     # Get connection to config DB
+    LOG.info('Opening connection to config DB')
     config = ska_sdp_config.Config()
 
     # Claim processing block
@@ -113,15 +110,18 @@ def main(argv):
         pb = txn.get_processing_block(pb_id)
     LOG.info('Claimed processing block %s', pb_id)
 
-    sb_id = pb.get('sbi_id')
+    sb_id = pb.sbi_id
+    LOG.info('SB id: %s', sb_id)
 
     # Set status to WAITING
+    LOG.info('Setting status to WAITING')
     for txn in config.txn():
         state = txn.get_processing_block_state(pb_id)
         state['status'] = 'WAITING'
         txn.update_processing_block_state(pb_id, state)
 
     # Wait for resources to be available
+    LOG.info('Waiting for resources to be available')
     for txn in config.txn():
         state = txn.get_processing_block_state(pb_id)
         ra = state.get('resources_available')
@@ -129,69 +129,56 @@ def main(argv):
             txn.loop(wait=True)
 
     # Set status to RUNNING
+    LOG.info('Setting status to RUNNING')
     for txn in config.txn():
         state = txn.get_processing_block_state(pb_id)
         state['status'] = 'RUNNING'
         txn.update_processing_block_state(pb_id, state)
 
-    # Loop over scans.
+    # Get the channel link map from SB
+    LOG.info("Retrieving channel link map from SB")
+    for txn in config.txn():
+        sb = txn.get_scheduling_block(sb_id)
+        sb_scan_types = sb.get('scan_types')
 
-    LOG.info("Starting loop over scans")
-    scan_id = None
+    # Generate receive addresses
+    LOG.info("Generating receive addresses")
+    receive_addresses = generate_receive_addresses(sb_scan_types)
 
-    while True:
+    # Update receive addresses in processing block state
+    LOG.info("Updating receive addresses in processing block state")
+    for txn in config.txn():
+        state = txn.get_processing_block_state(pb_id)
+        state['receive_addresses'] = receive_addresses
+        txn.update_processing_block_state(pb_id, state)
 
-        # If SB has finished, exit loop over scans.
-        for txn in config.txn():
-            sb = txn.get_scheduling_block(sb_id)
+    # Adding pb_id in pb_receive_address in SB
+    LOG.info("Adding PB ID to pb_receive_addresses in SB")
+    for txn in config.txn():
+        sb = txn.get_scheduling_block(sb_id)
+        sb['pb_receive_addresses'] = pb_id
+        txn.update_scheduling_block(sb_id, sb)
+
+    # ... Do some processing here ...
+
+    # Wait until ReleaseResources command is received.
+    LOG.info('Waiting for SB to end')
+    for txn in config.txn():
+        sb = txn.get_scheduling_block(sb_id)
         if sb.get('status') == 'FINISHED':
-            LOG.info('Exiting loop over scans')
+            LOG.info('SB has ended')
             break
+        txn.loop(wait=True)
 
-        # Wait for change to scan ID in scheduling block
-        LOG.info("Waiting for new scan ID")
-        for txn in config.txn():
-            sb = txn.get_scheduling_block(sb_id)
-            sb_scan_id = sb.get('scan_id')
-            if sb_scan_id == scan_id:
-                txn.loop(wait=True)
-        scan_id = sb_scan_id
-        LOG.info("Scan ID set to %d", scan_id)
-
-        # Wait for channel link map with matching scan ID in processing
-        # block state
-        LOG.info("Waiting for new channel map")
-        for txn in config.txn():
-            state = txn.get_processing_block_state(pb_id)
-            if state is None or 'channel_link_map' not in state:
-                LOG.info('Channel map not found in PB state')
-                txn.loop(wait=True)
-                continue
-            LOG.info('Channel map found in PB state')
-            channel_link_map = state['channel_link_map']
-            clm_scan_id = channel_link_map['scanID']
-            LOG.info('Channel map scan ID: %d', clm_scan_id)
-            if clm_scan_id != scan_id:
-                txn.loop(wait=True)
-
-        # Generate receive addresses
-        LOG.info("Generating receive addresses")
-        receive_addresses = generate_receive_addresses(channel_link_map)
-
-        # Update receive addresses in processing block state
-        LOG.info("Updating receive addresses in processing block state")
-        for txn in config.txn():
-            state = txn.get_processing_block_state(pb_id)
-            state['receive_addresses'] = receive_addresses
-            txn.update_processing_block_state(pb_id, state)
-
-    # Set status to FINISHED
+    # Set state to indicate processing is finished
+    LOG.info('Setting status to FINISHED')
     for txn in config.txn():
         state = txn.get_processing_block_state(pb_id)
         state['status'] = 'FINISHED'
         txn.update_processing_block_state(pb_id, state)
 
-    # Close connection to config DB.
+    # Close connection to config DB
+    LOG.info('Closing connection to config DB')
     config.close()
 
 

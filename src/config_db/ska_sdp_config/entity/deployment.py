@@ -19,12 +19,14 @@ class Deployment:
     configuration change.
     """
 
-    # pylint: disable=W0102,W0622
-    def __init__(self, deploy_id, type, args):
+    # pylint: disable=dangerous-default-value
+    # pylint: disable=redefined-builtin
+
+    def __init__(self, id, type, args):
         """
         Create a new deployment structure.
 
-        :param deploy_id: Deployment ID
+        :param id: Deployment ID
         :param type: Type of the deployment (method by which
             it is applied)
         :param args: Type-specific deployment arguments
@@ -32,7 +34,7 @@ class Deployment:
         """
         # Get parameter dictionary
         self._dict = {
-            'deploy_id': str(deploy_id),
+            'id': str(id),
             'type': str(type),
             'args': dict(copy.deepcopy(args)),
         }
@@ -40,18 +42,18 @@ class Deployment:
         # Validate
         if type not in DEPLOYMENT_TYPES:
             raise ValueError("Unknown deployment type {}!".format(type))
-        if not _DEPLOY_ID_RE.match(self.deploy_id):
+        if not _DEPLOY_ID_RE.match(self.id):
             raise ValueError("Deployment ID {} not permissible!".format(
-                self.deploy_id))
+                self.id))
 
     def to_dict(self):
         """Return data as dictionary."""
         return self._dict
 
     @property
-    def deploy_id(self):
-        """Return the Deployment id."""
-        return self._dict['deploy_id']
+    def id(self):
+        """Return the deployment id."""
+        return self._dict['id']
 
     @property
     def type(self):

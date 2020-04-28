@@ -48,15 +48,15 @@ def test_create_pb(cfg):
     # Create 3 processing blocks
     for txn in cfg.txn():
 
-        pb1_id = txn.new_processing_block_id(WORKFLOW['type'])
+        pb1_id = txn.new_processing_block_id('test')
         pb1 = entity.ProcessingBlock(pb1_id, None, WORKFLOW)
         assert txn.get_processing_block(pb1_id) is None
         txn.create_processing_block(pb1)
         with pytest.raises(backend.ConfigCollision):
             txn.create_processing_block(pb1)
-        assert txn.get_processing_block(pb1_id).pb_id == pb1_id
+        assert txn.get_processing_block(pb1_id).id == pb1_id
 
-        pb2_id = txn.new_processing_block_id(WORKFLOW['type'])
+        pb2_id = txn.new_processing_block_id('test')
         pb2 = entity.ProcessingBlock(pb2_id, None, WORKFLOW)
         txn.create_processing_block(pb2)
 
@@ -71,9 +71,6 @@ def test_create_pb(cfg):
     # Make sure we can update them
     for txn in cfg.txn():
         pb1.parameters['test'] = 'test'
-        pb1.scan_parameters['12345'] = {
-            'test_scan': 'asd'
-        }
         pb1.dependencies.append({
             'pbId': pb2_id,
             'type': []
@@ -82,10 +79,9 @@ def test_create_pb(cfg):
 
     # Check that update worked
     for txn in cfg.txn():
-        pb1x = txn.get_processing_block(pb1.pb_id)
+        pb1x = txn.get_processing_block(pb1.id)
         assert pb1x.sbi_id is None
         assert pb1x.parameters == pb1.parameters
-        assert pb1x.scan_parameters == pb1.scan_parameters
         assert pb1x.dependencies == pb1.dependencies
 
 
@@ -97,7 +93,7 @@ def test_take_pb(cfg):
     # Create another processing block
     for txn in cfg.txn():
 
-        pb_id = txn.new_processing_block_id(workflow2['type'])
+        pb_id = txn.new_processing_block_id('test')
         pb = entity.ProcessingBlock(pb_id, None, workflow2)
         txn.create_processing_block(pb)
 
@@ -114,50 +110,23 @@ def test_take_pb(cfg):
         assert txn.get_processing_block_owner(pb_id) is None
         assert not txn.is_processing_block_owner(pb_id)
 
-    # Check that asking for a non-existing workflow doesn't work
-    for txn in cfg.txn():
-        workflow3 = dict(WORKFLOW)
-        workflow3['id'] += "-take-doesnt-exist"
-        assert txn.take_processing_block_by_workflow(workflow3, lease) is None
-
-    # Test that we can find the processing block by workflow
-    with cfg.lease() as lease:
-        for txn in cfg.txn():
-            pb2 = txn.take_processing_block_by_workflow(workflow2, lease)
-            assert pb2.pb_id == pb_id
-
-    for txn in cfg.txn():
-        assert txn.get_processing_block_owner(pb_id) is None
-        assert not txn.is_processing_block_owner(pb_id)
-
-    # Check that we can re-claim it using client lease
-    for txn in cfg.txn():
-        pb2 = txn.take_processing_block_by_workflow(workflow2,
-                                                    cfg.client_lease)
-        assert pb2.pb_id == pb_id
-    for txn in cfg.txn():
-        assert txn.get_processing_block_owner(pb_id) == cfg.owner
-        assert txn.is_processing_block_owner(pb_id)
-
 
 def test_pb_state(cfg):
 
     pb_id = 'teststate-00000000-0000'
     state1 = {
-        "state": "executing",
-        "subarray": "ON",
-        "obsState": "SCANNING",
-        "receiveAddresses": {
+        "resources_available": True,
+        "state": "RUNNING",
+        "receive_addresses": {
             "1": {
                 "1": ["0.0.0.0", 1024]
             }
         }
     }
     state2 = {
-        "state": "failed",
-        "subarray": "ON",
-        "obsState": "SCANNING",
-        "receiveAddresses": {
+        "resources_available": True,
+        "state": "FINISHED",
+        "receive_addresses": {
             "1": {
                 "1": ["0.0.0.0", 1024]
             }

@@ -25,7 +25,8 @@ Environment Variables:
   SDP_CONFIG_PASSWORD  User password
 """
 
-# pylint: disable=E1111,R0912
+# pylint: disable=assignment-from-no-return
+# pylint: disable=too-many-branches
 
 import os
 import sys
@@ -136,7 +137,7 @@ def cmd_create_pb(txn, workflow, parameters, _args):
         pars = {}
 
     # Create new processing block ID, create processing block
-    pb_id = txn.new_processing_block_id(workflow['type'])
+    pb_id = txn.new_processing_block_id('sdpcfg')
     txn.create_processing_block(entity.ProcessingBlock(
         pb_id, None, workflow, parameters=pars))
     return pb_id
