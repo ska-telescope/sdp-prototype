@@ -3,12 +3,13 @@ from pathlib import Path
 from processing_controller import processing_controller
 
 LOG = logging.getLogger(__name__)
-PRJ_ROOT = str(Path(processing_controller.__file__).parent)
-SRC_ROOT = str(Path(processing_controller.__file__).parent.parent.parent)
-SDP_ROOT = str(Path(processing_controller.__file__).parent.parent)
+FILE = Path(processing_controller.__file__)
+PRJ_ROOT = str(FILE.parent)
+SDP_ROOT = str(FILE.parent.parent)
+SRC_ROOT = str(FILE.parent.parent.parent)
 SCHEMA = PRJ_ROOT+"/schema/workflows.json"
 WORKFLOW = SRC_ROOT+"/workflows/workflows.json"
-WORKURL = Path(WORKFLOW).as_uri()
+WORK_URL = Path(WORKFLOW).as_uri()
 
 def test_without_json():
     wf = processing_controller.Workflows("not_there.json")
