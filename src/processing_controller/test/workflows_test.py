@@ -7,6 +7,7 @@ PRJ_ROOT = str(Path(processing_controller.__file__).parent)
 SRC_ROOT = str(Path(processing_controller.__file__).parent.parent.parent)
 SDP_ROOT = str(Path(processing_controller.__file__).parent.parent)
 SCHEMA = PRJ_ROOT+"/schema/workflows.json"
+WORKFLOW = SRC_ROOT+"/workflows/workflows.json"
 
 def test_without_json():
     wf = processing_controller.Workflows("not_there.json")
@@ -31,5 +32,5 @@ def test_scan():
 
 def test_workflow():
     wf = processing_controller.Workflows(SCHEMA)
-    wf.update_file(SRC_ROOT+"/workflows/workflows.json")
+    wf.update_file(WORKFLOW)
     assert wf.version['date-time'].startswith('2019')

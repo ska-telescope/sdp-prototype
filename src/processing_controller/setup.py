@@ -20,6 +20,8 @@ setuptools.setup(
     url='https://gitlab.com/ska-telescope/sdp-prototype/src/processing_controller/',
     packages=setuptools.find_packages(),
     install_requires=[
+        'jsonschema',
+        'requests',
         'ska-sdp-config'
     ],
     setup_requires=['pytest-runner'],
