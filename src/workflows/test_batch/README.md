@@ -1,4 +1,4 @@
-## Test batch workflow
+## Test Batch Workflow
 
 The `test_batch` workflow is designed to test the processing
 controller logic concerning processing block dependencies.

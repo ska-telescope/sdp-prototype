@@ -66,7 +66,7 @@ def run_processing_block(processing_block, status_callback, host='127.0.0.1',
                          port=constants.ISLAND_DEFAULT_REST_PORT, zero_cost_run=False):
     """Runs a ProcessingBlock to completion under daliuge"""
 
-    session_id = 'pb_%s' % processing_block.pb_id
+    session_id = 'pb_%s' % processing_block.id
     logical_graph = _get_lg(
         processing_block.workflow['id'],
         processing_block.workflow['version'])

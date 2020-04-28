@@ -154,45 +154,47 @@ Create a configuration string for the scheduling block instance:
 ```
   config_sbi = '''
   {
-    "id": "sbi-mvp01-20200318-0001",
+    "id": "sbi-mvp01-20200425-00000",
     "max_length": 21600.0,
     "scan_types": [
       {
         "id": "science",
-        "coordinate_system": "ICRS", "ra": "00:00:00.00", "dec": "00:00:00.0",
-        "freq_min": 0.0, "freq_max": 0.0, "nchan": 1000
+        "channels": [
+          {"count": 372, "start": 0, "stride": 2, "freq_min": 0.35e9, "freq_max": 0.358e9, "link_map": [[0,0], [200,1]]}
+        ]
       },
       {
         "id": "calibration",
-        "coordinate_system": "ICRS", "ra": "00:00:00.00", "dec": "00:00:00.0",
-        "freq_min": 0.0, "freq_max": 0.0, "nchan": 1000
+        "channels": [
+          {"count": 372, "start": 0, "stride": 2, "freq_min": 0.35e9, "freq_max": 0.358e9, "link_map": [[0,0], [200,1]]}
+        ]
       }
     ],
     "processing_blocks": [
       {
-        "id": "pb-mvp01-20200318-0001",
+        "id": "pb-mvp01-20200425-00000",
         "workflow": {"type": "realtime", "id": "test_realtime", "version": "0.1.0"},
         "parameters": {}
       },
       {
-        "id": "pb-mvp01-20200318-0002",
+        "id": "pb-mvp01-20200425-00001",
         "workflow": {"type": "realtime", "id": "test_realtime", "version": "0.1.0"},
         "parameters": {}
       },
       {
-        "id": "pb-mvp01-20200318-0003",
+        "id": "pb-mvp01-20200425-00002",
         "workflow": {"type": "batch", "id": "ical", "version": "0.1.0"},
         "parameters": {},
         "dependencies": [
-          {"pb_id": "pb-mvp01-20200318-0001", "type": ["visibilities"]}
+          {"pb_id": "pb-mvp01-20200425-00000", "type": ["visibilities"]}
         ]
       },
       {
-        "id": "pb-mvp01-20200318-0004",
+        "id": "pb-mvp01-20200425-00003",
         "workflow": {"type": "batch", "id": "dpreb", "version": "0.1.0"},
         "parameters": {},
         "dependencies": [
-          {"pb_id": "pb-mvp01-20200318-0003", "type": ["calibration"]}
+          {"pb_id": "pb-mvp01-20200425-00002", "type": ["calibration"]}
         ]
       }
     ]
@@ -248,8 +250,9 @@ config_newscantype = '''
  "new_scan_types": [
    {
      "id": "new_calibration",
-     "coordinate_system": "ICRS", "ra": "00:00:00.00", "dec": "00:00:00.0",
-     "freq_min": 0.0, "freq_max": 0.0, "nchan": 1000
+      "channels": [
+        {"count": 372, "start": 0, "stride": 2, "freq_min": 0.35e9, "freq_max": 0.358e9, "link_map": [[0,0], [200,1]]}
+      ]
    }
  ],
  "scan_type": "new_calibration"

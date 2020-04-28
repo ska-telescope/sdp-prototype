@@ -18,14 +18,15 @@ their dependencies are finished.
 
 ## Processing block and its state
 
-The PB and its state are created in the configuration database by the subarray
-Tango device when starting the SBI. Their paths are:
+A PB and its state are located at the following paths in the configuration
+database:
 ```bash
 /pb/[pb_id]
 /pb/[pb_id]/state
 ```
-Once the PB is created it does not change. The state is empty when it is
-created, and it is subsequently updated by the PC and the workflow.
+The PB is created by the subarray Tango device when starting a SBI. Once it
+is created it does not change. The state is created by the PC when deploying
+the workflow, and it is subsequently updated by the PC and the workflow.
 
 The entries in the PB state relevant to the PC are `status` and
 `resources_available`, for example:
@@ -61,10 +62,10 @@ The behaviour of the PC is summarised as follows:
    intervals (the default is every 5 minutes).
 
 2. If a PB is new, the PC will create the workflow deployment for it. A PB is
-   deemed to be new if `status` is not present in the PB state and its
-   workflow is not deployed. The PC sets `status` to `STARTING` and
-   `resources_available` to `false`. If the workflow ID and version is not
-   found in the definition file, the PC sets the `status` to `FAILED`.
+   deemed to be new if the PB state does not exist. The PC creates the state
+   and sets `status` to `STARTING` and `resources_available` to `false`. If
+   the workflow ID and version is not found in the definition file, the PC
+   still creates the state, but sets `status` to `FAILED`.
 
 3. If a PB's dependencies are all `FINISHED`, the PC sets
    `resources_available` to `true` to allow it to start executing. Real-time

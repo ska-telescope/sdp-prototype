@@ -1,7 +1,8 @@
 FROM python:3.7
 
-WORKDIR /app
-COPY requirements.txt .
-COPY test_receive_addresses.py .
+COPY requirements.txt ./
 RUN pip install -r requirements.txt
+
+WORKDIR /app
+COPY test_receive_addresses.py ./
 ENTRYPOINT ["python", "test_receive_addresses.py"]

@@ -43,7 +43,7 @@ def get_pb(config, pb_id):
 
 def create_deployment(config, pb):
     logger.info("Deploying DALiuGE...")
-    deploy_id = pb.pb_id + "-daliuge"
+    deploy_id = 'proc-{}-daliuge'.format(pb.id)
     deployment = ska_sdp_config.Deployment(
         deploy_id, "helm", {
             'chart': 'daliuge',
@@ -56,7 +56,7 @@ def create_deployment(config, pb):
 def idle_for_some_obscure_reason(config, pb):
     logger.info("Done, now idling...")
     for txn in config.txn():
-        if not txn.is_processing_block_owner(pb.pb_id):
+        if not txn.is_processing_block_owner(pb.id):
             break
         txn.loop(True)
 
@@ -91,14 +91,46 @@ def main():
     logging.basicConfig(level=logging.INFO)
     config = ska_sdp_config.Config()
     pb = get_pb(config, sys.argv[1])
+
+    # Set state to indicate workflow is waiting for resources
+    logger.info('Setting status to WAITING')
+    for txn in config.txn():
+        state = txn.get_processing_block_state(pb.id)
+        state['status'] = 'WAITING'
+        txn.update_processing_block_state(pb.id, state)
+
+    # Wait for resources_available to be true
+    logger.info('Waiting for resources to be available')
+    for txn in config.txn():
+        state = txn.get_processing_block_state(pb.id)
+        ra = state.get('resources_available')
+        if ra is not None and ra:
+            break
+        txn.loop(wait=True)
+
+    # Set state to indicate workflow is running
+    logger.info('Setting status to RUNNING')
+    for txn in config.txn():
+        state = txn.get_processing_block_state(pb.id)
+        state['status'] = 'RUNNING'
+        txn.update_processing_block_state(pb.id, state)
+
     deployment = create_deployment(config, pb)
     try:
-        dlg_dim_ip = resolve_dim_host(deployment.deploy_id)
+        dlg_dim_ip = resolve_dim_host(deployment.id)
         common.run_processing_block(pb, lambda _: None,
                 host=dlg_dim_ip, port=8001)
         idle_for_some_obscure_reason(config, pb)
     finally:
         cleanup(config, deployment)
+
+    # Set state to indicate processing has ended
+    logger.info('Setting status to FINISHED')
+    for txn in config.txn():
+        state = txn.get_processing_block_state(pb.id)
+        state['status'] = 'FINISHED'
+        txn.update_processing_block_state(pb.id, state)
+
 
 if __name__ == '__main__':
     main()

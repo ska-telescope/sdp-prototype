@@ -5,7 +5,7 @@
   "version": "0.1.0",
   "type": "object",
   "required": ["id"],
-  "additionalProperties": false,
+  "additionalProperties": true,
   "properties": {
     "id": { "$ref": "#/definitions/scan_id" }
   },

@@ -14,7 +14,7 @@ _RE_PB = 'pb(-[0-9a-zA-Z]*){3}'
 # processing blocks
 #
 # This one matches workflow deployments only
-_RE_DEPLOY_PROC_WF = re.compile('^proc-(?P<pb_id>{})$'.format(_RE_PB))
+_RE_DEPLOY_PROC_WF = re.compile('^proc-(?P<pb_id>{})-workflow$'.format(_RE_PB))
 # This one matches any processing deployment
 _RE_DEPLOY_PROC_ANY = re.compile('^proc-(?P<pb_id>{}).*$'.format(_RE_PB))
 
@@ -37,7 +37,10 @@ class ProcessingController:
         :returns: processing block status
         """
         state = txn.get_processing_block_state(pb_id)
-        status = state.get('status')
+        if state is None:
+            status = None
+        else:
+            status = state.get('status')
         return status
 
     def _start_new_pb_workflows(self, txn):
@@ -47,19 +50,10 @@ class ProcessingController:
         :param txn:
         """
         pb_ids = txn.list_processing_blocks()
-        deploy_ids = txn.list_deployments()
-
-        # Get list of processing blocks that have a workflow deployed
-        pbs_with_wf_deployed = []
-        for i in deploy_ids:
-            match = _RE_DEPLOY_PROC_WF.match(i)
-            if match is not None:
-                pbs_with_wf_deployed.append(match.group('pb_id'))
-        pbs_with_wf_deployed = list(set(pbs_with_wf_deployed))
 
         for pb_id in pb_ids:
-            status = self._get_pb_status(txn, pb_id)
-            if status is None and pb_id not in pbs_with_wf_deployed:
+            state = txn.get_processing_block_state(pb_id)
+            if state is None:
                 self._start_workflow(txn, pb_id)
 
     def _start_workflow(self, txn, pb_id):
@@ -72,9 +66,8 @@ class ProcessingController:
 
         LOG.info('Making deployment for processing block %s', pb_id)
 
-        # Read the processing block and its state
+        # Read the processing block
         pb = txn.get_processing_block(pb_id)
-        state = txn.get_processing_block_state(pb_id)
 
         # Get workflow type, id and version
         wf_type = pb.workflow['type']
@@ -94,7 +87,7 @@ class ProcessingController:
             # Make the deployment
             LOG.info('Deploying %s workflow %s, version %s', wf_type, wf_id,
                     wf_version)
-            deploy_id = 'proc-{}'.format(pb_id)
+            deploy_id = 'proc-{}-workflow'.format(pb_id)
             values = {}
             for v in ['SDP_CONFIG_HOST', 'SDP_HELM_NAMESPACE']:
                 values['env.' + v] = os.environ[v]
@@ -107,14 +100,18 @@ class ProcessingController:
             deploy = ska_sdp_config.Deployment(deploy_id, 'helm', chart)
             txn.create_deployment(deploy)
             # Set status to STARTING, and resources_available to False
-            state['status'] = 'STARTING'
-            state['resources_available'] = False
+            state = {
+                'status': 'STARTING',
+                'resources_available': False
+            }
         else:
             # Invalid workflow, so set status to FAILED
-            state['status'] = 'FAILED'
+            state = {
+                'status': 'FAILED'
+            }
 
-        # Update the processing block state.
-        txn.update_processing_block_state(pb_id, state)
+        # Create the processing block state.
+        txn.create_processing_block_state(pb_id, state)
 
     def _release_pbs_with_finished_dependencies(self, txn):
         """
@@ -126,8 +123,12 @@ class ProcessingController:
 
         for pb_id in pb_ids:
             state = txn.get_processing_block_state(pb_id)
-            status = state.get('status')
-            ra = state.get('resources_available')
+            if state is None:
+                status = None
+                ra = None
+            else:
+                status = state.get('status')
+                ra = state.get('resources_available')
             if status == 'WAITING' and not ra:
                 # Check status of dependencies.
                 pb = txn.get_processing_block(pb_id)

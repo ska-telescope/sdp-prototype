@@ -6,7 +6,7 @@
   "type": "object",
   "required": ["scan_type"],
   "optional": ["new_scan_types"],
-  "additionalProperties": false,
+  "additionalProperties": true,
   "properties": {
     "new_scan_types": {
       "type": "array",

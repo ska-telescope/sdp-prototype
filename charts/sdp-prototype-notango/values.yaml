@@ -7,7 +7,7 @@ etcd:
 # Processing controller
 processing_controller:
   image: nexus.engageska-portugal.pt/sdp-prototype/processing-controller
-  version: 0.5.2
+  version: 0.6.0
   imagePullPolicy: IfNotPresent
   replicas: 1
   resources: {}
@@ -18,7 +18,7 @@ processing_controller:
 # Helm deployment controller
 helm_deploy:
   image: nexus.engageska-portugal.pt/sdp-prototype/helm-deploy
-  version: 0.4.1
+  version: 0.5.0
   imagePullPolicy: IfNotPresent
   replicas: 1
   namespace: sdp
@@ -31,7 +31,7 @@ helm_deploy:
 # Console
 console:
   image: nexus.engageska-portugal.pt/sdp-prototype/console
-  version: 0.1.0
+  version: 0.2.0
   imagePullPolicy: IfNotPresent
   replicas: 1
   enabled: true

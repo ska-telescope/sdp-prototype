@@ -1,4 +1,4 @@
-## Test real-time workflow
+## Test Real-Time Workflow
 
 The `test_realtime` workflow is designed to test the processing
 controller logic concerning processing block dependencies.

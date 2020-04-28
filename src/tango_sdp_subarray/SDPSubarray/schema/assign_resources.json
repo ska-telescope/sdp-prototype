@@ -5,7 +5,7 @@
   "version": "0.1.0",
   "type": "object",
   "required": ["id", "max_length", "scan_types", "processing_blocks"],
-  "additionalProperties": false,
+  "additionalProperties": true,
   "properties": {
     "id": { "$ref": "#/definitions/sbi_id" },
     "max_length": { "$ref": "#/definitions/max_length" },

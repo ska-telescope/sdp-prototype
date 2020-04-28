@@ -4,7 +4,6 @@
 # pylint: disable=too-many-lines
 # pylint: disable=wrong-import-position
 # pylint: disable=too-many-public-methods
-# pylint: disable=fixme
 
 import os
 import sys
@@ -263,7 +262,10 @@ class SDPSubarray(Device):
                 pb_realtime = sb.get('pb_realtime')
                 for pb_id in pb_realtime:
                     pb_state = txn.get_processing_block_state(pb_id)
-                    pb_state['id'] = pb_id
+                    if pb_state is None:
+                        pb_state = {'id': pb_id}
+                    else:
+                        pb_state['id'] = pb_id
                     pb_state_list.append(pb_state)
 
         return json.dumps(pb_state_list)
@@ -320,9 +322,6 @@ class SDPSubarray(Device):
         self._require_admin_mode([AdminMode.ONLINE, AdminMode.MAINTENANCE,
                                   AdminMode.RESERVED])
 
-        LOG.debug('Setting device state to ON')
-        self.set_state(DevState.ON)
-
         # Log the JSON configuration string
         LOG.info('Configuration string:')
         for line in config_str.splitlines():
@@ -333,7 +332,7 @@ class SDPSubarray(Device):
             config_str, 'assign_resources.json')
 
         if config is None:
-            # Validation has failed, so raise error
+            # Validation has failed, so raise an error
             self._raise_command_error('Configuration validation failed')
             return
 
@@ -359,6 +358,9 @@ class SDPSubarray(Device):
         # Set the scheduling block instance ID
         self._sbi_id = config.get('id')
 
+        LOG.debug('Setting device state to ON')
+        self.set_state(DevState.ON)
+
         LOG.info('-------------------------------------------------------')
         LOG.info('AssignResources Successful!')
         LOG.info('-------------------------------------------------------')
@@ -368,7 +370,7 @@ class SDPSubarray(Device):
         """Release resources assigned to the subarray.
 
         This ends the real-time processing blocks associated with the
-        sceduling block instance.
+        scheduling block instance.
 
         """
         LOG.info('-------------------------------------------------------')
@@ -517,8 +519,9 @@ class SDPSubarray(Device):
         # Check obsState is READY
         self._require_obs_state([ObsState.READY])
 
-        # Set scan type to None and status to 'IDLE'
-        self._update_sb({'current_scan_type': None, 'status': 'IDLE'})
+        # Clear scan type and scan ID, and set status to IDLE
+        self._update_sb({'current_scan_type': None, 'scan_id': None,
+                         'status': 'IDLE'})
 
         # Clear receive addresses
         self._set_receive_addresses(None)
@@ -627,14 +630,12 @@ class SDPSubarray(Device):
         """
         # Fail if obsState is NOT in one of the allowed_obs_states
         if not invert and self._obs_state not in allowed_states:
-            self._set_obs_state(ObsState.FAULT)
             msg = 'obsState ({}) must be in {}'.format(
                 self._obs_state, allowed_states)
             self._raise_command_error(msg)
 
         # Fail if obsState is in one of the allowed_obs_states
         if invert and self._obs_state in allowed_states:
-            self._set_obs_state(ObsState.FAULT)
             msg = 'The device must NOT be in one of the ' \
                   'following obsState values: {}'.format(allowed_states)
             self._raise_command_error(msg)
@@ -827,9 +828,7 @@ class SDPSubarray(Device):
             # Add processing block to list
             pbs.append(
                 ska_sdp_config.ProcessingBlock(
-                    pb_id=pb_id,
-                    sbi_id=sbi_id,
-                    workflow=workflow,
+                    pb_id, sbi_id, workflow,
                     parameters=parameters,
                     dependencies=dependencies
                 )
@@ -896,9 +895,7 @@ class SDPSubarray(Device):
                 sbi_id = sb.get('id')
                 txn.create_scheduling_block(sbi_id, sb)
                 for pb in pbs:
-                    pb_id = pb.pb_id
                     txn.create_processing_block(pb)
-                    txn.create_processing_block_state(pb_id, {})
 
     def _update_sb(self, new_values):
         """Update SB in the config DB.
@@ -915,10 +912,11 @@ class SDPSubarray(Device):
     def _get_receive_addresses(self):
         """Get the receive addresses for the current scan type.
 
-        The channel link map for each scan type is contained in the
-        list of scan types in the SB. The workflow generates the receive
-        addresses for each scan type and writes them to the processing
-        block state. This function retrieves the
+        The channel link map for each scan type is contained in the list of
+        scan types in the SB. The ingest workflow uses them to generate the
+        receive addresses for each scan type and writes them to the processing
+        block state. This function retrieves them from the processing block
+        state and extracts the set for the current scan type.
 
         :returns: receive address as dict
 
@@ -940,7 +938,11 @@ class SDPSubarray(Device):
         # and pick out the right one
         for txn in self._config_db_client.txn():
             pb_state = txn.get_processing_block_state(pb_id)
+            if pb_state is None:
+                return None
         receive_addresses_list = pb_state.get('receive_addresses')
+        if receive_addresses_list is None:
+            return None
         receive_addresses = None
         for ra in receive_addresses_list:
             if ra.get('scanType') == scan_type:

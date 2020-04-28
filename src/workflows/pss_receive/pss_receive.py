@@ -26,7 +26,7 @@ def main(argv):
 
     # Deploy PSS Receive with 1 worker.
     log.info("Deploying PSS Receive...")
-    deploy_id = pb.pb_id + "-pss-receive"
+    deploy_id = 'proc-{}-pss-receive'.format(pb.id)
     deploy = ska_sdp_config.Deployment(
         deploy_id, "helm", {
             'chart': 'pss-receive',  # Helm chart deploy/charts/pss-receive
@@ -38,7 +38,7 @@ def main(argv):
         # Just idle until processing block or disappears
         log.info("Done, now idling...")
         for txn in config.txn():
-            if not txn.is_processing_block_owner(pb.pb_id):
+            if not txn.is_processing_block_owner(pb.id):
                 break
             txn.loop(True)
 
