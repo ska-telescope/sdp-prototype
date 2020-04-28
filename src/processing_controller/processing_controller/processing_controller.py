@@ -159,9 +159,10 @@ class ProcessingController:
                     deploy = txn.get_deployment(deploy_id)
                     txn.delete_deployment(deploy)
 
-    def main(self):
+    def main(self, backend=None):
         """
-        Main loop.
+        Main loop
+        :param backend: config backend to use.
         """
         # Initialise workflow definitions
         LOG.info('Initialising workflow definitions')
@@ -170,7 +171,8 @@ class ProcessingController:
 
         # Connect to config DB
         LOG.info('Connecting to config DB')
-        config = ska_sdp_config.Config()
+        # Note: sdp_config supports this by design but is not fully implemented.
+        config = ska_sdp_config.Config(backend=backend)
 
         LOG.info('Starting main loop')
         for txn in config.txn():
