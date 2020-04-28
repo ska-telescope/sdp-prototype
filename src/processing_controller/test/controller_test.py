@@ -15,7 +15,7 @@ class MemoryBackend:
 
 def test_stuff():
     controller = processing_controller.ProcessingController(workflows_test.SCHEMA,
-                                                            workflows_test.WORKURL, 1)
+                                                            workflows_test.WORK_URL, 1)
     controller._workflows.update_url = controller._workflows.update_file
 
     # FIXME: needs an update to sdp_config to properly support backend injection.
