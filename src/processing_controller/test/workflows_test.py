@@ -8,6 +8,7 @@ SRC_ROOT = str(Path(processing_controller.__file__).parent.parent.parent)
 SDP_ROOT = str(Path(processing_controller.__file__).parent.parent)
 SCHEMA = PRJ_ROOT+"/schema/workflows.json"
 WORKFLOW = SRC_ROOT+"/workflows/workflows.json"
+WORKURL = Path(WORKFLOW).as_uri()
 
 def test_without_json():
     wf = processing_controller.Workflows("not_there.json")
