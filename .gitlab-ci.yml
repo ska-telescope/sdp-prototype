@@ -6,6 +6,11 @@
 variables:
   GIT_STRATEGY: clone
 
+workflow:
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+    - if: $CI_COMMIT_BRANCH
+
 stages:
   - build
   - test
