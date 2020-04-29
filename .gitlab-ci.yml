@@ -61,8 +61,6 @@ coverage_report:
     - pip install coveralls
     - pip install pyyaml
     - pip install anybadge
-    # This would install the latest coverage.
-    #- pip install coverage
     #- pip install python-coveralls
   script:
     # Combine the coverage reports into a single report.
@@ -126,6 +124,9 @@ pages:
     - mv build/cov_report.svg public
   artifacts:
     paths: [public/]
+  rules:
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"'
+      when: always
 
 create_ci_metrics:
   stage: .post
