@@ -35,4 +35,4 @@ def test_scan():
 def test_workflow():
     wf = processing_controller.Workflows(SCHEMA)
     wf.update_file(WORKFLOW)
-    assert wf.version['date-time'].startswith('2019')
+    assert wf.version['date-time'].startswith('20')
