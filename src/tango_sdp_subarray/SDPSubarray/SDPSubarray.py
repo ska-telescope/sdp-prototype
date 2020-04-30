@@ -171,6 +171,12 @@ class SDPSubarray(Device):
         self.set_state(DevState.INIT)
         LOG.info('Initialising SDP Subarray: %s', self.get_name())
 
+        # These attributes are updated with push_change_event
+        self.set_change_event('obsState', True)
+        self.set_change_event('adminMode', True)
+        self.set_change_event('healthState', True)
+        self.set_change_event('receiveAddresses', True, False)
+
         # Initialise attributes
         self._set_obs_state(ObsState.IDLE)
         self._set_admin_mode(AdminMode.ONLINE)
