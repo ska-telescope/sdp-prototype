@@ -1,15 +1,4 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=invalid-name
-# pylint: disable=too-few-public-methods
-# pylint: disable-msg=E0611
-# pylint: disable-msg=E0401
-# pylint: disable-msg=R0201
-# pylint: disable-msg=E1120
-# pylint: disable-msg=C0111
-# pylint: disable-msg=W0621
-# pylint: disable-msg=W0613
-# pylint: disable=fixme
-
 import importlib
 import logging
 import sys

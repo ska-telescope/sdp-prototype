@@ -30,6 +30,7 @@ setup(
     install_requires=[
         'pytango',
         'jsonschema',
+        'ska-sdp-logging'
     ],
     entry_points={
         'console_scripts': ['SDPSubarray = SDPSubarray:main']
