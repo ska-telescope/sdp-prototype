@@ -4,7 +4,7 @@
 # Consider change to: ska-tangods-sdpsubarray ?
 NAME = "ska-sdp-subarray"
 # For version names see: https://www.python.org/dev/peps/pep-0440/
-VERSION = "0.9.0"
+VERSION = "0.9.1"
 VERSION_INFO = VERSION.split(".")
 AUTHOR = "ORCA team, Sim Team"
 LICENSE = 'License :: OSI Approved :: BSD License'

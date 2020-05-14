@@ -51,7 +51,6 @@ def subarray_device(tango_context, admin_mode_value: str):
 # When Steps : Describe an event or action
 # -----------------------------------------------------------------------------
 
-
 @when('the device is initialised')
 def init_device(subarray_device):
     """Initialise the subarray device.
@@ -61,15 +60,40 @@ def init_device(subarray_device):
     subarray_device.Init()
 
 
-@when(parsers.parse('obsState is {value}'))
-@when('obsState is <value>')
-def set_obs_state(subarray_device, value):
-    """Set the obsState attribute to the specified value.
+@when(parsers.parse(
+    'the device is {state_value} and obsState is {obs_state_value}'
+))
+@when('the device is <state_value> and obsState is <obs_state_value>')
+def set_subarray_device_state_obstate(subarray_device, state_value: str,
+                                      obs_state_value):
+    """Set the device state and obsState attribute to the specified value.
 
-    :param subarray_device: An SDPSubarray device.
-    :param value: An SDPSubarray ObsState enum string.
+    :param subarray_device: fixture providing a TangoTestContext
+    :param state_value: An SDPSubarray state string.
+    :param obs_state_value: An SDPSubarray ObsState enum string.
     """
-    subarray_device.obsState = ObsState[value]
+
+    subarray_device.Init()
+    if state_value == 'OFF' and obs_state_value == 'IDLE':
+        pass
+    elif state_value == 'ON' and obs_state_value == 'IDLE':
+        command_assign_resources(subarray_device)
+    elif state_value == 'ON' and obs_state_value == 'READY':
+        command_assign_resources(subarray_device)
+        command_configure(subarray_device)
+    elif state_value == 'ON' and obs_state_value == 'SCANNING':
+        command_assign_resources(subarray_device)
+        command_configure(subarray_device)
+        command_scan(subarray_device)
+    else:
+        raise ValueError(
+            'Combination of device state {} and obsState {} not settable'
+            ''.format(state_value, obs_state_value)
+        )
+
+    # Check state and obs_state values.
+    assert subarray_device.state() == DevState.names[state_value]
+    assert subarray_device.ObsState == ObsState[obs_state_value]
 
 
 @when('I call AssignResources')
@@ -217,7 +241,7 @@ def command_end_scan(subarray_device):
 # -----------------------------------------------------------------------------
 
 
-@then(parsers.parse('State should be {expected}'))
+@then(parsers.parse('the device should be {expected}'))
 def device_state_equals(subarray_device, expected):
     """Check the Subarray device device state.
 
@@ -266,6 +290,7 @@ def dev_failed_error_raised_by_assign_resources(subarray_device):
 
     :param subarray_device: An SDPSubarray device.
     """
+
     with pytest.raises(tango.DevFailed):
         subarray_device.AssignResources('{}')
 
@@ -276,6 +301,7 @@ def dev_failed_error_raised_by_release_resources(subarray_device):
 
     :param subarray_device: An SDPSubarray device.
     """
+
     with pytest.raises(tango.DevFailed):
         subarray_device.ReleaseResources()
 
@@ -286,6 +312,7 @@ def dev_failed_error_raised_by_configure(subarray_device):
 
     :param subarray_device: An SDPSubarray device.
     """
+
     with pytest.raises(tango.DevFailed):
         subarray_device.Configure('{}')
 
