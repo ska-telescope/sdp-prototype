@@ -31,10 +31,10 @@ case ${1^^} in
 	cd ..
 	cppcheck ./ -i extern/gtest/ --enable=warning,portability,style
 	cd build
-	echo -e "\n ${bold}*** Running Coveralls *** ${normal} \n"
-	cmake -DCOVERALLS=ON -DCMAKE_BUILD_TYPE=Debug ..
+#	echo -e "\n ${bold}*** Running Coveralls *** ${normal} \n"
+	cmake -DCMAKE_BUILD_TYPE=Debug ..
 	make
-	make coveralls
+#	make coveralls
 	;;
     USAN|UNDEF*|BEHAV*)
 	echo -e "\n ${bold}*** Running Undefined Behaviour Sanitizer *** ${normal} \n"
