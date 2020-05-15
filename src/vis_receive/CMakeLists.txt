@@ -18,6 +18,8 @@ project(vis_recv_c C CXX)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 14)
 
+set(BUILD_SHARED_LIBS ON)
+
 # Add local CMake module path.
 list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_SOURCE_DIR}/cmake/modules)
 
