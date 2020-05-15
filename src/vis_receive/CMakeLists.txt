@@ -18,8 +18,6 @@ project(vis_recv_c C CXX)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 14)
 
-set(BUILD_SHARED_LIBS ON)
-
 # Add local CMake module path.
 list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_SOURCE_DIR}/cmake/modules)
 
@@ -135,6 +133,7 @@ endif()
 set(libname vis_recv)
 add_library(${libname} ${recv_SRC})
 target_link_libraries(${libname} Threads::Threads)
+target_link_libraries(${libname} m)
 if (OSKAR_MS_FOUND)
     target_link_libraries(${libname} ${OSKAR_MS_LIBRARY} ${CASACORE_LIBRARIES})
 endif()
