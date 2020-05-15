@@ -9,16 +9,16 @@
   image: ubuntu:bionic
   before_script:
     - apt update
-    - apt install -y --no-install-recommends cppcheck=1.82-1
+    - apt install -y --no-install-recommends cppcheck
     - apt install -y cmake curl
     - apt install -y python3-pip
     - apt install -y git
     - pip3 install urllib3==1.21.1
-    - pip3 install cpp-coveralls==0.4.2
+#    - pip3 install cpp-coveralls==0.4.2
     - pip3 install pyyaml
-  artifacts:
-    paths:
-      - ./$BUILD_PATH/dist/
+#  artifacts:
+#    paths:
+#      - ./$BUILD_PATH/dist/
 
 # ============================================================================
 # Test the visibility receiver: Run CPP Check and Coveralls
