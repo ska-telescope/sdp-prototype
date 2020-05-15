@@ -121,7 +121,7 @@ linting:
 pages:
   stage: pages
   tags: [docker]
-  image: python:latest
+  image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
   dependencies: [coverage_report]
   script:
     # Publish the output of coverage_report
