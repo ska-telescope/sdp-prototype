@@ -30,10 +30,12 @@ case ${1^^} in
 	echo -e "\n ${bold}*** Running Cpp Check *** ${normal} \n"
 	cd ..
 	cppcheck ./ -i extern/gtest/ --enable=warning,portability,style
-	cd build
+	cd ./build
+	ls
 #	echo -e "\n ${bold}*** Running Coveralls *** ${normal} \n"
 	echo -e "\n ${bold}*** Running Unit test *** ${normal} \n"
 	cmake -DCMAKE_BUILD_TYPE=Debug ..
+	ls
 	make
 	./tests/recv_test
 #	make coveralls

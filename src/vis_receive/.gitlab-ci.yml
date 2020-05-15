@@ -16,9 +16,9 @@
     - pip3 install urllib3==1.21.1
     - pip3 install cpp-coveralls==0.4.2
     - pip3 install pyyaml
-  artifacts:
-    paths:
-      - ./$BUILD_PATH/dist/
+#  artifacts:
+#    paths:
+#      - ./$BUILD_PATH/dist/
 
 # ============================================================================
 # Test the visibility receiver: Run CPP Check and Coveralls
