@@ -27,6 +27,7 @@ test:ska-sdp-logging:
     - python3 setup.py test
     # Make the coverage report available at the top level, which will merge it.
     - mv .coverage ../../$CI_JOB_NAME.coverage
+    - ls ../..
   artifacts:
     paths:
       - ./$CI_JOB_NAME.coverage

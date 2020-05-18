@@ -34,7 +34,7 @@ case ${1^^} in
 #	echo -e "\n ${bold}*** Running Coveralls *** ${normal} \n"
 	echo -e "\n ${bold}*** Running Unit test *** ${normal} \n"
 #	cmake -DCOVERALLS=ON -DCMAKE_BUILD_TYPE=Debug ..
-	cmake -DCMAKE_BUILD_TYPE=Debug ..
+	cmake -DENABLE_COVERAGE=ON ..
 	make
 #	make coveralls
 	./tests/recv_test

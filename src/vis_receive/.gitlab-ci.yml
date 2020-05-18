@@ -14,7 +14,8 @@
     - apt install -y python3-pip
     - apt install -y git
     - pip3 install urllib3==1.21.1
-    - pip3 install cpp-coveralls==0.4.2
+#    - pip3 install cpp-coveralls==0.4.2
+    - pip3 install gcovr
     - pip3 install pyyaml
 #  artifacts:
 #    paths:
@@ -29,6 +30,9 @@ test:vis_receive:
   extends: .build_vis_docker
   script:
     - ./scripts/run_c_tests.sh TEST
+    -  gcovr -r src/vis_receive/tests -o coverage.out src/vis_receive/build/tests/CMakeFiles/recv_test.dir
+    - mv coverage.out $$CI_JOB_NAME.coverage
+    - ls
 #    - mv src/vis_receive/build/coveralls.json ./coveralls.json
 #  artifacts:
 #    paths: [./coveralls.json]
