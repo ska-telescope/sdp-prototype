@@ -36,7 +36,7 @@ test:vis_receive:
     - pwd
 #    - mv src/vis_receive/build/coveralls.json ./coveralls.json
   artifacts:
-    paths: $CI_JOB_NAME.coverage
+    paths: [$CI_JOB_NAME.coverage]
     expire_in: 1 day
 
 # ============================================================================
