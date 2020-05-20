@@ -22,3 +22,11 @@ However, you will need to append the namespace in which the SDP is running.
     $ kubectl exec -it deploy/test-sdp-prototype-console -- /bin/bash -n <namespace>
 
 The default namespace into which `skampi` deploys is `-n integration`.
+
+Alternatively, you may run
+
+.. code-block::
+
+    $ kubectl config set-context --current --namespace=integration
+
+to allow you to run the commands without alteration.
