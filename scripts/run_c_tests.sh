@@ -33,10 +33,10 @@ case ${1^^} in
 	cd build
 #	echo -e "\n ${bold}*** Running Coveralls *** ${normal} \n"
 	echo -e "\n ${bold}*** Running Unit test *** ${normal} \n"
-#	cmake -DCOVERALLS=ON -DCMAKE_BUILD_TYPE=Debug ..
-	cmake -DENABLE_COVERAGE=ON ..
+	cmake -DCOVERALLS=ON -DCMAKE_BUILD_TYPE=Debug ..
+#	cmake -DENABLE_COVERAGE=ON ..
 	make
-#	make coveralls
+	make coveralls
 	./tests/recv_test
 	;;
     USAN|UNDEF*|BEHAV*)
