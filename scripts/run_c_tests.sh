@@ -31,12 +31,9 @@ case ${1^^} in
 	cd ..
 	cppcheck ./ -i extern/gtest/ --enable=warning,portability,style
 	cd build
-#	echo -e "\n ${bold}*** Running Coveralls *** ${normal} \n"
 	echo -e "\n ${bold}*** Running Unit test *** ${normal} \n"
-	cmake -DCOVERALLS=ON -DCMAKE_BUILD_TYPE=Debug ..
-#	cmake -DENABLE_COVERAGE=ON ..
+	cmake -DENABLE_COVERAGE=ON ..
 	make
-	make coveralls
 	./tests/recv_test
 	;;
     USAN|UNDEF*|BEHAV*)
