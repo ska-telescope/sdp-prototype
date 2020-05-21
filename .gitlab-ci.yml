@@ -63,7 +63,7 @@ coverage_report:
   before_script:
     # The sub-projects run with this version so enforce it. There should be a better way of handling this.
     - pip install coverage
-    - pip install coveralls
+    # - pip install coveralls
     - pip install pyyaml
     - pip install anybadge
     #- pip install python-coveralls
@@ -82,7 +82,7 @@ coverage_report:
   coverage: '/TOTAL\s+\d+\s+\d+\s+\d+\s+\d+\s+(\d+\%)/'
   after_script:
     # FIXME: this is not working but doesn't break the build.
-    - coveralls --merge=coveralls.json
+   # - coveralls --merge=coveralls.json
   artifacts:
     paths:
     - htmlcov

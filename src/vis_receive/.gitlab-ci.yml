@@ -30,11 +30,12 @@ test:vis_receive:
     - ./scripts/run_c_tests.sh TEST
     - mkdir htmlout
     - gcovr --html --html-details -r src/vis_receive/src -o htmlout/vis_receive.html src/vis_receive/build/CMakeFiles/vis_recv.dir/src
+    - gcovr -r src/vis_receive/src
     - pwd
 #    - mv src/vis_receive/build/coveralls.json ./coveralls.json
   artifacts:
     paths:
-      -  htmlout
+      - htmlout
     expire_in: 1 week
 
 # ============================================================================
