@@ -66,6 +66,7 @@ coverage_report:
     # - pip install coveralls
     - pip install pyyaml
     - pip install anybadge
+    - pip install gcovr
     #- pip install python-coveralls
   script:
     # Combine the coverage reports into a single report.
@@ -79,6 +80,8 @@ coverage_report:
     - mv coverage.xml ./build/reports/code-coverage.xml
     - cov=$(grep -m 1 data-ratio htmlcov/index.html | cut -d">" -f2 | cut -d% -f1)
     - anybadge -l "coverage report" -v ${cov} -f build/cov_report.svg coverage
+    - ls
+    - gcovr --add-tracefile htmlout/vis-receive.json --add-tracefile htmlout/subarray.json --html-details gcovr_coverage.html
   coverage: '/TOTAL\s+\d+\s+\d+\s+\d+\s+\d+\s+(\d+\%)/'
   after_script:
     # FIXME: this is not working but doesn't break the build.

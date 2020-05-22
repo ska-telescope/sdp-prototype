@@ -36,6 +36,7 @@ test:ska-sdp-subarray:
     TOGGLE_CONFIG_DB: 0
   before_script:
     - python3 -m pip install --upgrade ska-sdp-logging ska-sdp-config
+    - python3 -m pip install gcovr
   script:
     - cd src/tango_sdp_subarray
     - mkdir -p build/reports
@@ -45,10 +46,14 @@ test:ska-sdp-subarray:
     - mv coverage.xml build/code-coverage.xml
     - mv cucumber.json build/cucumber.json
     - mv build ../../build
+    - mkdir htmlout
+    - gcovr --html --html-details -r . -o htmlout/subarray.html
+    - gcovr -r . --json htmlout/subarray.json
   artifacts:
     paths:
       - build
       - ./$CI_JOB_NAME.coverage
+      - htmlout
     expire_in: 1 week
     when: always
 
