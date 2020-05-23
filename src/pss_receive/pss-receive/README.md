@@ -1,7 +1,7 @@
-## Introduction
+# PSS Receive Workflow
 
-This is a simple python code for a PSS (Pulsar Search Sub-element) receiver capable of receiving UDP-based
-SPEAD streams.
+This is a simple python code for a PSS (Pulsar Search Sub-element) receiver
+capable of receiving UDP-based SPEAD streams.
 
 ## Dependencies
 

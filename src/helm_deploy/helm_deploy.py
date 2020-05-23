@@ -99,8 +99,6 @@ def delete_helm(txn, dpl_id):
     """Delete a Helm deployment."""
 
     # Try to delete
-    log.info("Delete deployment {}...".format(dpl_id))
-
     try:
         helm_invoke('uninstall', dpl_id, '-n', NAMESPACE)
         return True
@@ -163,7 +161,7 @@ def main():
     next_chart_refresh = time.time() + CHART_REPO_REFRESH
 
     # Load Helm repository
-    helm_invoke("repo", "add", "stable", "https://kubernetes-charts.storage.googleapis.com/")
+    helm_invoke("repo", "add", "dask", "https://helm.dask.org/")
     helm_invoke("repo", "update")
 
     # Show

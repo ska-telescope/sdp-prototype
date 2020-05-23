@@ -1,6 +1,6 @@
 apiVersion: v2
-name: workflow
-description: Helm chart to deploy an SDP workflow
+name: buffer
+description: Helm chart to create an SDP buffer reservation using a persistent volume claim
 type: application
 version: 0.1.0
 appVersion: 0.1.0

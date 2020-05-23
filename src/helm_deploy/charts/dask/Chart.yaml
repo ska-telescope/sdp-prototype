@@ -1,6 +1,6 @@
 apiVersion: v2
-name: workflow
-description: Helm chart to deploy an SDP workflow
+name: dask
+description: Helm chart to deploy SDP Dask execution engine
 type: application
 version: 0.1.0
 appVersion: 0.1.0
@@ -11,3 +11,5 @@ sources:
 maintainers:
 - name: Mark Ashdown
   email: maja1@mrao.cam.ac.uk
+- name: Nijin Thykatthu
+  email: nijin.thykkathu@stfc.ac.uk
