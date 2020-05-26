@@ -29,7 +29,7 @@ test:vis_receive:
   script:
     - ./scripts/run_c_tests.sh TEST
     - mkdir htmlout
-    - gcovr --html --html-details -r src/vis_receive/src -o htmlout/coverage.html src/vis_receive/build/CMakeFiles/vis_receive.dir/src
+    - gcovr --html --html-details -r src/vis_receive/src -o htmlout/coverage.html src/vis_receive/build/CMakeFiles/vis_recv.dir/src
     - pwd
 #    - mv src/vis_receive/build/coveralls.json ./coveralls.json
   artifacts:
