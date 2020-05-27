@@ -819,3 +819,46 @@ class Etcd3Transaction:
             # lot of updates in batch
             revision = rev
             block = False
+
+
+class MemoryTransaction:
+    def __init__(self):
+        self.dict = {}
+
+    def __iter__(self):
+        return self.dict.__iter__()
+
+    def commit(self):
+        pass
+
+    def get(self, key):
+        return self.dict[key]
+
+    def put(self, key, val):
+        self.dict[key] = val
+
+    def list_keys(self, path):
+        return [k for k in self.dict.keys() if k.startswith(path)]
+
+    def loop(self, *args, **kwargs):
+        pass
+
+
+class Memory:
+    """
+    In-memory backend implementation, principally for testing.
+    """
+    def __init__(self, *args, **kwargs):
+        """ Constructor. """
+        pass
+
+    def lease(self, ttl=10):
+        class Lease:
+            pass
+        return Lease()
+
+    def txn(self, max_retries=64):
+        return MemoryTransaction(),
+
+    def close(self) -> None:
+        pass

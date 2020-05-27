@@ -224,7 +224,6 @@ def main():
         txn.loop(wait=True, timeout=next_chart_refresh - time.time())
 
 
-
 def terminate(signal, frame):
     """Terminate the program."""
     log.info("Asked to terminate")

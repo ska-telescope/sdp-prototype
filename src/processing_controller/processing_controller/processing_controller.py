@@ -165,13 +165,12 @@ class ProcessingController:
         :param backend: config backend to use.
         """
         # Initialise workflow definitions
-        LOG.info('Initialising workflow definitions')
+        LOG.info('Initialising workflow definitions from %s', self._url)
         self._workflows.update_url(self._url)
         next_workflows_refresh = time.time() + self._refresh
 
         # Connect to config DB
         LOG.info('Connecting to config DB')
-        # Note: sdp_config supports this by design but is not fully implemented.
         config = ska_sdp_config.Config(backend=backend)
 
         LOG.info('Starting main loop')
