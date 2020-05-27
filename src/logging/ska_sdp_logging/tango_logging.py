@@ -1,7 +1,4 @@
 """Standard logging for TANGO devices."""
-# pylint: disable=invalid-name
-# pylint: disable=too-few-public-methods
-
 import enum
 import inspect
 import logging

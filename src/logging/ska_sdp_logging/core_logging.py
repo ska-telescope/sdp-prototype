@@ -3,7 +3,6 @@ Core logging functionality.
 
 This module depends only on the Python standard library.
 """
-# pylint: disable=invalid-name
 # pylint: disable=too-many-instance-attributes
 # pylint: disable=broad-except
 # pylint: disable=fixme
