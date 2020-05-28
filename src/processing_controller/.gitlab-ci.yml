@@ -1,5 +1,8 @@
 # Local Gitlab-CI file for Processing Controller
 
+variables:
+  BUILD_PATH: src/processing_controller
+
 ## ============================================================================
 ## Build, tag and push Docker development images
 ## ============================================================================
@@ -12,22 +15,11 @@
 build:processing_controller:
   stage: build
   extends: .build_docker
-  variables:
-    BUILD_PATH: src/processing_controller
 
 test:processing_controller:
-  extends: .tango_tests
-  stage: test
-  script:
-    - cd src/processing_controller
-    - python3 setup.py test
-    # Make the coverage report available at the top level, which will merge it.
-    - mv .coverage ../../$CI_JOB_NAME.coverage
-  artifacts:
-    paths:
-      - ./$CI_JOB_NAME.coverage
-    expire_in: 1 week
-    when: always
+  extends:
+    - .tango_tests
+    - .test_with_coverage
 
 ### ============================================================================
 ### Test Docker development images
@@ -50,5 +42,3 @@ publish:processing_controller:
   extends: .publish_template
   dependencies:
     - build:processing_controller
-  variables:
-    BUILD_PATH: src/processing_controller
