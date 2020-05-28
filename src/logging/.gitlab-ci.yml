@@ -1,6 +1,7 @@
 # Local Gitlab-CI file for SDP Logging
-include:
-  - local: /scripts/.gitlab-ci-common.yml
+
+variables:
+  BUILD_PATH: src/logging
 
 # ============================================================================
 # Build python packages
@@ -8,13 +9,9 @@ include:
 
 build:ska-sdp-logging_dev: # Executed on a commit
   extends: .build_python_dev
-  variables:
-    BUILD_PATH: src/logging
 
 build:ska-sdp-logging:
   extends: .build_python_release
-  variables:
-    BUILD_PATH: src/logging
 
 # ============================================================================
 # Testing built python package
@@ -23,10 +20,7 @@ build:ska-sdp-logging:
 test:ska-sdp-logging:
   extends:
     - .tango_tests
-    - .coverage_template
-  variables:
-    DIR_NAME: logging
-  stage: test
+    - .test_with_coverage
 
 ## ============================================================================
 ## Publish python packages
@@ -36,12 +30,8 @@ publish:ska-sdp-logging-dev:
   extends: .publish_python_dev
   dependencies:
     - build:ska-sdp-logging_dev
-  variables:
-    BUILD_PATH: src/logging
 
 publish:ska-sdp-logging:
   extends: .publish_python_release
   dependencies:
     - build:ska-sdp-logging
-  variables:
-    BUILD_PATH: src/logging
