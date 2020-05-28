@@ -170,3 +170,21 @@
          --data @build/cucumber.json
          https://jira.skatelescope.org/rest/raven/1.0/import/execution/cucumber'
   retry: 2 # In case JIRA doesn't work first time
+
+## ============================================================================
+## Miscellaneous templates.
+## ============================================================================
+
+.coverage_template: &coverage_template
+  stage: test
+  script:
+    - coverage --version
+    - cd src/$DIR_NAME
+    - python3 setup.py test
+    # Make the coverage report available at the top level, which will merge it.
+    - mv .coverage ../../$CI_JOB_NAME.coverage
+  artifacts:
+    paths:
+      - ./$CI_JOB_NAME.coverage
+    expire_in: 1 week
+    when: always

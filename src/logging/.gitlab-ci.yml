@@ -1,4 +1,6 @@
 # Local Gitlab-CI file for SDP Logging
+include:
+  - local: /scripts/.gitlab-ci-common.yml
 
 # ============================================================================
 # Build python packages
@@ -19,19 +21,12 @@ build:ska-sdp-logging:
 # ============================================================================
 
 test:ska-sdp-logging:
-  extends: .tango_tests
+  extends:
+    - .tango_tests
+    - .coverage_template
+  variables:
+    DIR_NAME: logging
   stage: test
-  script:
-    - coverage --version
-    - cd src/logging
-    - python3 setup.py test
-    # Make the coverage report available at the top level, which will merge it.
-    - mv .coverage ../../$CI_JOB_NAME.coverage
-  artifacts:
-    paths:
-      - ./$CI_JOB_NAME.coverage
-    expire_in: 1 week
-    when: always
 
 ## ============================================================================
 ## Publish python packages
