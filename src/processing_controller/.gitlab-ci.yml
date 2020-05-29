@@ -1,7 +1,8 @@
 # Local Gitlab-CI file for Processing Controller
 
-variables:
-  BUILD_PATH: src/processing_controller
+.env: &env
+  variables:
+    BUILD_PATH: src/processing_controller
 
 ## ============================================================================
 ## Build, tag and push Docker development images
@@ -15,11 +16,13 @@ variables:
 build:processing_controller:
   stage: build
   extends: .build_docker
+  *env
 
 test:processing_controller:
   extends:
     - .tango_tests
     - .test_with_coverage
+  *env
 
 ### ============================================================================
 ### Test Docker development images
@@ -42,3 +45,4 @@ publish:processing_controller:
   extends: .publish_template
   dependencies:
     - build:processing_controller
+  *env
