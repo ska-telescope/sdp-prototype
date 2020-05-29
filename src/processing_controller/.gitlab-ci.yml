@@ -16,13 +16,13 @@
 build:processing_controller:
   stage: build
   extends: .build_docker
-  *env
+  <<: *env
 
 test:processing_controller:
   extends:
     - .tango_tests
     - .test_with_coverage
-  *env
+  <<: *env
 
 ### ============================================================================
 ### Test Docker development images
@@ -45,4 +45,4 @@ publish:processing_controller:
   extends: .publish_template
   dependencies:
     - build:processing_controller
-  *env
+  <<: *env
