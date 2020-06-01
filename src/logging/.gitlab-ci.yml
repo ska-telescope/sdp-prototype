@@ -1,4 +1,4 @@
-# Local Gitlab-CI file for SDP Logging
+# Local Gitlab-CI file for SDP Logging.
 
 .env: &env
   variables:

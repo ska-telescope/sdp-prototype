@@ -175,7 +175,7 @@
 ## Miscellaneous templates.
 ## ============================================================================
 
-.test_with_coverage: &test_with_coverage
+.test_with_coverage:
   stage: test
   script:
     - coverage --version
