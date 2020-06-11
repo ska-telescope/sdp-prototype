@@ -1,2 +1,2 @@
 pytango
-ska-sdp-logging>=0.0.5
+ska-sdp-logging >= 0.0.6

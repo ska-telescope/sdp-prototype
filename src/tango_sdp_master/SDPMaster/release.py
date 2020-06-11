@@ -3,7 +3,7 @@
 
 NAME = "ska-sdp-master"
 # For version names see: https://www.python.org/dev/peps/pep-0440/
-VERSION = "0.3.2"
+VERSION = "0.3.3"
 VERSION_INFO = VERSION.split(".")
 AUTHOR = "ORCA Team, Sim Team"
 LICENSE = 'License :: OSI Approved :: BSD License'

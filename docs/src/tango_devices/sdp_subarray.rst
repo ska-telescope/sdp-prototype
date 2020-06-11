@@ -13,7 +13,8 @@ State Model
 
 The SDP Subarray device will eventually implement the `Subarray state model
 <https://confluence.skatelescope.org/display/SE/Subarray+State+Model>`_. The
-present partial implementation is as follows:
+present implementation is shown in the diagram below. Here the state is the
+combination of the Tango device state and the observing state (obsState).
 
 .. image:: ../images/sdp_subarray_states.svg
    :align: center
@@ -42,7 +43,7 @@ Attribute               Type   Read/Write Values                      Descriptio
 ======================= ====== ========== =========================== ===========
 serverVersion           String Read       Semantic version            Subarray device server version
 ----------------------- ------ ---------- --------------------------- -----------
-obsState                Enum   Read-write :ref:`subarray_obsstate`    Subarray observation state
+obsState                Enum   Read-write :ref:`subarray_obsstate`    Subarray observing state
 ----------------------- ------ ---------- --------------------------- -----------
 adminMode               Enum   Read-write :ref:`subarray_adminmode`   Subarray admin mode
 ----------------------- ------ ---------- --------------------------- -----------
@@ -143,52 +144,54 @@ and the parameters to be passed to the workflows.
 An example of the argument is below. Note that:
 
 - ``max_length`` specifies the maximum length of the SBI in seconds.
-- In ``scan_types``, the frequency and channel information are for example only, they will be more detailed.
+- In ``scan_types``, the channel information is for example only.
 - In ``processing_blocks``, the workflow parameters will not actually be empty. Each workflow will have its
   own schema for its parameters.
 
 .. code-block:: json
 
     {
-      "id": "sbi-mvp01-20200318-0001",
+      "id": "sbi-mvp01-20200425-00000",
       "max_length": 21600.0,
       "scan_types": [
         {
-          "id": "science_A",
-          "coordinate_system": "ICRS", "ra": "00:00:00.00", "dec": "00:00:00.0",
-          "freq_min": 0.0, "freq_max": 0.0, "nchan": 1000
+          "id": "science",
+          "channels": [
+            {"count": 372, "start": 0, "stride": 2, "freq_min": 0.35e9, "freq_max": 0.358e9, "link_map": [[0,0], [200,1]]}
+          ]
         },
         {
-          "id": "calibration_B",
-          "coordinate_system": "ICRS", "ra": "00:00:00.00", "dec": "00:00:00.0",
-          "freq_min": 0.0, "freq_max": 0.0, "nchan": 1000
+          "id": "calibration",
+          "channels": [
+            {"count": 372, "start": 0, "stride": 2, "freq_min": 0.35e9, "freq_max": 0.358e9, "link_map": [[0,0], [200,1]]}
+          ]
         }
       ],
       "processing_blocks": [
         {
-          "id": "pb-mvp01-20200318-0001",
+          "id": "pb-mvp01-20200425-00000",
           "workflow": {"type": "realtime", "id": "vis_receive", "version": "0.1.0"},
           "parameters": {}
         },
         {
-          "id": "pb-mvp01-20200318-0002",
+          "id": "pb-mvp01-20200425-00001",
           "workflow": {"type": "realtime", "id": "test_realtime", "version": "0.1.0"},
           "parameters": {}
         },
         {
-          "id": "pb-mvp01-20200318-0003",
+          "id": "pb-mvp01-20200425-00002",
           "workflow": {"type": "batch", "id": "ical", "version": "0.1.0"},
           "parameters": {},
           "dependencies": [
-            {"pb_id": "pb-mvp01-20200318-0001", "type": ["visibilities"]}
+            {"pb_id": "pb-mvp01-20200425-00000", "type": ["visibilities"]}
           ]
         },
         {
-          "id": "pb-mvp01-20200318-0004",
+          "id": "pb-mvp01-20200425-00003",
           "workflow": {"type": "batch", "id": "dpreb", "version": "0.1.0"},
           "parameters": {},
           "dependencies": [
-            {"pb_id": "pb-mvp01-20200318-0003", "type": ["calibration"]}
+            {"pb_id": "pb-mvp01-20200425-00002", "type": ["calibration"]}
           ]
         }
       ]
@@ -212,12 +215,13 @@ An example of the argument:
     {
       "new_scan_types": [
         {
-          "id": "calibration_C",
-          "coordinate_system": "ICRS", "ra": "00:00:00.00", "dec": "00:00:00.0",
-          "freq_min": 0.0, "freq_max": 0.0, "nchan": 1000
+          "id": "new_calibration",
+          "channels": [
+            {"count": 372, "start": 0, "stride": 2, "freq_min": 0.35e9, "freq_max": 0.358e9, "link_map": [[0,0], [200,1]]}
+          ]
         }
       ],
-      "scan_type": "calibration_C"
+      "scan_type": "new_calibration"
     }
 
 

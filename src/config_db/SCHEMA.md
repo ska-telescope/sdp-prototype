@@ -23,15 +23,15 @@ Dynamic state information of the scheduling block instance.
 Contents:
 ```javascript
 {
-    "id": "sbi-mvp01-20200330-0001",
+    "id": "sbi-mvp01-20200425-00000",
     "max_length": 21600.0
     "scan_types": [
         { "id": "science", ... },
         { "id": "calibration", ... }
     ]
-    "pb_realtime": [ "pb-mvp01-20200330-0001", ... ]
+    "pb_realtime": [ "pb-mvp01-20200425-00000", ... ]
     "pb_batch": [ ... ]
-    "pb_receive_addresses": "pb-mvp01-20200330-0001"
+    "pb_receive_addresses": "pb-mvp01-20200425-00000"
     "current_scan_type": "science"
     "status": "SCANNING"
     "scan_id": 12345
@@ -53,15 +53,14 @@ Static definition of processing block information.
 Contents:
 ```javascript
 {
-    "pb_id": "pb-mvp01-20200330-0001",
-    "sbi_id": "sb-mvp01-20200330-0001",
+    "id": "pb-mvp01-20200425-00000",
+    "sbi_id": "sbi-mvp01-20200425-00000",
     "workflow": {
         "type": "realtime",
         "id": "vis_receive",
-        "version": "0.1.0"
+        "version": "0.2.0"
     }
     "parameters": { ... }
-    "scan_parameters": {}
 }
 ```
 
@@ -74,8 +73,7 @@ typically be executed according to resource availability.
 Valid types are `realtime` and `batch`. The workflow tag identifies the
 workflow script version as well as the required underlying software (e.g.
 execution engines, processing components). `...` stands for arbitrary
-workflow-defined parameters. The `scan_parameters` field is now redundant; it
-will be removed in a future release.
+workflow-defined parameters.
 
 ### Processing Block State
 
@@ -90,8 +88,8 @@ Contents:
     "resources_available": True
     "status": "RUNNING",
     "receive_addresses": [
-        { "id": "science", ... },
-        { "id": "calibration", ... },
+        { "scan_type": "science", ... },
+        { "scan_type": "calibration", ... },
     ]
 }
 ```
@@ -113,9 +111,9 @@ Contents:
 {
   "command": [
     "vis_receive.py",
-    "pb-mvp01-20200330-0001"
+    "pb-mvp01-20200425-00000"
   ],
-  "hostname": "pb-mvp01-20200330-0001-workflow-2kxfz",
+  "hostname": "pb-mvp01-20200425-00000-workflow-2kxfz",
   "pid": 1
 }
 ```

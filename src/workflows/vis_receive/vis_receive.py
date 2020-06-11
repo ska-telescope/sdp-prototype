@@ -4,9 +4,9 @@ Example Vis Receive workflow
 
 # pylint: disable=C0103
 
+import sys
 import logging
 import ska_sdp_config
-import sys
 
 # Initialise logging and configuration
 logging.basicConfig()
@@ -26,7 +26,7 @@ def main(argv):
 
     # Deploy Vis Receive with 1 worker.
     log.info("Deploying Vis Receive...")
-    deploy_id = pb.pb_id + "-vis-receive"
+    deploy_id = 'proc-{}-vis-receive'.format(pb.id)
     deploy = ska_sdp_config.Deployment(
         deploy_id, "helm", {
             'chart': 'vis-receive',  # Helm chart deploy/charts/vis-receive
@@ -38,7 +38,7 @@ def main(argv):
         # Just idle until processing block or disappears
         log.info("Done, now idling...")
         for txn in config.txn():
-            if not txn.is_processing_block_owner(pb.pb_id):
+            if not txn.is_processing_block_owner(pb.id):
                 break
             txn.loop(True)
 

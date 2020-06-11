@@ -1,6 +1,6 @@
 #!/bin/sh
 
-docker run -d -h etcd --name etcd \
+docker run -d -h etcd --rm --name etcd \
     -P \
     quay.io/coreos/etcd:latest \
     /usr/local/bin/etcd \
@@ -23,4 +23,3 @@ echo
 echo To use with ska-sdp-config, either link into container, or use locally:
 echo  $ docker run --link etcd --env SDP_CONFIG_HOST=etcd ...
 echo  $ SDP_CONFIG_HOST=$SDP_CONFIG_HOST SDP_CONFIG_PORT=$SDP_CONFIG_PORT sdpcfg ...
-

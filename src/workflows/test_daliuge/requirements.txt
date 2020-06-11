@@ -1,0 +1,2 @@
+daliuge
+ska-sdp-config >= 0.0.8

@@ -1,7 +1,8 @@
 FROM python:3.7
 
-RUN pip install ska_sdp_config
+COPY requirements.txt ./
+RUN pip install -r requirements.txt
 
 WORKDIR /app
-COPY pss_receive.py .
+COPY pss_receive.py ./
 ENTRYPOINT ["python", "pss_receive.py"]

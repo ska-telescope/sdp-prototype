@@ -1,10 +1,11 @@
 {
   "new_scan_types": [
     {
-      "id": "calibration_C",
-      "coordinate_system": "ICRS", "ra": "00:00:00.00", "dec": "00:00:00.0",
-      "freq_min": 0.0, "freq_max": 0.0, "nchan": 1000
+      "id": "new_calibration",
+      "channels": [
+        {"count": 372, "start": 0, "stride": 2, "freq_min": 0.35e9, "freq_max": 0.358e9, "link_map": [[0,0], [200,1]]}
+      ]
     }
   ],
-  "scan_type": "calibration_C"
+  "scan_type": "new_calibration"
 }
