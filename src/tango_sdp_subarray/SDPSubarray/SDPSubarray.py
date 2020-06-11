@@ -369,9 +369,7 @@ class SDPSubarray(Device):
         self._sbi_id = config.get('id')
 
         # Get the receive addresses and publish them on the attribute
-        LOG.info("Going to publish the receive address to the attributes")
         receive_addresses = self._get_receive_addresses()
-        LOG.info('SETTING RECEIVE ADDRESSES')
         LOG.info(receive_addresses)
         self._set_receive_addresses(receive_addresses)
 
@@ -976,45 +974,44 @@ class SDPSubarray(Device):
         :returns: receive address as dict
 
         """
-        LOG.info('INISDE RECEIVE ADDRESS')
-        # if not SDPSubarray.is_feature_active(FeatureToggle.RECEIVE_ADDRESSES):
-        if self._config_db_client is None:
-            return None
-
-        # Get ID of PB that is generating the receive addresses and scan type
-        for txn in self._config_db_client.txn():
-            sb = txn.get_scheduling_block(self._sbi_id)
-        pb_id = sb.get('pb_receive_addresses')
-        LOG.info(pb_id)
-        scan_type = sb.get('current_scan_type')
-        LOG.info(scan_type)
-
-        # If no PB is configured to generate the receive addresses, return None
-        if pb_id is None:
-            return None
-        LOG.info("GETTING RECEIVE ADDRESSES")
-        # Get the list of receive address configurations for all scan types
-        # and pick out the right one
-        for txn in self._config_db_client.txn():
-            pb_state = txn.get_processing_block_state(pb_id)
-            if pb_state is None:
-                return None
-        receive_addresses_list = pb_state.get('receive_addresses')
-        LOG.info(receive_addresses_list)
-        if receive_addresses_list is None:
-            return None
-        # receive_addresses = None
-        receive_addresses = receive_addresses_list
-        # for ra in receive_addresses_list:
-        #     if ra.get('scanType') == scan_type:
-        #         receive_addresses = ra
-        #         break
-        # else:
-        #     ra_file = os.path.join(os.path.dirname(__file__),
-        #                            'receive_addresses.json')
-        #     with open(ra_file, 'r') as file:
-        #         receive_addresses = json.load(file)
+        # # if not SDPSubarray.is_feature_active(FeatureToggle.RECEIVE_ADDRESSES):
+        # if self._config_db_client is None:
+        #     return None
         #
+        # # Get ID of PB that is generating the receive addresses and scan type
+        # for txn in self._config_db_client.txn():
+        #     sb = txn.get_scheduling_block(self._sbi_id)
+        # pb_id = sb.get('pb_receive_addresses')
+        # LOG.info(pb_id)
+        # scan_type = sb.get('current_scan_type')
+        # LOG.info(scan_type)
+        #
+        # # If no PB is configured to generate the receive addresses, return None
+        # if pb_id is None:
+        #     return None
+        # # Get the list of receive address configurations for all scan types
+        # # and pick out the right one
+        # for txn in self._config_db_client.txn():
+        #     pb_state = txn.get_processing_block_state(pb_id)
+        #     if pb_state is None:
+        #         return None
+        # receive_addresses_list = pb_state.get('receive_addresses')
+        # LOG.info(receive_addresses_list)
+        # if receive_addresses_list is None:
+        #     return None
+        # receive_addresses = None
+        # for ra in receive_addresses_list:
+        #     receive_addresses = ra
+        #     break
+            # if ra.get('scanType') == scan_type:
+            #     receive_addresses = ra
+            #     break
+        # else:
+        ra_file = os.path.join(os.path.dirname(__file__),
+                               'receive_addresses.json')
+        with open(ra_file, 'r') as file:
+            receive_addresses = json.load(file)
+
         return receive_addresses
 
 
