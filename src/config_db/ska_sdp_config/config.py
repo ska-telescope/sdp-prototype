@@ -262,7 +262,7 @@ class Transaction:
         """
         Add a new :class:`ProcessingBlock` to the configuration.
 
-        :param obj: Processing block to create
+        :param pb: Processing block to create
         """
         assert isinstance(pb, entity.ProcessingBlock)
         self._create(self._pb_path + pb.id, pb.to_dict())
@@ -271,7 +271,7 @@ class Transaction:
         """
         Update a :class:`ProcessingBlock` in the configuration.
 
-        :param obj: Processing block to update
+        :param pb: Processing block to update
         """
         assert isinstance(pb, entity.ProcessingBlock)
         self._update(self._pb_path + pb.id, pb.to_dict())
