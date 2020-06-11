@@ -997,11 +997,13 @@ class SDPSubarray(Device):
             receive_addresses_list = pb_state.get('receive_addresses')
             if receive_addresses_list is None:
                 return None
-            receive_addresses = None
-            for ra in receive_addresses_list:
-                if ra.get('scanType') == scan_type:
-                    receive_addresses = ra
-                    break
+            receive_addresses = receive_addresses_list
+            
+            # for ra in receive_addresses_list:
+            #     receive_addresses = ra
+                # if ra.get('scanType') == scan_type:
+                #     receive_addresses = ra
+                #     break
         else:
             ra_file = os.path.join(os.path.dirname(__file__),
                                    'receive_addresses.json')
