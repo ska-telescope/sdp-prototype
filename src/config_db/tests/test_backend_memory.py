@@ -5,10 +5,12 @@ from ska_sdp_config.memory_backend import MemoryBackend, MemoryTransaction
 
 @pytest.fixture
 def txn() -> MemoryTransaction:
-    return MemoryTransaction(MemoryBackend())
+    return MemoryBackend().txn()
 
 
 def test_stuff(txn: MemoryTransaction):
+    txn.create('/x', 'v0')
+    assert txn.get('/x') == 'v0'
     txn.create('/x/y', 'v1')
     assert txn.get('/x/y') == 'v1'
     txn.update('/x/y', 'v3')
@@ -22,9 +24,15 @@ def test_stuff(txn: MemoryTransaction):
     with pytest.raises(ConfigVanished):
         txn.delete('/y/x', 'v')
 
-    assert len(txn.list_keys('/x')) == 1
+    paths = txn.list_keys('/x')
+    assert len(paths) == 1
+    assert paths[0] == '/x/y'
+    paths = txn.list_keys('/')
+    assert len(paths) == 1
+    assert paths[0] == '/x'
 
     txn.commit()
+    txn.loop()
     assert next(iter(txn)) == txn
 
     assert txn.backend.lease() is not None

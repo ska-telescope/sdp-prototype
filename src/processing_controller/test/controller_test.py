@@ -31,7 +31,8 @@ def test_stuff():
     pb = {"id": "test", "sbi_id": "test", "workflow": wf, "parameters": {}, "dependencies": []}
 
     backend = MemoryBackend()
-    backend.create("/pb/test",  dict_to_json(pb))
+    backend.create("/pb/test", dict_to_json(pb))
 
     controller.main(backend=backend)
+    LOG.info(backend.list_keys('/deploy'))
     assert '/deploy/proc-test-workflow' in backend.list_keys('/deploy')

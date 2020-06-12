@@ -20,7 +20,7 @@ build:helm_deploy:
 ### Test Docker development images
 ### ============================================================================
 #
- test:helm_deploy:
+test:helm_deploy:
   stage: test
   extends: .pull_docker
   variables:
