@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""PIP setup script for the SDP Logging package."""
+"""PIP setup script for the helm deploy package."""
 
 import setuptools
 
@@ -17,7 +17,7 @@ setuptools.setup(
     license='License :: OSI Approved :: BSD License',
     long_description=LONG_DESCRIPTION,
     long_description_content_type='text/markdown',
-    url='https://gitlab.com/ska-telescope/sdp-prototype/src/processing_controller/',
+    url='https://gitlab.com/ska-telescope/sdp-prototype/src/helm_deploy/',
     packages=setuptools.find_packages(),
     install_requires=[
         'python-dotenv',

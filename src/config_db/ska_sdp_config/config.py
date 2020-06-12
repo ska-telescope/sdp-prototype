@@ -6,7 +6,7 @@ from datetime import date
 import json
 from socket import gethostname
 
-from . import backend as backend_mod, entity
+from . import etcd_backend, entity
 
 
 class Config:
@@ -67,7 +67,7 @@ class Config:
             if 'password' not in cargs:
                 cargs['password'] = os.getenv('SDP_CONFIG_PASSWORD', None)
 
-            return backend_mod.Etcd3(**cargs)
+            return etcd_backend.Etcd3(**cargs)
         else:
             raise ValueError(
                 "Unknown configuration backend {}!".format(backend))

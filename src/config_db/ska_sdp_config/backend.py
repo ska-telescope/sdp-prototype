@@ -1,6 +1,4 @@
-"""
-Some generic functionality for implementing backends.
-"""
+""" Some generic functionality for implementing backends. """
 
 
 # Some utilities for handling tagging paths.
@@ -19,13 +17,14 @@ def _depth(path: str) -> int:
 
 def _tag_depth(path: str, depth=None) -> str:
     """Add depth tag to path."""
+
     # All paths must start at the root
     # SG: This did return a bytes object, why?
     if not path or path[0] != '/':
         raise ValueError("Path must start with /!")
     if depth is None:
         depth = _depth(path)
-    #return "{}{}".format(depth, path).encode('utf-8')
+    # return "{}{}".format(depth, path).encode('utf-8')
     return "{}{}".format(depth, path)
 
 

@@ -1,6 +1,7 @@
 """
-This module implements an in-memory database backend, principally for testing purposes. In
-principle it should behave in the same way as the etcd backend.
+This module implements an in-memory database backend, principally for testing purposes.
+
+In principle it should behave in the same way as the etcd backend.
 No attempt has been made to make it thread-safe, so it probably isn't.
 """
 from typing import List, Callable
@@ -18,13 +19,9 @@ def _op(path: str, value: str,
 
 
 class MemoryBackend:
-    """
-    In-memory backend implementation, principally for testing.
-    """
+    """ In-memory backend implementation, principally for testing. """
     def __init__(self):
-        """
-        Constructor.
-        """
+        """ Construct a memory backend. """
         self.dict = {}
 
     def lease(self, *args, **kwargs) -> 'Lease':
@@ -36,7 +33,6 @@ class MemoryBackend:
         """
         class Lease:
             """ Dummy lease class. """
-            pass
         return Lease()
 
     def txn(self, *args, **kwargs) -> 'MemoryTransaction':
@@ -102,27 +98,27 @@ class MemoryBackend:
 
     def list_keys(self, path: str) -> List[str]:
         """
-        Get a list of the keys at the given path. In common with the etcd backend, the structure is
+        Get a list of the keys at the given path.
+        In common with the etcd backend, the structure is
         "flat" rather than a real hierarchy, even though it looks like one.
         :param path:
         :return: list of keys
         """
         # Match only at this depth level. Special case for top level.
         if path == '/':
-            p = path
+            new_path = path
             depth = 1
         else:
-            p = path.rstrip('/')
-            depth = _depth(p) + 1
-        tag = _tag_depth(p, depth=depth)
-        return sorted([_untag_depth(k) for k in self.dict.keys() if k.startswith(tag)])
+            new_path = path.rstrip('/')
+            depth = _depth(new_path) + 1
+        tag = _tag_depth(new_path, depth=depth)
+        return sorted([_untag_depth(k) for k in self.dict if k.startswith(tag)])
 
     def close(self) -> None:
         """
         This does nothing.
         :return: nothing
         """
-        pass
 
 
 class MemoryTransaction:
@@ -133,7 +129,7 @@ class MemoryTransaction:
     """
     def __init__(self, backend: MemoryBackend):
         """
-        Constructor.
+        Construct an in-memory transaction.
         :param backend: to wrap
         """
         self.backend = backend
@@ -150,7 +146,6 @@ class MemoryTransaction:
         This does nothing.
         :return: nothing
         """
-        pass
 
     def get(self, path: str) -> str:
         """
@@ -195,7 +190,8 @@ class MemoryTransaction:
 
     def list_keys(self, path: str) -> List[str]:
         """
-        Get a list of the keys at the given path. In common with the etcd backend, the structure is
+        Get a list of the keys at the given path.
+        In common with the etcd backend, the structure is
         "flat" rather than a real hierarchy, even though it looks like one.
         :param path:
         :return: list of keys
@@ -207,6 +203,3 @@ class MemoryTransaction:
         This does nothing.
         :return: nothing
         """
-        pass
-
-
