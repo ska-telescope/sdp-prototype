@@ -124,8 +124,8 @@ def create_helm(txn, dpl_id, deploy):
 
     # Encode any parameters
     if 'values' in deploy.args and isinstance(deploy.args, dict):
-        val_str = ",".join(["{}={}".format(k,v) for
-                            k,v in deploy.args['values'].items()])
+        val_str = ",".join(["{}={}".format(k, v) for
+                            k, v in deploy.args['values'].items()])
         cmd.extend(['--set', val_str])
 
     # Make the call
@@ -147,7 +147,6 @@ def create_helm(txn, dpl_id, deploy):
             log.error("Could not create deployment {}!".format(dpl_id))
 
     return False
-
 
 
 def main():
