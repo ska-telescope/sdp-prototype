@@ -1,14 +1,15 @@
 """
-This module implements an in-memory database backend,
-principally for testing purposes.
+This module implements an in-memory database backend.
 
+The main purpose of this is for use in testing.
 In principle it should behave in the same way as the etcd backend.
 No attempt has been made to make it thread-safe, so it probably isn't.
 """
 from typing import List, Callable
 
-from ska_sdp_config.backend import (_depth, _tag_depth, _untag_depth,
-                                    _check_path, ConfigCollision, ConfigVanished)
+from ska_sdp_config.backend import (_depth, _tag_depth,
+                                    _untag_depth, _check_path,
+                                    ConfigCollision, ConfigVanished)
 
 
 def _op(path: str, value: str,
