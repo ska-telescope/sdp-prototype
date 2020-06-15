@@ -19,25 +19,29 @@ def _op(path: str, value: str,
 
 
 class MemoryBackend:
-    """ In-memory backend implementation, principally for testing. """
+    """In-memory backend implementation, principally for testing."""
+
     def __init__(self):
-        """ Construct a memory backend. """
+        """Construct a memory backend."""
         self.dict = {}
 
     def lease(self, *args, **kwargs) -> 'Lease':
         """
-        Generate a dummy lease object. This currently has no additional methods.
+        Generate a dummy lease object.
+
+        This currently has no additional methods.
         :param args: arbitrary, not used
         :param kwargs: arbitrary, not used
         :return: dummy lease object
         """
         class Lease:
-            """ Dummy lease class. """
+            """Dummy lease class."""
         return Lease()
 
     def txn(self, *args, **kwargs) -> 'MemoryTransaction':
         """
         Create an in-memory "transaction".
+
         :param args: arbitrary, not used
         :param kwargs: arbitrary, not used
         :return: transaction object
@@ -46,7 +50,8 @@ class MemoryBackend:
 
     def get(self, path: str) -> str:
         """
-        Get the value at the given path
+        Get the value at the given path.
+
         :param path: to lookup
         :return: the value
         """
@@ -66,6 +71,7 @@ class MemoryBackend:
     def create(self, path: str, value: str, *args, **kwargs) -> None:
         """
         Create an entry at the given path.
+
         :param path: to create an entry
         :param value: of the entry
         :param args: arbitrary, not used
@@ -77,6 +83,7 @@ class MemoryBackend:
     def update(self, path: str, value: str, *args, **kwargs) -> None:
         """
         Update an entry at the given path.
+
         :param path: to create an entry
         :param value: of the entry
         :param args: arbitrary, not used
@@ -88,6 +95,7 @@ class MemoryBackend:
     def delete(self, path, *args, **kwargs) -> None:
         """
         Delete an entry at the given path.
+
         :param path: to create an entry
         :param value: of the entry
         :param args: arbitrary, not used
@@ -99,6 +107,7 @@ class MemoryBackend:
     def list_keys(self, path: str) -> List[str]:
         """
         Get a list of the keys at the given path.
+
         In common with the etcd backend, the structure is
         "flat" rather than a real hierarchy, even though it looks like one.
         :param path:
@@ -116,6 +125,8 @@ class MemoryBackend:
 
     def close(self) -> None:
         """
+        Close the resource.
+
         This does nothing.
         :return: nothing
         """
@@ -123,33 +134,40 @@ class MemoryBackend:
 
 class MemoryTransaction:
     """
-    Transaction wrapper around the backend implementation. Transactions always succeed if they
-    are valid, so there is no need to loop; however the iterator is supported for compatibility
-    with the etcd backend.
+    Transaction wrapper around the backend implementation.
+
+    Transactions always succeed if they are valid, so there is no need to loop; however the
+    iterator is supported for compatibility with the etcd backend.
     """
+
     def __init__(self, backend: MemoryBackend):
         """
         Construct an in-memory transaction.
+
         :param backend: to wrap
         """
         self.backend = backend
 
     def __iter__(self):
         """
-        Iterator that just returns this object.
+        Iterate over just this object.
+
         :return: this object
         """
         yield self
 
     def commit(self) -> None:
         """
+        Commit the transaction.
+
         This does nothing.
         :return: nothing
         """
 
     def get(self, path: str) -> str:
         """
-        Get the value at the given path
+        Get the value at the given path.
+
         :param path: to lookup
         :return: the value
         """
@@ -158,6 +176,7 @@ class MemoryTransaction:
     def create(self, path: str, value: str, *args, **kwargs) -> None:
         """
         Create an entry at the given path.
+
         :param path: to create an entry
         :param value: of the entry
         :param args: arbitrary, not used
@@ -169,6 +188,7 @@ class MemoryTransaction:
     def update(self, path: str, value: str, *args, **kwargs) -> None:
         """
         Update an entry at the given path.
+
         :param path: to create an entry
         :param value: of the entry
         :param args: arbitrary, not used
@@ -180,6 +200,7 @@ class MemoryTransaction:
     def delete(self, path, *args, **kwargs):
         """
         Delete an entry at the given path.
+
         :param path: to create an entry
         :param value: of the entry
         :param args: arbitrary, not used
@@ -191,6 +212,7 @@ class MemoryTransaction:
     def list_keys(self, path: str) -> List[str]:
         """
         Get a list of the keys at the given path.
+
         In common with the etcd backend, the structure is
         "flat" rather than a real hierarchy, even though it looks like one.
         :param path:
@@ -200,6 +222,8 @@ class MemoryTransaction:
 
     def loop(self, *args, **kwargs) -> None:
         """
+        Loop the transaction.
+
         This does nothing.
         :return: nothing
         """
