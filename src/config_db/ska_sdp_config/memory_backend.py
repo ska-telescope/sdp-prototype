@@ -1,13 +1,14 @@
 """
-This module implements an in-memory database backend, principally for testing purposes.
+This module implements an in-memory database backend,
+principally for testing purposes.
 
 In principle it should behave in the same way as the etcd backend.
 No attempt has been made to make it thread-safe, so it probably isn't.
 """
 from typing import List, Callable
 
-from ska_sdp_config.backend import (
-    _depth, _tag_depth, _untag_depth, _check_path, ConfigCollision, ConfigVanished)
+from ska_sdp_config.backend import (_depth, _tag_depth, _untag_depth,
+                                    _check_path, ConfigCollision, ConfigVanished)
 
 
 def _op(path: str, value: str,
@@ -66,7 +67,8 @@ class MemoryBackend:
 
     def _check_not_exists(self, path: str) -> None:
         if path in self.dict.keys():
-            raise ConfigCollision(path, "path {} already in dictionary".format(path))
+            raise ConfigCollision(path,
+                                  "path {} already in dictionary".format(path))
 
     def create(self, path: str, value: str, *args, **kwargs) -> None:
         """
@@ -121,7 +123,8 @@ class MemoryBackend:
             new_path = path.rstrip('/')
             depth = _depth(new_path) + 1
         tag = _tag_depth(new_path, depth=depth)
-        return sorted([_untag_depth(k) for k in self.dict if k.startswith(tag)])
+        return sorted([_untag_depth(k)
+                       for k in self.dict if k.startswith(tag)])
 
     def close(self) -> None:
         """
@@ -136,8 +139,9 @@ class MemoryTransaction:
     """
     Transaction wrapper around the backend implementation.
 
-    Transactions always succeed if they are valid, so there is no need to loop; however the
-    iterator is supported for compatibility with the etcd backend.
+    Transactions always succeed if they are valid, so there is no need
+    to loop; however the iterator is supported for compatibility with
+    the etcd backend.
     """
 
     def __init__(self, backend: MemoryBackend):

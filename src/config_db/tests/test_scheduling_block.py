@@ -9,6 +9,7 @@ import ska_sdp_config
 
 PREFIX = "/__test_sb"
 
+
 # pylint: disable=W0212
 @pytest.fixture(scope="session")
 def cfg():
