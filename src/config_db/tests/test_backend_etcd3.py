@@ -6,7 +6,7 @@ import os
 import time
 import pytest
 
-from ska_sdp_config import backend
+from ska_sdp_config import etcd_backend as backend
 
 PREFIX = "/__test"
 

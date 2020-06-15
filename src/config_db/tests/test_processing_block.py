@@ -3,7 +3,7 @@
 import os
 import pytest
 
-from ska_sdp_config import config, entity, backend
+from ska_sdp_config import config, entity, etcd_backend as backend
 
 # pylint: disable=missing-docstring,redefined-outer-name
 
