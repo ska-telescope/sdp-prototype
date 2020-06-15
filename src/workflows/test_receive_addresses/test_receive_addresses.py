@@ -5,9 +5,10 @@ The purpose of this workflow is to test the mechanism for generating SDP
 receive addresses from the channel link map for each scan type which is
 contained in the list of scan types in the SB. The workflow picks it up
 from there, uses it to generate the receive addresses for each scan type
-and writes them to the processing block state. The subarray device picks
-the addresses from there through Configure command and publishes them
-on the appropriate attribute.
+and writes them to the processing block state. It consists of a map
+of scan type to a receive address map. This address map get publishes to
+the appropriate attribute once the SDP subarray finishes the transition
+following AssignResources.
 
 This workflow does not generate any deployments.
 """
@@ -73,12 +74,12 @@ def generate_receive_addresses(scan_types):
     :return: receive addresses
     """
 
-    receive_addresses_list = []
+    receive_addresses_dict = {}
     for channel_link_map in scan_types:
         channels = channel_list(channel_link_map)
-        receive_addresses_list.append(minimal_receive_addresses(channels))
+        receive_addresses_dict.update(minimal_receive_addresses(channels))
 
-    return receive_addresses_list
+    return receive_addresses_dict
 
 
 def main(argv):
