@@ -982,7 +982,7 @@ class SDPSubarray(Device):
             if self._config_db_client is None:
                 return None
 
-            # Get ID of PB that is generating the receive addresses and scan type
+            # Get ID of PB that is generating the receive addresses
             # Wait for pb receive address to be available
             LOG.info('Waiting for pb_receive_addresses to be available')
             for txn in self._config_db_client.txn():
@@ -1060,7 +1060,8 @@ def main(args=None, **kwargs):
     # Set default values for feature toggles.
     SDPSubarray.set_feature_toggle_default(FeatureToggle.CONFIG_DB, False)
     SDPSubarray.set_feature_toggle_default(FeatureToggle.AUTO_REGISTER, True)
-    SDPSubarray.set_feature_toggle_default(FeatureToggle.RECEIVE_ADDRESSES, True)
+    SDPSubarray.set_feature_toggle_default(FeatureToggle.RECEIVE_ADDRESSES,
+                                           False)
 
     # If the feature is enabled, attempt to auto-register the device
     # with the tango db.
