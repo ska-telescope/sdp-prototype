@@ -370,7 +370,6 @@ class SDPSubarray(Device):
 
         # Get the receive addresses and publish them on the attribute
         receive_addresses = self._get_receive_addresses()
-        # LOG.info(receive_addresses)
         self._set_receive_addresses(receive_addresses)
 
         LOG.debug('Setting device state to ON')
@@ -974,7 +973,12 @@ class SDPSubarray(Device):
         :returns: receive address as dict
 
         """
-        if not SDPSubarray.is_feature_active(FeatureToggle.RECEIVE_ADDRESSES):
+        if self.is_feature_active(FeatureToggle.RECEIVE_ADDRESSES):
+            ra_file = os.path.join(os.path.dirname(__file__),
+                                   'receive_addresses.json')
+            with open(ra_file, 'r') as file:
+                receive_addresses = json.load(file)
+        else:
             if self._config_db_client is None:
                 return None
 
@@ -987,28 +991,11 @@ class SDPSubarray(Device):
                 if pb_id is None or not pb_id:
                     txn.loop(wait=True)
 
-            LOG.info('Getting PB ID:  %s', pb_id)
-
             for txn in self._config_db_client.txn():
                 pb_state = txn.get_processing_block_state(pb_id)
                 if pb_state is None:
                     return None
-            LOG.info("PB State: %s", pb_state)
             receive_addresses = pb_state.get('receive_addresses')
-            LOG.info("Receive Addresses - %s", receive_addresses)
-            # if receive_addresses is None:
-            #     return None
-            # receive_addresses = None
-            r = None
-            for ra in receive_addresses:
-                r = ra
-                break
-            LOG.info(r)
-        else:
-            ra_file = os.path.join(os.path.dirname(__file__),
-                                   'receive_addresses.json')
-            with open(ra_file, 'r') as file:
-                receive_addresses = json.load(file)
 
         return receive_addresses
 
