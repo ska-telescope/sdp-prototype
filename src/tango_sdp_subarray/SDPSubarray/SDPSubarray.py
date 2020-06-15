@@ -1060,7 +1060,7 @@ def main(args=None, **kwargs):
     # Set default values for feature toggles.
     SDPSubarray.set_feature_toggle_default(FeatureToggle.CONFIG_DB, False)
     SDPSubarray.set_feature_toggle_default(FeatureToggle.AUTO_REGISTER, True)
-    SDPSubarray.set_feature_toggle_default(FeatureToggle.RECEIVE_ADDRESSES, False)
+    SDPSubarray.set_feature_toggle_default(FeatureToggle.RECEIVE_ADDRESSES, True)
 
     # If the feature is enabled, attempt to auto-register the device
     # with the tango db.
