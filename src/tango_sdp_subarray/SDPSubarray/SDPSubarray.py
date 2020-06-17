@@ -13,7 +13,6 @@ import json
 from enum import IntEnum, unique
 
 from ska_sdp_logging import tango_logging
-from ska_telmodel.sdp.schema import *
 
 import tango
 from tango import AttrWriteType, ConnectionFailed, Database, \
