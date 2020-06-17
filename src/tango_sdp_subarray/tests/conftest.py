@@ -20,7 +20,7 @@ def tango_context():
     #       TOGGLE_CONFIG_DB
     # Note: if these, or the env variables are not set, use the
     #       SDPSubarray device defaults.
-    SDPSubarray.set_feature_toggle_default('config_db', False)
+    SDPSubarray.set_feature_toggle_default('config_db', True)
 
     device_name = 'mid_sdp/elt/subarray_1'
     properties = dict(Version=VERSION)
