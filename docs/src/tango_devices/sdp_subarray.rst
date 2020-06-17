@@ -170,12 +170,12 @@ An example of the argument is below. Note that:
       "processing_blocks": [
         {
           "id": "pb-mvp01-20200425-00000",
-          "workflow": {"type": "realtime", "id": "vis_receive", "version": "0.1.0"},
+          "workflow": {"type": "realtime", "id": "test_realtime", "version": "0.2.0"},
           "parameters": {}
         },
         {
           "id": "pb-mvp01-20200425-00001",
-          "workflow": {"type": "realtime", "id": "test_realtime", "version": "0.1.0"},
+          "workflow": {"type": "realtime", "id": "test_receive_addresses", "version": "0.3.2"},
           "parameters": {}
         },
         {

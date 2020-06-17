@@ -13,6 +13,7 @@ import json
 from enum import IntEnum, unique
 
 from ska_sdp_logging import tango_logging
+from ska_telmodel.sdp.schema import *
 
 import tango
 from tango import AttrWriteType, ConnectionFailed, Database, \
@@ -74,7 +75,7 @@ class FeatureToggle(IntEnum):
 
     CONFIG_DB = 1  #: Enable / Disable the Config DB
     AUTO_REGISTER = 2  #: Enable / Disable Tango DB auto-registration
-    RECEIVE_ADDRESSES = 3  # Enable / Disable Receive Addresses from file
+    RECEIVE_ADDRESSES_HACK = 3  # Enable / Disable Receive Addresses from file
 
 
 # class SDPSubarray(SKASubarray):
@@ -973,7 +974,7 @@ class SDPSubarray(Device):
         :returns: receive address as dict
 
         """
-        if self.is_feature_active(FeatureToggle.RECEIVE_ADDRESSES):
+        if self.is_feature_active(FeatureToggle.RECEIVE_ADDRESSES_HACK):
             ra_file = os.path.join(os.path.dirname(__file__),
                                    'receive_addresses.json')
             with open(ra_file, 'r') as file:
@@ -1060,7 +1061,7 @@ def main(args=None, **kwargs):
     # Set default values for feature toggles.
     SDPSubarray.set_feature_toggle_default(FeatureToggle.CONFIG_DB, False)
     SDPSubarray.set_feature_toggle_default(FeatureToggle.AUTO_REGISTER, True)
-    SDPSubarray.set_feature_toggle_default(FeatureToggle.RECEIVE_ADDRESSES,
+    SDPSubarray.set_feature_toggle_default(FeatureToggle.RECEIVE_ADDRESSES_HACK,
                                            False)
 
     # If the feature is enabled, attempt to auto-register the device
