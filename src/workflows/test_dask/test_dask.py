@@ -7,6 +7,8 @@ import sys
 import logging
 import ska_sdp_config
 import distributed
+import time
+from kubernetes import client, config
 
 # Initialise logging
 logging.basicConfig()
@@ -31,7 +33,8 @@ def main(argv):
     for txn in config.txn():
         txn.take_processing_block(pb_id, config.client_lease)
         pb = txn.get_processing_block(pb_id)
-    LOG.info("Claimed processing block %s", pb_id)
+    start_time = time.time()
+    LOG.info("Claimed processing block %s at %s", pb_id, start_time)
 
     # Set state to indicate workflow is waiting for resources
     LOG.info('Setting status to WAITING')
@@ -55,6 +58,14 @@ def main(argv):
         state = txn.get_processing_block_state(pb_id)
         state['status'] = 'RUNNING'
         txn.update_processing_block_state(pb_id, state)
+        # set receive addresses
+        # TODO factor this out into its own package for use by other workflows
+        # TODO add error handling for the k8s calls
+        ip_addresses = get_pod_ipaddr()
+        end_time = time.time()
+        elapsed = start_time - end_time
+        LOG.info('Workflow startup time %s; ip addresses: %s', 
+                elapsed, ip_addresses)
 
     # Deploy Dask with 2 workers.
     # This is done by adding the request to the configuration database,
@@ -120,6 +131,18 @@ def main(argv):
         txn.update_processing_block_state(pb_id, state)
 
     config.close()
+
+def get_pod_ipaddr():
+    config.load_kube_config()
+    v1 = client.CoreV1Api()
+    # this lists pods with their IPs
+    pod_list = v1.list_pod_for_all_namespaces(watch=False)
+    ip_addresses = []
+    for i in pod_list.items:
+        # this is a total hack, but works for dask - sort of
+        if i.metadata.namespace == "sdp" and "worker" in i.metadata.name:
+            ip.addresses.append(i.status.pod_ip))
+    return ip_addresses
 
 if __name__ == "__main__":
     main(sys.argv[1:])
