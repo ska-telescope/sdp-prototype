@@ -27,8 +27,7 @@ include:
   - local: /scripts/.gitlab-ci-common.yml
   - local: /src/logging/.gitlab-ci.yml
   - local: /src/config_db/.gitlab-ci.yml
-  - local: /src/tango_sdp_master/.gitlab-ci.yml
-  - local: /src/tango_sdp_subarray/.gitlab-ci.yml
+  - local: /src/lmc/.gitlab-ci.yml
   - local: /src/console/.gitlab-ci.yml
   - local: /src/processing_controller/.gitlab-ci.yml
   - local: /src/helm_deploy/.gitlab-ci.yml

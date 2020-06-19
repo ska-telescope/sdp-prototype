@@ -37,12 +37,12 @@ test:ska-sdp-logging:
 ## Publish python packages
 ## ============================================================================
 
-publish:ska-sdp-logging-dev:
-  extends: .publish_python_dev
-  dependencies:
-    - build:ska-sdp-logging_dev
-  variables:
-    BUILD_PATH: src/logging
+# publish:ska-sdp-logging-dev:
+#   extends: .publish_python_dev
+#   dependencies:
+#     - build:ska-sdp-logging_dev
+#   variables:
+#     BUILD_PATH: src/logging
 
 publish:ska-sdp-logging:
   extends: .publish_python_release

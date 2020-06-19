@@ -1,2 +1,0 @@
-pytango
-ska-sdp-logging >= 0.0.6

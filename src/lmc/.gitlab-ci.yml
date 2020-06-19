@@ -1,0 +1,107 @@
+# Local GitLab CI file for Local Monitoring and Control (Tango devices)
+
+# ============================================================================
+# Build Python package
+# ============================================================================
+
+build-python:ska-sdp-lmc-dev:
+  extends: .build_python_dev
+  variables:
+    BUILD_PATH: src/lmc
+
+build-python:ska-sdp-lmc:
+  extends: .build_python_release
+  variables:
+    BUILD_PATH: src/lmc
+
+# ============================================================================
+# Test Python package
+# ============================================================================
+
+test:ska-sdp-lmc:
+  extends: .tango_tests
+  stage: test
+#  services:
+#    - name: quay.io/coreos/etcd:latest
+#      alias: etcd
+#      command:
+#        - /usr/local/bin/etcd
+#        - "--advertise-client-urls=http://0.0.0.0:2379"
+#        - "--listen-client-urls=http://0.0.0.0:2379"
+#        - "--initial-advertise-peer-urls=http://0.0.0.0:2380"
+#        - "--listen-peer-urls=http://0.0.0.0:2380"
+#        - "--initial-cluster=default=http://0.0.0.0:2380"
+  variables:
+    SDP_CONFIG_HOST: etcd
+    TOGGLE_CONFIG_DB: 0
+  script:
+    - cd src/lmc
+    - pip install -r requirements.txt -r requirements-test.txt
+    - mkdir -p build/reports
+    - python3 setup.py test
+    - mv .coverage ../../$CI_JOB_NAME.coverage
+    - mv htmlcov build/lmc_htmlcov
+    - mv coverage.xml build/code-coverage.xml
+    - mv cucumber.json build/cucumber.json
+    - mv build ../../build
+  artifacts:
+    paths:
+      - build
+      - ./$CI_JOB_NAME.coverage
+    expire_in: 1 week
+    when: always
+
+# ============================================================================
+# Publish Python package
+# ============================================================================
+
+# publish-python:ska-sdp-lmc-dev:
+#   extends: .publish_python_dev
+#   dependencies:
+#     - build-python:ska-sdp-lmc-dev
+#   variables:
+#     BUILD_PATH: src/lmc
+
+publish-python:ska-sdp-lmc:
+  extends: .publish_python_release
+  dependencies:
+    - build-python:ska-sdp-lmc
+  variables:
+    BUILD_PATH: src/lmc
+
+# ============================================================================
+# Build, tag and push Docker development images
+# ============================================================================
+
+# This needs to be updated. Might be best to use Gitlab registry for
+# development images, otherwise it will load the nexus registry with lots of
+# development images.
+
+# Build and push ska-sdp-lmc image.
+build-docker:ska-sdp-lmc:
+  stage: build
+  extends: .build_docker
+  variables:
+    BUILD_PATH: src/lmc
+
+
+# ============================================================================
+# Tag and push Docker latest images (master only)
+# ============================================================================
+
+publish-docker:ska-sdp-lmc:
+  extends: .publish_template
+  dependencies:
+    - build-docker:ska-sdp-lmc
+  variables:
+    BUILD_PATH: src/lmc
+
+# ============================================================================
+# Update XRay links in JIRA automatically (master only)
+# ============================================================================
+
+xray-report:
+  extends: .xray_report
+  when: always
+  only: [master]
+  allow_failure: true
