@@ -369,8 +369,8 @@ class SDPSubarray(Device):
         self._sbi_id = config.get('id')
 
         # Get the receive addresses and publish them on the attribute
-        # receive_addresses = self._get_receive_addresses()
-        # self._set_receive_addresses(receive_addresses)
+        receive_addresses = self._get_receive_addresses()
+        self._set_receive_addresses(receive_addresses)
 
         LOG.debug('Setting device state to ON')
         self.set_state(DevState.ON)
@@ -463,6 +463,11 @@ class SDPSubarray(Device):
                 origin='SDPSubarray.Configure()'
             )
             return
+
+        if self.is_feature_active(FeatureToggle.RECEIVE_ADDRESSES_HACK):
+            # Get the receive addresses and publish them on the attribute
+            receive_addresses = self._get_receive_addresses()
+            self._set_receive_addresses(receive_addresses)
 
         # Set status to READY
         self._update_sb({'status': 'READY'})
@@ -982,6 +987,8 @@ class SDPSubarray(Device):
             if self._config_db_client is None:
                 return None
 
+            # This is not a permanent solution.
+            # Will be rectified as part of SP-979
             # Get ID of PB that is generating the receive addresses
             # Wait for pb receive address to be available
             LOG.info('Waiting for pb_receive_addresses to be available')
@@ -990,11 +997,11 @@ class SDPSubarray(Device):
                 pb_id = sb.get('pb_receive_addresses')
                 if pb_id is None or not pb_id:
                     txn.loop(wait=True)
+                else:
+                    pb_state = txn.get_processing_block_state(pb_id)
+                    if pb_state is None:
+                        return None
 
-            for txn in self._config_db_client.txn():
-                pb_state = txn.get_processing_block_state(pb_id)
-                if pb_state is None:
-                    return None
             receive_addresses = pb_state.get('receive_addresses')
 
         return receive_addresses
