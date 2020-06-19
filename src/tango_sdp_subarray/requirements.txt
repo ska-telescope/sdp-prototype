@@ -2,3 +2,4 @@ pytango
 jsonschema
 ska-sdp-config>=0.0.8
 ska-sdp-logging>=0.0.6
+ska-telescope-model
