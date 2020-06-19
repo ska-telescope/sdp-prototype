@@ -369,8 +369,8 @@ class SDPSubarray(Device):
         self._sbi_id = config.get('id')
 
         # Get the receive addresses and publish them on the attribute
-        receive_addresses = self._get_receive_addresses()
-        self._set_receive_addresses(receive_addresses)
+        # receive_addresses = self._get_receive_addresses()
+        # self._set_receive_addresses(receive_addresses)
 
         LOG.debug('Setting device state to ON')
         self.set_state(DevState.ON)

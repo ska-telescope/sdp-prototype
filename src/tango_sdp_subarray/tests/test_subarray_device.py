@@ -6,13 +6,19 @@
 # pylint: disable=fixme
 
 import json
+import threading
+import time
+import ast
 from os.path import dirname, join
 
 import tango
 from tango import DevState
+from multiprocessing import Process
 
 import pytest
 from pytest_bdd import (given, parsers, scenarios, then, when)
+
+from ska_telmodel.sdp.schema import validate_sdp_receive_addresses
 
 from SDPSubarray import (AdminMode, HealthState, ObsState, SDPSubarray)
 
@@ -20,7 +26,6 @@ try:
     import ska_sdp_config
 except ImportError:
     ska_sdp_config = None
-
 
 # -----------------------------------------------------------------------------
 # Scenarios : Specify what we want the software to do
@@ -42,6 +47,15 @@ def subarray_device(tango_context, admin_mode_value: str):
     :param tango_context: fixture providing a TangoTestContext
     :param admin_mode_value: adminMode value the device is created with
     """
+
+    # Clear the Database
+    if ska_sdp_config is not None \
+            and SDPSubarray.is_feature_active('config_db'):
+        config_db_client = ska_sdp_config.Config()
+        config_db_client._backend.delete("/pb", must_exist=False, recursive=True)
+        config_db_client._backend.delete("/sb", must_exist=False, recursive=True)
+
+    # Initialise SDPSubarray device
     tango_context.device.Init()
     tango_context.device.adminMode = AdminMode[admin_mode_value]
     return tango_context.device
@@ -96,6 +110,67 @@ def set_subarray_device_state_obstate(subarray_device, state_value: str,
     assert subarray_device.ObsState == ObsState[obs_state_value]
 
 
+def mock_receive_addresses():
+    state = {
+        'status': 'STARTING',
+        'resources_available': True
+    }
+    # Get connection to config DB
+    config = ska_sdp_config.Config()
+    for txn in config.txn():
+        pb_ids = txn.list_processing_blocks()
+        print(pb_ids)
+        if not pb_ids:
+            print("LOOPINGGGGGGG")
+            txn.loop(wait=True)
+
+    for txn in config.txn():
+        for pb_id in pb_ids:
+          pb = txn.get_processing_block(pb_id)
+          if pb.workflow['id'] == 'test_receive_addresses':
+              print('IN HERE')
+              print(pb_id)
+              # Set status to STARTING, and resources_available to True
+              # Create the processing block state.
+              txn.create_processing_block_state(pb_id, state)
+
+              config = ska_sdp_config.Config()
+
+              sb_id = pb.sbi_id
+              print('SB id: %s', sb_id)
+
+              # Set status to WAITING
+              print('Setting status to WAITING')
+              state = txn.get_processing_block_state(pb_id)
+              print(state)
+              state['status'] = 'WAITING'
+              txn.update_processing_block_state(pb_id, state)
+
+              # Set status to RUNNING
+              print('Setting status to RUNNING')
+
+              state = txn.get_processing_block_state(pb_id)
+              state['status'] = 'RUNNING'
+              txn.update_processing_block_state(pb_id, state)
+
+              # Generated receive addresses
+              receive_addresses = ast.literal_eval("{'science_A': {'host': [[0, '192.168.0.1'], " \
+                                "[2000, '192.168.0.1']], 'port': [[0, 9000, 1], [2000, 9000, 1]]}, " \
+                                "'calibration_B': {'host': [[0, '192.168.0.1'], [2000, '192.168.0.1']], " \
+                                "'port': [[0, 9000, 1], [2000, 9000, 1]]}}")
+
+              # Update receive addresses in processing block state
+              print("Updating receive addresses in processing block state")
+              state = txn.get_processing_block_state(pb_id)
+              state['receive_addresses'] = receive_addresses
+              txn.update_processing_block_state(pb_id, state)
+
+              # Adding pb_id in pb_receive_address in SB
+              print("Adding PB ID to pb_receive_addresses in SB")
+              sb = txn.get_scheduling_block(sb_id)
+              sb['pb_receive_addresses'] = pb_id
+              txn.update_scheduling_block(sb_id, sb)
+
 @when('I call AssignResources')
 def command_assign_resources(subarray_device):
     """Call the AssignResources command.
@@ -112,7 +187,24 @@ def command_assign_resources(subarray_device):
     with open(path, 'r') as file:
         config_str = file.read()
 
-    subarray_device.AssignResources(config_str)
+
+    # Multiprocessing Attempt
+    # p1 = Process(target=subarray_device.AssignResources(config_str))
+    # # p2 = Process(target=mock_receive_addresses())
+    # p1.start()
+    # # p2.start()
+    # # p2.start()
+
+    # mock_receive_addresses()
+    thread1 = threading.Thread(target=subarray_device.AssignResources(config_str))
+    thread1.daemon = True
+    thread1.start()
+    thread = threading.Thread(target=mock_receive_addresses())
+    thread.daemon = True
+    thread.start()
+
+
+    # print(threading.active_count())
 
 
 @when('I call AssignResources with invalid JSON')
@@ -366,6 +458,7 @@ def check_config_db():
             assert pb['id'] in pb_ids
 
 
+# TODO: Need to update this - Nijin
 @then('the receiveAddresses attribute should return the expected value')
 def receive_addresses_attribute_ok(subarray_device):
     """Check that the receiveAddresses attribute works as expected.
@@ -380,12 +473,24 @@ def receive_addresses_attribute_ok(subarray_device):
             and SDPSubarray.is_feature_active('config_db'):
         expected_output_file = join(
             data_path,
-            'attr_receiveAddresses-cbfOutputLink-disabled.json'
+            'receive_addresses_output.json'
             )
+    # if ska_sdp_config is not None \
+    #         and SDPSubarray.is_feature_active('config_db'):
+    #     expected_output_file = join(
+    #         data_path,
+    #         'attr_receiveAddresses-cbfOutputLink-disabled.json'
+    #         )
+
+        # Instead of opening file use telescope-model package
         with open(expected_output_file, 'r') as file:
             expected = json.loads(file.read())
         receive_addresses = json.loads(receive_addresses)
         assert receive_addresses == expected
+
+        validate_sdp_receive_addresses(3, json.loads(receive_addresses), 2)
+
+
 
 
 @then('the receiveAddresses attribute should return an empty JSON object')
