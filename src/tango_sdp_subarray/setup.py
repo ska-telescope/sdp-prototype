@@ -42,7 +42,6 @@ setup(
         'pytest-pycodestyle',
         'pytest-pydocstyle',
         'pytest_bdd',
-        'pyassert',
         'pytest-cov',
         'pytest-json-report',
         'pylint2junit',

@@ -175,7 +175,10 @@ class SDPSubarray(Device):
         self.set_change_event('obsState', True)
         self.set_change_event('adminMode', True)
         self.set_change_event('healthState', True)
-        self.set_change_event('receiveAddresses', True, False)
+        self.set_change_event(
+            'receiveAddresses', True,
+            not self.is_feature_active(FeatureToggle.RECEIVE_ADDRESSES_HACK)
+        )
 
         # Initialise attributes
         self._set_obs_state(ObsState.IDLE)
@@ -368,9 +371,11 @@ class SDPSubarray(Device):
         # Set the scheduling block instance ID
         self._sbi_id = config.get('id')
 
-        # Get the receive addresses and publish them on the attribute
-        receive_addresses = self._get_receive_addresses()
-        self._set_receive_addresses(receive_addresses)
+        if not self.is_feature_active(FeatureToggle.RECEIVE_ADDRESSES_HACK):
+            # Get the receive addresses and publish them on the attribute
+            # receive_addresses = self._get_receive_addresses()
+            receive_addresses = None
+            self._set_receive_addresses(receive_addresses)
 
         LOG.debug('Setting device state to ON')
         self.set_state(DevState.ON)
@@ -403,6 +408,10 @@ class SDPSubarray(Device):
 
         # Set status to FINISHED
         self._update_sb({'status': 'FINISHED'})
+
+        if not self.is_feature_active(FeatureToggle.RECEIVE_ADDRESSES_HACK):
+            # Clear receive addresses
+            self._set_receive_addresses(None)
 
         # Clear the scheduling block instance ID
         self._sbi_id = None
@@ -466,7 +475,7 @@ class SDPSubarray(Device):
 
         if self.is_feature_active(FeatureToggle.RECEIVE_ADDRESSES_HACK):
             # Get the receive addresses and publish them on the attribute
-            receive_addresses = self._get_receive_addresses()
+            receive_addresses = self._get_receive_addresses_fixed()
             self._set_receive_addresses(receive_addresses)
 
         # Set status to READY
@@ -572,8 +581,9 @@ class SDPSubarray(Device):
         self._update_sb({'current_scan_type': None, 'scan_id': None,
                          'status': 'IDLE'})
 
-        # Clear receive addresses
-        self._set_receive_addresses(None)
+        if self.is_feature_active(FeatureToggle.RECEIVE_ADDRESSES_HACK):
+            # Clear receive addresses
+            self._set_receive_addresses(None)
 
         # Set obsState to IDLE
         self._set_obs_state(ObsState.IDLE)
@@ -963,46 +973,55 @@ class SDPSubarray(Device):
                 txn.update_scheduling_block(self._sbi_id, sb)
 
     def _get_receive_addresses(self):
-        """Get the receive addresses for the current scan type.
+        """Get the receive addresses from the receive PB state.
 
         The channel link map for each scan type is contained in the list of
-        scan types in the SB. The ingest workflow uses them to generate the
+        scan types in the SBI. The receive workflow uses them to generate the
         receive addresses for each scan type and writes them to the processing
         block state. This function retrieves them from the processing block
-        state and extracts the set for the current scan type.
+        state.
 
-        If the feature toggle is true
-        This version returns a fixed set of receive addresses read from
-        a JSON file.
-
-        :returns: receive address as dict
+        :returns: dict mapping scan type to receive addresses
 
         """
-        if self.is_feature_active(FeatureToggle.RECEIVE_ADDRESSES_HACK):
-            ra_file = os.path.join(os.path.dirname(__file__),
-                                   'receive_addresses.json')
-            with open(ra_file, 'r') as file:
-                receive_addresses = json.load(file)
-        else:
-            if self._config_db_client is None:
-                return None
+        if self._config_db_client is None:
+            return None
 
-            # This is not a permanent solution.
-            # Will be rectified as part of SP-979
-            # Get ID of PB that is generating the receive addresses
-            # Wait for pb receive address to be available
-            LOG.info('Waiting for pb_receive_addresses to be available')
-            for txn in self._config_db_client.txn():
-                sb = txn.get_scheduling_block(self._sbi_id)
-                pb_id = sb.get('pb_receive_addresses')
-                if pb_id is None or not pb_id:
-                    txn.loop(wait=True)
-                else:
-                    pb_state = txn.get_processing_block_state(pb_id)
-                    if pb_state is None:
-                        return None
+        LOG.info('Waiting for receive addresses')
 
+        # Wait for pb_receive_addresses in SBI
+        for txn in self._config_db_client.txn():
+            sb = txn.get_scheduling_block(self._sbi_id)
+            pb_id = sb.get('pb_receive_addresses')
+            if pb_id is None:
+                txn.loop(wait=True)
+
+        # Wait for receive_addresses in PB state
+        for txn in self._config_db_client.txn():
+            pb_state = txn.get_processing_block_state(pb_id)
+            if pb_state is None:
+                txn.loop(wait=True)
+                continue
             receive_addresses = pb_state.get('receive_addresses')
+            if receive_addresses is None:
+                txn.loop(wait=True)
+
+        return receive_addresses
+
+    def _get_receive_addresses_fixed(self):
+        """Get a fixed set of receive addresses.
+
+        This function is used when the RECEIVE_ADDRESSES_HACK feature toggle is
+        set. It retrieves the addresses for a single scan type from a JSON
+        file.
+
+        :returns: receive addresses for a single scan type
+
+        """
+        ra_file = os.path.join(os.path.dirname(__file__),
+                               'receive_addresses_fixed.json')
+        with open(ra_file, 'r') as file:
+            receive_addresses = json.load(file)
 
         return receive_addresses
 
