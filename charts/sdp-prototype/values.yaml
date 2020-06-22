@@ -2,7 +2,10 @@
 # Feature toggles
 feature:
   # Tango devices connect to configuration DB?
-  config-db: "1"
+  config-db: 1
+  # To use the old version of receive addresses, set to 1
+  receive-addresses-hack: 0
+
 
 # Helm deployment controller
 helm_deploy:

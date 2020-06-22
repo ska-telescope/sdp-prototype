@@ -373,8 +373,8 @@ class SDPSubarray(Device):
 
         if not self.is_feature_active(FeatureToggle.RECEIVE_ADDRESSES_HACK):
             # Get the receive addresses and publish them on the attribute
-            # receive_addresses = self._get_receive_addresses()
-            receive_addresses = None
+            receive_addresses = self._get_receive_addresses()
+            # receive_addresses = None
             self._set_receive_addresses(receive_addresses)
 
         LOG.debug('Setting device state to ON')

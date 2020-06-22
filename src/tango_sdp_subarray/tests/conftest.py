@@ -86,7 +86,6 @@ def mock_pc_and_rw():
     This starts the main loop in a thread.
 
     """
-    print('Running mock_pc_and_rw')
     end = threading.Event()
     thread = threading.Thread(target=mock_pc_and_rw_loop, args=(end,))
     thread.start()
