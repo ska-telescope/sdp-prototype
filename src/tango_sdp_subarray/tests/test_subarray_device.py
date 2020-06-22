@@ -408,11 +408,12 @@ def receive_addresses_attribute_ok(subarray_device):
     receive_addresses = subarray_device.receiveAddresses
     receive_addresses = json.loads(receive_addresses)
 
-    if ska_sdp_config is not None:
-        if not SDPSubarray.is_feature_active('RECEIVE_ADDRESSES_HACK'):
-            validate_sdp_receive_addresses(3, receive_addresses, 2)
-        else:
+    if ska_sdp_config is not None \
+            and SDPSubarray.is_feature_active('config_db'):
+        if SDPSubarray.is_feature_active('RECEIVE_ADDRESSES_HACK'):
             validate_sdp_receive_addresses(2, receive_addresses, 2)
+        else:
+            validate_sdp_receive_addresses(3, receive_addresses, 2)
 
 
 @then('the receiveAddresses attribute should return an empty JSON object')

@@ -78,23 +78,7 @@ stop:  ## Stop the device
 
 .PHONY: test lint ci_test test_shell
 
-test:  ## Run tests for the device
-	docker run --rm -t \
-		-v $(PWD):/app \
-		$(TEST_IMAGE) \
-		python3 -m pytest \
-		--color=yes \
-		--pylint \
-		--pycodestyle \
-		--pydocstyle \
-		--cov=SDPSubarray \
-		--cov-report=term \
-		--cov-config=./setup.cfg \
-		-vv -s \
-		--gherkin-terminal-reporter \
-		.
-
-test_with_db:  ## Run tests for the device with config_db
+test:  ## Run tests for the device with or without config db
 	docker run --link etcd --env SDP_CONFIG_HOST=etcd \
 	    --rm -t \
 		-v $(PWD):/app \

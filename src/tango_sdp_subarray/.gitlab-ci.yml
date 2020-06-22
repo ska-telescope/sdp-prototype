@@ -33,7 +33,7 @@ test:ska-sdp-subarray:
         - "--initial-cluster=default=http://0.0.0.0:2380"
   variables:
     SDP_CONFIG_HOST: etcd
-    TOGGLE_CONFIG_DB: 1
+    TOGGLE_CONFIG_DB: 0
     TOGGLE_RECEIVE_ADDRESSES_HACK: 0
   before_script:
     - python3 -m pip install --upgrade ska-sdp-logging ska-sdp-config ska-telescope-model
