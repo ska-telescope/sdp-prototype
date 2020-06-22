@@ -1,7 +1,8 @@
 # coding: utf-8
 """Pytest plugins."""
 
-import threading
+# import threading
+from multiprocessing import Process
 
 import pytest
 from tango.test_context import DeviceTestContext
@@ -49,7 +50,7 @@ RECEIVE_ADDRESSES = {
 }
 
 
-def mock_pc_and_rw_loop(end, timeout=5):
+def mock_pc_and_rw_loop(end=None, timeout=5):
     """Execute main loop for mocking PC and and receive workflow.
 
     :param end: event used to signal loop to exit
@@ -59,8 +60,8 @@ def mock_pc_and_rw_loop(end, timeout=5):
     # pylint: disable=invalid-name
     config = ska_sdp_config.Config()
     for txn in config.txn():
-        if end.is_set():
-            break
+        # if end.is_set():
+        #     break
         pb_list = txn.list_processing_blocks()
         for pb_id in pb_list:
             pb_state = txn.get_processing_block_state(pb_id)
@@ -86,9 +87,14 @@ def mock_pc_and_rw():
     This starts the main loop in a thread.
 
     """
-    end = threading.Event()
-    thread = threading.Thread(target=mock_pc_and_rw_loop, args=(end,))
-    thread.start()
+    # end = threading.Event()
+    # thread = threading.Thread(target=mock_pc_and_rw_loop, args=(end,))
+    # thread.start()
+    # yield
+    # end.set()
+    # thread.join()
+
+    process = Process(target=mock_pc_and_rw_loop)
+    process.start()
     yield
-    end.set()
-    thread.join()
+    process.terminate()
