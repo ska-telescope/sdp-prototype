@@ -52,7 +52,7 @@ tangods:
     imagePullPolicy: IfNotPresent
   subarray:
     image: nexus.engageska-portugal.pt/sdp-prototype/tangods_sdp_subarray
-    version: 0.9.2
+    version: 0.10.0
     imagePullPolicy: IfNotPresent
 
 # Console
