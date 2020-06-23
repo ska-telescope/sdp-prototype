@@ -96,10 +96,11 @@ test:  ## Run tests for the device with or without config db
 		.
 
 test_only:  ## Run tests for the device
-	docker run --rm -t \
+	docker run --link etcd --env SDP_CONFIG_HOST=etcd \
+	    --rm -t \
 		-v $(PWD):/app \
 		$(TEST_IMAGE) \
-		python -m pytest \
+		python3 -m pytest \
 		-vv -s \
 		--gherkin-terminal-reporter \
 		.
