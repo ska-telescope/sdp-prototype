@@ -49,7 +49,7 @@ RECEIVE_ADDRESSES = {
 }
 
 
-async def mock_pc_and_rw_loop(end, timeout=5):
+def mock_pc_and_rw_loop(end, timeout=5):
     """Execute main loop for mocking PC and and receive workflow.
 
     :param end: event used to signal loop to exit
