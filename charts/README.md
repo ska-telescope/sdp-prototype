@@ -108,7 +108,7 @@ Assuming the configuration is prepared as explained in the previous
 section, we can now add a processing block to the configuration:
 
 ```console
-# sdpcfg process batch:test_dask:0.2.0
+# sdpcfg process batch:test_dask:0.2.1
 OK, pb_id = pb-sdpcfg-20200425-00000
 ```
 
