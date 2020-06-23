@@ -11,6 +11,8 @@ from os.path import dirname, join
 import tango
 from tango import DevState
 
+from ska_telmodel.sdp.schema import validate_sdp_receive_addresses
+
 import pytest
 from pytest_bdd import (given, parsers, scenarios, then, when)
 
@@ -20,7 +22,6 @@ try:
     import ska_sdp_config
 except ImportError:
     ska_sdp_config = None
-
 
 # -----------------------------------------------------------------------------
 # Scenarios : Specify what we want the software to do
@@ -42,9 +43,41 @@ def subarray_device(tango_context, admin_mode_value: str):
     :param tango_context: fixture providing a TangoTestContext
     :param admin_mode_value: adminMode value the device is created with
     """
-    tango_context.device.Init()
-    tango_context.device.adminMode = AdminMode[admin_mode_value]
-    return tango_context.device
+
+    # Initialise SDPSubarray device
+    # tango_context.device.Init()
+    device = tango_context.device
+    device.adminMode = AdminMode[admin_mode_value]
+
+    # Resetting state to OFF and obsState to IDLE
+    state_value = device.state().name
+    obs_state_value = device.obsState.name
+
+    if state_value == 'OFF' and obs_state_value == 'IDLE':
+        pass
+    elif state_value == 'ON' and obs_state_value == 'IDLE':
+        command_release_resources(device)
+    elif state_value == 'ON' and obs_state_value == 'READY':
+        command_reset(device)
+        command_release_resources(device)
+    elif state_value == 'ON' and obs_state_value == 'SCANNING':
+        command_end_scan(device)
+        command_reset(device)
+        command_release_resources(device)
+
+    assert device.state() == DevState.OFF
+    assert device.obsState == ObsState.IDLE
+
+    # Clear the Database
+    if ska_sdp_config is not None \
+            and SDPSubarray.is_feature_active('config_db'):
+        config_db_client = ska_sdp_config.Config()
+        config_db_client._backend.delete("/pb", must_exist=False,
+                                         recursive=True)
+        config_db_client._backend.delete("/sb", must_exist=False,
+                                         recursive=True)
+
+    return device
 
 
 # -----------------------------------------------------------------------------
@@ -73,7 +106,7 @@ def set_subarray_device_state_obstate(subarray_device, state_value: str,
     :param obs_state_value: An SDPSubarray ObsState enum string.
     """
 
-    subarray_device.Init()
+    # subarray_device.Init()
     if state_value == 'OFF' and obs_state_value == 'IDLE':
         pass
     elif state_value == 'ON' and obs_state_value == 'IDLE':
@@ -373,19 +406,14 @@ def receive_addresses_attribute_ok(subarray_device):
     :param subarray_device: An SDPSubarray device.
     """
     receive_addresses = subarray_device.receiveAddresses
-    # print(json.dumps(json.loads(receive_addresses), indent=2))
-    data_path = join(dirname(__file__), 'data')
+    receive_addresses = json.loads(receive_addresses)
 
     if ska_sdp_config is not None \
             and SDPSubarray.is_feature_active('config_db'):
-        expected_output_file = join(
-            data_path,
-            'attr_receiveAddresses-cbfOutputLink-disabled.json'
-            )
-        with open(expected_output_file, 'r') as file:
-            expected = json.loads(file.read())
-        receive_addresses = json.loads(receive_addresses)
-        assert receive_addresses == expected
+        if SDPSubarray.is_feature_active('RECEIVE_ADDRESSES_HACK'):
+            validate_sdp_receive_addresses(2, receive_addresses, 2)
+        else:
+            validate_sdp_receive_addresses(3, receive_addresses, 2)
 
 
 @then('the receiveAddresses attribute should return an empty JSON object')

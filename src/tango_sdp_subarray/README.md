@@ -157,19 +157,25 @@ Create a configuration string for the scheduling block instance:
     "id": "sbi-mvp01-20200425-00000",
     "max_length": 21600.0,
     "scan_types": [
-      {
-        "id": "science",
-        "channels": [
-          {"count": 372, "start": 0, "stride": 2, "freq_min": 0.35e9, "freq_max": 0.358e9, "link_map": [[0,0], [200,1]]}
-        ]
-      },
-      {
-        "id": "calibration",
-        "channels": [
-          {"count": 372, "start": 0, "stride": 2, "freq_min": 0.35e9, "freq_max": 0.358e9, "link_map": [[0,0], [200,1]]}
-        ]
-      }
-    ],
+       {
+         "id": "science_A",
+         "coordinate_system": "ICRS", "ra": "02:42:40.771", "dec": "-00:00:47.84",
+         "channels": [{
+            "count": 744, "start": 0, "stride": 2, "freq_min": 0.35e9, "freq_max": 0.368e9, "link_map": [[0,0], [200,1], [744,2], [944,3]]
+         },{
+            "count": 744, "start": 2000, "stride": 1, "freq_min": 0.36e9, "freq_max": 0.368e9, "link_map": [[2000,4], [2200,5]]
+         }]
+       },
+       {
+         "id": "calibration_B",
+         "coordinate_system": "ICRS", "ra": "12:29:06.699", "dec": "02:03:08.598",
+         "channels": [{
+            "count": 744, "start": 0, "stride": 2, "freq_min": 0.35e9, "freq_max": 0.368e9, "link_map": [[0,0], [200,1], [744,2], [944,3]]
+         },{
+            "count": 744, "start": 2000, "stride": 1, "freq_min": 0.36e9, "freq_max": 0.368e9, "link_map": [[2000,4], [2200,5]]
+         }]
+       }
+     ],
     "processing_blocks": [
       {
         "id": "pb-mvp01-20200425-00000",
@@ -178,7 +184,7 @@ Create a configuration string for the scheduling block instance:
       },
       {
         "id": "pb-mvp01-20200425-00001",
-        "workflow": {"type": "realtime", "id": "test_realtime", "version": "0.1.0"},
+        "workflow": {"type": "realtime", "id": "test_receive_addresses", "version": "0.3.2"},
         "parameters": {}
       },
       {
@@ -210,6 +216,13 @@ d.AssignResources(config_sbi)
 ```
 
 The subarray should now be ON, but the obsState remains IDLE.
+
+Following this transition the receive addresses map should get published to the receiveAddresses
+attribute and this can be verified by running ```d.receiveAddresses``` and the output should look like this:
+
+```
+'{"calibration_B": {"host": [[0, "192.168.0.1"], [2000, "192.168.0.1"]], "port": [[0, 9000, 1], [2000, 9000, 1]]}, "science_A": {"host": [[0, "192.168.0.1"], [2000, "192.168.0.1"]], "port": [[0, 9000, 1], [2000, 9000, 1]]}}'
+```
 
 Before executing a scan, we need to configure the scan type. This is done by passing the scan type to the
 Configure command:

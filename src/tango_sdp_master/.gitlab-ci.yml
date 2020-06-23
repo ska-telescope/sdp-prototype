@@ -39,12 +39,12 @@ test:ska-sdp-master:
 ## Publish python packages
 ## ============================================================================
 
-publish:ska-sdp-master-dev:
-  extends: .publish_python_dev
-  dependencies:
-    - build:ska-sdp-master_dev
-  variables:
-    BUILD_PATH: src/tango_sdp_master
+# publish:ska-sdp-master-dev:
+#   extends: .publish_python_dev
+#   dependencies:
+#     - build:ska-sdp-master_dev
+#   variables:
+#     BUILD_PATH: src/tango_sdp_master
 
 publish:ska-sdp-master:
   extends: .publish_python_release

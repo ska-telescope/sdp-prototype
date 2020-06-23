@@ -74,6 +74,7 @@ class FeatureToggle(IntEnum):
 
     CONFIG_DB = 1  #: Enable / Disable the Config DB
     AUTO_REGISTER = 2  #: Enable / Disable Tango DB auto-registration
+    RECEIVE_ADDRESSES_HACK = 3  # Enable / Disable Receive Addresses from file
 
 
 # class SDPSubarray(SKASubarray):
@@ -169,6 +170,15 @@ class SDPSubarray(Device):
 
         self.set_state(DevState.INIT)
         LOG.info('Initialising SDP Subarray: %s', self.get_name())
+
+        # These attributes are updated with push_change_event
+        self.set_change_event('obsState', True)
+        self.set_change_event('adminMode', True)
+        self.set_change_event('healthState', True)
+        self.set_change_event(
+            'receiveAddresses', True,
+            not self.is_feature_active(FeatureToggle.RECEIVE_ADDRESSES_HACK)
+        )
 
         # Initialise attributes
         self._set_obs_state(ObsState.IDLE)
@@ -361,6 +371,12 @@ class SDPSubarray(Device):
         # Set the scheduling block instance ID
         self._sbi_id = config.get('id')
 
+        if not self.is_feature_active(FeatureToggle.RECEIVE_ADDRESSES_HACK):
+            # Get the receive addresses and publish them on the attribute
+            receive_addresses = self._get_receive_addresses()
+            # receive_addresses = None
+            self._set_receive_addresses(receive_addresses)
+
         LOG.debug('Setting device state to ON')
         self.set_state(DevState.ON)
 
@@ -392,6 +408,10 @@ class SDPSubarray(Device):
 
         # Set status to FINISHED
         self._update_sb({'status': 'FINISHED'})
+
+        if not self.is_feature_active(FeatureToggle.RECEIVE_ADDRESSES_HACK):
+            # Clear receive addresses
+            self._set_receive_addresses(None)
 
         # Clear the scheduling block instance ID
         self._sbi_id = None
@@ -453,9 +473,10 @@ class SDPSubarray(Device):
             )
             return
 
-        # Get the receive addresses and publish them on the attribute
-        receive_addresses = self._get_receive_addresses()
-        self._set_receive_addresses(receive_addresses)
+        if self.is_feature_active(FeatureToggle.RECEIVE_ADDRESSES_HACK):
+            # Get the receive addresses and publish them on the attribute
+            receive_addresses = self._get_receive_addresses_fixed()
+            self._set_receive_addresses(receive_addresses)
 
         # Set status to READY
         self._update_sb({'status': 'READY'})
@@ -560,8 +581,9 @@ class SDPSubarray(Device):
         self._update_sb({'current_scan_type': None, 'scan_id': None,
                          'status': 'IDLE'})
 
-        # Clear receive addresses
-        self._set_receive_addresses(None)
+        if self.is_feature_active(FeatureToggle.RECEIVE_ADDRESSES_HACK):
+            # Clear receive addresses
+            self._set_receive_addresses(None)
 
         # Set obsState to IDLE
         self._set_obs_state(ObsState.IDLE)
@@ -951,44 +973,55 @@ class SDPSubarray(Device):
                 txn.update_scheduling_block(self._sbi_id, sb)
 
     def _get_receive_addresses(self):
-        """Get the receive addresses for the current scan type.
+        """Get the receive addresses from the receive PB state.
 
         The channel link map for each scan type is contained in the list of
-        scan types in the SB. The ingest workflow uses them to generate the
+        scan types in the SBI. The receive workflow uses them to generate the
         receive addresses for each scan type and writes them to the processing
         block state. This function retrieves them from the processing block
-        state and extracts the set for the current scan type.
+        state.
 
-        :returns: receive address as dict
+        :returns: dict mapping scan type to receive addresses
 
         """
         if self._config_db_client is None:
             return None
 
-        # Get ID of PB that is generating the receive addresses and scan type
+        LOG.info('Waiting for receive addresses')
+
+        # Wait for pb_receive_addresses in SBI
         for txn in self._config_db_client.txn():
             sb = txn.get_scheduling_block(self._sbi_id)
-        pb_id = sb.get('pb_receive_addresses')
-        scan_type = sb.get('current_scan_type')
+            pb_id = sb.get('pb_receive_addresses')
+            if pb_id is None:
+                txn.loop(wait=True)
 
-        # If no PB is configured to generate the receive addresses, return None
-        if pb_id is None:
-            return None
-
-        # Get the list of receive address configurations for all scan types
-        # and pick out the right one
+        # Wait for receive_addresses in PB state
         for txn in self._config_db_client.txn():
             pb_state = txn.get_processing_block_state(pb_id)
             if pb_state is None:
-                return None
-        receive_addresses_list = pb_state.get('receive_addresses')
-        if receive_addresses_list is None:
-            return None
-        receive_addresses = None
-        for ra in receive_addresses_list:
-            if ra.get('scanType') == scan_type:
-                receive_addresses = ra
-                break
+                txn.loop(wait=True)
+                continue
+            receive_addresses = pb_state.get('receive_addresses')
+            if receive_addresses is None:
+                txn.loop(wait=True)
+
+        return receive_addresses
+
+    def _get_receive_addresses_fixed(self):
+        """Get a fixed set of receive addresses.
+
+        This function is used when the RECEIVE_ADDRESSES_HACK feature toggle is
+        set. It retrieves the addresses for a single scan type from a JSON
+        file.
+
+        :returns: receive addresses for a single scan type
+
+        """
+        ra_file = os.path.join(os.path.dirname(__file__),
+                               'receive_addresses_fixed.json')
+        with open(ra_file, 'r') as file:
+            receive_addresses = json.load(file)
 
         return receive_addresses
 
@@ -1053,6 +1086,8 @@ def main(args=None, **kwargs):
     # Set default values for feature toggles.
     SDPSubarray.set_feature_toggle_default(FeatureToggle.CONFIG_DB, False)
     SDPSubarray.set_feature_toggle_default(FeatureToggle.AUTO_REGISTER, True)
+    SDPSubarray.set_feature_toggle_default(
+        FeatureToggle.RECEIVE_ADDRESSES_HACK, False)
 
     # If the feature is enabled, attempt to auto-register the device
     # with the tango db.

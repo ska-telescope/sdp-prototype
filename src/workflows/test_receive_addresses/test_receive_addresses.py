@@ -5,9 +5,10 @@ The purpose of this workflow is to test the mechanism for generating SDP
 receive addresses from the channel link map for each scan type which is
 contained in the list of scan types in the SB. The workflow picks it up
 from there, uses it to generate the receive addresses for each scan type
-and writes them to the processing block state. The subarray device picks
-the addresses from there through Configure command and publishes them
-on the appropriate attribute.
+and writes them to the processing block state. It consists of a map
+of scan type to a receive address map. This address map get publishes to
+the appropriate attribute once the SDP subarray finishes the transition
+following AssignResources.
 
 This workflow does not generate any deployments.
 """
@@ -31,13 +32,17 @@ def channel_list(channel_link_map):
     :returns: list of channels.
     """
     channels = []
+    i = 0
     for channel in channel_link_map['channels']:
+        host_incr = i+1
         channel = dict(
             numchan=channel['count'],
             startchan=channel['start'],
-            scan_type=channel_link_map.get('id')
+            scan_type=channel_link_map.get('id'),
+            host=host_incr
         )
         channels.append(channel)
+
     return channels
 
 
@@ -49,30 +54,13 @@ def minimal_receive_addresses(channels):
     :returns: receive addresses
     """
 
-    # Get first channel and number of channels for each FSP.
-    fsp = {}
-
+    host_list = []
+    port_list = []
+    receive_addresses = {}
     for chan in channels:
-        scan_type = chan['scan_type']
-        if scan_type not in fsp:
-            fstchan = chan['startchan']
-            numchan = chan['numchan']
-            fsp_id = 1
-            fsp[scan_type] = (fsp_id, fstchan, numchan)
-
-    # Total number of channels.
-    totchan = sum(f[2] for f in fsp.values())
-
-    # Construct receive addresses.
-    ralist = []
-    for scan_type, (fsp_id, fstchan, numchan) in fsp.items():
-        host = '192.168.0.{}'.format(random.randint(1, 20))
-        clist = [dict(portOffset=random.randint(9000, 9050), startChannel=fstchan,
-                      numChannels=numchan)]
-        hlist = [dict(host=host, channels=clist)]
-        ralist.append(dict(phaseBinId=0, fspId=fsp_id, hosts=hlist))
-    receive_addresses = dict(scanType=scan_type, totalChannels=totchan,
-                             receiveAddresses=ralist)
+        host_list.append([chan['startchan'], '192.168.0.{}'.format(chan['host'])])
+        port_list.append([chan['startchan'], 9000, 1])
+    receive_addresses[chan['scan_type']] = dict(host=host_list, port=port_list)
 
     return receive_addresses
 
@@ -86,13 +74,12 @@ def generate_receive_addresses(scan_types):
     :return: receive addresses
     """
 
-    receive_addresses_list = []
+    receive_addresses_dict = {}
     for channel_link_map in scan_types:
         channels = channel_list(channel_link_map)
-        receive_addresses = minimal_receive_addresses(channels)
-        receive_addresses_list.append(receive_addresses)
+        receive_addresses_dict.update(minimal_receive_addresses(channels))
 
-    return receive_addresses_list
+    return receive_addresses_dict
 
 
 def main(argv):

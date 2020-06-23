@@ -2,7 +2,10 @@
 # Feature toggles
 feature:
   # Tango devices connect to configuration DB?
-  config-db: "1"
+  config-db: 1
+  # To use the old version of receive addresses, set to 1
+  receive-addresses-hack: 0
+
 
 # Helm deployment controller
 helm_deploy:
@@ -49,7 +52,7 @@ tangods:
     imagePullPolicy: IfNotPresent
   subarray:
     image: nexus.engageska-portugal.pt/sdp-prototype/tangods_sdp_subarray
-    version: 0.9.1
+    version: 0.10.0
     imagePullPolicy: IfNotPresent
 
 # Console

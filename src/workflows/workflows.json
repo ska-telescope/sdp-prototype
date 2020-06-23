@@ -15,7 +15,7 @@
     {"type": "batch", "id":  "batch_imaging", "repository": "nexus", "image": "workflow-batch-imaging", "versions": ["0.1.0"]},
     {"type": "batch", "id":  "delivery", "repository": "nexus", "image": "workflow-delivery", "versions": ["0.1.0"]},
     {"type": "realtime", "id":  "test_realtime", "repository": "nexus", "image": "workflow-test-realtime", "versions": ["0.2.0"]},
-    {"type": "realtime", "id":  "test_receive_addresses", "repository": "nexus", "image": "workflow-test-receive-addresses", "versions": ["0.3.0"]},
+    {"type": "realtime", "id":  "test_receive_addresses", "repository": "nexus", "image": "workflow-test-receive-addresses", "versions": ["0.3.2"]},
     {"type": "realtime", "id":  "vis_receive", "repository": "nexus", "image": "workflow-vis-receive", "versions": ["0.2.0"]},
     {"type": "realtime", "id":  "pss_receive", "repository": "nexus", "image": "workflow-pss-receive", "versions": ["0.2.0"]}
   ]
