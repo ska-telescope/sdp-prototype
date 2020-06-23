@@ -57,12 +57,12 @@ test:ska-sdp-subarray:
 ## Publish python packages
 ## ============================================================================
 
-publish:ska-sdp-subarray-dev:
-  extends: .publish_python_dev
-  dependencies:
-    - build:ska-sdp-subarray_dev
-  variables:
-    BUILD_PATH: src/tango_sdp_subarray
+# publish:ska-sdp-subarray-dev:
+#   extends: .publish_python_dev
+#   dependencies:
+#     - build:ska-sdp-subarray_dev
+#   variables:
+#     BUILD_PATH: src/tango_sdp_subarray
 
 publish:ska-sdp-subarray:
   extends: .publish_python_release

@@ -51,12 +51,12 @@ test:ska-sdp-config:
 ## Publish python packages
 ## ============================================================================
 
-publish:ska-sdp-config-dev:
-  extends: .publish_python_dev
-  dependencies:
-    - build:ska-sdp-config_dev
-  variables:
-    BUILD_PATH: src/config_db
+# publish:ska-sdp-config-dev:
+#   extends: .publish_python_dev
+#   dependencies:
+#     - build:ska-sdp-config_dev
+#   variables:
+#     BUILD_PATH: src/config_db
 
 publish:ska-sdp-config:
   extends: .publish_python_release
