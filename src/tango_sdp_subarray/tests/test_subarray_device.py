@@ -11,10 +11,10 @@ from os.path import dirname, join
 import tango
 from tango import DevState
 
+from ska_telmodel.sdp.schema import validate_sdp_receive_addresses
+
 import pytest
 from pytest_bdd import (given, parsers, scenarios, then, when)
-
-from ska_telmodel.sdp.schema import validate_sdp_receive_addresses
 
 from SDPSubarray import (AdminMode, HealthState, ObsState, SDPSubarray)
 
