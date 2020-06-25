@@ -75,16 +75,16 @@ push_version: tag_version  ## Push the image tagged as :$(VERSION) (without the 
 	@echo "$(CBLUE)Pushing:$(CEND) $(IMAGE):$(VERSION)"
 	@docker push $(IMAGE):$(VERSION)
 
-pull: ## Fetch the latest image
-	@echo "$(IMAGE)"
-	@docker pull $(IMAGE):latest
+push_version_gitlab: # Push the image tagged as 'gtlab-ci-image'
+	docker tag  gitlab-ci-image $(IMAGE):$(VERSION)
+	docker push $(IMAGE):$(VERSION)
 
 pull_default: ## Fetch the default Git versioned image
 	@docker pull $(DEFAULT_TAG) || true
 
-ls:  ## List images built from this folder
-	@echo "$(CBLUE)Images matching:$(CEND) $(IMAGE):*"
-	@docker image ls --filter=reference="$(IMAGE):*"
+pull_gitlab: ## Fetch the default Git versioned image and alias as 'gilab-ci-image'
+	docker pull $(DEFAULT_TAG) || true
+	docker tag  $(DEFAULT_TAG) gitlab-ci-image
 
 rm:  ## Remove all images built from this folder
 	@echo "$(CBLUE)Removing images matching:$(CEND) $(IMAGE):*"

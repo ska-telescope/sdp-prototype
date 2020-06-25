@@ -1,15 +1,19 @@
-# Local Gitlab-CI file for SDP ConfigDB
+# GitLab CI jobs for SDP configuration database library
 
 # ============================================================================
-# Build python packages
+# Build Python package
 # ============================================================================
 
-build:ska-sdp-config_dev: # Executed on a commit
+# Executed on a non-master commit
+
+build:ska-sdp-config_dev:
   extends: .build_python_dev
   before_script:
     - python3 -m pip install etcd3-py
   variables:
     BUILD_PATH: src/config_db
+
+# Executed on a master commit
 
 build:ska-sdp-config:
   extends: .build_python_release
@@ -19,12 +23,11 @@ build:ska-sdp-config:
     BUILD_PATH: src/config_db
 
 # ============================================================================
-# Testing built python package
+# Test Python package
 # ============================================================================
 
 test:ska-sdp-config:
-  extends: .tango_tests
-  stage: test
+  extends: .test_python
   services:
     - name: quay.io/coreos/etcd:latest
       alias: etcd
@@ -37,26 +40,18 @@ test:ska-sdp-config:
         - "--initial-cluster=default=http://0.0.0.0:2380"
   variables:
     SDP_TEST_HOST: etcd
-  before_script:
-    - python3 -m pip install pytest-pycodestyle pytest-pydocstyle
   script:
-    - python3 -m pip install -r src/config_db/requirements.txt
+    - python3 -m pip install pytest-pycodestyle pytest-pydocstyle
     - ./scripts/run_test.sh src/config_db
     - mv .coverage $CI_JOB_NAME.coverage
   artifacts:
     paths:
       - $CI_JOB_NAME.coverage
+    expire_in: 1 week
 
-## ============================================================================
-## Publish python packages
-## ============================================================================
-
-# publish:ska-sdp-config-dev:
-#   extends: .publish_python_dev
-#   dependencies:
-#     - build:ska-sdp-config_dev
-#   variables:
-#     BUILD_PATH: src/config_db
+# ============================================================================
+# Publish Python package (master only)
+# ============================================================================
 
 publish:ska-sdp-config:
   extends: .publish_python_release

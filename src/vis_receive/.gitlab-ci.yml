@@ -1,7 +1,7 @@
-# Local Gitlab-CI file for Visibility Receiver
+# GitLab CI jobs for Visibility Receiver
 
 # ============================================================================
-# Building the docker image for testing
+# Common definitions for building the Docker image for testing
 # ============================================================================
 
 .build_vis_docker:
@@ -35,7 +35,7 @@ test:vis_receive:
 #    expire_in: 1 day
 
 # ============================================================================
-# Test the visibility receiver: Run Undefinded Behaviour Sanitizer
+# Test the visibility receiver: Run Undefined Behaviour Sanitizer
 # ============================================================================
 
 test:vis_receive_usan:

@@ -1,13 +1,17 @@
-# Local Gitlab-CI file for SDP Subarray
+# GitLab CI jobs for SDP Subarray Tango device
 
 # ============================================================================
-# Build python packages
+# Build Python package
 # ============================================================================
 
-build:ska-sdp-subarray_dev: # Executed on a commit
+# Executed on a non-master commit
+
+build:ska-sdp-subarray_dev:
   extends: .build_python_dev
   variables:
     BUILD_PATH: src/tango_sdp_subarray
+
+# Executed on a master commit
 
 build:ska-sdp-subarray:
   extends: .build_python_release
@@ -15,31 +19,18 @@ build:ska-sdp-subarray:
     BUILD_PATH: src/tango_sdp_subarray
 
 # ============================================================================
-# Testing built python package
+# Test Python package
 # ============================================================================
 
 test:ska-sdp-subarray:
-  extends: .tango_tests
-  stage: test
-  services:
-    - name: quay.io/coreos/etcd:latest
-      alias: etcd
-      command:
-        - /usr/local/bin/etcd
-        - "--advertise-client-urls=http://0.0.0.0:2379"
-        - "--listen-client-urls=http://0.0.0.0:2379"
-        - "--initial-advertise-peer-urls=http://0.0.0.0:2380"
-        - "--listen-peer-urls=http://0.0.0.0:2380"
-        - "--initial-cluster=default=http://0.0.0.0:2380"
+  extends: .test_python
   variables:
-    SDP_CONFIG_HOST: etcd
     TOGGLE_CONFIG_DB: 0
     TOGGLE_RECEIVE_ADDRESSES_HACK: 0
-  before_script:
-    - python3 -m pip install --upgrade ska-sdp-logging ska-sdp-config ska-telescope-model
   script:
     - cd src/tango_sdp_subarray
     - mkdir -p build/reports
+    - pip3 install -r requirements.txt -r requirements-test.txt
     - python3 setup.py test
     - mv .coverage ../../$CI_JOB_NAME.coverage
     - mv htmlcov build/sdp_subarray_htmlcov
@@ -53,16 +44,9 @@ test:ska-sdp-subarray:
     expire_in: 1 week
     when: always
 
-## ============================================================================
-## Publish python packages
-## ============================================================================
-
-# publish:ska-sdp-subarray-dev:
-#   extends: .publish_python_dev
-#   dependencies:
-#     - build:ska-sdp-subarray_dev
-#   variables:
-#     BUILD_PATH: src/tango_sdp_subarray
+# ============================================================================
+# Publish Python package (master only)
+# ============================================================================
 
 publish:ska-sdp-subarray:
   extends: .publish_python_release
@@ -71,51 +55,30 @@ publish:ska-sdp-subarray:
   variables:
     BUILD_PATH: src/tango_sdp_subarray
 
-## ============================================================================
-## Build, tag and push Docker development images
-## ============================================================================
-
-# This needs to be updated. Might be best to use Gitlab registry for
-# development images, otherwise it will load the nexus registry with lots of
-# development images.
+# ============================================================================
+# Build Docker development image
+# ============================================================================
 
 # Build and push `tangods_sdp_subarray` image.
 build:tangods_sdp_subarray:
-  stage: build
   extends: .build_docker
   variables:
     BUILD_PATH: src/tango_sdp_subarray
 
-### ============================================================================
-### Test Docker development images
-### ============================================================================
-#
-## Placeholder for testing. Currently not doing anything.
-# test:tangods_sdp_subarray:
-#  stage: test
-#  extends: .pull_docker
-#  variables:
-#    BUILD_PATH: src/tango_sdp_subarray
-#  script:
-#    - echo "Placeholder for testing docker images"
-
-## ============================================================================
-## Tag and push Docker latest images (master only)
-## ============================================================================
+# ============================================================================
+# Tag and publish Docker image (master only)
+# ============================================================================
 
 publish:tangods_sdp_subarray:
-  extends: .publish_template
+  extends: .push_docker_nexus
   dependencies:
     - build:tangods_sdp_subarray
   variables:
     BUILD_PATH: src/tango_sdp_subarray
 
-## ============================================================================
-## Update XRay links in JIRA automatically (master only)
-## ============================================================================
+# ============================================================================
+# Upload XRay test report to JIRA (master only)
+# ============================================================================
 
 xray_report:
   extends: .xray_report
-  when: always
-  only: [master]
-  allow_failure: true

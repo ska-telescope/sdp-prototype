@@ -1,13 +1,17 @@
-# Local Gitlab-CI file for SDP Logging
+# GitLab CI jobs for SDP logging library
 
 # ============================================================================
-# Build python packages
+# Build Python package
 # ============================================================================
 
-build:ska-sdp-logging_dev: # Executed on a commit
+# Executed on a non-master commit
+
+build:ska-sdp-logging_dev:
   extends: .build_python_dev
   variables:
     BUILD_PATH: src/logging
+
+# Executed on a master commit
 
 build:ska-sdp-logging:
   extends: .build_python_release
@@ -15,12 +19,11 @@ build:ska-sdp-logging:
     BUILD_PATH: src/logging
 
 # ============================================================================
-# Testing built python package
+# Test Python package
 # ============================================================================
 
 test:ska-sdp-logging:
-  extends: .tango_tests
-  stage: test
+  extends: .test_python
   script:
     - coverage --version
     - cd src/logging
@@ -33,16 +36,9 @@ test:ska-sdp-logging:
     expire_in: 1 week
     when: always
 
-## ============================================================================
-## Publish python packages
-## ============================================================================
-
-# publish:ska-sdp-logging-dev:
-#   extends: .publish_python_dev
-#   dependencies:
-#     - build:ska-sdp-logging_dev
-#   variables:
-#     BUILD_PATH: src/logging
+# ============================================================================
+# Publish Python package (master only)
+# ============================================================================
 
 publish:ska-sdp-logging:
   extends: .publish_python_release

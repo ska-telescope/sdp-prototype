@@ -7,3 +7,4 @@ pytest-pycodestyle
 pytest-pydocstyle
 pytest-pylint
 pytest-runner
+ska-telescope-model

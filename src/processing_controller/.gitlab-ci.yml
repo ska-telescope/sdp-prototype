@@ -1,23 +1,11 @@
-# Local Gitlab-CI file for Processing Controller
+# GitLab CI jobs for processing controller
 
-## ============================================================================
-## Build, tag and push Docker development images
-## ============================================================================
-
-# This needs to be updated. Might be best to use Gitlab registry for
-# development images, otherwise it will load the nexus registry with lots of
-# development images.
-
-# Build and push `processing_controller` image.
-build:processing_controller:
-  stage: build
-  extends: .build_docker
-  variables:
-    BUILD_PATH: src/processing_controller
+# ============================================================================
+# Test Python package
+# ============================================================================
 
 test:processing_controller:
-  extends: .tango_tests
-  stage: test
+  extends: .test_python
   script:
     - cd src/processing_controller
     - python3 setup.py test
@@ -29,25 +17,21 @@ test:processing_controller:
     expire_in: 1 week
     when: always
 
-### ============================================================================
-### Test Docker development images
-### ============================================================================
-#
-## Placeholder for testing. Currently not doing anything.
-# test:processing_controller:
-#  stage: test
-#  extends: .pull_docker
-#  variables:
-#    BUILD_PATH: src/processing_controller
-#  script:
-#    - echo "Placeholder for testing docker images"
+# ============================================================================
+# Build Docker development image
+# ============================================================================
 
-## ============================================================================
-## Tag and push Docker latest images (master only)
-## ============================================================================
+build:processing_controller:
+  extends: .build_docker
+  variables:
+    BUILD_PATH: src/processing_controller
+
+# ============================================================================
+# Tag and publish Docker image (master only)
+# ============================================================================
 
 publish:processing_controller:
-  extends: .publish_template
+  extends: .push_docker_nexus
   dependencies:
     - build:processing_controller
   variables:
