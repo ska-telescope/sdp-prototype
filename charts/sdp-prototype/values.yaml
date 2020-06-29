@@ -20,6 +20,7 @@ helm_deploy:
 
 # Configuration database
 etcd:
+  repository: quay.io/coreos/etcd
   version: "3.3"
   replicas: 1
 
