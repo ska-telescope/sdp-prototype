@@ -2,6 +2,7 @@
 #define RECV_STREAM_H_
 
 #include <stddef.h>
+#include <liburing.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -41,6 +42,8 @@ void stream_free(struct Stream* self);
  */
 void stream_receive(struct Stream* stream);
 
+  int add_read_request(struct Stream* stream, struct io_uring* ring);
+  
 #ifdef __cplusplus
 }
 #endif

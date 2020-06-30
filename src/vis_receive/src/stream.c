@@ -6,6 +6,7 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
+
 #ifdef __APPLE__
 #  include <libkern/OSByteOrder.h>
 #  define be32toh(x) OSSwapBigToHostInt32(x)
@@ -19,6 +20,20 @@
 #include "receiver.h"
 #include "stream.h"
 #include "timer.h"
+
+#include <liburing.h>
+
+
+#define READ_SZ                 8192
+#define EVENT_TYPE_RECEIVE      0
+
+struct request {
+    int event_type;
+    int iovec_count;
+    int client_socket;
+    struct iovec iov[];
+};
+
 
 typedef unsigned char uchar;
 
@@ -259,4 +274,23 @@ void stream_receive(struct Stream* stream)
                 stream, stream->socket_buffer + offset, 0);
         offset += bytes_decoded;
     }
+}
+
+
+
+/* Add a read request to the queue */
+int add_read_request(struct Stream* stream, struct io_uring* ring) {
+  struct io_uring_sqe *sqe = io_uring_get_sqe(&ring);
+  struct request *req = malloc(sizeof(*req) + sizeof(struct iovec));
+  req->iov[0].iov_base = malloc(READ_SZ);
+  req->iov[0].iov_len = READ_SZ;
+  req->event_type = EVENT_TYPE_RECEIVE;
+  req->client_socket = stream->socket_handle;
+  memset(req->iov[0].iov_base, 0, READ_SZ);
+
+  io_uring_prep_readv(sqe, stream->socket_handle, &req->iov[0], 1, 0);
+  io_uring_sqe_set_data(sqe, req);
+  io_uring_submit(&ring);
+  return 0;
+    
 }
