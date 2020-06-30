@@ -2,6 +2,8 @@
 #  define _GNU_SOURCE
 #  include <sched.h>
 #endif
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,6 +16,12 @@
 #ifdef WITH_MS
 #include "write_ms_access.h"
 #endif
+
+#include <liburing.h>
+
+#define QUEUE_DEPTH             256
+struct io_uring ring; 
+
 
 static char* construct_output_root(const char* output_location,
                                    const char* output_name)
@@ -114,6 +122,9 @@ int main(int argc, char** argv)
     const char* antenna_file = 0;
     struct Antenna* antennas = 0;
 
+
+    io_uring_queue_init(QUEUE_DEPTH, &ring, 0);
+    
     while(1) {
         static struct option lopts[] =
         {
