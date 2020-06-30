@@ -143,6 +143,8 @@ set_target_properties(${libname} PROPERTIES
 # Build executable.
 add_executable(recv src/main.c)
 target_link_libraries(recv vis_recv Threads::Threads)
+target_link_libraries(recv m)
+target_link_libraries(recv uring)
 if (OSKAR_MS_FOUND)
     target_link_libraries(recv ${OSKAR_MS_LIBRARY} ${CASACORE_LIBRARIES})
 endif()
