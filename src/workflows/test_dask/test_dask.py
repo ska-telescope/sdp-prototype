@@ -133,7 +133,7 @@ def main(argv):
     config.close()
 
 def get_pod_ipaddr():
-    config.load_kube_config()
+    config.load_incluster_config()
     v1 = client.CoreV1Api()
     # this lists pods with their IPs
     pod_list = v1.list_pod_for_all_namespaces(watch=False)
