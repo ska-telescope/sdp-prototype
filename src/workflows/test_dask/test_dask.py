@@ -141,7 +141,7 @@ def get_pod_ipaddr():
     for i in pod_list.items:
         # this is a total hack, but works for dask - sort of
         if i.metadata.namespace == "sdp" and "worker" in i.metadata.name:
-            ip.addresses.append(i.status.pod_ip))
+            ip.addresses.append(i.status.pod_ip)
     return ip_addresses
 
 if __name__ == "__main__":
