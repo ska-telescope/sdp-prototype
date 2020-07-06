@@ -442,6 +442,9 @@ class SDPSubarray(Device):
         LOG.info('Configure (%s)', self.get_name())
         LOG.info('-------------------------------------------------------')
 
+        # Set obsState to CONFIGURING
+        self._set_obs_state(ObsState.CONFIGURING)
+
         # Log the JSON configuration string
         LOG.info('Configuration string:')
         for line in config_str.splitlines():
@@ -481,7 +484,7 @@ class SDPSubarray(Device):
         # Set status to READY
         self._update_sb({'status': 'READY'})
 
-        # Set the obsState to READY
+        # Set obsState to READY
         self._set_obs_state(ObsState.READY)
 
         LOG.info('-------------------------------------------------------')
