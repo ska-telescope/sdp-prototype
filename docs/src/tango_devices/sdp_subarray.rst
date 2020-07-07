@@ -11,13 +11,12 @@ initiated in SDP.
 State Model
 -----------
 
-The SDP Subarray device will eventually implement the `Subarray state model
-<https://confluence.skatelescope.org/display/SE/Subarray+State+Model>`_. The
-present implementation is shown in the diagram below. Here the state is the
+The present implementation is shown in the diagram below. Here the state is the
 combination of the Tango device state and the observing state (obsState).
 
 .. image:: ../images/sdp_subarray_states.svg
    :align: center
+
 
 
 Behaviour
@@ -43,7 +42,7 @@ Attribute               Type   Read/Write Values                      Descriptio
 ======================= ====== ========== =========================== ===========
 serverVersion           String Read       Semantic version            Subarray device server version
 ----------------------- ------ ---------- --------------------------- -----------
-obsState                Enum   Read-write :ref:`subarray_obsstate`    Subarray observing state
+obsState                Enum   Read       :ref:`subarray_obsstate`    Subarray observing state
 ----------------------- ------ ---------- --------------------------- -----------
 adminMode               Enum   Read-write :ref:`subarray_adminmode`   Subarray admin mode
 ----------------------- ------ ---------- --------------------------- -----------
@@ -64,19 +63,27 @@ obsState values
 =============== ===========
 obsState        Description
 =============== ===========
-IDLE (0)
+EMPTY (0)
 --------------- -----------
-CONFIGURING (1)
+RESOURCING (1)
 --------------- -----------
-READY (2)
+IDLE (2)
 --------------- -----------
-SCANNING (3)
+CONFIGURING (3)
 --------------- -----------
-PAUSED (4)
+READY (4)
 --------------- -----------
-ABORTED (5)
+SCANNING (5)
 --------------- -----------
-FAULT (6)
+ABORTING (6)
+--------------- -----------
+ABORTED (7)
+--------------- -----------
+RESETTING (8)
+--------------- -----------
+FAULT (9)
+--------------- -----------
+RESTARTING (10)
 =============== ===========
 
 .. _subarray_adminmode:
@@ -122,12 +129,17 @@ Commands
 ================ ============= =========== ======
 Command          Argument type Return type Action
 ================ ============= =========== ======
-AssignResources  String (JSON) None        :ref:`Assigns processing resources to the SBI. Sets DeviceState to ON <subarray_assign_resources>`.
-ReleaseResources None          None        Releases all real-time processing in the SBI. Sets DeviceState to OFF.
+On               None          None        Device is in its operational state. Sets the DeviceState to ON and obsState to EMPTY.
+Off              None          None        Device is not active. Sets the DeviceState to OFF.
+AssignResources  String (JSON) None        :ref:`Assigns processing resources to the SBI. Sets obsState to IDLE <subarray_assign_resources>`.
+ReleaseResources None          None        Releases all real-time processing in the SBI. Sets obsState to EMPTY.
 Configure        String (JSON) None        :ref:`Configures scan type for the next scans. Sets obsState to READY <subarray_configure>`.
-Reset            None          None        Clears the scan type. Sets obsState to IDLE.
 Scan             String (JSON) None        :ref:`Begins a scan of the configured type. Sets obsState to SCANNING <subarray_scan>`.
 EndScan          None          None        Ends the scan. Sets obsState to READY.
+End              None          None        Clears the scan type. Sets obsState to IDLE.
+Abort            None          None        Aborts current activity. Sets obsState to ABORTED.
+ObsReset         None          None        Resets to last known stable state. Sets obsState to IDLE.
+Restart          None          None        Restarts the subarray device. Sets obsState to EMPTY.
 ================ ============= =========== ======
 
 .. _subarray_assign_resources:
