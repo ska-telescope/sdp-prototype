@@ -17,11 +17,7 @@
 #include "write_ms_access.h"
 #endif
 
-#include <liburing.h>
-
-#define QUEUE_DEPTH             256
-struct io_uring ring; 
-
+static int use_iouring = 0;
 
 static char* construct_output_root(const char* output_location,
                                    const char* output_name)
@@ -122,8 +118,6 @@ int main(int argc, char** argv)
     const char* antenna_file = 0;
     struct Antenna* antennas = 0;
 
-
-    io_uring_queue_init(QUEUE_DEPTH, &ring, 0);
     
     while(1) {
         static struct option lopts[] =
@@ -139,10 +133,11 @@ int main(int argc, char** argv)
             {"expire", required_argument, 0, 'e'},
             {"declination", optional_argument, 0, 'd'},
             {"ascension", optional_argument, 0, 'a'},
-            {"antenna", required_argument, 0, 'x'}
+            {"antenna", required_argument, 0, 'x'},
+            {"io_uring", optional_argument, 0, 'u'}
         };
         int opt_index = 0;
-        opt = getopt_long(argc, argv, "s:r:w:b:t:p:c:o:e:d:a:x:", lopts, &opt_index);
+        opt = getopt_long(argc, argv, "s:r:w:b:t:p:c:o:e:d:a:x:u:", lopts, &opt_index);
         if(opt == -1)
             break;
         switch(opt){
@@ -191,6 +186,9 @@ int main(int argc, char** argv)
                 else
                     num_stations = antenna_coord_count;
                 break;
+            case 'u':
+                use_iouring = 1;
+                break;
             default:
                 abort();
         }
@@ -222,7 +220,7 @@ int main(int argc, char** argv)
     struct Receiver* receiver = receiver_create( num_stations,
             max_num_buffers, num_times_in_buffer, num_threads_recv,
             num_threads_write, num_streams, port_start,
-            num_channels_per_file, output_root);
+            num_channels_per_file, output_root, use_iouring);
 
     if(antennas != 0)
     {
