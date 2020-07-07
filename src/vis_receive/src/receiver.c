@@ -22,6 +22,11 @@
 #   include <oskar_measurement_set.h>
 #endif
 
+#include <liburing.h>
+#include <sys/uio.h>
+
+#define QUEUE_DEPTH             256
+struct io_uring ring; 
 
 /**
  * Manage the buffer and returns the buffer to use for the current data packet
@@ -115,7 +120,7 @@ struct Buffer* receiver_buffer(struct Receiver* self, int heap, size_t length,
 struct Receiver* receiver_create(int num_stations, int max_num_buffers, int num_times_in_buffer,
         int num_threads_recv, int num_threads_write, int num_streams,
         unsigned short int port_start, int num_channels_per_file,
-        const char* output_root)
+        const char* output_root, const int use_iouring)
 {
     struct Receiver* cls =
             (struct Receiver*) calloc(1, sizeof(struct Receiver));
@@ -154,6 +159,7 @@ struct Receiver* receiver_create(int num_stations, int max_num_buffers, int num_
             num_pols, ref_freq_hz, freq_inc_hz, write_autocorr,
             write_crosscorr);
 #endif
+    cls->use_iouring = use_iouring;
     return cls;
 }
 
@@ -484,18 +490,49 @@ void receiver_start(struct Receiver* self)
     struct ThreadArg* args =
             (struct ThreadArg*) malloc(num_threads * sizeof(struct ThreadArg));
     tmr_start(self->tmr);
-    for (int i = 0; i < num_threads; ++i)
-    {
-        args[i].thread_id = i;
-        args[i].receiver = self;
-        pthread_create(&threads[i], &attr, &thread_receive, &args[i]);
-    }
-    for (int i = 0; i < num_threads; ++i)
+
+    if (self->use_iouring == 1 ){
+        printf("using io_uring recv\n");
+        struct io_uring_cqe *cqe;
+        io_uring_queue_init(QUEUE_DEPTH, &ring, 0);
+        
+        /* we have control over the number of reads we put in the queue */ 
+        /* we reuse the number of receive threads command line parameter */
+        for (int i = 0; i < num_threads; i++) {
+            add_read_request(self->streams[0]);
+
+        }
+        
+        while (1) {
+            /* now wait for completed read requests and handle them as they come in */
+            io_uring_wait_cqe(&ring, &cqe);
+            //struct request req = (struct request *)cqe->user_data;
+
+            struct request *req = (struct request *) cqe->user_data;
+
+            handle_packet(req, self->streams[0]);
+            /* the read request was handled, add a new one to keep queue filled */
+            /* is this actually necessary?? */
+            /* add_read_request(self->streams[0]); */
+        
+        }
+
+    } else{ 
+
+        for (int i = 0; i < num_threads; ++i)
+        {   
+            args[i].thread_id = i;
+            args[i].receiver = self;
+
+            pthread_create(&threads[i], &attr, &thread_receive, &args[i]);
+        }      
+        for (int i = 0; i < num_threads; ++i)
         pthread_join(threads[i], NULL);
-    pthread_attr_destroy(&attr);
-    free(args);
-    free(threads);
-    LOG_INFO(0, "All %d stream(s) completed.", self->num_streams);
+        pthread_attr_destroy(&attr);
+        free(args);
+        free(threads);
+        LOG_INFO(0, "All %d stream(s) completed.", self->num_streams);
+    }
 }
 
 void receiver_set_phase(struct Receiver* self, double ra, double dec)
@@ -550,4 +587,32 @@ void calculate_uvw(struct Buffer* arg)
     free(antenna_differences_x);
     free(antenna_differences_y);
     free(antenna_differences_z);
+}
+
+
+int add_read_request(struct Stream* stream) {
+    struct io_uring_sqe *sqe = io_uring_get_sqe(&ring);
+    struct request *req = malloc(sizeof(*req) + sizeof(struct iovec));
+    req->iov[0].iov_base = malloc(READ_SZ);
+    req->iov[0].iov_len = READ_SZ;
+    req->event_type = EVENT_TYPE_READ;
+    req->client_socket = stream->socket_handle;
+    memset(req->iov[0].iov_base, 0, READ_SZ);
+    /* Linux kernel 5.5 has support for readv, but not for recv() or read() */
+    io_uring_prep_readv(sqe, req->client_socket, &req->iov[0], 1, 0);
+    io_uring_sqe_set_data(sqe, req);
+    io_uring_submit(&ring);
+    return 0;
+}
+
+int handle_packet(struct request *req, struct Stream* stream) {
+
+    int offset = 0;
+    while ((req->iov[0].iov_len - offset) >=8) {
+        int bytes_decoded = stream_decode(stream, req->iov[0].iov_base + offset, 0);
+        offset += bytes_decoded;
+        printf("message length: %ld, bytes decoded: %d\n", req->iov[0].iov_len, bytes_decoded);
+    }
+
+    return 0;
 }
