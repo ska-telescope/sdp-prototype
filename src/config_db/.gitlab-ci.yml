@@ -44,9 +44,11 @@ test:ska-sdp-config:
     - python3 -m pip install pytest-pycodestyle pytest-pydocstyle
     - ./scripts/run_test.sh src/config_db
     - mv .coverage $CI_JOB_NAME.coverage
+    - mv unit-tests.xml unit-tests-${CI_JOB_NAME}.xml
   artifacts:
     paths:
       - $CI_JOB_NAME.coverage
+      - unit-tests-${CI_JOB_NAME}.xml
     expire_in: 1 week
 
 # ============================================================================
