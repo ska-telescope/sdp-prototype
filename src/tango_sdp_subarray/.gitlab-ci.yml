@@ -26,8 +26,8 @@ build:ska-sdp-subarray:
 
 test:ska-sdp-subarray:
   extends:
-    .test_python
-    .test_with_coverage
+    - .test_python
+    - .test_with_coverage
   <<: *env
   variables:
     TOGGLE_CONFIG_DB: 0
