@@ -75,7 +75,7 @@
   artifacts:
     paths:
       - ./$CI_JOB_NAME.coverage
-      - ./$CI_JOB_NAME.xml
+      - ./unit-tests-${CI_JOB_NAME}.xml
     expire_in: 1 week
     when: always
 

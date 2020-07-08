@@ -77,7 +77,7 @@ coverage_report:
     - mv coverage.xml ./build/reports/code-coverage.xml
     - cov=$(grep -m 1 data-ratio htmlcov/index.html | cut -d">" -f2 | cut -d% -f1)
     - anybadge -l "coverage report" -v ${cov} -f build/cov_report.svg coverage
-    - junitparser merge paths unit-tests-*.xml ./build/reports/unit-tests.xml
+    - junitparser merge unit-tests-*.xml ./build/reports/unit-tests.xml
   coverage: '/TOTAL\s+\d+\s+\d+\s+\d+\s+\d+\s+(\d+\%)/'
   after_script:
     # FIXME: this is not working but doesn't break the build.

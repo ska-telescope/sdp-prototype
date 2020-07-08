@@ -9,13 +9,11 @@
 # ============================================================================
 
 # Executed on a non-master commit
-
-build:ska-sdp-logging_dev: # Executed on a commit
+build:ska-sdp-logging_dev:
   extends: .build_python_dev
   <<: *env
 
 # Executed on a master commit
-
 build:ska-sdp-logging:
   extends: .build_python_release
   <<: *env
