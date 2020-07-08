@@ -1,5 +1,9 @@
 # GitLab CI jobs for SDP Subarray Tango device
 
+.env: &env
+  variables:
+    BUILD_PATH: src/tango_sdp_subarray
+
 # ============================================================================
 # Build Python package
 # ============================================================================
@@ -8,31 +12,29 @@
 
 build:ska-sdp-subarray_dev:
   extends: .build_python_dev
-  variables:
-    BUILD_PATH: src/tango_sdp_subarray
+  <<: *env
 
 # Executed on a master commit
 
 build:ska-sdp-subarray:
   extends: .build_python_release
-  variables:
-    BUILD_PATH: src/tango_sdp_subarray
+  <<: *env
 
 # ============================================================================
 # Test Python package
 # ============================================================================
 
 test:ska-sdp-subarray:
-  extends: .test_python
+  extends:
+    .test_python
+    .test_with_coverage
+  <<: *env
   variables:
     TOGGLE_CONFIG_DB: 0
     TOGGLE_RECEIVE_ADDRESSES_HACK: 0
-  script:
-    - cd src/tango_sdp_subarray
-    - mkdir -p build/reports
+  before_script:
     - pip3 install -r requirements.txt -r requirements-test.txt
-    - python3 setup.py test
-    - mv .coverage ../../$CI_JOB_NAME.coverage
+  after_script:
     - mv htmlcov build/sdp_subarray_htmlcov
     - mv coverage.xml build/code-coverage.xml
     - mv cucumber.json build/cucumber.json
@@ -40,7 +42,6 @@ test:ska-sdp-subarray:
   artifacts:
     paths:
       - build
-      - ./$CI_JOB_NAME.coverage
     expire_in: 1 week
     when: always
 
@@ -52,8 +53,7 @@ publish:ska-sdp-subarray:
   extends: .publish_python_release
   dependencies:
     - build:ska-sdp-subarray
-  variables:
-    BUILD_PATH: src/tango_sdp_subarray
+  <<: *env
 
 # ============================================================================
 # Build Docker development image
@@ -62,8 +62,7 @@ publish:ska-sdp-subarray:
 # Build and push `tangods_sdp_subarray` image.
 build:tangods_sdp_subarray:
   extends: .build_docker
-  variables:
-    BUILD_PATH: src/tango_sdp_subarray
+  <<: *env
 
 # ============================================================================
 # Tag and publish Docker image (master only)
@@ -73,8 +72,7 @@ publish:tangods_sdp_subarray:
   extends: .push_docker_nexus
   dependencies:
     - build:tangods_sdp_subarray
-  variables:
-    BUILD_PATH: src/tango_sdp_subarray
+  <<: *env
 
 # ============================================================================
 # Upload XRay test report to JIRA (master only)
