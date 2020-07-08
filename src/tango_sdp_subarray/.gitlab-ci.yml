@@ -35,12 +35,12 @@ test:ska-sdp-subarray:
   before_script:
     - cd $BUILD_PATH
     - pwd
-    - ls
     - pip3 install -r requirements.txt -r requirements-test.txt
+    - cd ../..
+    - pwd
   after_script:
     - cd $BUILD_PATH
     - pwd
-    - ls
     - mv htmlcov build/sdp_subarray_htmlcov
     - mv coverage.xml build/code-coverage.xml
     - mv cucumber.json build/cucumber.json
