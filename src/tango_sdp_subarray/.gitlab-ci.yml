@@ -34,22 +34,13 @@ test:ska-sdp-subarray:
     TOGGLE_RECEIVE_ADDRESSES_HACK: 0
   before_script:
     - cd $BUILD_PATH
-    - pwd
     - pip3 install -r requirements.txt -r requirements-test.txt
     - cd ../..
-    - pwd
   after_script:
     - cd $BUILD_PATH
-    - pwd
-    - mv htmlcov build/sdp_subarray_htmlcov
-    - mv coverage.xml build/code-coverage.xml
-    - mv cucumber.json build/cucumber.json
-    - mv build ../../build
-  artifacts:
-    paths:
-      - build
-    expire_in: 1 week
-    when: always
+    - mv htmlcov ../../build/sdp_subarray_htmlcov
+    - mv coverage.xml ../../build/code-coverage.xml
+    - mv cucumber.json ../../build/cucumber.json
 
 # ============================================================================
 # Publish Python package (master only)

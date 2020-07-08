@@ -66,17 +66,17 @@
 .test_with_coverage:
   stage: test
   script:
-    - coverage --version
     - cd $BUILD_PATH
-    - pwd
     - python3 setup.py test
     # Make the coverage report available at the top level, which will merge it.
     - mv .coverage ../../$CI_JOB_NAME.coverage
     - cp build/reports/unit-tests.xml ../../unit-tests-${CI_JOB_NAME}.xml
+    - mv build ../../build
   artifacts:
     paths:
       - ./$CI_JOB_NAME.coverage
       - ./unit-tests-${CI_JOB_NAME}.xml
+      - ./build
     expire_in: 1 week
     when: always
 
