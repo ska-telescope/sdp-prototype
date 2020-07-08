@@ -26,7 +26,7 @@ build:ska-sdp-logging:
 
 test:ska-sdp-logging:
   extends:
-    - .tango_tests
+    - .test_python
     - .test_with_coverage
   <<: *env
 
