@@ -21,7 +21,6 @@ def test_stuff():
     controller = processing_controller.ProcessingController(workflows_test.SCHEMA,
                                                             workflows_test.WORKFLOW, 1)
 
-    LOG.info("log level %s", LOG.getEffectiveLevel())
     # Annoyingly requests doesn't support local (file) URLs, so redirect. It is possible to
     # create an adapter for this, but that seems like overkill.
     controller._workflows.update_url = controller._workflows.update_file

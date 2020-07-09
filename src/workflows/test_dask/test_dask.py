@@ -68,7 +68,7 @@ def main(argv):
     deploy_id = 'proc-{}-dask'.format(pb.id)
     deploy = ska_sdp_config.Deployment(
         deploy_id, "helm", {
-            'chart': 'stable/dask',
+            'chart': 'dask/dask',
             'values': {
                 'jupyter.enabled': 'false',
                 'worker.replicas': 2,

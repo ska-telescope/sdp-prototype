@@ -3,204 +3,356 @@ Feature: SDP Subarray Device
 	#300-000000-029 rev 04 SDP to TM ICD
 	#
 	#Section 2.4.1 Control, State and Configuration
+	#
+	#Note that this has been updated by ADR-3.
 
-	
-	@XTP-119 @XTP-118
+
+	@XTP-119 @XTP-118 @XTP-895 @Current
 	Scenario: Device startup
 		Given I have an OFFLINE SDPSubarray device
 		When the device is initialised
-		Then State should be OFF
-		And obsState should be IDLE
+		Then the device should be OFF
+		And obsState should be EMPTY
 		And adminMode should be ONLINE
 		And healthState should be OK
-			
 
-	
-	@XTP-120 @XTP-118
+	@XTP-119 @XTP-118 @XTP-895 @Current
+	Scenario: On command succeeds
+		Given I have an ONLINE SDPSubarray device
+		When the device is OFF and obsState is EMPTY
+		And I call On
+		Then the device should be ON
+		And obsState should be EMPTY
+
+# TODO (NJT) - This needs to be a scenario outline
+#	@XTP-119 @XTP-118 @XTP-895 @Current
+#	Scenario: Off command succeeds
+#		Given I have an ONLINE SDPSubarray device
+#		When the device is ON and obsState is EMPTY
+#		And I call On
+#		Then the device should be ON
+#		And obsState should be EMPTY
+
+	#This is a revised version of the test following the implementation of ADR-4 and ADR-10.
+    # The check on the value of the receiveAddresses attribute has been added to this test.
+	@XTP-896 @XTP-895 @Current
 	Scenario: AssignResources command succeeds
 		Given I have an ONLINE SDPSubarray device
-		When obsState is IDLE
+		When the device is ON and obsState is EMPTY
 		And I call AssignResources
-		Then State should be ON
-		And obsState should be IDLE
-		And adminMode should be ONLINE
+#		Then the device should be ON
+		Then obsState should be IDLE
 		And the configured Processing Blocks should be in the Config DB
-			
+		And the receiveAddresses attribute should return the expected value
 
-	
-	@XTP-121 @XTP-118
-	Scenario Outline: AssignResources command fails when obsState is not IDLE
+
+	@XTP-121 @XTP-118 @XTP-895 @Current
+	Scenario Outline: AssignResources command fails when device is not ON
 		Given I have an ONLINE SDPSubarray device
-		When obsState is <value>
+		When the device is <state_value> and obsState is <obs_state_value>
 		Then calling AssignResources raises tango.DevFailed
-		
-		Examples:
-		| value       |
-		| CONFIGURING |
-		| READY       |
-		| SCANNING    |
-		| ABORTED     |
-		| FAULT       |
-			
 
-	
-	@XTP-737 @XTP-118
+		Examples:
+		|state_value|obs_state_value|
+		|ON         |IDLE           |
+		|ON         |READY          |
+		|ON         |SCANNING       |
+		|OFF	   	|EMPTY          |
+		# TODO (NJT) MORE EXAMPLES TO ADD HERE
+
+
+
+	@XTP-737 @XTP-118 @XTP-895 @Current
 	Scenario: AssignResources command fails with invalid JSON
 		Given I have an ONLINE SDPSubarray device
-		When obsState is IDLE
+		When the device is ON and obsState is EMPTY
 		And I call AssignResources with invalid JSON
-		Then obsState should be IDLE
-			
+		Then the device should be ON
+		Then obsState should be FAULT
 
-	
-	@XTP-122 @XTP-118
+
+	#This is a revised version of the test following the implementation of ADR-4 and and ADR-10.
+   # The check on the value of the receiveAddresses attribute has been added to this test.
+	@XTP-904 @XTP-895 @Current
 	Scenario: ReleaseResources command succeeds
 		Given I have an ONLINE SDPSubarray device
-		When obsState is IDLE
+		When the device is ON and obsState is IDLE
 		And I call ReleaseResources
-		Then State should be OFF
-		And obsState should be IDLE
-		And adminMode should be ONLINE
-			
+#		Then the device should be OFF
+		Then obsState should be EMPTY
+		And the receiveAddresses attribute should return an empty JSON object
 
-	
-	@XTP-193 @XTP-118
-	Scenario Outline: ReleaseResources command fails when obsState is not IDLE
+
+	@XTP-193 @XTP-895 @XTP-118 @Current
+	Scenario Outline: ReleaseResources command fails when device is not ON or obsState is not IDLE
 		Given I have an ONLINE SDPSubarray device
-		When obsState is <value>
+		When the device is <state_value> and obsState is <obs_state_value>
 		Then calling ReleaseResources raises tango.DevFailed
-		
-		Examples:
-		| value       |
-		| CONFIGURING |
-		| READY       |
-		| SCANNING    |
-		| ABORTED     |
-		| FAULT       |
-			
 
-	
-	@XTP-123 @XTP-118
+		Examples:
+		|state_value|obs_state_value|
+		|OFF        |EMPTY          |
+		|ON         |EMPTY          |
+		|ON         |SCANNING       |
+		|ON         |READY          |
+		# TODO (NJT) MORE EXAMPLES TO ADD HERE
+
+
+	#This is a revised version of the test following the implementation of ADR-4 and ADR-10.
+    # It no longer contains a check on the value of the receiveAddresses attribute.
+	@XTP-897 @XTP-895 @Current
 	Scenario Outline: Configure command succeeds
 		Given I have an ONLINE SDPSubarray device
-		When obsState is <value>
+		When the device is <state_value> and obsState is <obs_state_value>
 		And I call Configure
 		Then obsState should be READY
-		And the receiveAddresses attribute should return the expected value
-		
-		Examples:
-		| value |
-		| IDLE  |
-		| READY |
-			
 
-	
-	@XTP-738 @XTP-118
-	Scenario Outline: Configure command fails when obsState is not IDLE or READY
+		Examples:
+		|state_value|obs_state_value|
+		|ON         |IDLE           |
+		|ON         |READY          |
+
+
+
+	@XTP-738 @XTP-895 @XTP-118 @Current
+	Scenario Outline: Configure command fails when device is not ON or obsState is not IDLE or READY
 		Given I have an ONLINE SDPSubarray device
-		When obsState is <value>
+		When the device is <state_value> and obsState is <obs_state_value>
 		Then calling Configure raises tango.DevFailed
-		
-		Examples:
-		| value       |
-		| CONFIGURING |
-		| SCANNING    |
-		| ABORTED     |
-		| FAULT       |
-			
 
-	
-	@XTP-241 @XTP-118
-	Scenario: Configure command fails with invalid JSON
+		Examples:
+		|state_value|obs_state_value|
+		|OFF        |EMPTY          |
+		|ON         |SCANNING       |
+		# TODO (NJT) MORE EXAMPLES TO ADD HERE
+
+
+
+	@XTP-241 @XTP-895 @XTP-118 @Current
+	Scenario Outline: Configure command fails with invalid JSON
 		Given I have an ONLINE SDPSubarray device
-		When obsState is IDLE
+		When the device is <state_value> and obsState is <obs_state_value>
 		And I call Configure with invalid JSON
-		Then obsState should be IDLE
+		Then obsState should be FAULT
 		And the receiveAddresses attribute should return an empty JSON object
-			
 
-	
-	@XTP-739 @XTP-118
-	Scenario: Reset command succeeds
-		Given I have an ONLINE SDPSubarray device
-		When obsState is READY
-		And I call Reset
-		Then obsState should be IDLE
-		And the receiveAddresses attribute should return an empty JSON object
-			
-
-	
-	@XTP-740 @XTP-118
-	Scenario Outline: Reset command fails when obsState is not READY
-		Given I have an ONLINE SDPSubarray device
-		When obsState is <value>
-		Then calling Scan raises tango.DevFailed
-		
 		Examples:
-		| value       |
-		| CONFIGURING |
-		| SCANNING    |
-		| IDLE        |
-		| ABORTED     |
-		| FAULT       |
-			
+		|state_value|obs_state_value|
+		|ON         |IDLE           |
+		|ON         |READY          |
 
-	
-	@XTP-191 @XTP-118
+
+	#This is a revised version of the test following the implementation of ADR-4 and ADR-10.
+    # It no longer contains a check on the value of the receiveAddresses attribute.
+	@XTP-905 @XTP-895 @Current
+	Scenario: End command succeeds
+		Given I have an ONLINE SDPSubarray device
+		When the device is ON and obsState is READY
+		And I call End
+		Then obsState should be IDLE
+
+
+
+	@XTP-740 @XTP-118 @XTP-895 @Current
+	Scenario Outline: End command fails when obsState is not READY
+		Given I have an ONLINE SDPSubarray device
+		When the device is <state_value> and obsState is <obs_state_value>
+		Then calling End raises tango.DevFailed
+
+		Examples:
+		|state_value|obs_state_value|
+		|OFF        |EMPTY          |
+		|ON         |EMPTY          |
+		|ON         |IDLE           |
+		|ON         |SCANNING       |
+		# TODO (NJT) MORE EXAMPLES TO ADD HERE
+
+
+
+	@XTP-191 @XTP-118 @XTP-895 @Current
 	Scenario: Scan command succeeds
 		Given I have an ONLINE SDPSubarray device
-		When obsState is READY
+		When the device is ON and obsState is READY
 		And I call Scan
 		Then obsState should be SCANNING
-			
 
-	
-	@XTP-741 @XTP-118
+
+
+	@XTP-741 @XTP-118 @XTP-895 @Current
 	Scenario Outline: Scan command fails when obsState is not READY
 		Given I have an ONLINE SDPSubarray device
-		When obsState is <value>
+		When the device is <state_value> and obsState is <obs_state_value>
 		Then calling Scan raises tango.DevFailed
-		
-		Examples:
-		| value       |
-		| CONFIGURING |
-		| IDLE        |
-		| SCANNING    |
-		| ABORTED     |
-		| FAULT       |
-			
 
-	
-	@XTP-742 @XTP-118
+		Examples:
+		|state_value|obs_state_value|
+		|OFF        |EMPTY          |
+		|ON         |EMPTY          |
+		|ON         |IDLE           |
+		|ON         |SCANNING       |
+		# TODO (NJT) MORE EXAMPLES TO ADD HERE
+
+
+
+	@XTP-742 @XTP-118 @XTP-895 @Current
 	Scenario: Scan command fails with invalid JSON
 		Given I have an ONLINE SDPSubarray device
-		When obsState is READY
+		When the device is ON and obsState is READY
 		And I call Scan with invalid JSON
-		Then obsState should be READY
-			
+		Then obsState should be FAULT
 
-	
-	@XTP-192 @XTP-118
+
+
+	@XTP-192 @XTP-895 @XTP-118 @Current
 	Scenario: EndScan command succeeds
 		Given I have an ONLINE SDPSubarray device
-		When obsState is SCANNING
+		When the device is ON and obsState is SCANNING
 		And I call EndScan
 		Then obsState should be READY
-		
-			
 
-	
-	@XTP-743 @XTP-118
+
+
+	@XTP-743 @XTP-895 @XTP-118 @Current
 	Scenario Outline: EndScan command fails when obsState is not SCANNING
 		Given I have an ONLINE SDPSubarray device
-		When obsState is <value>
+		When the device is <state_value> and obsState is <obs_state_value>
 		Then calling EndScan raises tango.DevFailed
-		
+
 		Examples:
-		| value       |
-		| CONFIGURING |
-		| IDLE        |
-		| READY       |
-		| ABORTED     |
-		| FAULT       |
-		
+		|state_value|obs_state_value|
+		|OFF        |EMPTY          |
+		|ON         |EMPTY          |
+		|ON         |IDLE           |
+		|ON         |READY          |
+	    # TODO (NJT) MORE EXAMPLES TO ADD HERE
+
+
+
+# TODO (NJT) Think about how to set CONFIGURING AND RESETTING
+	@XTP-192 @XTP-895 @XTP-118 @Current
+	Scenario Outline: Abort command succeeds
+		Given I have an ONLINE SDPSubarray device
+		When the device is <state_value> and obsState is <obs_state_value>
+		And I call Abort
+		Then obsState should be ABORTED
+
+		Examples:
+		|state_value|obs_state_value|
+		|ON         |IDLE	        |
+#		|ON         |CONFIGURING    |
+		|ON         |READY          |
+		|ON         |SCANNING       |
+#		|ON         |RESETTING      |
+
+
+
+	@XTP-192 @XTP-895 @XTP-118 @Current
+	Scenario Outline: ObsReset command succeeds
+		Given I have an ONLINE SDPSubarray device
+		When the device is <state_value> and obsState is <obs_state_value>
+		And I call ObsReset
+		Then obsState should be IDLE
+
+		Examples:
+		|state_value|obs_state_value|
+		|ON         |ABORTED        |
+		|ON         |FAULT          |
+
+
+
+	@XTP-192 @XTP-895 @XTP-118 @Current
+	Scenario Outline: Restart command succeeds
+		Given I have an ONLINE SDPSubarray device
+		When the device is <state_value> and obsState is <obs_state_value>
+		And I call Restart
+		Then obsState should be EMPTY
+
+		Examples:
+		|state_value|obs_state_value|
+		|ON         |ABORTED        |
+		|ON         |FAULT          |
+
+
+#	@XTP-842 @XTP-895 @XTP-118
+#	Scenario: Tango device publishes custom attribute
+#		Given I have an <device_type> device
+#		And The device is configured to publish a <attribute_type> attribute
+#		And The configuration database has a <attribute_type> value for the attribute
+#		When I query the value of the <attribute_type> attribute from the <device_type> device using TANGO
+#		Then The result is the same value as in the configuration database
+#
+#		Examples:
+#		|device_type|attribute_type|
+#		|ONLINE SDPSubarray |string|
+#		|ONLINE SDPSubarray |int|
+#		|ONLINE SDPSubarray |float|
+#		|ONLINE SDPSubarray |float array|
+#		|SDPMaster |string|
+#		|SDPMaster |int|
+#		|SDPMaster |float|
+
+
+#	@XTP-843 @XTP-895 @XTP-118
+#	Scenario: Tango device falls back for custom attribute
+#		Given I have an <device_type> device
+#		And The device is configured to publish a <attribute_type> attribute
+#		And The configuration database does not have the value for the <attribute_type> attribute
+#		When I query the value of the <attribute_type> attribute from the <device_type> device using TANGO
+#		Then the result is a standard fall-back <attribute_type> value
+#
+#		Examples:
+#		|device_type|attribute_type|
+#		|ONLINE SDPSubarray |string|
+#		|ONLINE SDPSubarray |int|
+#		|ONLINE SDPSubarray |float|
+#		|ONLINE SDPSubarray |float array|
+#		|SDPMaster |string|
+#		|SDPMaster |int|
+#		|SDPMaster |float|
+
+
+#	@XTP-844 @XTP-895 @XTP-118
+#	Scenario: Tango device publishes changes to custom attribute
+#		Given I have an <device_type> device
+#		And The device is configured to publish a <attribute_type> attribute
+#		And The configuration database has a <attribute_type> value for the attribute
+#		When I change the value of the <attribute_type> attribute in the configuration database
+#		And I query the value of the <attribute_type> attribute from the <device_type> device using TANGO
+#		Then The result is the new <attribute_type> value as changed in the configuration database
+#
+#		Examples:
+#		|device_type|attribute_type|
+#		|ONLINE SDPSubarray |string|
+#		|ONLINE SDPSubarray |int|
+#		|ONLINE SDPSubarray |float|
+#		|ONLINE SDPSubarray |float array|
+#		|SDPMaster |string|
+#		|SDPMaster |int|
+#		|SDPMaster |float|
+
+
+#	@XTP-872 @XTP-895 @XTP-118
+#	Scenario: Receive addresses map set after AssignResources
+#		Given I have an ONLINE SDPSubarray device implementing interface version 3
+#		And The device is ON and obsState is EMPTY
+#		When I call AssignResources with a scheduling block
+#		And Wait for the obsState to be IDLE
+#		Then The receive addresses map is set, with entries for every scan type
+
+
+#	@XTP-877 @XTP-895 @XTP-118
+#	Scenario: SDP utilises link map
+#		Given An offline SDP subarray
+#		And An AssignResources request for a scheduling block that has a link and channel map for every scan type
+#		When The AssignRessources request is sent to SDP
+#		Then SDP determines destination hosts and routes for every channel
+#		And Configures networking as required
+#		And Starts up and configures ingest processes for all scan types at the determined hosts
+#
+#
+#	@XTP-878 @XTP-118 @XTP-895
+#	Scenario: SDP utilises channel map
+#		Given An idle SDP subarray with a scheduling block including a channel map for every scan type
+#		When A scan type gets configured
+#		And The scan gets started
+#		Then Received visibilites are associated with the frequencies given in the channel map for the configured scan type

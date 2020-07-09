@@ -1,2 +1,4 @@
-distributed
+dask==2.8.1
+distributed==2.8.1
+msgpack<1.0.0
 ska-sdp-config >= 0.0.8

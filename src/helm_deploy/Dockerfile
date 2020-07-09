@@ -8,8 +8,8 @@ RUN curl https://get.helm.sh/helm-v${HELM_VERSION}-linux-amd64.tar.gz | tar xz \
     && install linux-amd64/helm /usr/local/bin/helm \
     && rm -r linux-amd64
 
-COPY requirements.txt ./
-RUN pip install -r requirements.txt
+COPY requirements.txt *.whl ./
+RUN pip install -r requirements.txt -f .
 
 WORKDIR /app
 COPY helm_deploy.py ./

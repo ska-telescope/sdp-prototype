@@ -1,13 +1,17 @@
-# Local Gitlab-CI file for SDP Master
+# Gitlab CI jobs for SDP Master Tango device
 
 # ============================================================================
-# Build python packages
+# Build Python package
 # ============================================================================
 
-build:ska-sdp-master_dev: # Executed on a commit
+# Executed on a non-master commit
+
+build:ska-sdp-master_dev:
   extends: .build_python_dev
   variables:
     BUILD_PATH: src/tango_sdp_master
+
+# Executed on a master commit
 
 build:ska-sdp-master:
   extends: .build_python_release
@@ -15,12 +19,11 @@ build:ska-sdp-master:
     BUILD_PATH: src/tango_sdp_master
 
 # ============================================================================
-# Testing built python package
+# Test Python package
 # ============================================================================
 
 test:ska-sdp-master:
-  extends: .tango_tests
-  stage: test
+  extends: .test_python
   script:
     - cd src/tango_sdp_master
     - python3 setup.py test
@@ -35,16 +38,9 @@ test:ska-sdp-master:
     expire_in: 1 week
     when: always
 
-## ============================================================================
-## Publish python packages
-## ============================================================================
-
-publish:ska-sdp-master-dev:
-  extends: .publish_python_dev
-  dependencies:
-    - build:ska-sdp-master_dev
-  variables:
-    BUILD_PATH: src/tango_sdp_master
+# ============================================================================
+# Publish Python package (master only)
+# ============================================================================
 
 publish:ska-sdp-master:
   extends: .publish_python_release
@@ -53,40 +49,21 @@ publish:ska-sdp-master:
   variables:
     BUILD_PATH: src/tango_sdp_master
 
-## ============================================================================
-## Build, tag and push Docker development images
-## ============================================================================
+# ============================================================================
+# Build Docker development image
+# ============================================================================
 
-# This needs to be updated. Might be best to use Gitlab registry for
-# development images, otherwise it will load the nexus registry with lots of
-# development images.
-
-# Build and push `tangods_sdp_master` image.
 build:tangods_sdp_master:
-  stage: build
   extends: .build_docker
   variables:
     BUILD_PATH: src/tango_sdp_master
 
-### ============================================================================
-### Test Docker development images
-### ============================================================================
-#
-## Placeholder for testing. Currently not doing anything.
-# test:tangods_sdp_master:
-#  stage: test
-#  extends: .pull_docker
-#  variables:
-#    BUILD_PATH: src/tango_sdp_master
-#  script:
-#    - echo "Placeholder for testing docker images"
-
-## ============================================================================
-## Tag and push Docker latest images (master only)
-## ============================================================================
+# ============================================================================
+# Tag and publish Docker image (master only)
+# ============================================================================
 
 publish:tangods_sdp_master:
-  extends: .publish_template
+  extends: .push_docker_nexus
   dependencies:
     - build:tangods_sdp_master
   variables:

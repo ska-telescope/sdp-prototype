@@ -1,0 +1,6 @@
+# Default values for buffer.
+
+size: 1Gi
+class: standard
+accessModes:
+  - ReadWriteMany

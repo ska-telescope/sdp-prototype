@@ -78,8 +78,25 @@ stop:  ## Stop the device
 
 .PHONY: test lint ci_test test_shell
 
-test:  ## Run tests for the device
+test:  ## Run tests for the device without config db
 	docker run --rm -t \
+		-v $(PWD):/app \
+		$(TEST_IMAGE) \
+		python3 -m pytest \
+		--color=yes \
+		--pylint \
+		--pycodestyle \
+		--pydocstyle \
+		--cov=SDPSubarray \
+		--cov-report=term \
+		--cov-config=./setup.cfg \
+		-vv -s \
+		--gherkin-terminal-reporter \
+		.
+
+test_with_configdb:  ## Run tests for the device with config db
+	docker run --link etcd --env SDP_CONFIG_HOST=etcd \
+	    --rm -t \
 		-v $(PWD):/app \
 		$(TEST_IMAGE) \
 		python3 -m pytest \
@@ -98,7 +115,7 @@ test_only:  ## Run tests for the device
 	docker run --rm -t \
 		-v $(PWD):/app \
 		$(TEST_IMAGE) \
-		python -m pytest \
+		python3 -m pytest \
 		-vv -s \
 		--gherkin-terminal-reporter \
 		.
@@ -109,7 +126,7 @@ test_shell:  ## Provide a test shell with the current code
 		--network=container:databaseds \
 		-e TANGO_HOST=localhost:10000 \
 		--entrypoint=/bin/bash \
-		$(DEV_IMAGE)
+		$(TEST_IMAGE)
 
 dev_shell:  ## Provide a development shell with the current code
 	@docker run --rm -it \

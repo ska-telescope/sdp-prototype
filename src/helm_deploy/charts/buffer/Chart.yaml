@@ -1,0 +1,13 @@
+apiVersion: v2
+name: buffer
+description: Helm chart to create an SDP buffer reservation using a persistent volume claim
+type: application
+version: 0.1.0
+appVersion: 0.1.0
+home: https://developer.skatelescope.org/projects/sdp-prototype/
+icon: http://www.skatelescope.org/wp-content/uploads/2016/07/09545_NEW_LOGO_2014.png
+sources:
+- https://gitlab.com/ska-telescope/sdp-prototype/
+maintainers:
+- name: Mark Ashdown
+  email: maja1@mrao.cam.ac.uk

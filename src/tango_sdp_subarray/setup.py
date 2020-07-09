@@ -30,23 +30,23 @@ setup(
     install_requires=[
         'pytango',
         'jsonschema',
-        'ska-sdp-logging'
+        'ska-sdp-config>=0.0.8',
+        'ska-sdp-logging>=0.0.6'
     ],
     entry_points={
         'console_scripts': ['SDPSubarray = SDPSubarray:main']
     },
     setup_requires=['pytest-runner'],
     tests_require=[
+        'pylint2junit',
         'pytest',
-        'pytest-pylint',
-        'pytest-pycodestyle',
-        'pytest-pydocstyle',
-        'pytest_bdd',
-        'pyassert',
+        'pytest-bdd',
         'pytest-cov',
         'pytest-json-report',
-        'pylint2junit',
-
+        'pytest-pycodestyle',
+        'pytest-pydocstyle',
+        'pytest-pylint',
+        'ska-telescope-model'
     ],
     zip_safe=False,
     classifiers=[

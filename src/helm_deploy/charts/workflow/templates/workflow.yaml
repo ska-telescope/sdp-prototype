@@ -31,4 +31,4 @@ spec:
         args:
           - {{ .Values.pb_id }}
       restartPolicy: Never
-  backoffLimit: 4
+  backoffLimit: 0

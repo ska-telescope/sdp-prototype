@@ -37,15 +37,6 @@
       <type xsi:type="pogoDsl:StringType"/>
       <status abstract="false" inherited="true" concrete="true"/>
     </deviceProperties>
-    <commands name="Abort" description="Change obsState to ABORTED." execMethod="abort" displayLevel="OPERATOR" polledPeriod="0">
-      <argin description="">
-        <type xsi:type="pogoDsl:VoidType"/>
-      </argin>
-      <argout description="">
-        <type xsi:type="pogoDsl:VoidType"/>
-      </argout>
-      <status abstract="false" inherited="true" concrete="true"/>
-    </commands>
     <commands name="ConfigureCapability" description="Configures number of instances for each capability. If the capability exists, &#xA;it increments the configured instances by the number of instances requested, &#xA;otherwise an exception will be raised.&#xA;Note: The two lists arguments must be of equal length or an exception will be raised." execMethod="configure_capability" displayLevel="OPERATOR" polledPeriod="0">
       <argin description="[Number of instances to add][Capability types]">
         <type xsi:type="pogoDsl:LongStringArrayType"/>
@@ -99,6 +90,24 @@
         <type xsi:type="pogoDsl:StateType"/>
       </argout>
       <status abstract="true" inherited="true" concrete="true"/>
+    </commands>
+    <commands name="On" description="" execMethod="on" displayLevel="OPERATOR" polledPeriod="0">
+      <argin description="Sets the subarray device into its Operational state.">
+        <type xsi:type="pogoDsl:StringArrayType"/>
+      </argin>
+      <argout description="Sets the subarray device into its Operational state.">
+        <type xsi:type="pogoDsl:StringArrayType"/>
+      </argout>
+      <status abstract="false" inherited="true" concrete="true" concreteHere="true"/>
+    </commands>
+    <commands name="Off" description="" execMethod="off" displayLevel="OPERATOR" polledPeriod="0">
+      <argin description="Sets the subarray device to inactive state.">
+        <type xsi:type="pogoDsl:StringArrayType"/>
+      </argin>
+      <argout description="Sets the subarray device to inactive state.">
+        <type xsi:type="pogoDsl:StringArrayType"/>
+      </argout>
+      <status abstract="false" inherited="true" concrete="true" concreteHere="true"/>
     </commands>
     <commands name="AssignResources" description="" execMethod="assign_resources" displayLevel="OPERATOR" polledPeriod="0">
       <argin description="List of Resources to add to subarray.">
@@ -163,7 +172,34 @@
       </argout>
       <status abstract="false" inherited="true" concrete="true" concreteHere="true"/>
     </commands>
-    <commands name="Reset" description="Reset device to its default state" execMethod="reset" displayLevel="OPERATOR" polledPeriod="0">
+    <commands name="End" description="End device to its default state" execMethod="end" displayLevel="OPERATOR" polledPeriod="0">
+      <argin description="">
+        <type xsi:type="pogoDsl:VoidType"/>
+      </argin>
+      <argout description="">
+        <type xsi:type="pogoDsl:VoidType"/>
+      </argout>
+      <status abstract="false" inherited="true" concrete="true"/>
+    </commands>
+    <commands name="Abort" description="End device to its default state" execMethod="abort" displayLevel="OPERATOR" polledPeriod="0">
+      <argin description="">
+        <type xsi:type="pogoDsl:VoidType"/>
+      </argin>
+      <argout description="">
+        <type xsi:type="pogoDsl:VoidType"/>
+      </argout>
+      <status abstract="false" inherited="true" concrete="true"/>
+    </commands>
+    <commands name="ObsReset" description="End device to its default state" execMethod="obs_reset" displayLevel="OPERATOR" polledPeriod="0">
+      <argin description="">
+        <type xsi:type="pogoDsl:VoidType"/>
+      </argin>
+      <argout description="">
+        <type xsi:type="pogoDsl:VoidType"/>
+      </argout>
+      <status abstract="false" inherited="true" concrete="true"/>
+    </commands>
+    <commands name="Restart" description="End device to its default state" execMethod="restart" displayLevel="OPERATOR" polledPeriod="0">
       <argin description="">
         <type xsi:type="pogoDsl:VoidType"/>
       </argin>

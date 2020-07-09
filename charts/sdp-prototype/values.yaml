@@ -2,12 +2,13 @@
 # Feature toggles
 feature:
   # Tango devices connect to configuration DB?
-  config-db: "1"
+  config-db: 1
+
 
 # Helm deployment controller
 helm_deploy:
   image: nexus.engageska-portugal.pt/sdp-prototype/helm-deploy
-  version: 0.5.0
+  version: 0.5.1
   imagePullPolicy: IfNotPresent
   replicas: 1
   namespace: sdp
@@ -49,7 +50,7 @@ tangods:
     imagePullPolicy: IfNotPresent
   subarray:
     image: nexus.engageska-portugal.pt/sdp-prototype/tangods_sdp_subarray
-    version: 0.9.0
+    version: 0.11.0
     imagePullPolicy: IfNotPresent
 
 # Console
