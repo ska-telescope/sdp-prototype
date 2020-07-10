@@ -1,6 +1,6 @@
 FROM python:3.7
 
-ARG HELM_VERSION=3.2.0
+ARG HELM_VERSION=3.2.4
 
 RUN apt-get update && apt-get install -y curl git && rm -rf /var/lib/apt/lists/*
 
