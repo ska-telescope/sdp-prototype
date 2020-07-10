@@ -20,10 +20,20 @@ If you have a fresh install of Helm, you need to add the `stable` repository:
 $ helm repo add stable https://kubernetes-charts.storage.googleapis.com/
 ```
 
-The `etcd-operator` chart is installed with:
+The `sdp-prototype` charts directory contains a file called
+`etcd-operator.yaml` with settings for the chart. This turns off parts which
+are not used (the backup and restore operators).
+
+First go to the charts directory:
 
 ```console
-$ helm install etcd stable/etcd-operator
+$ cd [sdp-prototype]/charts
+```
+
+Then install the `etcd-operator` chart with:
+
+```console
+$ helm install etcd stable/etcd-operator -f etcd-operator.yaml
 ```
 
 If you now execute:
@@ -40,14 +50,8 @@ a  chance it will fail.
 Deploying the SDP
 -----------------
 
-At this point you should be able to deploy the SDP. First go to the charts
-directory:
-
-```console
-$ cd [sdp-prototype]/charts
-```
-
-Then install the `sdp-prototype` chart with the release name `test`:
+At this point you should be able to deploy the SDP. Install the `sdp-prototype`
+chart with the release name `test`:
 
 ```console
 $ helm install test sdp-prototype

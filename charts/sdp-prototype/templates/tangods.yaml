@@ -1,3 +1,4 @@
+{{ if .Values.tangods.enabled }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -43,7 +44,7 @@ spec:
             name: {{ include "sdp-prototype.fullname" . }}-tangods-configuration
       initContainers:
 {{- if index .Values "feature" "config-db" }}
-{{ include "sdp-prototype.wait-for-etcd" . | nindent 8 }}
+{{- include "sdp-prototype.wait-for-etcd" . | nindent 8 }}
 {{- end }}
         - name: dsconfig
           image: "{{ .Values.dsconfig.image.registry }}/{{ .Values.dsconfig.image.image }}:{{ .Values.dsconfig.image.tag }}"
@@ -101,7 +102,10 @@ spec:
           value: {{ quote (index .Values "feature" "config-db") }}
         - name: TOGGLE_AUTO_REGISTER
           value: "0"
+        - name: TOGGLE_RECEIVE_ADDRESSES_HACK
+          value: {{ quote (index .Values "feature" "receive-addresses-hack") }}
 {{- if index .Values "feature" "config-db" }}
         - name: SDP_CONFIG_HOST
           value: {{ include "sdp-prototype.etcd-host" . }}
 {{- end }}
+{{ end }}

@@ -20,6 +20,7 @@ helm_deploy:
 
 # Configuration database
 etcd:
+  repository: quay.io/coreos/etcd
   version: "3.3"
   replicas: 1
 
@@ -44,6 +45,7 @@ processing_controller:
 
 # Tango devices
 tangods:
+  enabled: true
   master:
     image: nexus.engageska-portugal.pt/sdp-prototype/tangods_sdp_master
     version: 0.3.3
