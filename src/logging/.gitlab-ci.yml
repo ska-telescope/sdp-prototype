@@ -1,40 +1,32 @@
 # GitLab CI jobs for SDP logging library
 
+.env: &env
+  variables:
+    BUILD_PATH: src/logging
+
 # ============================================================================
 # Build Python package
 # ============================================================================
 
 # Executed on a non-master commit
-
 build:ska-sdp-logging_dev:
   extends: .build_python_dev
-  variables:
-    BUILD_PATH: src/logging
+  <<: *env
 
 # Executed on a master commit
-
 build:ska-sdp-logging:
   extends: .build_python_release
-  variables:
-    BUILD_PATH: src/logging
+  <<: *env
 
 # ============================================================================
 # Test Python package
 # ============================================================================
 
 test:ska-sdp-logging:
-  extends: .test_python
-  script:
-    - coverage --version
-    - cd src/logging
-    - python3 setup.py test
-    # Make the coverage report available at the top level, which will merge it.
-    - mv .coverage ../../$CI_JOB_NAME.coverage
-  artifacts:
-    paths:
-      - ./$CI_JOB_NAME.coverage
-    expire_in: 1 week
-    when: always
+  extends:
+    - .test_python
+    - .test_with_coverage
+  <<: *env
 
 # ============================================================================
 # Publish Python package (master only)
@@ -44,5 +36,4 @@ publish:ska-sdp-logging:
   extends: .publish_python_release
   dependencies:
     - build:ska-sdp-logging
-  variables:
-    BUILD_PATH: src/logging
+  <<: *env

@@ -45,6 +45,7 @@ else
     --cov-append
     --cov-branch
     --cov=${DIR}
+    --junitxml=unit-tests.xml
     "
 #    --cov-report=html
 fi

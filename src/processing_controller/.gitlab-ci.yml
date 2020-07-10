@@ -1,21 +1,18 @@
 # GitLab CI jobs for processing controller
 
+.env: &env
+  variables:
+    BUILD_PATH: src/processing_controller
+
 # ============================================================================
 # Test Python package
 # ============================================================================
 
 test:processing_controller:
-  extends: .test_python
-  script:
-    - cd src/processing_controller
-    - python3 setup.py test
-    # Make the coverage report available at the top level, which will merge it.
-    - mv .coverage ../../$CI_JOB_NAME.coverage
-  artifacts:
-    paths:
-      - ./$CI_JOB_NAME.coverage
-    expire_in: 1 week
-    when: always
+  extends:
+    - .test_python
+    - .test_with_coverage
+  <<: *env
 
 # ============================================================================
 # Build Docker development image
@@ -23,8 +20,7 @@ test:processing_controller:
 
 build:processing_controller:
   extends: .build_docker
-  variables:
-    BUILD_PATH: src/processing_controller
+  <<: *env
 
 # ============================================================================
 # Tag and publish Docker image (master only)
@@ -34,5 +30,4 @@ publish:processing_controller:
   extends: .push_docker_nexus
   dependencies:
     - build:processing_controller
-  variables:
-    BUILD_PATH: src/processing_controller
+  <<: *env
