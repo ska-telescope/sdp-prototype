@@ -14,7 +14,7 @@ helm_deploy:
   namespace: sdp
   chart_repo:
     url: https://gitlab.com/ska-telescope/sdp-prototype.git
-    ref: master
+    ref: YAN-340
     path: src/helm_deploy/charts
     refresh: 300
 
@@ -40,7 +40,7 @@ processing_controller:
   resources: {}
   imagePullPolicy: IfNotPresent
   workflows:
-    url: https://gitlab.com/ska-telescope/sdp-prototype/-/raw/master/src/workflows/workflows.json
+    url: https://gitlab.com/ska-telescope/sdp-prototype/-/raw/YAN-340/src/workflows/workflows.json
     refresh: 300
 
 # Tango devices
