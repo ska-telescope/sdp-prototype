@@ -27,8 +27,8 @@ def main(argv):
     log.info("Claimed processing block %s", pb)
 
     # Deploy Vis Receive with 1 worker.
-    log.info("Deploying CBF-SDP Receive Worflow...")
-    deploy_id = 'proc-{}-cbf-sdp'.format(pb.id)
+    log.info("Deploying CBF-SDP Receive Workflow...")
+    deploy_id = 'proc-{}-'.format(pb.id)
     deploy = ska_sdp_config.Deployment(
         deploy_id, "helm", {
             'chart': 'cbf-sdp-simple-pair-example',  # Helm chart deploy/charts/cbf-sdp-simple-pair
