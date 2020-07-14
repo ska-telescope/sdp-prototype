@@ -31,7 +31,7 @@ def main(argv):
     deploy_id = 'proc-{}-cbf-sdp'.format(pb.id)
     deploy = ska_sdp_config.Deployment(
         deploy_id, "helm", {
-            'chart': 'cbf-sdp-simple-pair',  # Helm chart deploy/charts/cbf-sdp-simple-pair
+            'chart': 'cbf-sdp-simple-pair-example',  # Helm chart deploy/charts/cbf-sdp-simple-pair
         })
     for txn in config.txn():
         txn.create_deployment(deploy)
