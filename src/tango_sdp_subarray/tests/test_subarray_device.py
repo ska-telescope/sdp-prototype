@@ -6,6 +6,7 @@
 # pylint: disable=fixme
 
 import json
+import re
 from os.path import dirname, join
 
 import tango
@@ -28,7 +29,7 @@ except ImportError:
 # -----------------------------------------------------------------------------
 
 # Load all scenarios from the specified feature file.
-scenarios('./1_VTS-223-2.feature')
+scenarios('./1_VTS-223-bkm.feature')
 
 
 # -----------------------------------------------------------------------------
@@ -207,6 +208,32 @@ def command_assign_resources_invalid_json(subarray_device):
         subarray_device.AssignResources(config_str)
 
 
+@when(parsers.parse('I call {command_name} with invalid JSON'))
+@when('I call <command_name> with invalid JSON')
+def command_with_invalid_json(subarray_device, command_name):
+    """Call an SDPSubarray command with invalid JSON.
+
+    :param subarray_device: An SDPSubarray device.
+    :param command_name: the name of the command.
+    """
+    print('command_name = ', command_name)
+    command_list = subarray_device.get_command_list()
+    assert command_name in command_list
+    command = getattr(subarray_device, command_name)
+
+    config_file = 'invalid_' + command_name + '.json'
+    path = join(dirname(__file__), 'data', config_file)
+    try:
+        with open(path, 'r') as file:
+            config_str = file.read()
+    except FileNotFoundError:
+        config_str = '{}'
+    print(config_str)
+
+    with pytest.raises(tango.DevFailed):
+        command(config_str)
+
+
 @when('I call ReleaseResources')
 def command_release_resources(subarray_device):
     """Call the ReleaseResources command.
@@ -381,6 +408,18 @@ def obs_state_equals(subarray_device, expected):
     assert subarray_device.obsState == ObsState[expected]
 
 
+@then(parsers.parse('obsState should be {final_obs_state_value}'))
+@then('obsState should be <final_obs_state_value>')
+def final_obs_state_equals(subarray_device, final_obs_state_value):
+    """Check the Subarray obsState attribute value.
+
+        :param subarray_device: An SDPSubarray device.
+        :param final_obs_state_value: The final obsState value.
+        """
+    print(final_obs_state_value)
+    obs_state_equals(subarray_device, final_obs_state_value)
+
+
 @then(parsers.parse('adminMode should be {expected}'))
 def admin_mode_equals(subarray_device, expected):
     """Check the Subarray adminMode value.
@@ -402,6 +441,30 @@ def health_state_equals(subarray_device, expected):
     assert subarray_device.healthState == HealthState[expected]
     if expected == 'OK':
         assert subarray_device.healthState == 0
+
+
+@when(parsers.parse('I call {command_name}'))
+@when('I call <command_name>')
+def call_command(subarray_device, command_name):
+    """Call the correct function to test an SDPSubarray command.
+
+     :param subarray_device: An SDPSubarray device.
+     :param command_name: An SDPSubarray command invoked via a test function
+     """
+    print('command_name = ', command_name)
+    command_list = subarray_device.get_command_list()
+    assert command_name in command_list
+
+    words = re.findall('([A-Z][a-z]*)', command_name)
+    test_command_name = 'command'
+    for word in words:
+        test_command_name += '_' + word.lower()
+    print(test_command_name)
+#  test_command_name = 'command_' + command_name.lower()
+    assert test_command_name in globals()
+    test_command = globals()[test_command_name]
+
+    test_command(subarray_device)
 
 
 @then(parsers.parse('calling {command_name} raises tango.DevFailed'))
