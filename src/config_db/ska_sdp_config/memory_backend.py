@@ -7,9 +7,9 @@ No attempt has been made to make it thread-safe, so it probably isn't.
 """
 from typing import List, Callable
 
-from ska_sdp_config.backend import (_depth, _tag_depth,
-                                    _untag_depth, _check_path,
-                                    ConfigCollision, ConfigVanished)
+from .backend import (_depth, _tag_depth,
+                      _untag_depth, _check_path,
+                      ConfigCollision, ConfigVanished)
 
 
 def _op(path: str, value: str,

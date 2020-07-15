@@ -8,11 +8,11 @@ import time
 import queue as queue_m
 
 import etcd3
-from ska_sdp_config.backend import (
+from .backend import (
     _tag_depth, _untag_depth, _check_path, ConfigCollision, ConfigVanished)
 
 
-class Etcd3:
+class Etcd3Backend:
     """
     Highly consistent database backend store.
 

@@ -15,7 +15,7 @@ PREFIX = "/__test"
 def etcd3():
     host = os.getenv('SDP_TEST_HOST', '127.0.0.1')
     port = os.getenv('SDP_CONFIG_PORT', '2379')
-    with backend.Etcd3(host=host, port=port) as etcd3:
+    with backend.Etcd3Backend(host=host, port=port) as etcd3:
         etcd3.delete(PREFIX, must_exist=False, recursive=True)
         yield etcd3
         etcd3.delete(PREFIX, must_exist=False, recursive=True)

@@ -86,8 +86,6 @@ coverage_report:
     - ./build
     expire_in: 1 week
 
-  extends: .test_python
-
 # Generate linting report.
 linting:
   stage: linting

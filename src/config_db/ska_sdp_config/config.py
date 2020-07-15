@@ -67,7 +67,7 @@ class Config:
             if 'password' not in cargs:
                 cargs['password'] = os.getenv('SDP_CONFIG_PASSWORD', None)
 
-            return etcd_backend.Etcd3(**cargs)
+            return etcd_backend.Etcd3Backend(**cargs)
         else:
             raise ValueError(
                 "Unknown configuration backend {}!".format(backend))
