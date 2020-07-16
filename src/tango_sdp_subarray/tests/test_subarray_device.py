@@ -6,7 +6,6 @@
 # pylint: disable=fixme
 
 import json
-import re
 from os.path import dirname, join
 
 import tango
@@ -29,7 +28,7 @@ except ImportError:
 # -----------------------------------------------------------------------------
 
 # Load all scenarios from the specified feature file.
-scenarios('./1_VTS-223-bkm.feature')
+scenarios('./1_VTS-223.feature')
 
 
 # -----------------------------------------------------------------------------
@@ -43,25 +42,21 @@ def subarray_device(tango_context, admin_mode_value: str):
 
     :param tango_context: fixture providing a TangoTestContext
     :param admin_mode_value: adminMode value the device is created with
-    """
 
+    """
     # Initialise SDPSubarray device
     device = tango_context.device
     device.adminMode = AdminMode[admin_mode_value]
 
-    # Resetting state to OFF and obsState to EMPTY
-    state_value = device.state().name
-    obs_state_value = device.obsState.name
-
-    if state_value == 'OFF' and obs_state_value == 'EMPTY':
+    # Reset state to OFF and obsState to EMPTY
+    if device.state().name == 'OFF' and device.obsState.name == 'EMPTY':
         pass
     else:
-        command_off(device)
-
+        call_command(device, 'Off')
     assert device.state() == DevState.OFF
     assert device.obsState == ObsState.EMPTY
 
-    # Clear the Database
+    # Clear the config DB
     if ska_sdp_config is not None \
             and SDPSubarray.is_feature_active('config_db'):
         config_db_client = ska_sdp_config.Config()
@@ -81,147 +76,120 @@ def subarray_device(tango_context, admin_mode_value: str):
 def init_device(subarray_device):
     """Initialise the subarray device.
 
-    :param subarray_device: An SDPSubarray device.
+    :param subarray_device: an SDPSubarray device
+
     """
     subarray_device.Init()
 
 
-@when(parsers.parse('the state is {state_value}'))
-@when('the state is <state_value>')
-def set_subarray_device_state(subarray_device, state_value: str):
+@when(parsers.parse('the state is {state:S}'))
+def set_subarray_device_state(subarray_device, state: str):
     """Set the device state to the specified value.
 
-    :param subarray_device: An SDPSubarray device.
-    :param state_value: An SDPSubarray state string.
+    :param subarray_device: an SDPSubarray device.
+    :param state: an SDPSubarray state string.
 
     """
-    if state_value == 'OFF':
+    if state == 'OFF':
         pass
-    elif state_value == 'ON':
-        command_on(subarray_device)
+    elif state == 'ON':
+        call_command(subarray_device, 'On')
 
-    assert subarray_device.state() == DevState.names[state_value]
+    assert subarray_device.state() == DevState.names[state]
 
 
-@when(parsers.parse('obsState is {obs_state_value}'))
-@when('obsState is <obs_state_value>')
-def set_subarray_device_obstate(subarray_device, obs_state_value: str):
+@when(parsers.parse('obsState is {initial_obs_state:S}'))
+@when('obsState is <initial_obs_state>')
+def set_subarray_device_obstate(subarray_device, initial_obs_state: str):
     """Set the obsState to the specified value.
 
-    :param subarray_device: An SDPSubarray device.
-    :param obs_state_value: An SDPSubarray ObsState enum string.
+    :param subarray_device: an SDPSubarray device
+    :param initial_obs_state: an SDPSubarray ObsState enum string
 
     If the device state is OFF, this function turns in ON.
 
     """
     # If the state is OFF, call the On command
     if subarray_device.state() == DevState.OFF:
-        command_on(subarray_device)
+        call_command(subarray_device, 'On')
 
     # Set obsState by calling commands
-    if obs_state_value == 'EMPTY':
+    if initial_obs_state == 'EMPTY':
         pass
-    elif obs_state_value == 'IDLE':
-        command_assign_resources(subarray_device)
-    elif obs_state_value == 'READY':
-        command_assign_resources(subarray_device)
-        command_configure(subarray_device)
-    elif obs_state_value == 'SCANNING':
-        command_assign_resources(subarray_device)
-        command_configure(subarray_device)
-        command_scan(subarray_device)
-    elif obs_state_value == 'ABORTED':
-        command_assign_resources(subarray_device)
-        command_abort(subarray_device)
-    elif obs_state_value == 'FAULT':
+    elif initial_obs_state == 'IDLE':
+        call_command(subarray_device, 'AssignResources')
+    elif initial_obs_state == 'READY':
+        call_command(subarray_device, 'AssignResources')
+        call_command(subarray_device, 'Configure')
+    elif initial_obs_state == 'SCANNING':
+        call_command(subarray_device, 'AssignResources')
+        call_command(subarray_device, 'Configure')
+        call_command(subarray_device, 'Scan')
+    elif initial_obs_state == 'ABORTED':
+        call_command(subarray_device, 'AssignResources')
+        call_command(subarray_device, 'Abort')
+    elif initial_obs_state == 'FAULT':
         # Note this configures an SBI
-        command_assign_resources(subarray_device)
-        command_configure_invalid_json(subarray_device)
+        call_command(subarray_device, 'AssignResources')
+        call_command_with_invalid_json(subarray_device, 'Configure')
     else:
-        raise ValueError(
-            'obsState {} not settable with commands'.format(obs_state_value)
-        )
+        msg = 'obsState {} is not settable with commands'
+        raise ValueError(msg.format(initial_obs_state))
 
-    # Check obs_state value
-    assert subarray_device.ObsState == ObsState[obs_state_value]
-
-
-@when('I call On')
-def command_on(subarray_device):
-    """Call the ReleaseResources command.
-
-    :param subarray_device: An SDPSubarray device.
-    """
-    assert 'On' in subarray_device.get_command_list()
-    command_info = subarray_device.get_command_config('On')
-    assert command_info.in_type == tango.DevVoid
-    assert command_info.out_type == tango.DevVoid
-
-    subarray_device.On()
+    # Check obsState
+    assert subarray_device.ObsState == ObsState[initial_obs_state]
 
 
-@when('I call Off')
-def command_off(subarray_device):
-    """Call the ReleaseResources command.
+@when(parsers.parse('I call {command:S}'))
+@when('I call <command>')
+def call_command(subarray_device, command):
+    """Call an SDPSubarray command.
 
-    :param subarray_device: An SDPSubarray device.
-    """
-    assert 'Off' in subarray_device.get_command_list()
-    command_info = subarray_device.get_command_config('Off')
-    assert command_info.in_type == tango.DevVoid
-    assert command_info.out_type == tango.DevVoid
+     :param subarray_device: an SDPSubarray device
+     :param command: the name of the command
 
-    subarray_device.Off()
+     """
+    print('command = ', command)
+    command_list = subarray_device.get_command_list()
+    assert command in command_list
+    command_config = subarray_device.get_command_config(command)
+    # Get command function
+    command_func = getattr(subarray_device, command)
 
-
-@when('I call AssignResources')
-def command_assign_resources(subarray_device):
-    """Call the AssignResources command.
-
-    :param subarray_device: An SDPSubarray device.
-    """
-    assert 'AssignResources' in subarray_device.get_command_list()
-    command_info = subarray_device.get_command_config('AssignResources')
-    assert command_info.in_type == tango.DevString
-    assert command_info.out_type == tango.DevVoid
-
-    config_file = 'command_AssignResources.json'
-    path = join(dirname(__file__), 'data', config_file)
-    with open(path, 'r') as file:
-        config_str = file.read()
-
-    subarray_device.AssignResources(config_str)
-
-
-@when('I call AssignResources with invalid JSON')
-def command_assign_resources_invalid_json(subarray_device):
-    """Call the AssignResources command with invalid JSON.
-
-    :param subarray_device: An SDPSubarray device.
-    """
-    config_file = 'invalid_AssignResources.json'
-    path = join(dirname(__file__), 'data', config_file)
-    with open(path, 'r') as file:
-        config_str = file.read()
-
-    with pytest.raises(tango.DevFailed):
-        subarray_device.AssignResources(config_str)
+    if command_config.in_type == tango.DevVoid:
+        command_func()
+    elif command_config.in_type == tango.DevString:
+        # Read the configuration string for the command
+        config_file = 'command_{}.json'.format(command)
+        path = join(dirname(__file__), 'data', config_file)
+        try:
+            with open(path, 'r') as file:
+                config_str = file.read()
+        except FileNotFoundError:
+            msg = 'Cannot read configuration string for {} command'
+            raise ValueError(msg.format(command))
+        # Call the command
+        command_func(config_str)
+    else:
+        msg = 'Test cannot handle argument of type {}'
+        raise ValueError(msg.format(command_config.in_type))
 
 
-@when(parsers.parse('I call {command_name} with invalid JSON'))
-@when('I call <command_name> with invalid JSON')
-def command_with_invalid_json(subarray_device, command_name):
+@when(parsers.parse('I call {command:S} with an invalid JSON configuration'))
+@when('I call <command> with an invalid JSON configuration')
+def call_command_with_invalid_json(subarray_device, command):
     """Call an SDPSubarray command with invalid JSON.
 
-    :param subarray_device: An SDPSubarray device.
-    :param command_name: the name of the command.
-    """
-    print('command_name = ', command_name)
-    command_list = subarray_device.get_command_list()
-    assert command_name in command_list
-    command = getattr(subarray_device, command_name)
+    :param subarray_device: an SDPSubarray device
+    :param command: the name of the command
 
-    config_file = 'invalid_' + command_name + '.json'
+    """
+    command_list = subarray_device.get_command_list()
+    assert command in command_list
+    # Get the command function
+    command_func = getattr(subarray_device, command)
+
+    config_file = 'command_{}_invalid.json'.format(command)
     path = join(dirname(__file__), 'data', config_file)
     try:
         with open(path, 'r') as file:
@@ -231,196 +199,35 @@ def command_with_invalid_json(subarray_device, command_name):
     print(config_str)
 
     with pytest.raises(tango.DevFailed):
-        command(config_str)
-
-
-@when('I call ReleaseResources')
-def command_release_resources(subarray_device):
-    """Call the ReleaseResources command.
-
-    :param subarray_device: An SDPSubarray device.
-    """
-    assert 'ReleaseResources' in subarray_device.get_command_list()
-    command_info = subarray_device.get_command_config('ReleaseResources')
-    assert command_info.in_type == tango.DevVoid
-    assert command_info.out_type == tango.DevVoid
-
-    subarray_device.ReleaseResources()
-
-
-@when('I call Configure')
-def command_configure(subarray_device):
-    """Call the Configure command.
-
-    :param subarray_device: An SDPSubarray device.
-    """
-    assert 'Configure' in subarray_device.get_command_list()
-    command_info = subarray_device.get_command_config('Configure')
-    assert command_info.in_type == tango.DevString
-    assert command_info.out_type == tango.DevVoid
-
-    config_file = 'command_Configure.json'
-    path = join(dirname(__file__), 'data', config_file)
-    with open(path, 'r') as file:
-        config_str = file.read()
-
-    subarray_device.Configure(config_str)
-
-
-@when('I call Configure with invalid JSON')
-def command_configure_invalid_json(subarray_device):
-    """Call the Configure command with invalid JSON.
-
-    :param subarray_device: An SDPSubarray device.
-    """
-    config_file = 'invalid_Configure.json'
-    path = join(dirname(__file__), 'data', config_file)
-    with open(path, 'r') as file:
-        config_str = file.read()
-
-    with pytest.raises(tango.DevFailed):
-        subarray_device.Configure(config_str)
-
-
-@when('I call End')
-def command_end(subarray_device):
-    """Call the End command.
-
-    :param subarray_device: An SDPSubarray device.
-    """
-    assert 'End' in subarray_device.get_command_list()
-    command_info = subarray_device.get_command_config('End')
-    assert command_info.in_type == tango.DevVoid
-    assert command_info.out_type == tango.DevVoid
-
-    subarray_device.End()
-
-
-@when('I call Scan')
-def command_scan(subarray_device):
-    """Call the Scan command.
-
-    :param subarray_device: An SDPSubarray device.
-    """
-    assert 'Scan' in subarray_device.get_command_list()
-    command_info = subarray_device.get_command_config('Scan')
-    assert command_info.in_type == tango.DevString
-    assert command_info.out_type == tango.DevVoid
-
-    config_file = 'command_Scan.json'
-    path = join(dirname(__file__), 'data', config_file)
-    with open(path, 'r') as file:
-        config_str = file.read()
-
-    subarray_device.Scan(config_str)
-
-
-@when('I call Scan with invalid JSON')
-def command_scan_invalid_json(subarray_device):
-    """Call the Scan command with invalid JSON.
-
-    :param subarray_device: An SDPSubarray device.
-    """
-
-    with pytest.raises(tango.DevFailed):
-        subarray_device.Scan('{}')
-
-
-@when('I call EndScan')
-def command_end_scan(subarray_device):
-    """Call the EndScan command.
-
-    :param subarray_device: An SDPSubarray device.
-    """
-    assert 'EndScan' in subarray_device.get_command_list()
-    command_info = subarray_device.get_command_config('EndScan')
-    assert command_info.in_type == tango.DevVoid
-    assert command_info.out_type == tango.DevVoid
-
-    subarray_device.EndScan()
-
-
-@when('I call Abort')
-def command_abort(subarray_device):
-    """Call the Abort command.
-
-    :param subarray_device: An SDPSubarray device.
-    """
-    # TODO Need to think about how to set CONFIGURING AND RESETTING state
-    assert 'Abort' in subarray_device.get_command_list()
-    command_info = subarray_device.get_command_config('Abort')
-    assert command_info.in_type == tango.DevVoid
-    assert command_info.out_type == tango.DevVoid
-
-    subarray_device.Abort()
-
-
-@when('I call ObsReset')
-def command_obs_reset(subarray_device):
-    """Call the ObsReset command.
-
-    :param subarray_device: An SDPSubarray device.
-    """
-    assert 'ObsReset' in subarray_device.get_command_list()
-    command_info = subarray_device.get_command_config('ObsReset')
-    assert command_info.in_type == tango.DevVoid
-    assert command_info.out_type == tango.DevVoid
-
-    subarray_device.ObsReset()
-
-
-@when('I call Restart')
-def command_restart(subarray_device):
-    """Call the Restart command.
-
-    :param subarray_device: An SDPSubarray device.
-    """
-    assert 'Restart' in subarray_device.get_command_list()
-    command_info = subarray_device.get_command_config('Restart')
-    assert command_info.in_type == tango.DevVoid
-    assert command_info.out_type == tango.DevVoid
-
-    subarray_device.Restart()
-
+        command_func(config_str)
 
 # -----------------------------------------------------------------------------
 # Then Steps : Describe an expected outcome or result
 # -----------------------------------------------------------------------------
 
 
-@then(parsers.parse('the state should be {expected}'))
+@then(parsers.parse('the state should be {expected:S}'))
 def device_state_equals(subarray_device, expected):
     """Check the Subarray device device state.
 
-    :param subarray_device: An SDPSubarray device.
-    :param expected: The expected device state.
+    :param subarray_device: an SDPSubarray device.
+    :param expected: the expected device state.
     """
     assert subarray_device.state() == DevState.names[expected]
 
 
-@then(parsers.parse('obsState should be {expected}'))
-def obs_state_equals(subarray_device, expected):
+@then(parsers.parse('obsState should be {final_obs_state:S}'))
+@then('obsState should be <final_obs_state>')
+def obs_state_equals(subarray_device, final_obs_state):
     """Check the Subarray obsState attribute value.
 
-    :param subarray_device: An SDPSubarray device.
-    :param expected: The expected obsState.
+    :param subarray_device: an SDPSubarray device.
+    :param final_obs_state: the expected obsState.
     """
-    assert subarray_device.obsState == ObsState[expected]
+    assert subarray_device.obsState == ObsState[final_obs_state]
 
 
-@then(parsers.parse('obsState should be {final_obs_state_value}'))
-@then('obsState should be <final_obs_state_value>')
-def final_obs_state_equals(subarray_device, final_obs_state_value):
-    """Check the Subarray obsState attribute value.
-
-        :param subarray_device: An SDPSubarray device.
-        :param final_obs_state_value: The final obsState value.
-        """
-    print(final_obs_state_value)
-    obs_state_equals(subarray_device, final_obs_state_value)
-
-
-@then(parsers.parse('adminMode should be {expected}'))
+@then(parsers.parse('adminMode should be {expected:S}'))
 def admin_mode_equals(subarray_device, expected):
     """Check the Subarray adminMode value.
 
@@ -431,7 +238,7 @@ def admin_mode_equals(subarray_device, expected):
         "actual != expected"
 
 
-@then(parsers.parse('healthState should be {expected}'))
+@then(parsers.parse('healthState should be {expected:S}'))
 def health_state_equals(subarray_device, expected):
     """Check the Subarray healthState value.
 
@@ -443,54 +250,60 @@ def health_state_equals(subarray_device, expected):
         assert subarray_device.healthState == 0
 
 
-@when(parsers.parse('I call {command_name}'))
-@when('I call <command_name>')
-def call_command(subarray_device, command_name):
-    """Call the correct function to test an SDPSubarray command.
+@then('the input type of <command> should be <input_type>')
+def command_input_type_equals(subarray_device, command, input_type):
+    """Check input type of a command.
 
-     :param subarray_device: An SDPSubarray device.
-     :param command_name: An SDPSubarray command invoked via a test function
-     """
-    print('command_name = ', command_name)
-    command_list = subarray_device.get_command_list()
-    assert command_name in command_list
+    :param subarray_device: an SDPSubarray device
+    :param command: the command name
+    :param input_type: the expected input type
 
-    words = re.findall('([A-Z][a-z]*)', command_name)
-    test_command_name = 'command'
-    for word in words:
-        test_command_name += '_' + word.lower()
-    print(test_command_name)
-#  test_command_name = 'command_' + command_name.lower()
-    assert test_command_name in globals()
-    test_command = globals()[test_command_name]
-
-    test_command(subarray_device)
+    """
+    assert command in subarray_device.get_command_list()
+    command_config = subarray_device.get_command_config(command)
+    assert command_config.in_type == getattr(tango, input_type)
 
 
-@then(parsers.parse('calling {command_name} raises tango.DevFailed'))
-@then('calling <command_name> raises tango.DevFailed')
-def command_raises_dev_failed_error(subarray_device, command_name):
+@then('the output type of <command> should be <output_type>')
+def command_output_type_equals(subarray_device, command, output_type):
+    """Check output type of a command.
+
+    :param subarray_device: an SDPSubarray device.
+    :param command: the command name
+    :param output_type: the expected output type
+
+    """
+    assert command in subarray_device.get_command_list()
+    command_config = subarray_device.get_command_config(command)
+    assert command_config.out_type == getattr(tango, output_type)
+
+
+@then(parsers.parse('calling {command:S} raises tango.DevFailed'))
+@then('calling <command> raises tango.DevFailed')
+def command_raises_dev_failed_error(subarray_device, command):
     """Check that calling command raises a tango.DevFailed error.
 
     :param subarray_device: An SDPSubarray device.
-    :param command_name: the name of the command.
+    :param command: the name of the command.
     """
-    print('command_name = ', command_name)
+    print('command = ', command)
     command_list = subarray_device.get_command_list()
-    assert command_name in command_list
-    command = getattr(subarray_device, command_name)
-    command_info = subarray_device.get_command_config(command_name)
+    assert command in command_list
+    command_config = subarray_device.get_command_config(command)
+    # Get the command function
+    command_func = getattr(subarray_device, command)
 
     with pytest.raises(tango.DevFailed):
-        if command_info.in_type == tango.DevVoid:
-            command()
-        elif command_info.in_type == tango.DevString:
-            command('{}')
+        if command_config.in_type == tango.DevVoid:
+            command_func()
+        elif command_config.in_type == tango.DevString:
+            command_func('{}')
         else:
-            raise ValueError('Test cannot handle command input type')
+            msg = 'Test cannot handle command input of type {}'
+            raise ValueError(msg.format(command_config.in_type))
 
 
-@then('the configured Processing Blocks should be in the Config DB')
+@then('the processing blocks should be in the config DB')
 def check_config_db():
     """Check that the config DB has the configured PBs.
 
@@ -520,10 +333,7 @@ def receive_addresses_attribute_ok(subarray_device):
 
     if ska_sdp_config is not None \
             and SDPSubarray.is_feature_active('config_db'):
-        if SDPSubarray.is_feature_active('RECEIVE_ADDRESSES_HACK'):
-            validate_sdp_receive_addresses(2, receive_addresses, 2)
-        else:
-            validate_sdp_receive_addresses(3, receive_addresses, 2)
+        validate_sdp_receive_addresses(3, receive_addresses, 2)
 
 
 @then('the receiveAddresses attribute should return an empty JSON object')
