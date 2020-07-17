@@ -6,9 +6,9 @@ Feature: SDP Subarray Device
 	#
 	#Note that this has been updated by ADR-3.
 
-	#Device is initialised into the correct state.
+
 	@XTP-119 @XTP-118 @Current
-	Scenario: Device startup
+	Scenario: Device is initialised in the correct state
 		Given I have an OFFLINE SDPSubarray device
 		When the device is initialised
 		Then the state should be OFF
@@ -17,9 +17,9 @@ Feature: SDP Subarray Device
 		And healthState should be OK
 
 
-	#Expected commands are present, and that they have the correct argument type and return type.
+	#Required commands are present and they have the correct argument type and return type.
 	@XTP-969 @XTP-118 @Current
-	Scenario Outline: Commands are present and have correct input and output types
+	Scenario Outline: Command is present and has correct input and output types
 		Given I have an OFFLINE SDPSubarray Device
 		When the device is initialised
 		Then the input type of <command> should be <input_type>
@@ -42,7 +42,7 @@ Feature: SDP Subarray Device
 
 	#All commands, apart from On, are rejected when the state is OFF.
 	@XTP-949 @XTP-118 @Current
-	Scenario Outline: Commands rejected when the state is OFF
+	Scenario Outline: Command is rejected when the state is OFF
 		Given I have an ONLINE SDPSubarray device
 		When the state is OFF
 		Then calling <command> raises tango.DevFailed
@@ -92,7 +92,7 @@ Feature: SDP Subarray Device
 
 	#Commands succeed in obsStates where they are allowed and transition to the correct final obsState.
 	@XTP-971 @XTP-118 @Current
-	Scenario Outline: Commands succeed in allowed obsStates
+	Scenario Outline: Command succeeds in allowed obsState
 		Given I have an ONLINE SDPSubarray device
 		When obsState is <initial_obs_state>
 		And I call <command>
@@ -118,7 +118,7 @@ Feature: SDP Subarray Device
 
 	#Commands are rejected when called in obsStates where they are not allowed.
 	@XTP-972 @XTP-118 @Current
-	Scenario Outline: Commands rejected in disallowed obsStates
+	Scenario Outline: Command is rejected in disallowed obsState
 		Given I have an ONLINE SDPSubarray device
 		When obsState is <initial_obs_state>
 		Then calling <command> raises tango.DevFailed
@@ -169,7 +169,7 @@ Feature: SDP Subarray Device
 
 	#Commands that take a JSON configuration string fail when it is invalid and transition to obsState = FAULT.
 	@XTP-965 @XTP-118 @Current
-	Scenario Outline: Commands fail with an invalid JSON configuration
+	Scenario Outline: Command fails with an invalid JSON configuration
 		Given I have an ONLINE SDPSubarray device
 		When obsState is <initial_obs_state>
 		And I call <command> with an invalid JSON configuration
