@@ -19,40 +19,38 @@ load_dotenv()
 
 # Load environment
 HELM = shutil.which(os.getenv('SDP_HELM', 'helm'))
-HELM_TIMEOUT = int(os.getenv('SDP_HELM_TIMEOUT', str(300)))
-HELM_REPO = os.getenv('SDP_HELM_REPO')
-HELM_REPO_CA = os.getenv('SDP_HELM_REPO_CA')
+HELM_TIMEOUT = int(os.getenv('SDP_HELM_TIMEOUT', '300'))
 NAMESPACE = os.getenv('SDP_HELM_NAMESPACE', 'sdp')
+CHART_REPO_URL = os.getenv('SDP_CHART_REPO_URL', 'https://gitlab.com/ska-telescope/sdp-prototype/-/raw/master/src/helm_deploy/chart-repo/')
+CHART_REPO_REFRESH = int(os.getenv('SDP_CHART_REPO_REFRESH', '300'))
 LOG_LEVEL = os.getenv('SDP_LOG_LEVEL', 'DEBUG')
 
-GIT = shutil.which(os.getenv("SDP_GIT", 'git'))
-CHART_REPO = os.getenv('SDP_CHART_REPO', 'https://gitlab.com/ska-telescope/sdp-prototype.git')
-CHART_REPO_REF = os.getenv('SDP_CHART_REPO_REF', 'master')
-CHART_REPO_PATH = os.getenv('SDP_CHART_REPO_PATH', 'src/helm_deploy/charts')
-CHART_REPO_REFRESH = int(os.getenv('SDP_CHART_REFRESH', '300'))
+# Name to use for the Helm deployer's own repository
+CHART_REPO_NAME = 'helmdeploy'
+# Chart repositories to use, as a list of (name, url) pairs
+CHART_REPO_LIST = [
+    (CHART_REPO_NAME, CHART_REPO_URL),
+    ('dask', 'https://helm.dask.org/')
+]
 
 # Initialise logger
 log = core_logging.init(name='helm_deploy', level=LOG_LEVEL)
 
-# Where we are going to check out the charts
-chart_base_path = 'chart-repo'
-chart_path = os.path.join(chart_base_path, CHART_REPO_PATH)
 
-
-def invoke(*cmd_line, cwd):
+def invoke(*cmd_line):
     """Invoke a command with the given command-line arguments
 
-    :param cwd: Directory to run command in
     :returns: Output of the command
     :raises: `subprocess.CalledProcessError` if command returns an error status
     """
     # Perform call
     log.debug(" ".join(["$"] + list(cmd_line)))
     result = subprocess.run(
-        cmd_line, stdout=subprocess.PIPE,
+        cmd_line,
+        stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
-        timeout=HELM_TIMEOUT,
-        cwd=cwd)
+        timeout=HELM_TIMEOUT
+    )
     # Log results
     log.debug("Code: {}".format(result.returncode))
     out = result.stdout.decode()
@@ -68,31 +66,7 @@ def helm_invoke(*args):
     :returns: Output of the command
     :raises: `subprocess.CalledProcessError` if command returns an error status
     """
-    return invoke(*([HELM] + list(args)), cwd=chart_path)
-
-
-def update_chart_repos():
-    """Update the chart repository."""
-    # Does not exist? Initialise
-    if not os.path.exists(chart_base_path):
-        log.info("Initialising chart repos in {}".format(chart_path))
-        os.mkdir(chart_base_path)
-        invoke(GIT, "init", cwd=chart_base_path)
-        invoke(GIT, "config", "core.sparseCheckout", "true",
-               cwd=chart_base_path)
-        with open(os.path.join(chart_base_path, ".git", "info",
-                               "sparse-checkout"), "w") as f:
-            print(CHART_REPO_PATH, file=f)
-        invoke(GIT, "remote", "add", "origin", CHART_REPO,
-               cwd=chart_base_path)
-        invoke(GIT, "fetch", "--depth", "1", "origin", CHART_REPO_REF,
-               cwd=chart_base_path)
-        invoke(GIT, "checkout", CHART_REPO_REF,
-               cwd=chart_base_path)
-    else:
-        log.info("Refreshing chart repos in {}".format(chart_path))
-        invoke(GIT, "pull", "origin", CHART_REPO_REF,
-               cwd=chart_base_path)
+    return invoke(*([HELM] + list(args)))
 
 
 def delete_helm(txn, dpl_id):
@@ -112,13 +86,14 @@ def create_helm(txn, dpl_id, deploy):
     # Attempt install
     log.info("Creating deployment {}...".format(dpl_id))
 
+    # Get chart name. If it does not contain '/', it is from the private
+    # repository
+    chart = deploy.args.get('chart')
+    if '/' not in chart:
+        chart = CHART_REPO_NAME + '/' + chart
+
     # Build command line
-    cmd = ['install', dpl_id, deploy.args.get('chart'),
-           '-n', NAMESPACE]
-    if HELM_REPO is not None:
-        cmd.extend(['--repo', HELM_REPO])
-    if HELM_REPO_CA is not None:
-        cmd.extend(['--ca-file', HELM_REPO_CA])
+    cmd = ['install', dpl_id, chart, '-n', NAMESPACE]
 
     # Encode any parameters
     if 'values' in deploy.args and isinstance(deploy.args, dict):
@@ -156,13 +131,12 @@ def main():
 
     # TODO: Service lease + leader election
 
-    # Obtain charts
-    update_chart_repos()
-    next_chart_refresh = time.time() + CHART_REPO_REFRESH
-
-    # Load Helm repository
-    helm_invoke("repo", "add", "dask", "https://helm.dask.org/")
+    # Load Helm repositories
+    for name, url in CHART_REPO_LIST:
+        helm_invoke("repo", "add", name, url)
     helm_invoke("repo", "update")
+
+    next_chart_refresh = time.time() + CHART_REPO_REFRESH
 
     # Show
     log.info("Loading helm deployments...")
@@ -182,12 +156,7 @@ def main():
             try:
                 helm_invoke("repo", "update")
             except subprocess.CalledProcessError as e:
-                log.error("Could not refresh global chart repository!")
-
-            try:
-                update_chart_repos()
-            except subprocess.CalledProcessError as e:
-                log.error("Could not refresh chart repository!")
+                log.error("Could not refresh chart repositories")
 
         # List deployments
         target_deploys = txn.list_deployments()
