@@ -1,15 +1,12 @@
-"""
-Backend database modules for SKA SDP configuration information.
-
-At the moment we only support etcd3.
-"""
+"""Etcd3 backend for SKA SDP configuration DB."""
 
 import time
 import queue as queue_m
 
 import etcd3
-from .backend import (
-    _tag_depth, _untag_depth, _check_path, ConfigCollision, ConfigVanished)
+from .common import (
+    _tag_depth, _untag_depth, _check_path, ConfigCollision, ConfigVanished
+)
 
 
 class Etcd3Backend:

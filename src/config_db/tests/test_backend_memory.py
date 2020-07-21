@@ -1,6 +1,8 @@
 import pytest
-from ska_sdp_config.backend import ConfigVanished, ConfigCollision
-from ska_sdp_config.memory_backend import MemoryBackend, MemoryTransaction
+from ska_sdp_config.backend import (
+    ConfigVanished, ConfigCollision, MemoryBackend
+)
+from ska_sdp_config.backend.memory import MemoryTransaction
 
 
 @pytest.fixture

@@ -24,7 +24,11 @@ setuptools.setup(
         'Topic :: Scientific/Engineering :: Astronomy',
         'Topic :: System :: Distributed Computing',
     ],
-    packages=['ska_sdp_config', 'ska_sdp_config/entity'],
+    packages=[
+        'ska_sdp_config',
+        'ska_sdp_config/backend',
+        'ska_sdp_config/entity'
+    ],
     test_suite='tests',
     tests_require=['pytest'],
     scripts=['scripts/sdpcfg']

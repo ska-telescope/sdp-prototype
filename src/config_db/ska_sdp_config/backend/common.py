@@ -1,4 +1,4 @@
-"""Some generic functionality for implementing backends."""
+"""Common functionality for implementing backends."""
 
 
 # Some utilities for handling tagging paths.

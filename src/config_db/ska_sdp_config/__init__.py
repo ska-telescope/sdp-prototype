@@ -7,8 +7,8 @@ database. This library provides primitives for atomic queries and
 updates to the stored configuration information.
 """
 
-from .config import Config
 from .backend import ConfigCollision, ConfigVanished
+from .config import Config
 from .entity import ProcessingBlock, Deployment
 
 __version__ = '0.0.8'

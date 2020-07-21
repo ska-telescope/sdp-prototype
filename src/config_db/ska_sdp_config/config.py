@@ -6,7 +6,7 @@ from datetime import date
 import json
 from socket import gethostname
 
-from . import etcd_backend, entity
+from . import backend as backend_mod, entity
 
 
 class Config:
@@ -24,9 +24,7 @@ class Config:
             ownership.
         :param cargs: Backend client arguments
         """
-        if not backend:
-            backend = self._determine_backend(**cargs)
-        self._backend = backend
+        self._backend = self._determine_backend(backend, **cargs)
 
         # Owner dictionary
         if owner is None:
@@ -47,13 +45,15 @@ class Config:
         self._client_lease = None
 
     @staticmethod
-    def _determine_backend(**cargs):
+    def _determine_backend(backend, **cargs):
 
         # Determine backend
-        backend = os.getenv('SDP_CONFIG_BACKEND', 'etcd3')
+        if not backend:
+            backend = os.getenv('SDP_CONFIG_BACKEND', 'etcd3')
 
         # Instantiate backend, reading configuration from environment/dotenv
         if backend == 'etcd3':
+
             if 'host' not in cargs:
                 cargs['host'] = os.getenv('SDP_CONFIG_HOST', '127.0.0.1')
             if 'port' not in cargs:
@@ -67,8 +67,14 @@ class Config:
             if 'password' not in cargs:
                 cargs['password'] = os.getenv('SDP_CONFIG_PASSWORD', None)
 
-            return etcd_backend.Etcd3Backend(**cargs)
+            return backend_mod.Etcd3Backend(**cargs)
+
+        elif backend == 'memory':
+
+            return backend_mod.MemoryBackend()
+
         else:
+
             raise ValueError(
                 "Unknown configuration backend {}!".format(backend))
 
