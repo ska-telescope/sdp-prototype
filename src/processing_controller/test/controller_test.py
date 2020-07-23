@@ -3,8 +3,8 @@ import os
 
 from processing_controller import processing_controller
 from processing_controller.workflows import LOG
-from ska_sdp_config.config import dict_to_json
-from ska_sdp_config.memory_backend import MemoryBackend
+
+import ska_sdp_config
 import workflows_test
 
 for handler in logging.root.handlers:
@@ -13,6 +13,7 @@ for handler in logging.root.handlers:
 logging.basicConfig(level=logging.DEBUG)
 LOG.setLevel(logging.DEBUG)
 
+os.environ['SDP_CONFIG_BACKEND'] = 'memory'
 os.environ['SDP_CONFIG_HOST'] = 'localhost'
 os.environ['SDP_HELM_NAMESPACE'] = 'helm'
 
@@ -25,13 +26,24 @@ def test_stuff():
     # create an adapter for this, but that seems like overkill.
     controller._workflows.update_url = controller._workflows.update_file
 
-    wf = {"type": "batch", "id":  "test_batch", "repository": "nexus",
-          "image": "workflow-test-batch", "version": "0.2.0"}
-    pb = {"id": "test", "sbi_id": "test", "workflow": wf, "parameters": {}, "dependencies": []}
+    wf = {'type': 'batch', 'id':  'test_batch', 'version': '0.2.0'}
+    pb = ska_sdp_config.ProcessingBlock(
+        id='test',
+        sbi_id='test',
+        workflow=wf,
+        parameters={},
+        dependencies=[]
+    )
 
-    backend = MemoryBackend()
-    backend.create("/pb/test", dict_to_json(pb))
+    config = ska_sdp_config.Config()
 
-    controller.main(backend=backend)
-    LOG.info(backend.list_keys('/deploy'))
-    assert '/deploy/proc-test-workflow' in backend.list_keys('/deploy')
+    for txn in config.txn():
+        txn.create_processing_block(pb)
+
+    controller.main()
+
+    for txn in config.txn():
+        deployment_ids = txn.list_deployments()
+
+    LOG.info(deployment_ids)
+    assert 'proc-test-workflow' in deployment_ids
