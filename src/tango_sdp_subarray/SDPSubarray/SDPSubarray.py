@@ -5,14 +5,16 @@
 # pylint: disable=wrong-import-position
 # pylint: disable=too-many-public-methods
 
+from enum import IntEnum, unique
 import os
 import sys
 import signal
 import logging
 import json
-from enum import IntEnum, unique
+import jsonschema
 
 from ska_sdp_logging import tango_logging
+from .util import log_command, terminate
 
 import tango
 from tango import AttrWriteType, ConnectionFailed, Database, \
@@ -20,7 +22,6 @@ from tango import AttrWriteType, ConnectionFailed, Database, \
 from tango.server import Device, DeviceMeta, attribute, command, \
     device_property, run
 
-import jsonschema
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 from release import VERSION as SERVER_VERSION   # noqa
@@ -81,7 +82,7 @@ class FeatureToggle(IntEnum):
 
 
 # class SDPSubarray(SKASubarray):
-class SDPSubarray(Device):
+class SDPSubarray(Device, metaclass=DeviceMeta):
     """SDP Subarray device class.
 
     .. note::
@@ -93,8 +94,6 @@ class SDPSubarray(Device):
     # pylint: disable=attribute-defined-outside-init
     # pylint: disable=too-many-instance-attributes
     # pylint: disable=no-self-use
-
-    __metaclass__ = DeviceMeta
 
     # -----------------
     # Device Properties
@@ -315,20 +314,13 @@ class SDPSubarray(Device):
             obs_state_allowed=[ObsState.EMPTY]
         )
 
+    @log_command
     @command
     def On(self):
         """Set the subarray device into its Operational state."""
-        LOG.info('-------------------------------------------------------')
-        LOG.info('On (%s)', self.get_name())
-        LOG.info('-------------------------------------------------------')
-
         # Setting device state to ON state
         LOG.debug('Setting device state to ON')
         self.set_state(DevState.ON)
-
-        LOG.info('-------------------------------------------------------')
-        LOG.info('On Successful!')
-        LOG.info('-------------------------------------------------------')
 
     def is_Off_allowed(self):
         """Check if the Off command is allowed."""
@@ -337,13 +329,10 @@ class SDPSubarray(Device):
             state_allowed=[DevState.ON]
         )
 
+    @log_command
     @command
     def Off(self):
         """Set the subarray device to inactive state."""
-        LOG.info('-------------------------------------------------------')
-        LOG.info('Off (%s)', self.get_name())
-        LOG.info('-------------------------------------------------------')
-
         # Setting device state to OFF state
         LOG.debug('Setting device state to OFF')
         self.set_state(DevState.OFF)
@@ -367,10 +356,6 @@ class SDPSubarray(Device):
             # Set obsState to EMPTY
             self._set_obs_state(ObsState.EMPTY)
 
-        LOG.info('-------------------------------------------------------')
-        LOG.info('Off Successful!')
-        LOG.info('-------------------------------------------------------')
-
     def is_AssignResources_allowed(self):
         """Check if the AssignResources command is allowed."""
         return self._command_allowed(
@@ -381,6 +366,7 @@ class SDPSubarray(Device):
                                 AdminMode.RESERVED]
         )
 
+    @log_command
     @command(dtype_in=str, doc_in='Resource configuration JSON string')
     def AssignResources(self, config_str):
         """Assign resources to the subarray.
@@ -391,10 +377,6 @@ class SDPSubarray(Device):
         :param config_str: Resource configuration JSON string
 
         """
-        LOG.info('-------------------------------------------------------')
-        LOG.info('AssignResources (%s)', self.get_name())
-        LOG.info('-------------------------------------------------------')
-
         # Set obsState to RESOURCING
         self._set_obs_state(ObsState.RESOURCING)
 
@@ -454,10 +436,6 @@ class SDPSubarray(Device):
         # Set obsState to IDLE
         self._set_obs_state(ObsState.IDLE)
 
-        LOG.info('-------------------------------------------------------')
-        LOG.info('AssignResources Successful!')
-        LOG.info('-------------------------------------------------------')
-
     def is_ReleaseResources_allowed(self):
         """Check if the ReleaseResources command is allowed."""
         return self._command_allowed(
@@ -468,6 +446,7 @@ class SDPSubarray(Device):
             admin_mode_invert=True
         )
 
+    @log_command
     @command
     def ReleaseResources(self):
         """Release resources assigned to the subarray.
@@ -476,10 +455,6 @@ class SDPSubarray(Device):
         scheduling block instance.
 
         """
-        LOG.info('-------------------------------------------------------')
-        LOG.info('ReleaseResources (%s)', self.get_name())
-        LOG.info('-------------------------------------------------------')
-
         # Set obsState to RESOURCING
         self._set_obs_state(ObsState.RESOURCING)
 
@@ -495,10 +470,6 @@ class SDPSubarray(Device):
         # Set obsState to EMPTY
         self._set_obs_state(ObsState.EMPTY)
 
-        LOG.info('-------------------------------------------------------')
-        LOG.info('ReleaseResources Successful!')
-        LOG.info('-------------------------------------------------------')
-
     def is_Configure_allowed(self):
         """Check if the Configure command is allowed."""
         return self._command_allowed(
@@ -507,6 +478,7 @@ class SDPSubarray(Device):
             obs_state_allowed=[ObsState.IDLE, ObsState.READY]
         )
 
+    @log_command
     @command(dtype_in=str, doc_in='Scan type configuration JSON string')
     def Configure(self, config_str):
         """Configure SDP scan type.
@@ -514,10 +486,6 @@ class SDPSubarray(Device):
         :param config_str: Scan type configuration JSON string
 
         """
-        LOG.info('-------------------------------------------------------')
-        LOG.info('Configure (%s)', self.get_name())
-        LOG.info('-------------------------------------------------------')
-
         # Set obsState to CONFIGURING
         self._set_obs_state(ObsState.CONFIGURING)
 
@@ -559,10 +527,6 @@ class SDPSubarray(Device):
         # Set obsState to READY
         self._set_obs_state(ObsState.READY)
 
-        LOG.info('-------------------------------------------------------')
-        LOG.info('Configure successful!')
-        LOG.info('-------------------------------------------------------')
-
     def is_Scan_allowed(self):
         """Check if the Scan command is allowed."""
         return self._command_allowed(
@@ -571,6 +535,7 @@ class SDPSubarray(Device):
             obs_state_allowed=[ObsState.READY]
         )
 
+    @log_command
     @command(dtype_in=str, doc_in='Scan ID configuration JSON string')
     def Scan(self, config_str):
         """Start scan.
@@ -578,10 +543,6 @@ class SDPSubarray(Device):
         :param config_str: Scan ID configuration JSON string
 
         """
-        LOG.info('-------------------------------------------------------')
-        LOG.info('Scan (%s)', self.get_name())
-        LOG.info('-------------------------------------------------------')
-
         # Log the JSON configuration string
         LOG.info('Configuration string:')
         for line in config_str.splitlines():
@@ -609,10 +570,6 @@ class SDPSubarray(Device):
         # Set obsState to SCANNING
         self._set_obs_state(ObsState.SCANNING)
 
-        LOG.info('-------------------------------------------------------')
-        LOG.info('Scan Successful')
-        LOG.info('-------------------------------------------------------')
-
     def is_EndScan_allowed(self):
         """Check if the EndScan command is allowed."""
         return self._command_allowed(
@@ -621,22 +578,16 @@ class SDPSubarray(Device):
             obs_state_allowed=[ObsState.SCANNING]
         )
 
+    @log_command
     @command
     def EndScan(self):
         """End scan."""
-        LOG.info('-------------------------------------------------------')
-        LOG.info('EndScan (%s)', self.get_name())
-        LOG.info('-------------------------------------------------------')
 
         # Clear scan ID and set status to READY
         self._update_sb({'scan_id': None, 'status': 'READY'})
 
         # Set obsState to READY
         self._set_obs_state(ObsState.READY)
-
-        LOG.info('-------------------------------------------------------')
-        LOG.info('EndScan Successful')
-        LOG.info('-------------------------------------------------------')
 
     def is_End_allowed(self):
         """Check if the Reset command is allowed."""
@@ -646,12 +597,10 @@ class SDPSubarray(Device):
             obs_state_allowed=[ObsState.READY]
         )
 
+    @log_command
     @command
     def End(self):
         """End."""
-        LOG.info('-------------------------------------------------------')
-        LOG.info('Reset (%s)', self.get_name())
-        LOG.info('-------------------------------------------------------')
 
         # Clear scan type and scan ID, and set status to IDLE
         self._update_sb({'current_scan_type': None, 'scan_id': None,
@@ -659,10 +608,6 @@ class SDPSubarray(Device):
 
         # Set obsState to IDLE
         self._set_obs_state(ObsState.IDLE)
-
-        LOG.info('-------------------------------------------------------')
-        LOG.info('Reset Successful')
-        LOG.info('-------------------------------------------------------')
 
     def is_Abort_allowed(self):
         """Check if the Abort command is allowed."""
@@ -674,12 +619,10 @@ class SDPSubarray(Device):
                                ObsState.RESETTING]
         )
 
+    @log_command
     @command
     def Abort(self):
         """Abort the subarray device."""
-        LOG.info('-------------------------------------------------------')
-        LOG.info('Abort (%s)', self.get_name())
-        LOG.info('-------------------------------------------------------')
 
         # Set obsState to ABORTING
         self._set_obs_state(ObsState.ABORTING)
@@ -690,10 +633,6 @@ class SDPSubarray(Device):
         # Set obsState to IDLE
         self._set_obs_state(ObsState.ABORTED)
 
-        LOG.info('-------------------------------------------------------')
-        LOG.info('Abort Successful')
-        LOG.info('-------------------------------------------------------')
-
     def is_ObsReset_allowed(self):
         """Check if the ObsReset command is allowed."""
         return self._command_allowed(
@@ -702,15 +641,13 @@ class SDPSubarray(Device):
             obs_state_allowed=[ObsState.ABORTED, ObsState.FAULT]
         )
 
+    @log_command
     @command
     def ObsReset(self):
         """Set obsState to the last known stable state.
 
         In the case of the subarray device this is Idle.
         """
-        LOG.info('-------------------------------------------------------')
-        LOG.info('ObsReset (%s)', self.get_name())
-        LOG.info('-------------------------------------------------------')
 
         # Set obsState to RESETTING
         self._set_obs_state(ObsState.RESETTING)
@@ -733,10 +670,6 @@ class SDPSubarray(Device):
         # Set obsState to IDLE
         self._set_obs_state(ObsState.IDLE)
 
-        LOG.info('-------------------------------------------------------')
-        LOG.info('ObsReset Successful')
-        LOG.info('-------------------------------------------------------')
-
     def is_Restart_allowed(self):
         """Check if the Restart command is allowed."""
         return self._command_allowed(
@@ -745,15 +678,13 @@ class SDPSubarray(Device):
             obs_state_allowed=[ObsState.ABORTED, ObsState.FAULT]
         )
 
+    @log_command
     @command
     def Restart(self):
         """Restart the subarray device.
 
         This is like a "hard" rest
         """
-        LOG.info('-------------------------------------------------------')
-        LOG.info('Restart (%s)', self.get_name())
-        LOG.info('-------------------------------------------------------')
 
         # Set obsState to RESTARTING
         self._set_obs_state(ObsState.RESTARTING)
@@ -771,10 +702,6 @@ class SDPSubarray(Device):
 
         # Set obsState to EMPTY
         self._set_obs_state(ObsState.EMPTY)
-
-        LOG.info('-------------------------------------------------------')
-        LOG.info('Restart Successful')
-        LOG.info('-------------------------------------------------------')
 
     # -------------------------------------
     # Public methods
@@ -1264,12 +1191,6 @@ def main(args=None, **kwargs):
             register(sys.argv[1], *devices)
 
     return run((SDPSubarray,), args=args, **kwargs)
-
-
-def terminate(_sig, _frame):
-    """Terminate the program."""
-    LOG.info('Asked to terminate')
-    sys.exit(0)
 
 
 if __name__ == '__main__':

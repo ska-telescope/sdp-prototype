@@ -1,6 +1,7 @@
 # coding: utf-8
 """Pytest plugins."""
 
+import logging
 import threading
 
 import pytest
@@ -9,6 +10,9 @@ from tango.test_context import DeviceTestContext
 import ska_sdp_config
 from SDPSubarray import SDPSubarray
 from SDPSubarray.release import VERSION
+
+
+logging.basicConfig(level=logging.DEBUG)
 
 
 @pytest.fixture(scope='session', autouse=True)
@@ -33,7 +37,11 @@ def tango_context():
     tango_context.start()
     yield tango_context
     print('Stopping context...')
-    tango_context.stop()
+    # Looks like tango bug on Windows.
+    try:
+        tango_context.stop()
+    except PermissionError as tango_error:
+        print(str(tango_error))
 
 
 RECEIVE_WORKFLOWS = ['test_receive_addresses']
