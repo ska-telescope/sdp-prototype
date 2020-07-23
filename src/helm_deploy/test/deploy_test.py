@@ -2,9 +2,7 @@ import os
 from unittest.mock import patch, mock_open
 
 import helm_deploy as deploy
-from ska_sdp_config import Config
-from ska_sdp_config.entity import Deployment
-from ska_sdp_config.memory_backend import MemoryBackend
+from ska_sdp_config import Config, Deployment
 
 
 deploy.HELM = '/bin/helm'
@@ -34,12 +32,16 @@ def test_delete(mock_run):
 
 @patch('subprocess.run')
 def test_create(mock_run):
-    config = Config(backend=MemoryBackend())
+    config = Config(backend='memory')
+
     for txn in config.txn():
         txn.create_deployment(
-            Deployment('test', 'helm',
-                       {'values': {'test': 'test'}, 'chart': 'test'}))
-    deployment = txn.get_deployment('test')
-    deploy.create_helm(txn, 'test', deployment)
+            Deployment('test', 'helm', {'chart': 'test', 'values': {'test': 'test'}})
+        )
+
+    for txn in config.txn():
+        deployment = txn.get_deployment('test')
+        deploy.create_helm(txn, 'test', deployment)
+
     mock_run.assert_called_once()
 
