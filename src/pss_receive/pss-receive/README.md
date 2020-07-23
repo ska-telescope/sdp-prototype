@@ -61,9 +61,11 @@ saved to a file in the subdirectory 'output'.
 These instructions assume you have created the etcd cluster and deployed the sdp components. In other words, in the instructions
 for ''Running the SDP Prototype stand-alone'', you have done everything up to, but not including, the ''start a worflow'' section.
 
-Now we add a pss\_receive processing block to the configuration database.
+Now we add a pss\_receive processing block to the configuration database. We first connect to a console pod which allows us to interact with the configuration database. 
+
 
 ```bash
+    $ kubectl exec -it deploy/sdp-prototype-console -- /bin/bash
     $ sdpcfg process realtime:pss_receive:0.1.0
     OK, pb_id = realtime-20200203-0000
 ```
@@ -173,6 +175,134 @@ Now we can stop the sender job and remove the processing block from the configur
     $ sdpcfg delete /pb/realtime-20200203-0000
     $ kubectl delete job sender -n sdp
 ```
+
+# Deploying the SDP via TANGO
+
+(More generalised documentation can be found at https://developer.skatelescope.org/projects/sdp-prototype/en/latest/running/running\_standalone.html#accessing-tango
+
+Connect to the TANGO interface
+
+```bash
+    kubectl exec -it itango-tango-base-sdp-prototype -- /venv/bin/itango3
+```
+
+Create an interface to the SDP-subarray-1 TANGO device
+
+```bash
+    d = DeviceProxy('mid_sdp/elt/master')
+```
+
+We can check the obsState of the sub-array which is currently IDLE.
+
+```bash
+    d.obsState
+```
+
+We can then set the configuration of the Scheduling Block Instance by defining a JSON string containing information about the scan parameters and the workflow(s) to be deployed.
+
+```bash
+   config = '''
+   {
+  "id": "sbi-test-20200715-00000",
+  "max_length": 600.0,
+  "scan_types": [
+    {
+      "id": "science",
+      "channels": [
+        {"count": 372, "start": 0, "stride": 2, "freq_min": 0.35e9, "freq_max": 0.358e9, "link_map": [[0,0], [200,1]]}
+      ]
+    }
+  ],
+  "processing_blocks": [
+    {
+      "id": "pb-test-20200715-00000",
+      "workflow": {"type": "realtime", "id": "test_receive_addresses", "version": "0.3.2"},
+      "parameters": {}
+    },
+    {
+      "id": "pb-test-20200715-00001",
+      "workflow": {"type": "realtime", "id": "pss_receive", "version": "0.2.0"},
+      "parameters": {}
+    }
+  ]
+}'''
+```
+
+In this case the workflows are test\_receive\_addresses and pss\_receive.  If we look at the processes that are running in the sdp namespace we can see that the two workflows have been deployed and the pss-receive workflow has deployed the pss-receive container (the test\_receive\_addresses workflow does not trigger any deployments). 
+
+```bash
+    [bshaw@dokimi ~]$ kubectl get all -n sdp 
+    NAME                                             READY   STATUS    RESTARTS   AGE
+    pod/proc-pb-test-20200715-00000-workflow-dm48x   1/1     Running   0          2m
+    pod/proc-pb-test-20200715-00001-workflow-j8kbj   1/1     Running   0          2m
+    pod/pss-receive-sbwxz                            1/1     Running   0          1m
+
+    NAME                  TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE
+    service/pss-receive   ClusterIP   10.96.84.108   <none>        9021/UDP   1m
+
+    NAME                                             COMPLETIONS   DURATION   AGE
+    job.batch/proc-pb-test-20200715-00000-workflow   0/1           42m        2m
+    job.batch/proc-pb-test-20200715-00001-workflow   0/1           42m        2m
+    job.batch/pss-receive 
+```
+We can then set the scan type using the Configure() method. 
+
+```bash
+   d.Configure('{"scan_type": "science"}')
+```
+
+At this point our subarray has entered a READY state. We then set the scan running with the Scan() method. 
+
+```bash
+   d.Scan('{"id": 1}')
+```
+
+Now the subarray has entered a SCANNING state and data is being acquired. We can emulate the flow of data into the SDP from PSS by deployed the dummer sender by the same method as above. In a separate terminal, 
+
+```bash
+   cd /[...]/sdp-prototype/src/pss_receive/pss-send
+   kubectl apply -f deploy-sender.yaml
+```
+
+This will deploy a sender job (called sender) into the sdp namespace. This has sent some candidate data to the receiver, after which both the sender and receiver enter a "completed" state. 
+
+```bash
+    [bshaw@dokimi ~]$ kubectl get all -n sdp
+    NAME                                             READY   STATUS      RESTARTS   AGE
+    pod/proc-pb-test-20200715-00000-workflow-dm48x   1/1     Running     0          71m
+    pod/proc-pb-test-20200715-00001-workflow-j8kbj   1/1     Running     0          71m
+    pod/pss-receive-sbwxz                            0/1     Completed   0          69m
+    pod/sender-jrm6t                                 0/1     Completed   0          4m37s
+
+    NAME                  TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE
+    service/pss-receive   ClusterIP   10.96.84.108   <none>        9021/UDP   69m
+
+    NAME                                             COMPLETIONS   DURATION   AGE
+    job.batch/proc-pb-test-20200715-00000-workflow   0/1           71m        71m
+    job.batch/proc-pb-test-20200715-00001-workflow   0/1           71m        71m
+    job.batch/pss-receive                            1/1           64m        69m
+    job.batch/sender 
+```
+
+Now we can end the scan
+
+```bash
+   d.EndScan()
+```
+
+and the subarray reverts to the READY state. We then clear the scan-type with.
+
+```bash
+    d.Reset()
+```
+
+and the subarray returns to the IDLE state.  The SDP resources can then be freed using 
+
+```bash
+   d.ReleaseResources()
+```
+
+which sets the workflows into a "completed" state. 
 
 ## Ongoing work
 

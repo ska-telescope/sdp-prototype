@@ -49,7 +49,7 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{ include "sdp-prototype.fullname" . }}-etcd-client.{{ .Release.Namespace }}.svc.cluster.local
 {{- end -}}
 {{- define "sdp-prototype.wait-for-etcd" -}}
-- image: quay.io/coreos/etcd:v{{ .Values.etcd.version }}
+- image: {{ .Values.etcd.repository }}:v{{ .Values.etcd.version }}
   name: {{ .Chart.Name }}-wait-for-etcd
   command: ["/bin/sh", "-c", "while ( ! etcdctl endpoint health ); do sleep 1; done"]
   env:
