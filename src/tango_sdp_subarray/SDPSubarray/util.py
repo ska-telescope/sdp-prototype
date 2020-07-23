@@ -3,6 +3,7 @@
 import functools
 import logging
 import sys
+from typing import Callable
 
 
 def terminate(signame, frame):
@@ -11,7 +12,7 @@ def terminate(signame, frame):
     sys.exit()
 
 
-def log_command(command_function):
+def log_command(command_function: Callable):
     """
     Decorator to log a command function call.
     :param command_function: to decorate
