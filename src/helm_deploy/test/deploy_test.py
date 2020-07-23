@@ -11,17 +11,8 @@ deploy.GIT = '/bin/git'
 
 @patch('subprocess.run')
 def test_invoke(mock_run):
-    deploy.invoke('ls', cwd='.')
+    deploy.invoke('ls')
     mock_run.assert_called_once()
-
-
-@patch('os.mkdir')
-@patch('subprocess.run')
-def test_update(mock_run, mock_mkdir):
-    with patch('builtins.open', mock_open()):
-        deploy.update_chart_repos()
-    assert mock_run.call_count == 5
-    assert not os.path.exists(deploy.chart_base_path)
 
 
 @patch('subprocess.run')
