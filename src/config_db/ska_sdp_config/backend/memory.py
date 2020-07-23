@@ -25,9 +25,12 @@ def _op(path: str, value: str,
 class MemoryBackend:
     """In-memory backend implementation, principally for testing."""
 
+    # Class variable to store data
+    _data = {}
+
     def __init__(self):
         """Construct a memory backend."""
-        self.dict = {}
+        pass
 
     def lease(self, *args, **kwargs) -> 'Lease':
         """
@@ -59,17 +62,17 @@ class MemoryBackend:
         :param path: to lookup
         :return: the value
         """
-        return self.dict.get(_tag_depth(path), None)
+        return self._data.get(_tag_depth(path), None)
 
     def _put(self, path: str, value: str) -> None:
-        self.dict[path] = value
+        self._data[path] = value
 
     def _check_exists(self, path: str) -> None:
-        if path not in self.dict.keys():
+        if path not in self._data.keys():
             raise ConfigVanished(path, "{} not in dictionary".format(path))
 
     def _check_not_exists(self, path: str) -> None:
-        if path in self.dict.keys():
+        if path in self._data.keys():
             raise ConfigCollision(path,
                                   "path {} already in dictionary".format(path))
 
@@ -107,7 +110,7 @@ class MemoryBackend:
         :param kwargs: arbitrary, not used
         :return: nothing
         """
-        _op(path, None, self._check_exists, lambda t, _: self.dict.pop(t))
+        _op(path, None, self._check_exists, lambda t, _: self._data.pop(t))
 
     def list_keys(self, path: str) -> List[str]:
         """
@@ -127,7 +130,7 @@ class MemoryBackend:
             depth = _depth(new_path) + 1
         tag = _tag_depth(new_path, depth=depth)
         return sorted([_untag_depth(k)
-                       for k in self.dict if k.startswith(tag)])
+                       for k in self._data if k.startswith(tag)])
 
     def close(self) -> None:
         """
