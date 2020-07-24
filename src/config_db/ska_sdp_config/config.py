@@ -24,28 +24,7 @@ class Config:
             ownership.
         :param cargs: Backend client arguments
         """
-        # Determine backend
-        backend = os.getenv('SDP_CONFIG_BACKEND', 'etcd3')
-
-        # Instantiate backend, reading configuration from environment/dotenv
-        if backend == 'etcd3':
-            if 'host' not in cargs:
-                cargs['host'] = os.getenv('SDP_CONFIG_HOST', '127.0.0.1')
-            if 'port' not in cargs:
-                cargs['port'] = int(os.getenv('SDP_CONFIG_PORT', '2379'))
-            if 'protocol' not in cargs:
-                cargs['protocol'] = os.getenv('SDP_CONFIG_PROTOCOL', 'http')
-            if 'cert' not in cargs:
-                cargs['cert'] = os.getenv('SDP_CONFIG_CERT', None)
-            if 'username' not in cargs:
-                cargs['username'] = os.getenv('SDP_CONFIG_USERNAME', None)
-            if 'password' not in cargs:
-                cargs['password'] = os.getenv('SDP_CONFIG_PASSWORD', None)
-
-            self._backend = backend_mod.Etcd3(**cargs)
-        else:
-            raise ValueError(
-                "Unknown configuration backend {}!".format(backend))
+        self._backend = self._determine_backend(backend, **cargs)
 
         # Owner dictionary
         if owner is None:
@@ -64,6 +43,40 @@ class Config:
 
         # Lease associated with client
         self._client_lease = None
+
+    @staticmethod
+    def _determine_backend(backend, **cargs):
+
+        # Determine backend
+        if not backend:
+            backend = os.getenv('SDP_CONFIG_BACKEND', 'etcd3')
+
+        # Instantiate backend, reading configuration from environment/dotenv
+        if backend == 'etcd3':
+
+            if 'host' not in cargs:
+                cargs['host'] = os.getenv('SDP_CONFIG_HOST', '127.0.0.1')
+            if 'port' not in cargs:
+                cargs['port'] = int(os.getenv('SDP_CONFIG_PORT', '2379'))
+            if 'protocol' not in cargs:
+                cargs['protocol'] = os.getenv('SDP_CONFIG_PROTOCOL', 'http')
+            if 'cert' not in cargs:
+                cargs['cert'] = os.getenv('SDP_CONFIG_CERT', None)
+            if 'username' not in cargs:
+                cargs['username'] = os.getenv('SDP_CONFIG_USERNAME', None)
+            if 'password' not in cargs:
+                cargs['password'] = os.getenv('SDP_CONFIG_PASSWORD', None)
+
+            return backend_mod.Etcd3Backend(**cargs)
+
+        elif backend == 'memory':
+
+            return backend_mod.MemoryBackend()
+
+        else:
+
+            raise ValueError(
+                "Unknown configuration backend {}!".format(backend))
 
     def lease(self, ttl=10):
         """
@@ -255,7 +268,7 @@ class Transaction:
         """
         Add a new :class:`ProcessingBlock` to the configuration.
 
-        :param obj: Processing block to create
+        :param pb: Processing block to create
         """
         assert isinstance(pb, entity.ProcessingBlock)
         self._create(self._pb_path + pb.id, pb.to_dict())
@@ -264,7 +277,7 @@ class Transaction:
         """
         Update a :class:`ProcessingBlock` in the configuration.
 
-        :param obj: Processing block to update
+        :param pb: Processing block to update
         """
         assert isinstance(pb, entity.ProcessingBlock)
         self._update(self._pb_path + pb.id, pb.to_dict())

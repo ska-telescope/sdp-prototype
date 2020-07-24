@@ -1,43 +1,15 @@
-"""
-Backend database modules for SKA SDP configuration information.
-
-At the moment we only support etcd3.
-"""
+"""Etcd3 backend for SKA SDP configuration DB."""
 
 import time
 import queue as queue_m
 
 import etcd3
+from .common import (
+    _tag_depth, _untag_depth, _check_path, ConfigCollision, ConfigVanished
+)
 
 
-# Some utilities for handling tagging paths.
-#
-# The idea here is that etcd3 only supports straight-up prefix
-# searches, but we do not want to get "/a/b/c" when listing "/a/"
-# (just "/a/b"). Therefore we prepend all paths with the number of
-# slashes they contain, making standard prefix search non-recursive as
-# suggested by etcd's documentation. The recursive behaviour can
-# always be restored by doing separate searches per recursion level.
-def _tag_depth(path, depth=None):
-    """Add depth tag to path."""
-    # All paths must start at the root
-    if not path or path[0] != '/':
-        raise ValueError("Path must start with /!")
-    if depth is None:
-        depth = path.count('/')
-    return "{}{}".format(depth, path).encode('utf-8')
-
-
-def _untag_depth(path):
-    """Remove depth from path."""
-    # Cut from first '/'
-    slash_ix = path.index('/')
-    if slash_ix is None:
-        return path
-    return path[slash_ix:]
-
-
-class Etcd3:
+class Etcd3Backend:
     """
     Highly consistent database backend store.
 
@@ -78,8 +50,7 @@ class Etcd3:
         :returns: (value, revision). value is None if it doesn't exist
         """
         # Check/prepare parameters
-        if path and path[-1] == '/':
-            raise ValueError("Path should not have a trailing '/'!")
+        _check_path(path)
         tagged_path = _tag_depth(path)
         rev = (None if revision is None else revision.revision)
 
@@ -176,8 +147,7 @@ class Etcd3:
         :raises: ConfigCollision
         """
         # Prepare parameters
-        if path and path[-1] == '/':
-            raise ValueError("Path should not have a trailing '/'!")
+        _check_path(path)
         tagged_path = _tag_depth(path)
         lease_id = (0 if lease is None else lease.ID)
         value = str(value).encode('utf-8')
@@ -201,8 +171,7 @@ class Etcd3:
         :raises: ConfigVanished
         """
         # Validate parameters
-        if path and path[-1] == '/':
-            raise ValueError("Path should not have a trailing '/'!")
+        _check_path(path)
         tagged_path = _tag_depth(path)
         value = str(value).encode('utf-8')
         # Put value if version is *not* zero (i.e. it exists)
@@ -263,24 +232,6 @@ class Etcd3:
         """Use for scoping client connection to a block."""
         self.close()
         return False
-
-
-class ConfigCollision(RuntimeError):
-    """Exception generated if key to create already exists."""
-
-    def __init__(self, path, message):
-        """Instantiate the exception."""
-        self.path = path
-        super().__init__(message)
-
-
-class ConfigVanished(RuntimeError):
-    """Exception generated if key to update that does not exist."""
-
-    def __init__(self, path, message):
-        """Instantiate the exception."""
-        self.path = path
-        super().__init__(message)
 
 
 class Etcd3Revision:

@@ -1,4 +1,4 @@
 jsonschema
 requests
-ska-sdp-config >= 0.0.8
+ska-sdp-config >= 0.0.9
 ska-sdp-logging >= 0.0.6
