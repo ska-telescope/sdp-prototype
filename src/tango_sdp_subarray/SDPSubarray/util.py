@@ -14,7 +14,8 @@ def terminate(signame, frame):
 
 def log_command(command_function: Callable):
     """
-    Decorator to log a command function call.
+    Decorate a command function call to add logging.
+
     :param command_function: to decorate
     :return: any result of function
     """
@@ -30,3 +31,15 @@ def log_command(command_function: Callable):
         logging.info('-------------------------------------------------------')
         return ret
     return wrapper
+
+
+def log_lines(string: str, header: str = ''):
+    """
+    Log a string split into lines.
+
+    :param string: to split
+    :param header: context information to log first
+    """
+    logging.info(header)
+    for line in string.splitlines():
+        logging.info(line)

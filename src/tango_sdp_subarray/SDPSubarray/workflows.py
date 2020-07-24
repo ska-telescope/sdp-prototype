@@ -3,7 +3,8 @@ Workflow related tasks for SDPSubarray.
 
 This is the first stage to isolate the database operations.
 There should probably be another layer to fully separate the workflow logic
-from the database operations. Then more code can be moved from SDPSubarray into that layer.
+from the database operations. Then more code can be moved from SDPSubarray
+into that layer.
 """
 
 import logging
@@ -11,22 +12,23 @@ from typing import Dict, List, Tuple, Optional
 
 
 class Workflows:
-    """ Class to hold workflow and database state. """
+    """Class to hold workflow and database state."""
     # pylint: disable=invalid-name
     def __init__(self, db_client):
         self.db_client = db_client
         self._sbi_id = None
 
     def _lock(self) -> None:
-        """ Synchronization placeholder. """
+        """Synchronize placeholder."""
 
     def _unlock(self) -> None:
-        """ Synchronization placeholder. """
+        """Synchronize placeholder."""
 
     @property
     def sbi_id(self) -> str:
         """
         Get the scheduling block instance ID.
+
         :return: the id
         """
         return self._sbi_id
@@ -35,6 +37,7 @@ class Workflows:
     def sbi_id(self, value: Optional[str]) -> None:
         """
         Set the scheduling block instance ID.
+
         :param value: the ID
         """
         self._lock()
@@ -44,14 +47,13 @@ class Workflows:
     def is_sbi_active(self) -> bool:
         """
         Is the scheduling block instance ID set?
+
         :return: true if it is
         """
         return self.sbi_id is not None
 
     def clear_sbi(self) -> None:
-        """
-        Clear the scheduling block instance ID.
-        """
+        """Clear the scheduling block instance ID."""
         self.sbi_id = None
 
     def get_processing_block_state(self) -> List:
@@ -79,6 +81,7 @@ class Workflows:
     def get_scheduling_block(self) -> Optional[Dict]:
         """
         Get the scheduling block.
+
         :return: scheduling block or None if not active
         """
         sb = None
@@ -93,6 +96,7 @@ class Workflows:
     def get_existing_ids(self) -> Tuple[List, List]:
         """
         Get the existing scheduling and processing block ids.
+
         :return: tuple of ids, scheduling then processing
         """
         existing_sb_ids = []
@@ -113,7 +117,6 @@ class Workflows:
 
         :param sb: scheduling block
         :param pbs: list of processing blocks
-
         """
         if self.db_client is not None:
             self._lock()
@@ -128,7 +131,6 @@ class Workflows:
         """Update SB in the config DB.
 
         :param new_values: dict containing key/value pairs to update
-
         """
         if self.db_client is not None:
             self._lock()
@@ -148,7 +150,6 @@ class Workflows:
         state.
 
         :returns: dict mapping scan type to receive addresses
-
         """
         if self.db_client is None:
             return None
@@ -186,7 +187,6 @@ class Workflows:
         :param scan_type: scan type
         :returns: True if the configuration is good, False if there is an
             error
-
         """
         if self.db_client is not None:
             self._lock()

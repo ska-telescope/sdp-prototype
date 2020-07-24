@@ -1,4 +1,4 @@
-""" Handling of feature toggles. """
+"""Handling of feature toggles."""
 
 from enum import IntEnum, unique
 import logging
@@ -42,7 +42,6 @@ def is_feature_active(feature_name):
 
     :param feature_name: Name of the feature.
     :returns: True if the feature toggle is enabled.
-
     """
     env_var = _get_feature_toggle_env_var(feature_name)
     env_var_value = os.environ.get(env_var)
@@ -54,7 +53,6 @@ def set_feature_toggle_default(feature_name, default):
 
     :param feature_name: Name of the feature
     :param default: Default for the feature toggle (if it is not set)
-
     """
     env_var = _get_feature_toggle_env_var(feature_name)
     if not os.environ.get(env_var):
@@ -63,7 +61,7 @@ def set_feature_toggle_default(feature_name, default):
 
 
 def new_config_db():
-    """ Factory method to return config db object. """
+    """Return a config db object (factory method)."""
     if ska_sdp_config is not None \
             and is_feature_active(FeatureToggle.CONFIG_DB):
         config_db_client = ska_sdp_config.Config()

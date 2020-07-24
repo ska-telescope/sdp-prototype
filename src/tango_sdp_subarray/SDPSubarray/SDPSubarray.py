@@ -13,24 +13,25 @@ import logging
 import json
 import jsonschema
 
-import ska_sdp_config
-from ska_sdp_logging import tango_logging
-from .release import VERSION as SERVER_VERSION   # noqa
-from .feature_toggle import FeatureToggle, is_feature_active, new_config_db
-from .util import log_command, terminate
-from .workflows import Workflows
-
 import tango
 from tango import AttrWriteType, ConnectionFailed, Database, \
     DbDevInfo, DevState
 from tango.server import Device, DeviceMeta, attribute, command, \
     device_property, run
 
+import ska_sdp_config
+from ska_sdp_logging import tango_logging
+from .release import VERSION as SERVER_VERSION   # noqa
+from .feature_toggle import FeatureToggle, is_feature_active, new_config_db
+from .util import log_command, log_lines, terminate
+from .workflows import Workflows
+
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 
 LOG = logging.getLogger()
-
+VALIDATION_MSG = 'Configuration validation failed'
+CONFIG_MSG = 'Configuration string:'
 
 # https://pytango.readthedocs.io/en/stable/data_types.html#devenum-pythonic-usage
 @unique
@@ -85,7 +86,7 @@ class SDPSubarray(Device):
     # pylint: disable=too-many-instance-attributes
     # pylint: disable=no-self-use
 
-    # This is Python 2 syntax, but it doesn't seem to work with Python 3 syntax.
+    # This is Python 2 syntax, doesn't seem to work with Python 3 syntax.
     __metaclass__ = DeviceMeta
 
     # -----------------
@@ -304,7 +305,8 @@ class SDPSubarray(Device):
                 LOG.info('Cancelling the scheduling block instance')
 
                 # Clear scan type, scan ID and set status to CANCELLED
-                self._workflows.update_sb({'current_scan_type': None, 'scan_id': None,
+                self._workflows.update_sb({'current_scan_type': None,
+                                           'scan_id': None,
                                            'status': 'CANCELLED'})
 
                 # Clear the receive addresses
@@ -341,9 +343,7 @@ class SDPSubarray(Device):
         self._set_obs_state(ObsState.RESOURCING)
 
         # Log the JSON configuration string
-        LOG.info('Configuration string:')
-        for line in config_str.splitlines():
-            LOG.info(line)
+        log_lines(config_str, header=CONFIG_MSG)
 
         # Validate the JSON configuration string
         config = self._validate_json_config(
@@ -354,7 +354,7 @@ class SDPSubarray(Device):
             # an error
             self._set_obs_state(ObsState.FAULT)
             self._raise_command_error(
-                'Configuration validation failed',
+                VALIDATION_MSG,
                 origin='SDPSubarray.AssignResources()'
             )
             return
@@ -450,9 +450,7 @@ class SDPSubarray(Device):
         self._set_obs_state(ObsState.CONFIGURING)
 
         # Log the JSON configuration string
-        LOG.info('Configuration string:')
-        for line in config_str.splitlines():
-            LOG.info(line)
+        log_lines(config_str, header=CONFIG_MSG)
 
         # Validate the JSON configuration string
         config = self._validate_json_config(config_str, 'configure.json')
@@ -462,7 +460,7 @@ class SDPSubarray(Device):
             # an error
             self._set_obs_state(ObsState.FAULT)
             self._raise_command_error(
-                'Configuration validation failed',
+                VALIDATION_MSG,
                 origin='SDPSubarray.Configure()'
             )
 
@@ -504,9 +502,7 @@ class SDPSubarray(Device):
 
         """
         # Log the JSON configuration string
-        LOG.info('Configuration string:')
-        for line in config_str.splitlines():
-            LOG.info(line)
+        log_lines(config_str, header=CONFIG_MSG)
 
         # Validate the JSON configuration string
         config = self._validate_json_config(config_str, 'scan.json')
@@ -516,7 +512,7 @@ class SDPSubarray(Device):
             # an error
             self._set_obs_state(ObsState.FAULT)
             self._raise_command_error(
-                'Configuration validation failed',
+                VALIDATION_MSG,
                 origin='SDPSubarray.Scan()'
             )
             return
@@ -542,7 +538,6 @@ class SDPSubarray(Device):
     @command
     def EndScan(self):
         """End scan."""
-
         # Clear scan ID and set status to READY
         self._workflows.update_sb({'scan_id': None, 'status': 'READY'})
 
@@ -561,7 +556,6 @@ class SDPSubarray(Device):
     @command
     def End(self):
         """End."""
-
         # Clear scan type and scan ID, and set status to IDLE
         self._workflows.update_sb({'current_scan_type': None, 'scan_id': None,
                                    'status': 'IDLE'})
@@ -583,7 +577,6 @@ class SDPSubarray(Device):
     @command
     def Abort(self):
         """Abort the subarray device."""
-
         # Set obsState to ABORTING
         self._set_obs_state(ObsState.ABORTING)
 
@@ -608,7 +601,6 @@ class SDPSubarray(Device):
 
         In the case of the subarray device this is Idle.
         """
-
         # Set obsState to RESETTING
         self._set_obs_state(ObsState.RESETTING)
 
@@ -643,15 +635,15 @@ class SDPSubarray(Device):
     def Restart(self):
         """Restart the subarray device.
 
-        This is like a "hard" rest
+        This is like a "hard" reset.
         """
-
         # Set obsState to RESTARTING
         self._set_obs_state(ObsState.RESTARTING)
 
         if self._workflows.is_sbi_active():
             # Clear scan type and scan ID, and set status to CANCELLED
-            self._workflows.update_sb({'current_scan_type': None, 'scan_id': None,
+            self._workflows.update_sb({'current_scan_type': None,
+                                       'scan_id': None,
                                        'status': 'CANCELLED'})
 
             # Clear the receiveAddresses attribute
@@ -750,18 +742,16 @@ class SDPSubarray(Device):
         message = ''
 
         # Tango device state
-        if state_allowed is not None:
-            if self.get_state() not in state_allowed:
-                allowed = False
-                message = compose_message(message, name, 'the device',
-                                          self.get_state())
+        if state_allowed is not None and self.get_state() not in state_allowed:
+            allowed = False
+            message = compose_message(message, name, 'the device',
+                                      self.get_state())
 
         # Observing state
-        if obs_state_allowed is not None:
-            if self._obs_state not in obs_state_allowed:
-                allowed = False
-                message = compose_message(message, name, 'obsState',
-                                          self._obs_state.name)
+        if obs_state_allowed is not None and self._obs_state not in obs_state_allowed:
+            allowed = False
+            message = compose_message(message, name, 'obsState',
+                                      self._obs_state.name)
 
         # Administration mode
         if admin_mode_allowed is not None:
