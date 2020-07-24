@@ -22,10 +22,6 @@ build:processing_controller:
   extends: .build_docker
   <<: *env
 
-# ============================================================================
-# Tag and publish Docker image (master only)
-# ============================================================================
-
 publish:processing_controller:
   extends: .push_docker_nexus
   dependencies:

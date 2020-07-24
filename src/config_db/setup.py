@@ -1,14 +1,17 @@
 """PIP set-up for SKA SDP configuration database package."""
 
 import setuptools
-import ska_sdp_config
 
 with open('README.md', 'r') as file:
     LONG_DESCRIPTION = file.read()
 
+version = {}
+with open('ska_sdp_config/version.py', 'r') as file:
+    exec(file.read(), version)
+
 setuptools.setup(
     name='ska-sdp-config',
-    version=ska_sdp_config.__version__,
+    version=version['__version__'],
     description='SKA SDP Configuration Database',
     author='SKA ORCA and Sim Teams',
     license='License :: OSI Approved :: BSD License',
@@ -24,7 +27,11 @@ setuptools.setup(
         'Topic :: Scientific/Engineering :: Astronomy',
         'Topic :: System :: Distributed Computing',
     ],
-    packages=['ska_sdp_config', 'ska_sdp_config/entity'],
+    packages=[
+        'ska_sdp_config',
+        'ska_sdp_config/backend',
+        'ska_sdp_config/entity'
+    ],
     test_suite='tests',
     tests_require=['pytest'],
     scripts=['scripts/sdpcfg']

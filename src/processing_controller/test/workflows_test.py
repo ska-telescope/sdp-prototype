@@ -11,6 +11,7 @@ SCHEMA = PRJ_ROOT+"/schema/workflows.json"
 WORKFLOW = SRC_ROOT+"/workflows/workflows.json"
 WORK_URL = Path(WORKFLOW).as_uri()
 
+
 def test_without_json():
     wf = processing_controller.Workflows("not_there.json")
     assert wf.version == {}
