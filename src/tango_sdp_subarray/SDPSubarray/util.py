@@ -33,7 +33,7 @@ def log_command(command_function: Callable):
     return wrapper
 
 
-def log_lines(string: str, header: str = ''):
+def log_lines(string: str, header: str = '') -> None:
     """
     Log a string split into lines.
 

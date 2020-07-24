@@ -33,6 +33,7 @@ LOG = logging.getLogger()
 VALIDATION_MSG = 'Configuration validation failed'
 CONFIG_MSG = 'Configuration string:'
 
+
 # https://pytango.readthedocs.io/en/stable/data_types.html#devenum-pythonic-usage
 @unique
 class AdminMode(IntEnum):
@@ -748,7 +749,8 @@ class SDPSubarray(Device):
                                       self.get_state())
 
         # Observing state
-        if obs_state_allowed is not None and self._obs_state not in obs_state_allowed:
+        if (obs_state_allowed is not None and
+                self._obs_state not in obs_state_allowed):
             allowed = False
             message = compose_message(message, name, 'obsState',
                                       self._obs_state.name)

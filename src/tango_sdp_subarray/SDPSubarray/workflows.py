@@ -13,8 +13,14 @@ from typing import Dict, List, Tuple, Optional
 
 class Workflows:
     """Class to hold workflow and database state."""
+
     # pylint: disable=invalid-name
     def __init__(self, db_client):
+        """
+        Create the object.
+
+        :param db_client: database client
+        """
         self.db_client = db_client
         self._sbi_id = None
 
@@ -46,7 +52,7 @@ class Workflows:
 
     def is_sbi_active(self) -> bool:
         """
-        Is the scheduling block instance ID set?
+        Is the scheduling block instance ID set.
 
         :return: true if it is
         """
@@ -59,6 +65,7 @@ class Workflows:
     def get_processing_block_state(self) -> List:
         """
         Get the processing block state.
+
         :return: list of states
         """
         pb_state_list = []
@@ -178,7 +185,7 @@ class Workflows:
         return receive_addresses
 
     def set_scan_type(self, new_scan_types: List, scan_type: str) -> bool:
-        """ Set the scan type.
+        """Set the scan type.
 
         If new scan types are supplied, they are appended to the current
         list.
