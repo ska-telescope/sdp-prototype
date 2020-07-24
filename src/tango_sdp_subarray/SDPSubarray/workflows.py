@@ -1,25 +1,68 @@
-""" Workflow related tasks for SDPSubarray. """
+"""
+Workflow related tasks for SDPSubarray.
+
+This is the first stage to isolate the database operations.
+There should probably be another layer to fully separate the workflow logic
+from the database operations. Then more code can be moved from SDPSubarray into that layer.
+"""
 
 import logging
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 
 
 class Workflows:
     """ Class to hold workflow and database state. """
+    # pylint: disable=invalid-name
     def __init__(self, db_client):
         self.db_client = db_client
-        self.sbi_id = None
+        self._sbi_id = None
+
+    def _lock(self) -> None:
+        """ Synchronization placeholder. """
+
+    def _unlock(self) -> None:
+        """ Synchronization placeholder. """
+
+    @property
+    def sbi_id(self) -> str:
+        """
+        Get the scheduling block instance ID.
+        :return: the id
+        """
+        return self._sbi_id
+
+    @sbi_id.setter
+    def sbi_id(self, value: Optional[str]) -> None:
+        """
+        Set the scheduling block instance ID.
+        :param value: the ID
+        """
+        self._lock()
+        self._sbi_id = value
+        self._unlock()
 
     def is_sbi_active(self) -> bool:
+        """
+        Is the scheduling block instance ID set?
+        :return: true if it is
+        """
         return self.sbi_id is not None
 
     def clear_sbi(self) -> None:
+        """
+        Clear the scheduling block instance ID.
+        """
         self.sbi_id = None
 
     def get_processing_block_state(self) -> List:
+        """
+        Get the processing block state.
+        :return: list of states
+        """
         pb_state_list = []
 
-        if self.db_client is not None and self.sbi_id is not None:
+        if self.db_client is not None and self.is_sbi_active():
+            self._lock()
             for txn in self.db_client.txn():
                 sb = txn.get_scheduling_block(self.sbi_id)
                 pb_realtime = sb.get('pb_realtime')
@@ -30,23 +73,36 @@ class Workflows:
                     else:
                         pb_state['id'] = pb_id
                     pb_state_list.append(pb_state)
+            self._unlock()
         return pb_state_list
 
-    def get_scheduling_block(self) -> Dict:
+    def get_scheduling_block(self) -> Optional[Dict]:
+        """
+        Get the scheduling block.
+        :return: scheduling block or None if not active
+        """
         sb = None
 
+        self._lock()
         if self.db_client is not None and self.is_sbi_active():
             for txn in self.db_client.txn():
                 sb = txn.get_scheduling_block(self.sbi_id)
+        self._unlock()
         return sb
 
     def get_existing_ids(self) -> Tuple[List, List]:
+        """
+        Get the existing scheduling and processing block ids.
+        :return: tuple of ids, scheduling then processing
+        """
         existing_sb_ids = []
         existing_pb_ids = []
+        self._lock()
         if self.db_client is not None:
             for txn in self.db_client.txn():
                 existing_sb_ids = txn.list_scheduling_blocks()
                 existing_pb_ids = txn.list_processing_blocks()
+        self._unlock()
         return existing_sb_ids, existing_pb_ids
 
     def create_sb_and_pbs(self, sb: Dict, pbs: List) -> None:
@@ -60,11 +116,13 @@ class Workflows:
 
         """
         if self.db_client is not None:
+            self._lock()
             for txn in self.db_client.txn():
                 sbi_id = sb.get('id')
                 txn.create_scheduling_block(sbi_id, sb)
                 for pb in pbs:
                     txn.create_processing_block(pb)
+            self._unlock()
 
     def update_sb(self, new_values: Dict) -> None:
         """Update SB in the config DB.
@@ -73,10 +131,12 @@ class Workflows:
 
         """
         if self.db_client is not None:
+            self._lock()
             for txn in self.db_client.txn():
                 sb = txn.get_scheduling_block(self.sbi_id)
                 sb.update(new_values)
                 txn.update_scheduling_block(self.sbi_id, sb)
+            self._unlock()
 
     def get_receive_addresses(self) -> Dict:
         """Get the receive addresses from the receive PB state.
@@ -96,6 +156,7 @@ class Workflows:
         logging.info('Waiting for receive addresses')
 
         # Wait for pb_receive_addresses in SBI
+        self._lock()
         for txn in self.db_client.txn():
             sb = txn.get_scheduling_block(self.sbi_id)
             pb_id = sb.get('pb_receive_addresses')
@@ -112,6 +173,7 @@ class Workflows:
             if receive_addresses is None:
                 txn.loop(wait=True)
 
+        self._unlock()
         return receive_addresses
 
     def set_scan_type(self, new_scan_types: List, scan_type: str) -> bool:
@@ -127,6 +189,7 @@ class Workflows:
 
         """
         if self.db_client is not None:
+            self._lock()
 
             # Get the existing scan types from SB
             for txn in self.db_client.txn():
@@ -151,4 +214,5 @@ class Workflows:
             else:
                 self.update_sb({'current_scan_type': scan_type})
 
+            self._unlock()
         return True

@@ -8,8 +8,7 @@ import pytest
 from tango.test_context import DeviceTestContext
 
 import ska_sdp_config
-from SDPSubarray import SDPSubarray
-from SDPSubarray.release import VERSION
+from SDPSubarray import SDPSubarray, release, feature_toggle
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -25,10 +24,10 @@ def tango_context():
     #       TOGGLE_CONFIG_DB
     # Note: if these, or the env variables are not set, use the
     #       SDPSubarray device defaults.
-    SDPSubarray.set_feature_toggle_default('config_db', False)
+    feature_toggle.set_feature_toggle_default('config_db', False)
 
     device_name = 'mid_sdp/elt/subarray_1'
-    properties = dict(Version=VERSION)
+    properties = dict(Version=release.VERSION)
     tango_context = DeviceTestContext(SDPSubarray,
                                       device_name=device_name,
                                       properties=properties)

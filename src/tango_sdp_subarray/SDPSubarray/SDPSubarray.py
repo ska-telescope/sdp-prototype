@@ -13,7 +13,10 @@ import logging
 import json
 import jsonschema
 
+import ska_sdp_config
 from ska_sdp_logging import tango_logging
+from .release import VERSION as SERVER_VERSION   # noqa
+from .feature_toggle import FeatureToggle, is_feature_active, new_config_db
 from .util import log_command, terminate
 from .workflows import Workflows
 
@@ -25,12 +28,6 @@ from tango.server import Device, DeviceMeta, attribute, command, \
 
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
-from release import VERSION as SERVER_VERSION   # noqa
-
-try:
-    import ska_sdp_config
-except ImportError:
-    ska_sdp_config = None
 
 LOG = logging.getLogger()
 
@@ -72,14 +69,6 @@ class ObsState(IntEnum):
     RESETTING = 8
     FAULT = 9
     RESTARTING = 10
-
-
-@unique
-class FeatureToggle(IntEnum):
-    """Feature Toggles."""
-
-    CONFIG_DB = 1  #: Enable / Disable the Config DB
-    AUTO_REGISTER = 2  #: Enable / Disable Tango DB auto-registration
 
 
 # class SDPSubarray(SKASubarray):
@@ -187,18 +176,7 @@ class SDPSubarray(Device):
         self._set_admin_mode(AdminMode.ONLINE)
         self._set_health_state(HealthState.OK)
         self._set_receive_addresses(None)
-
-        if ska_sdp_config is not None \
-                and self.is_feature_active(FeatureToggle.CONFIG_DB):
-            config_db_client = ska_sdp_config.Config()
-            LOG.debug('SDP Config DB enabled')
-        else:
-            config_db_client = None
-            LOG.warning('SDP Config DB disabled %s',
-                        '(ska_sdp_config package not found)'
-                        if ska_sdp_config is None
-                        else 'by feature toggle')
-        self._workflows = Workflows(config_db_client)
+        self._workflows = Workflows(new_config_db())
 
         # The subarray device is initialised in the OFF state.
         LOG.debug('Setting device state to OFF')
@@ -671,7 +649,7 @@ class SDPSubarray(Device):
         # Set obsState to RESTARTING
         self._set_obs_state(ObsState.RESTARTING)
 
-        if self._workflows.is_sbi_active:
+        if self._workflows.is_sbi_active():
             # Clear scan type and scan ID, and set status to CANCELLED
             self._workflows.update_sb({'current_scan_type': None, 'scan_id': None,
                                        'status': 'CANCELLED'})
@@ -686,56 +664,8 @@ class SDPSubarray(Device):
         self._set_obs_state(ObsState.EMPTY)
 
     # -------------------------------------
-    # Public methods
-    # -------------------------------------
-
-    @staticmethod
-    def set_feature_toggle_default(feature_name, default):
-        """Set the default value of a feature toggle.
-
-        :param feature_name: Name of the feature
-        :param default: Default for the feature toggle (if it is not set)
-
-        """
-        env_var = SDPSubarray._get_feature_toggle_env_var(feature_name)
-        if not os.environ.get(env_var):
-            LOG.debug('Setting default for toggle: %s = %s', env_var, default)
-            os.environ[env_var] = str(int(default))
-
-    @staticmethod
-    def is_feature_active(feature_name):
-        """Check if feature is active.
-
-        :param feature_name: Name of the feature.
-        :returns: True if the feature toggle is enabled.
-
-        """
-        env_var = SDPSubarray._get_feature_toggle_env_var(feature_name)
-        env_var_value = os.environ.get(env_var)
-        return env_var_value == '1'
-
-    # -------------------------------------
     # Private methods
     # -------------------------------------
-
-    @staticmethod
-    def _get_feature_toggle_env_var(feature_name):
-        """Get the env var associated with the feature toggle.
-
-        :param feature_name: Name of the feature.
-        :returns: environment variable name for feature toggle.
-
-        """
-        if isinstance(feature_name, FeatureToggle):
-            feature_name = feature_name.name
-        env_var = str('toggle_' + feature_name).upper()
-        allowed = ['TOGGLE_' + toggle.name for toggle in FeatureToggle]
-        if env_var not in allowed:
-            message = 'Unknown feature toggle: {} (allowed: {})' \
-                .format(env_var, allowed)
-            LOG.error(message)
-            raise ValueError(message)
-        return env_var
 
     def _set_obs_state(self, value, verbose=True):
         """Set the obsState and issue a change event."""
@@ -1068,12 +998,10 @@ def main(args=None, **kwargs):
 
     # If the feature is enabled, attempt to auto-register the device
     # with the tango db.
-    if SDPSubarray.is_feature_active(FeatureToggle.AUTO_REGISTER):
-        if len(sys.argv) > 1:
-            # delete_device_server('*')
-            devices = ['mid_sdp/elt/subarray_{:d}'.format(i + 1)
-                       for i in range(1)]
-            register(sys.argv[1], *devices)
+    if is_feature_active(FeatureToggle.AUTO_REGISTER) and len(sys.argv) > 1:
+        # delete_device_server('*')
+        devices = ['mid_sdp/elt/subarray_{:d}'.format(i + 1) for i in range(1)]
+        register(sys.argv[1], *devices)
 
     return run((SDPSubarray,), args=args, **kwargs)
 

@@ -11,12 +11,11 @@ from os.path import dirname, join
 import tango
 from tango import DevState
 
-from ska_telmodel.sdp.schema import validate_sdp_receive_addresses
-
 import pytest
 from pytest_bdd import (given, parsers, scenarios, then, when)
 
-from SDPSubarray import (AdminMode, HealthState, ObsState, SDPSubarray)
+from ska_telmodel.sdp.schema import validate_sdp_receive_addresses
+from SDPSubarray import (AdminMode, HealthState, ObsState, feature_toggle)
 
 try:
     import ska_sdp_config
@@ -58,7 +57,7 @@ def subarray_device(tango_context, admin_mode_value: str):
 
     # Clear the config DB
     if ska_sdp_config is not None \
-            and SDPSubarray.is_feature_active('config_db'):
+            and feature_toggle.is_feature_active('config_db'):
         config_db_client = ska_sdp_config.Config()
         config_db_client._backend.delete("/pb", must_exist=False,
                                          recursive=True)
@@ -310,7 +309,7 @@ def check_config_db():
     Only run this step if the config DB is enabled.
     """
     if ska_sdp_config is not None \
-            and SDPSubarray.is_feature_active('config_db'):
+            and feature_toggle.is_feature_active('config_db'):
         filename = join(dirname(__file__), 'data',
                         'command_AssignResources.json')
         with open(filename, 'r') as file:
@@ -332,7 +331,7 @@ def receive_addresses_attribute_ok(subarray_device):
     receive_addresses = json.loads(receive_addresses)
 
     if ska_sdp_config is not None \
-            and SDPSubarray.is_feature_active('config_db'):
+            and feature_toggle.is_feature_active('config_db'):
         validate_sdp_receive_addresses(3, receive_addresses, 2)
 
 
