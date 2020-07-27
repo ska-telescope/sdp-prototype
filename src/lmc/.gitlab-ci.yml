@@ -1,55 +1,41 @@
 # Local GitLab CI file for Local Monitoring and Control (Tango devices)
 
+.env: &env
+  variables:
+    BUILD_PATH: src/lmc
+
 # ============================================================================
 # Build Python package
 # ============================================================================
 
 build-python:ska-sdp-lmc-dev:
   extends: .build_python_dev
-  variables:
-    BUILD_PATH: src/lmc
+  <<: *env
 
 build-python:ska-sdp-lmc:
   extends: .build_python_release
-  variables:
-    BUILD_PATH: src/lmc
+  <<: *env
 
 # ============================================================================
 # Test Python package
 # ============================================================================
 
 test:ska-sdp-lmc:
-  extends: .tango_tests
-  stage: test
-#  services:
-#    - name: quay.io/coreos/etcd:latest
-#      alias: etcd
-#      command:
-#        - /usr/local/bin/etcd
-#        - "--advertise-client-urls=http://0.0.0.0:2379"
-#        - "--listen-client-urls=http://0.0.0.0:2379"
-#        - "--initial-advertise-peer-urls=http://0.0.0.0:2380"
-#        - "--listen-peer-urls=http://0.0.0.0:2380"
-#        - "--initial-cluster=default=http://0.0.0.0:2380"
+  extends:
+    - .test_python
+    - .test_with_coverage
   variables:
-    SDP_CONFIG_HOST: etcd
+    BUILD_PATH: src/lmc
     TOGGLE_CONFIG_DB: 0
-  script:
-    - cd src/lmc
-    - pip install -r requirements.txt -r requirements-test.txt
-    - mkdir -p build/reports
-    - python3 setup.py test
-    - mv .coverage ../../$CI_JOB_NAME.coverage
-    - mv htmlcov build/lmc_htmlcov
-    - mv coverage.xml build/code-coverage.xml
-    - mv cucumber.json build/cucumber.json
-    - mv build ../../build
-  artifacts:
-    paths:
-      - build
-      - ./$CI_JOB_NAME.coverage
-    expire_in: 1 week
-    when: always
+  before_script:
+    - cd $BUILD_PATH
+    - pip3 install -r requirements.txt -r requirements-test.txt
+    - cd ../..
+  after_script:
+    - cd $BUILD_PATH
+    - mv htmlcov ../../build/sdp_subarray_htmlcov
+    - mv coverage.xml ../../build/code-coverage.xml
+    - mv cucumber.json ../../build/cucumber.json
 
 # ============================================================================
 # Publish Python package
@@ -66,8 +52,7 @@ publish-python:ska-sdp-lmc:
   extends: .publish_python_release
   dependencies:
     - build-python:ska-sdp-lmc
-  variables:
-    BUILD_PATH: src/lmc
+  <<: *env
 
 # ============================================================================
 # Build, tag and push Docker development images
@@ -81,8 +66,7 @@ publish-python:ska-sdp-lmc:
 build-docker:ska-sdp-lmc:
   stage: build
   extends: .build_docker
-  variables:
-    BUILD_PATH: src/lmc
+  <<: *env
 
 
 # ============================================================================
@@ -93,8 +77,7 @@ publish-docker:ska-sdp-lmc:
   extends: .publish_template
   dependencies:
     - build-docker:ska-sdp-lmc
-  variables:
-    BUILD_PATH: src/lmc
+  <<: *env
 
 # ============================================================================
 # Update XRay links in JIRA automatically (master only)
