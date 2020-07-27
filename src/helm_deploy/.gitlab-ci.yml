@@ -1,40 +1,20 @@
-# Local Gitlab-CI file for Helm-deploy
+# GitLab CI jobs for Helm deployer
 
+# ============================================================================
+# Build Docker development image
+# ============================================================================
 
-## ============================================================================
-## Build, tag and push Docker development images
-## ============================================================================
-
-# This needs to be updated. Might be best to use Gitlab registry for
-# development images, otherwise it will load the nexus registry with lots of
-# development images.
-
-# Build and push `helm_deploy` image.
 build:helm_deploy:
-  stage: build
   extends: .build_docker
   variables:
     BUILD_PATH: src/helm_deploy
 
-### ============================================================================
-### Test Docker development images
-### ============================================================================
-#
-## Placeholder for testing. Currently not doing anything.
-# test:helm_deploy:
-#  stage: test
-#  extends: .pull_docker
-#  variables:
-#    BUILD_PATH: src/helm_deploy
-#  script:
-#    - echo "Placeholder for testing docker images"
-
-## ============================================================================
-## Tag and push Docker latest images (master only)
-## ============================================================================
+# ============================================================================
+# Tag and publish Docker image (master only)
+# ============================================================================
 
 publish:helm_deploy:
-  extends: .publish_template
+  extends: .push_docker_nexus
   dependencies:
     - build:helm_deploy
   variables:

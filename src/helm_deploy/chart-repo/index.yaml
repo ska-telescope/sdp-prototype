@@ -1,0 +1,109 @@
+apiVersion: v1
+entries:
+  buffer:
+  - apiVersion: v2
+    appVersion: 0.1.0
+    created: "2020-07-08T16:32:08.87033+01:00"
+    description: Helm chart to create an SDP buffer reservation using a persistent
+      volume claim
+    digest: 071fb1f886049347086aea618a802bc9b6a057a44653be17ffc9e369ceaf9b3e
+    home: https://developer.skatelescope.org/projects/sdp-prototype/
+    icon: http://www.skatelescope.org/wp-content/uploads/2016/07/09545_NEW_LOGO_2014.png
+    maintainers:
+    - email: maja1@mrao.cam.ac.uk
+      name: Mark Ashdown
+    name: buffer
+    sources:
+    - https://gitlab.com/ska-telescope/sdp-prototype/
+    type: application
+    urls:
+    - buffer-0.1.0.tgz
+    version: 0.1.0
+  daliuge:
+  - apiVersion: v1
+    appVersion: "1.0"
+    created: "2020-07-08T16:32:08.870658+01:00"
+    description: A Helm chart to deploy DALiuGE
+    digest: 7d3ab0a40c810786e2c4d72599394bcbc5d09ead5ee0cd226343a4847210b7c1
+    home: https://developer.skatelescope.org/projects/sdp-prototype/
+    maintainers:
+    - email: rtobar@icrar.org
+      name: Rodrigo Tobar
+    name: daliuge
+    urls:
+    - daliuge-0.2.1.tgz
+    version: 0.2.1
+  dask:
+  - apiVersion: v2
+    appVersion: 0.1.0
+    created: "2020-07-08T16:32:08.871245+01:00"
+    description: Helm chart to deploy SDP Dask execution engine
+    digest: 22e0dacf4d96fa517d1791ab38a5bb8add352b2008a045647792a40374ad7ff4
+    home: https://developer.skatelescope.org/projects/sdp-prototype/
+    icon: http://www.skatelescope.org/wp-content/uploads/2016/07/09545_NEW_LOGO_2014.png
+    maintainers:
+    - email: maja1@mrao.cam.ac.uk
+      name: Mark Ashdown
+    - email: nijin.thykkathu@stfc.ac.uk
+      name: Nijin Thykatthu
+    name: dask
+    sources:
+    - https://gitlab.com/ska-telescope/sdp-prototype/
+    type: application
+    urls:
+    - dask-0.1.0.tgz
+    version: 0.1.0
+  pss-receive:
+  - apiVersion: v1
+    appVersion: "1.0"
+    created: "2020-07-08T16:32:08.871546+01:00"
+    description: Helm chart to deploy the SDP Prototype pss receiver execution engine
+    digest: 2d5b3e89da0a34d9be77f4655cf6f82f1bfb8ab5d80959b89bbbbb37c45f33e2
+    home: https://developer.skatelescope.org/projects/sdp-prototype/
+    icon: http://www.skatelescope.org/wp-content/uploads/2016/07/09545_NEW_LOGO_2014.png
+    maintainers:
+    - email: benjamin.shaw@manchester.ac.uk
+      name: Benjamin Shaw
+    name: pss-receive
+    sources:
+    - https://gitlab.com/ska-telescope/sdp-prototype
+    urls:
+    - pss-receive-0.1.0.tgz
+    version: 0.1.0
+  vis-receive:
+  - apiVersion: v1
+    appVersion: "1.0"
+    created: "2020-07-08T16:32:08.871973+01:00"
+    description: Helm chart to deploy the SDP Prototype visibility receiver execution
+      engine
+    digest: 2c9ad5c88a6b516e51bbc86eb11f2c4e7723e345546e6c2b696e07941cbade8e
+    home: https://developer.skatelescope.org/projects/sdp-prototype/
+    icon: http://www.skatelescope.org/wp-content/uploads/2016/07/09545_NEW_LOGO_2014.png
+    maintainers:
+    - email: nijin.thykkathu@stfc.ac.uk
+      name: Nijin Thykkathu
+    name: vis-receive
+    sources:
+    - https://gitlab.com/ska-telescope/sdp-prototype
+    urls:
+    - vis-receive-0.2.1.tgz
+    version: 0.2.1
+  workflow:
+  - apiVersion: v2
+    appVersion: 0.1.0
+    created: "2020-07-08T16:32:08.872259+01:00"
+    description: Helm chart to deploy an SDP workflow
+    digest: 06dab24f65c0d7bf478505c25067dc565ffdfb7b8319b61dd71041a46946369f
+    home: https://developer.skatelescope.org/projects/sdp-prototype/
+    icon: http://www.skatelescope.org/wp-content/uploads/2016/07/09545_NEW_LOGO_2014.png
+    maintainers:
+    - email: maja1@mrao.cam.ac.uk
+      name: Mark Ashdown
+    name: workflow
+    sources:
+    - https://gitlab.com/ska-telescope/sdp-prototype/
+    type: application
+    urls:
+    - workflow-0.1.0.tgz
+    version: 0.1.0
+generated: "2020-07-08T16:32:08.869752+01:00"

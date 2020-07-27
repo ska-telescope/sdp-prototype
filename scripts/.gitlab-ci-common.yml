@@ -1,89 +1,19 @@
-# Local Gitlab-CI file for Common settings
+# Common definitions for GitLab CI files
 
-## ============================================================================
-## Common settings for building docker images
-## ============================================================================
-
-.build_docker:
-  dependencies: []
-  variables:
-    DOCKER_REGISTRY_HOST: $DOCKER_REGISTRY_HOST
-    DOCKER_REGISTRY_USER: $CI_PROJECT_NAME
-    GIT_VERSION: ${CI_COMMIT_SHA:0:8}
-  tags:
-    - docker
-    - engageska
-  image: docker:stable
-  services:
-    - docker:dind
-  before_script:
-    - apk add make git
-    - docker login -u $DOCKER_REGISTRY_USERNAME -p $DOCKER_REGISTRY_PASSWORD $DOCKER_REGISTRY_HOST
-  script:
-    - cd $BUILD_PATH
-    - make DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME pull
-    - make DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME build
-    - make DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push
-  retry: 2
-
-.pull_docker:
-  dependencies: []
-  variables:
-    DOCKER_REGISTRY_HOST: $DOCKER_REGISTRY_HOST
-    DOCKER_REGISTRY_USER: $CI_PROJECT_NAME
-    GIT_VERSION: ${CI_COMMIT_SHA:0:8}
-  tags:
-    - docker
-    - engageska
-  image: docker:stable
-  services:
-    - docker:dind
-  before_script:
-    - apk add make git
-    - docker login -u $DOCKER_REGISTRY_USERNAME -p $DOCKER_REGISTRY_PASSWORD $DOCKER_REGISTRY_HOST
-  script:
-    - cd $BUILD_PATH
-    - make DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME pull_default
-  retry: 2
-
-.push_docker:
-  dependencies: []
-  variables:
-    DOCKER_REGISTRY_HOST: $DOCKER_REGISTRY_HOST
-    DOCKER_REGISTRY_USER: $CI_PROJECT_NAME
-    GIT_VERSION: ${CI_COMMIT_SHA:0:8}
-  tags:
-    - docker
-    - engageska
-  image: docker:stable
-  services:
-    - docker:dind
-  before_script:
-    - apk add make git
-    - docker login -u $DOCKER_REGISTRY_USERNAME -p $DOCKER_REGISTRY_PASSWORD $DOCKER_REGISTRY_HOST
-  script:
-    - cd $BUILD_PATH
-    - make DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME pull_default
-    - make DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST DOCKER_REGISTRY_USER=$CI_PROJECT_NAME push_version
-  retry: 2
-
-## ============================================================================
-## Common settings for building python
-## ============================================================================
+# ============================================================================
+# Common definitions for building Python packages
+# ============================================================================
 
 .build_python:
   stage: build
   dependencies: []
-  image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
-  script:
-      - apt-get -y update
-      - apt-get install -y python3-setuptools
-  tags:
-    - docker
-    - engageska
+  image: python:3.7
   artifacts:
     paths:
       - ./$BUILD_PATH/dist/
+    expire_in: 1 week
+
+# Executed on a non-master commit
 
 .build_python_dev:
   extends: .build_python
@@ -93,6 +23,8 @@
     - python3 setup.py egg_info -b+dev.$CI_COMMIT_SHORT_SHA sdist bdist_wheel
   except: [master]
 
+# Executed on a master commit
+
 .build_python_release:
   extends: .build_python
   script:
@@ -100,68 +32,120 @@
     - python3 setup.py sdist bdist_wheel
   only: [master]
 
-## ============================================================================
-## Common settings for publishing python
-## ============================================================================
+.install_artifacts:
+  before_script: # Install from build artifacts
+    - pip3 install ska-sdp-config --find-links src/config_db/dist
+    - pip3 install ska-sdp-logging --find-links src/logging/dist
 
-.publish_python:
+# ============================================================================
+# Common definitions for publishing Python packages
+# ============================================================================
+
+.publish_python_release:
   stage: publish
-  image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
+  only: [master]
   variables:
     TWINE_USERNAME: $TWINE_USERNAME
     TWINE_PASSWORD: $TWINE_PASSWORD
-  tags:
-    - docker
-    - engageska
-  before_script:
+  script:
     - python3 -m pip install twine
-
-.publish_python_dev:
-  extends: .publish_python
-  except: [master]
-  script:
-    - cd $BUILD_PATH
-    - twine upload --repository-url $PYPI_REPOSITORY_URL dist/* || true
-
-.publish_python_release:
-  extends: .publish_python
-  only: [master]
-  script:
     - cd $BUILD_PATH
     - twine upload --repository-url $PYPI_REPOSITORY_URL dist/* || true
     - twine upload --skip-existing -u $PYPI_USER -p $PYPI_PASS dist/* || true
 
-## ============================================================================
-## Common settings for tango
-## ============================================================================
+# ============================================================================
+# Common definitions for testing Python packages
+# ============================================================================
 
-.tango_tests:
+.test_python:
   stage: test
+  extends: .install_artifacts
   tags: [docker]
   image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
+
+.test_with_coverage:
+  stage: test
+  script:
+    - cd $BUILD_PATH
+    - python3 setup.py test
+    # Make the coverage report available at the top level, which will merge it.
+    - mv .coverage ../../$CI_JOB_NAME.coverage
+    - cp build/reports/unit-tests.xml ../../unit-tests-${CI_JOB_NAME}.xml
+    - mv build ../../build
+  artifacts:
+    paths:
+      - ./$CI_JOB_NAME.coverage
+      - ./unit-tests-${CI_JOB_NAME}.xml
+      - ./build
+    expire_in: 1 week
+    when: always
+
+# ============================================================================
+# Common definitions for building Docker images
+# ============================================================================
+
+.build_docker:
+  stage: build_docker
+  dependencies:
+    - build:ska-sdp-logging_dev
+    - build:ska-sdp-config_dev
+    - build:ska-sdp-logging
+    - build:ska-sdp-config
+  variables:
+    BUILD_REGISTRY_HOST: $CI_REGISTRY/ska-telescope
+  tags:
+    - docker
+    - engageska
+  image: docker:stable
+  services:
+    - docker:dind
   before_script:
-    - python3 -m pip install --upgrade ska-sdp-logging ska-sdp-config
+    - apk add make git
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - cp src/config_db/dist/*.whl $BUILD_PATH
+    - cp src/logging/dist/*.whl $BUILD_PATH
+    - cd $BUILD_PATH
+    - make DOCKER_REGISTRY_HOST=$BUILD_REGISTRY_HOST build
+    - make DOCKER_REGISTRY_HOST=$BUILD_REGISTRY_HOST push
 
+# ============================================================================
+# Common definitions for publishing Docker images
+# ============================================================================
 
-## ============================================================================
-## Common settings to publish to master
-## ============================================================================
-
-.publish_template:
+.push_docker_nexus:
   stage: publish
-  extends: .push_docker
-  when: always
   only: [master]
+  dependencies: []
+  variables:
+    DOCKER_REGISTRY_HOST: $DOCKER_REGISTRY_HOST
+    DOCKER_REGISTRY_USER: $CI_PROJECT_NAME
+    GIT_VERSION: ${CI_COMMIT_SHA:0:8}
+  tags:
+    - docker
+    - engageska
+  image: docker:stable
+  services:
+    - docker:dind
+  before_script:
+    - apk add make git
+  script:
+    - cd $BUILD_PATH
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - make DOCKER_REGISTRY_HOST=${CI_REGISTRY}/ska-telescope  pull_gitlab
+    - docker login -u $DOCKER_REGISTRY_USERNAME -p $DOCKER_REGISTRY_PASSWORD $DOCKER_REGISTRY_HOST
+    - make DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST push_version_gitlab
+  retry: 2
 
+# ============================================================================
+# Common definitions for uploading results of XRay tests
+# ============================================================================
 
-## ============================================================================
-## Common settings for XRay tests
-## ============================================================================
-
-# Create an XRay test execution report
-# (currently only for the SDPSubarray tests)
 .xray_report:
   stage: publish
+  only: [master]
+  when: always
+  allow_failure: true
   tags: [docker]
   image: python:latest
   script:

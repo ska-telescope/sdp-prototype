@@ -2,23 +2,23 @@
 # Feature toggles
 feature:
   # Tango devices connect to configuration DB?
-  config-db: "1"
+  config-db: 1
+
 
 # Helm deployment controller
 helm_deploy:
   image: nexus.engageska-portugal.pt/sdp-prototype/helm-deploy
-  version: 0.5.1
+  version: 0.6.0
   imagePullPolicy: IfNotPresent
   replicas: 1
   namespace: sdp
   chart_repo:
-    url: https://gitlab.com/ska-telescope/sdp-prototype.git
-    ref: master
-    path: src/helm_deploy/charts
+    url: https://gitlab.com/ska-telescope/sdp-prototype/-/raw/master/src/helm_deploy/chart-repo/
     refresh: 300
 
 # Configuration database
 etcd:
+  repository: quay.io/coreos/etcd
   version: "3.3"
   replicas: 1
 
@@ -43,13 +43,14 @@ processing_controller:
 
 # Tango devices
 tangods:
+  enabled: true
   master:
     image: nexus.engageska-portugal.pt/sdp-prototype/tangods_sdp_master
     version: 0.3.3
     imagePullPolicy: IfNotPresent
   subarray:
     image: nexus.engageska-portugal.pt/sdp-prototype/tangods_sdp_subarray
-    version: 0.9.1
+    version: 0.11.0
     imagePullPolicy: IfNotPresent
 
 # Console

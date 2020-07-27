@@ -1,40 +1,20 @@
-# Local Gitlab-CI file for console
+# GitLab CI jobs for console
 
+# ============================================================================
+# Build Docker development image
+# ============================================================================
 
-## ============================================================================
-## Build, tag and push Docker development images
-## ============================================================================
-
-# This needs to be updated. Might be best to use Gitlab registry for
-# development images, otherwise it will load the nexus registry with lots of
-# development images.
-
-# Build and push `console` image.
 build:console:
-  stage: build
   extends: .build_docker
   variables:
     BUILD_PATH: src/console
 
-### ============================================================================
-### Test Docker development images
-### ============================================================================
-#
-## Placeholder for testing. Currently not doing anything.
-# test:console:
-#  stage: test
-#  extends: .pull_docker
-#  variables:
-#    BUILD_PATH: src/console
-#  script:
-#    - echo "Placeholder for testing docker images"
-
-## ============================================================================
-## Tag and push Docker latest images (master only)
-## ============================================================================
+# ============================================================================
+# Tag and publish Docker image (master only)
+# ============================================================================
 
 publish:console:
-  extends: .publish_template
+  extends: .push_docker_nexus
   dependencies:
     - build:console
   variables:

@@ -18,7 +18,7 @@ spec:
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
       initContainers:
-      {{ include "sdp-prototype.wait-for-etcd" . | nindent 6 }}
+      {{- include "sdp-prototype.wait-for-etcd" . | nindent 6 }}
       containers:
       - image: {{ .Values.processing_controller.image }}:{{ .Values.processing_controller.version }}
         imagePullPolicy: {{ .Values.processing_controller.imagePullPolicy }}

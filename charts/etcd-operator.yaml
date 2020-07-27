@@ -1,0 +1,27 @@
+# Values to pass to the stable/etcd-operator Helm chart.
+#
+# To install the chart with these values:
+#
+#     helm install etcd stable/etcd-operator -f etcd-operator.yaml
+
+# Disable backup and restore operators (they are not used)
+deployments:
+  backupOperator: false
+  restoreOperator: false
+
+# Use default image
+image: &image {}
+
+# Use image in EngageSKA repository in case quay.io is not available
+# image: &image
+#   repository: nexus.engageska-portugal.pt/etcd/etcd-operator
+#   tag: v0.9.4
+
+etcdOperator:
+  image: *image
+
+backupOperator:
+  image: *image
+
+restoreOperator:
+  image: *image

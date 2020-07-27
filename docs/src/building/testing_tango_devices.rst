@@ -24,27 +24,23 @@ using ``itango`` (often called ``itango3`` for Python 3).
 As an example running a Tango device in one terminal window::
 
     $ python3 SDPSubarray 1 -v4
-    1|2020-04-07T10:24:29.333Z|INFO|MainThread|init|core_logging.py#132|SDPSubarray|Logging initialised
-    1|2020-04-07T10:24:29.334Z|DEBUG|MainThread|set_feature_toggle_default|SDPSubarray.py#529|SDPSubarray|Setting default for toggle: TOGGLE_CONFIG_DB = False
-    1|2020-04-07T10:24:29.334Z|DEBUG|MainThread|set_feature_toggle_default|SDPSubarray.py#529|SDPSubarray|Setting default for toggle: TOGGLE_CBF_OUTPUT_LINK = False
-    1|2020-04-07T10:24:29.334Z|DEBUG|MainThread|set_feature_toggle_default|SDPSubarray.py#529|SDPSubarray|Setting default for toggle: TOGGLE_AUTO_REGISTER = True
-    1|2020-04-07T10:24:29.367Z|DEBUG|MainThread|register|SDPSubarray.py#1034|SDPSubarray|Device 'mid_sdp/elt/subarray_1' already registered
-    1|2020-04-07T10:24:29.508Z|DEBUG|MainThread|tango_loop|server.py#1342|SDPSubarray|server loop started
-    1|2020-04-07T10:24:29.576Z|INFO|MainThread|init_device|SDPSubarray.py#171|SDPSubarray|Initialising SDP Subarray: mid_sdp/elt/subarray_1
-    1|2020-04-07T10:24:29.576Z|DEBUG|MainThread|_set_obs_state|SDPSubarray.py#570|SDPSubarray|Setting obsState to: <ObsState.IDLE: 0>
-    1|2020-04-07T10:24:29.577Z|DEBUG|MainThread|_set_admin_mode|SDPSubarray.py#577|SDPSubarray|Setting adminMode to: <AdminMode.ONLINE: 1>
-    1|2020-04-07T10:24:29.577Z|DEBUG|MainThread|_set_health_state|SDPSubarray.py#584|SDPSubarray|Setting healthState to: <HealthState.OK: 0>
-    1|2020-04-07T10:24:29.577Z|WARNING|MainThread|init_device|SDPSubarray.py#192|SDPSubarray|SDP Config DB disabled by feature toggle
-    1|2020-04-07T10:24:29.577Z|DEBUG|MainThread|init_device|SDPSubarray.py#197|SDPSubarray|CBF output link disabled
-    1|2020-04-07T10:24:29.577Z|INFO|MainThread|init_device|SDPSubarray.py#201|SDPSubarray|SDP Subarray initialised: mid_sdp/elt/subarray_1
+    1|2020-07-06T11:46:21.189Z|INFO|MainThread|init|core_logging.py#133|SDPSubarray|Logging initialised
+    1|2020-07-06T11:46:21.201Z|DEBUG|MainThread|tango_loop|server.py#1346|SDPSubarray|server loop started
+    1|2020-07-06T11:46:21.204Z|INFO|MainThread|init_device|SDPSubarray.py#175|SDPSubarray|Initialising SDP Subarray: mid_sdp/elt/subarray_1
+    1|2020-07-06T11:46:21.204Z|DEBUG|MainThread|_set_obs_state|SDPSubarray.py#818|SDPSubarray|Setting obsState to: <ObsState.EMPTY: 0>
+    1|2020-07-06T11:46:21.204Z|DEBUG|MainThread|_set_admin_mode|SDPSubarray.py#825|SDPSubarray|Setting adminMode to: <AdminMode.ONLINE: 1>
+    1|2020-07-06T11:46:21.204Z|DEBUG|MainThread|_set_health_state|SDPSubarray.py#832|SDPSubarray|Setting healthState to: <HealthState.OK: 0>
+    1|2020-07-06T11:46:21.208Z|DEBUG|MainThread|init_device|SDPSubarray.py#195|SDPSubarray|SDP Config DB enabled
+    1|2020-07-06T11:46:21.209Z|DEBUG|MainThread|init_device|SDPSubarray.py#204|SDPSubarray|Setting device state to OFF
+    1|2020-07-06T11:46:21.209Z|INFO|MainThread|init_device|SDPSubarray.py#207|SDPSubarray|SDP Subarray initialised: mid_sdp/elt/subarray_1
     Ready to accept request
 
 From another window::
 
     $ itango3
-    ITango 9.2.5 -- An interactive Tango client.
+    ITango 9.3.2 -- An interactive Tango client.
 
-    Running on top of Python 3.7.5, IPython 5.8 and PyTango 9.2.5
+    Running on top of Python 3.7.3, IPython 7.15 and PyTango 9.3.2
 
     help      -> ITango's help system.
     object?   -> Details about 'object'. ?object also works, ?? prints more.
@@ -73,12 +69,13 @@ and this is also the command used within the CI pipeline.
 
 The tests are defined using the BDD test framework which give more human readable test scenarios::
 
-    Scenario: AssignResources command successful
-        Given I have an ONLINE SDPSubarray device
-        When I call AssignResources
-        Then State should be ON
-        And obsState should be IDLE
-        And adminMode should be ONLINE
+	Scenario: AssignResources command succeeds
+		Given I have an ONLINE SDPSubarray device
+		When the device is ON and obsState is EMPTY
+		And I call AssignResources
+		Then obsState should be IDLE
+		And the configured Processing Blocks should be in the Config DB
+		And the receiveAddresses attribute should return the expected value
 
 The test scenarios are defined in the file ``tests/1_VTS-223.feature``
 and the implementations are in ``tests/test_subarray_device.py``.
@@ -140,9 +137,9 @@ or for the second device with::
 
     d = DeviceProxy('mid_sdp/elt/subarray_2')
 
-Then query the state of the device with::
+Then query the status of the device with::
 
-    d.state()
+    d.status()
 
 When first initialised the device will report ``'The device is in OFF state.'``
 
@@ -150,58 +147,71 @@ To query the obsState attribute::
 
     d.obsState
 
-This will return ``<obsState.IDLE: 0>``
+This will return ``<obsState.EMPTY: 0>``
+
+
+First need to set the subarray device into its Operational state and that can be done by the ``On`` command::
+
+    d.On()
+
+The subarray device should now be ``ON``, but the obsState remains ``EMPTY``.
 
 Create a configuration string for the scheduling block instance::
 
-    config_sbi = '''
-    {
-      "id": "sbi-mvp01-20200425-00000",
-      "max_length": 21600.0,
-      "scan_types": [
-        {
-          "id": "science",
-          "channels": [
-            {"count": 372, "start": 0, "stride": 2, "freq_min": 0.35e9, "freq_max": 0.358e9, "link_map": [[0,0], [200,1]]}
-          ]
-        },
-        {
-          "id": "calibration",
-          "channels": [
-            {"count": 372, "start": 0, "stride": 2, "freq_min": 0.35e9, "freq_max": 0.358e9, "link_map": [[0,0], [200,1]]}
-          ]
-        }
-      ],
-      "processing_blocks": [
-        {
-          "id": "pb-mvp01-20200425-00000",
-          "workflow": {"type": "realtime", "id": "test_realtime", "version": "0.1.0"},
-          "parameters": {}
-        },
-        {
-          "id": "pb-mvp01-20200425-00001",
-          "workflow": {"type": "realtime", "id": "test_realtime", "version": "0.1.0"},
-          "parameters": {}
-        },
-        {
-          "id": "pb-mvp01-20200425-00002",
-          "workflow": {"type": "batch", "id": "test_batch", "version": "0.1.0"},
-          "parameters": {},
-          "dependencies": [
-            {"pb_id": "pb-mvp01-20200425-00000", "type": ["visibilities"]}
-          ]
-        },
-        {
-          "id": "pb-mvp01-20200425-00003",
-          "workflow": {"type": "batch", "id": "test_batch", "version": "0.1.0"},
-          "parameters": {},
-          "dependencies": [
-            {"pb_id": "pb-mvp01-20200425-00002", "type": ["calibration"]}
-          ]
-        }
-      ]
-    }
-    '''
+  config_sbi = '''
+  {
+    "id": "sbi-mvp01-20200425-00000",
+    "max_length": 21600.0,
+    "scan_types": [
+       {
+         "id": "science_A",
+         "coordinate_system": "ICRS", "ra": "02:42:40.771", "dec": "-00:00:47.84",
+         "channels": [{
+            "count": 744, "start": 0, "stride": 2, "freq_min": 0.35e9, "freq_max": 0.368e9, "link_map": [[0,0], [200,1], [744,2], [944,3]]
+         },{
+            "count": 744, "start": 2000, "stride": 1, "freq_min": 0.36e9, "freq_max": 0.368e9, "link_map": [[2000,4], [2200,5]]
+         }]
+       },
+       {
+         "id": "calibration_B",
+         "coordinate_system": "ICRS", "ra": "12:29:06.699", "dec": "02:03:08.598",
+         "channels": [{
+            "count": 744, "start": 0, "stride": 2, "freq_min": 0.35e9, "freq_max": 0.368e9, "link_map": [[0,0], [200,1], [744,2], [944,3]]
+         },{
+            "count": 744, "start": 2000, "stride": 1, "freq_min": 0.36e9, "freq_max": 0.368e9, "link_map": [[2000,4], [2200,5]]
+         }]
+       }
+     ],
+    "processing_blocks": [
+      {
+        "id": "pb-mvp01-20200425-00000",
+        "workflow": {"type": "realtime", "id": "test_realtime", "version": "0.1.0"},
+        "parameters": {}
+      },
+      {
+        "id": "pb-mvp01-20200425-00001",
+        "workflow": {"type": "realtime", "id": "test_receive_addresses", "version": "0.3.2"},
+        "parameters": {}
+      },
+      {
+        "id": "pb-mvp01-20200425-00002",
+        "workflow": {"type": "batch", "id": "ical", "version": "0.1.0"},
+        "parameters": {},
+        "dependencies": [
+          {"pb_id": "pb-mvp01-20200425-00000", "type": ["visibilities"]}
+        ]
+      },
+      {
+        "id": "pb-mvp01-20200425-00003",
+        "workflow": {"type": "batch", "id": "dpreb", "version": "0.1.0"},
+        "parameters": {},
+        "dependencies": [
+          {"pb_id": "pb-mvp01-20200425-00002", "type": ["calibration"]}
+        ]
+      }
+    ]
+  }
+  '''
 
 Note that the link map for each scan type is included in the configuration.
 The format of this may change.
@@ -210,7 +220,7 @@ The scheduling block instance is started by the ``AssignResources`` command::
 
     d.AssignResources(config_sbi)
 
-The subarray should now be ``ON``, but the obsState remains ``IDLE``.
+which changes the obsState to ``RESOURCING`` and then to ``IDLE``. At this point, receive addresses will be set.
 
 Before executing a scan, we need to configure the scan type. This is done by passing the scan type to the
 ``Configure`` command::
@@ -258,9 +268,9 @@ and pass that to the ``Configure`` command::
 
     d.Configure(config_newscantype)
 
-The ``Reset`` command clears the scan type::
+The ``End`` command clears the scan type::
 
-    d.Reset()
+    d.End()
 
 which changes the obsState to ``IDLE``.
 
@@ -268,7 +278,41 @@ Finally, when the obsState is ``IDLE``, the scheduling block instance is ended b
 
     d.ReleaseResources()
 
-after which the subarray should be ``OFF``.
+after which the obsState should be ``EMPTY``.
+
+To set the subarray device into its Inactive state which can be done by the ``Off`` command::
+
+    d.Off()
+
+It is in a normal condition but cannot be used. ``Off`` would normally be initiated from ``obsState=EMPTY``, but may be used
+from any obsState (for state=ON) to force a hard restart.
+
+Other commands
+--------------
+
+To abort current activity can be done by the ``Abort`` command::
+
+    d.Abort()
+
+This may be for various reasons some of which are normal operations, some of which are because something may have gone
+wrong and the operator wishes to examine the system state.
+
+To reset the obsState to the last known stable state can be done by the ``ObsReset`` command::
+
+    d.ObsReset()
+
+This allows for an SBI execution to be restarted if the reasons for the Abort/ObsReset are understood and perhaps
+resolved by the operator who considers that the execution can be restarted.
+
+
+To restart the subarray device can be done by the ``Restart`` command::
+
+    d.Restart()
+
+This is like a "hard" reset, the operator is not sure of the system state and wishes to get to a known state from which
+operations on the subarray can begin again. This is interpreted as the entry state of the obsState state machine, i.e. Empty.
+The transition should ensure the removal of all resources from the subarray.
+
 
 To list other commands and attributes exposed by the SDPSubarray device::
 
