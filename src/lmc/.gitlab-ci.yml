@@ -38,7 +38,7 @@ test:ska-sdp-lmc:
     - mv cucumber.json ../../build/cucumber.json
 
 # ============================================================================
-# Publish Python package
+# Publish Python package (master only)
 # ============================================================================
 
 # publish-python:ska-sdp-lmc-dev:
@@ -55,36 +55,28 @@ publish-python:ska-sdp-lmc:
   <<: *env
 
 # ============================================================================
-# Build, tag and push Docker development images
+# Build Docker development image
 # ============================================================================
 
-# This needs to be updated. Might be best to use Gitlab registry for
-# development images, otherwise it will load the nexus registry with lots of
-# development images.
-
-# Build and push ska-sdp-lmc image.
-build-docker:ska-sdp-lmc:
-  stage: build
+# Build and push `tangods_sdp_subarray` image.
+build:tangods_sdp_subarray:
   extends: .build_docker
   <<: *env
 
 
 # ============================================================================
-# Tag and push Docker latest images (master only)
+# Tag and publish Docker image (master only)
 # ============================================================================
 
-publish-docker:ska-sdp-lmc:
-  extends: .publish_template
+publish:tangods_sdp_subarray:
+  extends: .push_docker_nexus
   dependencies:
-    - build-docker:ska-sdp-lmc
+    - build:tangods_sdp_subarray
   <<: *env
 
 # ============================================================================
-# Update XRay links in JIRA automatically (master only)
+# Upload XRay test report to JIRA (master only)
 # ============================================================================
 
-xray-report:
+xray_report:
   extends: .xray_report
-  when: always
-  only: [master]
-  allow_failure: true
