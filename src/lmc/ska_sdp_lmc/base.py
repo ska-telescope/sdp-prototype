@@ -1,5 +1,7 @@
 """SDP Tango device base class module."""
 
+# pylint: disable=duplicate-code
+
 import os
 import logging
 

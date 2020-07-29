@@ -4,6 +4,7 @@
 # pylint: disable=too-many-lines
 # pylint: disable=wrong-import-position
 # pylint: disable=too-many-public-methods
+# pylint: disable=duplicate-code
 
 import os
 import sys
