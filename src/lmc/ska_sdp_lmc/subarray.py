@@ -54,13 +54,6 @@ class SDPSubarray(SDPDevice):
     # Attributes
     # ----------
 
-    serverVersion = attribute(
-        label='Server Version',
-        dtype=str,
-        access=AttrWriteType.READ,
-        doc='The version of the SDP Subarray device'
-    )
-
     obsState = attribute(
         label='Obs State',
         dtype=ObsState,
@@ -111,7 +104,6 @@ class SDPSubarray(SDPDevice):
 
     def init_device(self):
         """Initialise the device."""
-        # SKASubarray.init_device(self)
         super().init_device()
 
         self.set_state(DevState.INIT)
