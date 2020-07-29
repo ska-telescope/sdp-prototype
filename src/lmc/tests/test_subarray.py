@@ -48,15 +48,14 @@ scenarios('features/subarray.feature')
 
 
 @given(parsers.parse('I have an {admin_mode_value} SDPSubarray device'))
-def subarray_device(tango_context, admin_mode_value: str):
+def subarray_device(device, admin_mode_value: str):
     """Get a SDPSubarray device object
 
-    :param tango_context: fixture providing a TangoTestContext
+    :param device: an instance of the device in a Tango DeviceTestContext
     :param admin_mode_value: adminMode value the device is created with
 
     """
     # Initialise SDPSubarray device
-    device = tango_context.device
     device.adminMode = AdminMode[admin_mode_value]
 
     # Reset state to OFF and obsState to EMPTY

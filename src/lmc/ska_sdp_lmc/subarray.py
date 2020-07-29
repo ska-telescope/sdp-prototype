@@ -1063,5 +1063,3 @@ def main(args=None, **kwargs):
     signal.signal(signal.SIGTERM, terminate)
 
     return run((SDPSubarray,), args=args, **kwargs)
-
-
