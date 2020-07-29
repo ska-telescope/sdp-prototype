@@ -5,5 +5,5 @@ USER root
 RUN pip install .
 
 USER tango
-ENTRYPOINT ["python", "SDPMaster"]
+ENTRYPOINT ["SDPDevice"]
 CMD ["1", "-v4"]
