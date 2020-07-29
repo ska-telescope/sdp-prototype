@@ -18,10 +18,10 @@ spec:
       - image: {{ .Values.cbf_sdp_emulator.container }}:{{ .Values.cbf_sdp_emulator.version }}
         imagePullPolicy: {{ .Values.cbf_sdp_emulator.imagePullPolicy }}
         name: receiver
-        command: ["emu-recv", "-o", "transmission.channels_per_stream=4", "-o", "reception.datamodel=/input.ms", "-o", "reception.outputfilename=/tmp/output.ms"]
+        command: ["emu-recv", "-o", "transmission.channels_per_stream=4", "-o", "reception.datamodel=/mnt/input.ms", "-o", "reception.outputfilename=/mnt/output.ms"]
         volumeMounts:
-        - mountPath: /input.ms
-          name: input-ms-volume
+        - mountPath: /mnt
+          name: task-pv-storage
         {{- with .Values.receiver.resources }}
         resources:
           {{- toYaml . | nindent 10 }}
@@ -29,18 +29,16 @@ spec:
       - image: {{ .Values.cbf_sdp_emulator.container }}:{{ .Values.cbf_sdp_emulator.version }}
         imagePullPolicy: {{ .Values.cbf_sdp_emulator.imagePullPolicy }}
         name: sender
-        command: ["emu-send", "/input.ms", "-o", "transmission.channels_per_stream=4", "-o", "transmission.rate=147000"]
+        command: ["emu-send", "/mnt/input.ms", "-o", "transmission.channels_per_stream=4", "-o", "transmission.rate=147000"]
         volumeMounts:
-        - mountPath: /input.ms
-          name: input-ms-volume
+        - mountPath: /mnt
+          name: task-pv-storage
         {{- with .Values.sender.resources }}
         resources:
           {{- toYaml . | nindent 10 }}
         {{- end }}
       volumes:
-      - name: input-ms-volume
-        {{ .Values.input.mountType }}:
-        {{- with .Values.input.mountTypeOptions }}
-          {{- toYaml . | nindent 10 }}
-        {{- end }}
+      - name: task-pv-storage
+        persistentVolumeClaim:
+            claimName: task-pv-claim
   backoffLimit: 1
