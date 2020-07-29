@@ -1,6 +1,5 @@
 """SDP Tango device base class module."""
 
-# pylint: disable=duplicate-code
 
 import os
 import logging
@@ -17,6 +16,7 @@ class SDPDevice(Device):
     """SDP Tango device base class."""
 
     # pylint: disable=attribute-defined-outside-init
+    # pylint: disable=duplicate-code
 
     # Features: this is dict mapping feature name to default toggle value
 
