@@ -710,7 +710,6 @@ class SDPSubarray(SDPDevice):
     # Private methods
     # -------------------------------------
 
-
     def _set_obs_state(self, value, verbose=True):
         """Set the obsState and issue a change event."""
         if verbose:
