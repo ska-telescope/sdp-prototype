@@ -161,16 +161,6 @@ class SDPMaster(SDPDevice):
         :returns: True if the command is allowed, otherwise raises exception
 
         """
-        # Utility function for composing the error message
-        def compose_message(message_inp, name, state, value):
-            if message_inp == '':
-                message_out = 'Command {} not allowed when {} is {}' \
-                              ''.format(name, state, value)
-            else:
-                message_out = '{}, or when {} is {}' \
-                              ''.format(message_inp, state, value)
-            return message_out
-
         allowed = True
         message = ''
 
@@ -178,8 +168,8 @@ class SDPMaster(SDPDevice):
         if state_allowed is not None:
             if self.get_state() not in state_allowed:
                 allowed = False
-                message = compose_message(message, name, 'the device',
-                                          self.get_state())
+                message = self._compose_message(message, name, 'the device',
+                                                self.get_state())
 
         if not allowed:
             # Raise command error

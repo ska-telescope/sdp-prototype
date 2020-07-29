@@ -1,7 +1,6 @@
 """SDP Master device tests."""
 
 # pylint: disable=redefined-outer-name
-# pylint:disable=duplicate-code
 
 from pytest_bdd import (given, parsers, scenarios, then, when)
 

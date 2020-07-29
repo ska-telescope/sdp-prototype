@@ -1,6 +1,7 @@
 """Pytest fixtures."""
 
 # pylint: disable=redefined-outer-name
+
 import threading
 
 import ska_sdp_config
