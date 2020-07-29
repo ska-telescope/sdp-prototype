@@ -106,8 +106,7 @@ linting:
       processing_controller/processing_controller
       pss_receive/pss-receive
       pss_receive/pss-send
-      tango_sdp_master/SDPMaster
-      tango_sdp_subarray/SDPSubarray
+      lmc/ska_sdp_lmc
       > ../build/reports/linting.xml
   when: always
   artifacts:
