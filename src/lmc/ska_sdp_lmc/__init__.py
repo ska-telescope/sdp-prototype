@@ -1,5 +1,7 @@
 """SKA SDP local monitoring and control (Tango devices)."""
 
+# pylint:disable=duplicate-code
+
 from . import release
 from .attributes import (AdminMode, HealthState, ObsState)
 from .master import SDPMaster
