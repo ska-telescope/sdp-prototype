@@ -4,7 +4,6 @@
 # pylint: disable=too-many-lines
 # pylint: disable=wrong-import-position
 # pylint: disable=too-many-public-methods
-# pylint: disable=duplicate-code
 
 import os
 import sys
@@ -755,15 +754,6 @@ class SDPSubarray(SDPDevice):
 
         """
         # pylint: disable=too-many-arguments
-        # Utility function for composing the error message
-        def compose_message(message_inp, name, state, value):
-            if message_inp == '':
-                message_out = 'Command {} not allowed when {} is {}' \
-                              ''.format(name, state, value)
-            else:
-                message_out = '{}, or when {} is {}' \
-                              ''.format(message_inp, state, value)
-            return message_out
 
         allowed = True
         message = ''
@@ -772,15 +762,15 @@ class SDPSubarray(SDPDevice):
         if state_allowed is not None:
             if self.get_state() not in state_allowed:
                 allowed = False
-                message = compose_message(message, name, 'the device',
-                                          self.get_state())
+                message = self._compose_message(message, name, 'the device',
+                                                self.get_state())
 
         # Observing state
         if obs_state_allowed is not None:
             if self._obs_state not in obs_state_allowed:
                 allowed = False
-                message = compose_message(message, name, 'obsState',
-                                          self._obs_state.name)
+                message = self._compose_message(message, name, 'obsState',
+                                                self._obs_state.name)
 
         # Administration mode
         if admin_mode_allowed is not None:
@@ -789,8 +779,8 @@ class SDPSubarray(SDPDevice):
                 condition = not condition
             if condition:
                 allowed = False
-                message = compose_message(message, name, 'adminMode',
-                                          self._admin_mode.name)
+                message = self._compose_message(message, name, 'adminMode',
+                                                self._admin_mode.name)
 
         if not allowed:
             # Raise command error

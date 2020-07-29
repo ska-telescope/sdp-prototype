@@ -1,7 +1,5 @@
 """Device attributes."""
 
-# pylint: disable=duplicate-code
-
 import enum
 
 

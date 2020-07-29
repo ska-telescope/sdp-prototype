@@ -1,6 +1,5 @@
 """SDP Tango device base class module."""
 
-
 import os
 import logging
 
@@ -16,7 +15,6 @@ class SDPDevice(Device):
     """SDP Tango device base class."""
 
     # pylint: disable=attribute-defined-outside-init
-    # pylint: disable=duplicate-code
 
     # Features: this is dict mapping feature name to default toggle value
 
@@ -114,3 +112,21 @@ class SDPDevice(Device):
         if origin != '':
             LOG.error(origin)
         Except.throw_exception(reason, desc, origin, ErrSeverity.ERR)
+
+    @staticmethod
+    def _compose_message(message_inp, name, state, value):
+        """Compose the error message.
+
+        :param message_inp: Error message / description.
+        :param name: Name of the command.
+        :param state: State or Mode.
+        :param value: State value.
+
+        """
+        if message_inp == '':
+            message_out = 'Command {} not allowed when {} is {}' \
+                          ''.format(name, state, value)
+        else:
+            message_out = '{}, or when {} is {}' \
+                          ''.format(message_inp, state, value)
+        return message_out

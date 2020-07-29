@@ -1,7 +1,5 @@
 """Utilities."""
 
-# pylint: disable=duplicate-code
-
 import sys
 
 
