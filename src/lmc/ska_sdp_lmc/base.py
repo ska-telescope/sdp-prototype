@@ -113,20 +113,69 @@ class SDPDevice(Device):
             LOG.error(origin)
         Except.throw_exception(reason, desc, origin, ErrSeverity.ERR)
 
-    @staticmethod
-    def _compose_message(message_inp, name, state, value):
-        """Compose the error message.
+    def _check_command(self, name,
+                       state_allowed, obs_state_allowed=None,
+                       admin_mode_allowed=None, admin_mode_invert=False):
+        """Check if command is allowed in a particular state.
 
-        :param message_inp: Error message / description.
-        :param name: Name of the command.
-        :param state: State or Mode.
-        :param value: State value.
+        :param name: name of the command
+        :param state_allowed: list of allowed Tango device states
+        :param obs_state_allowed: list of allowed observing states
+        :param admin_mode_allowed: list of allowed administration modes
+        :param admin_mode_invert: inverts condition on administration modes
+        :returns: True if the command is allowed, otherwise raises exception
 
         """
-        if message_inp == '':
-            message_out = 'Command {} not allowed when {} is {}' \
-                          ''.format(name, state, value)
-        else:
-            message_out = '{}, or when {} is {}' \
-                          ''.format(message_inp, state, value)
-        return message_out
+        # pylint: disable=too-many-arguments
+
+        allowed = True
+        message = ''
+
+        def compose_message(message_inp, name, state, value):
+            """Compose the error message.
+
+            :param message_inp: Error message / description.
+            :param name: Name of the command.
+            :param state: State or Mode.
+            :param value: State value.
+
+            """
+            if message_inp == '':
+                message_out = 'Command {} not allowed when {} is {}' \
+                              ''.format(name, state, value)
+            else:
+                message_out = '{}, or when {} is {}' \
+                              ''.format(message_inp, state, value)
+            return message_out
+
+        # Tango device state
+        if state_allowed is not None:
+            if self.get_state() not in state_allowed:
+                allowed = False
+                message = compose_message(message, name, 'the device',
+                                          self.get_state())
+
+        # Observing state
+        if obs_state_allowed is not None:
+            if self._obs_state not in obs_state_allowed:
+                allowed = False
+                message = compose_message(message, name, 'obsState',
+                                          self._obs_state.name)
+
+        # Administration mode
+        if admin_mode_allowed is not None:
+            condition = self._admin_mode not in admin_mode_allowed
+            if admin_mode_invert:
+                condition = not condition
+            if condition:
+                allowed = False
+                message = compose_message(message, name, 'adminMode',
+                                          self._admin_mode.name)
+        # Tango device state
+        if state_allowed is not None:
+            if self.get_state() not in state_allowed:
+                allowed = False
+                message = compose_message(message, name, 'the device',
+                                          self.get_state())
+
+        return allowed, message

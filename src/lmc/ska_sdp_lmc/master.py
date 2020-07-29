@@ -159,15 +159,7 @@ class SDPMaster(SDPDevice):
         :returns: True if the command is allowed, otherwise raises exception
 
         """
-        allowed = True
-        message = ''
-
-        # Tango device state
-        if state_allowed is not None:
-            if self.get_state() not in state_allowed:
-                allowed = False
-                message = self._compose_message(message, name, 'the device',
-                                                self.get_state())
+        allowed, message = self._check_command(name, state_allowed)
 
         if not allowed:
             # Raise command error

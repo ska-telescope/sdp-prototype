@@ -755,32 +755,10 @@ class SDPSubarray(SDPDevice):
         """
         # pylint: disable=too-many-arguments
 
-        allowed = True
-        message = ''
-
-        # Tango device state
-        if state_allowed is not None:
-            if self.get_state() not in state_allowed:
-                allowed = False
-                message = self._compose_message(message, name, 'the device',
-                                                self.get_state())
-
-        # Observing state
-        if obs_state_allowed is not None:
-            if self._obs_state not in obs_state_allowed:
-                allowed = False
-                message = self._compose_message(message, name, 'obsState',
-                                                self._obs_state.name)
-
-        # Administration mode
-        if admin_mode_allowed is not None:
-            condition = self._admin_mode not in admin_mode_allowed
-            if admin_mode_invert:
-                condition = not condition
-            if condition:
-                allowed = False
-                message = self._compose_message(message, name, 'adminMode',
-                                                self._admin_mode.name)
+        allowed, message = self._check_command(name, state_allowed,
+                                               obs_state_allowed,
+                                               admin_mode_allowed,
+                                               admin_mode_invert)
 
         if not allowed:
             # Raise command error
