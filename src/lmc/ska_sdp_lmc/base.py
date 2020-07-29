@@ -114,21 +114,3 @@ class SDPDevice(Device):
         if origin != '':
             LOG.error(origin)
         Except.throw_exception(reason, desc, origin, ErrSeverity.ERR)
-
-    @staticmethod
-    def _compose_message(message_inp, name, state, value):
-        """Composing the error message.
-
-        :param message_inp: Error message / description.
-        :param name: Name of the command.
-        :param state: The device.
-        :param value: State value.
-
-        """
-        if message_inp == '':
-            message_out = 'Command {} not allowed when {} is {}' \
-                          ''.format(name, state, value)
-        else:
-            message_out = '{}, or when {} is {}' \
-                          ''.format(message_inp, state, value)
-        return message_out
