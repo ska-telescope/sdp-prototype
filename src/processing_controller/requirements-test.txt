@@ -1,10 +1,8 @@
 pylint2junit
 pytest
-pytest-bdd
 pytest-cov
 pytest-json-report
 pytest-pycodestyle
 pytest-pydocstyle
 pytest-pylint
 pytest-runner
-ska-telescope-model

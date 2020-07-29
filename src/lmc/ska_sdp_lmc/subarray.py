@@ -112,7 +112,7 @@ class SDPSubarray(SDPDevice):
     def init_device(self):
         """Initialise the device."""
         # SKASubarray.init_device(self)
-        Device.init_device(self)
+        super().init_device()
 
         self.set_state(DevState.INIT)
         LOG.info('Initialising SDP Subarray: %s', self.get_name())
@@ -144,9 +144,7 @@ class SDPSubarray(SDPDevice):
                         else 'by feature toggle')
 
         # The subarray device is initialised in the OFF state.
-        LOG.debug('Setting device state to OFF')
         self.set_state(DevState.OFF)
-
         LOG.info('SDP Subarray initialised: %s', self.get_name())
 
     def always_executed_hook(self):
@@ -159,14 +157,6 @@ class SDPSubarray(SDPDevice):
     # ------------------
     # Attributes methods
     # ------------------
-
-    def read_serverVersion(self):
-        """Get the SDPSubarray device server version attribute.
-
-        :returns: The SDP subarray device server version.
-
-        """
-        return SERVER_VERSION
 
     def read_obsState(self):
         """Get the obsState attribute.
@@ -755,31 +745,6 @@ class SDPSubarray(SDPDevice):
         self._receive_addresses = value
         self.push_change_event('receiveAddresses',
                                json.dumps(self._receive_addresses))
-
-    def _raise_command_error(self, desc, origin=''):
-        """Raise a command error.
-
-        :param desc: Error message / description.
-        :param origin: Error origin (optional).
-
-        """
-        self._raise_error(desc, reason='API_CommandFailed', origin=origin)
-
-    def _raise_error(self, desc, reason='', origin=''):
-        """Raise an error.
-
-        :param desc: Error message / description.
-        :param reason: Reason for the error.
-        :param origin: Error origin (optional).
-
-        """
-        if reason != '':
-            LOG.error(reason)
-        LOG.error(desc)
-        if origin != '':
-            LOG.error(origin)
-        tango.Except.throw_exception(reason, desc, origin,
-                                     tango.ErrSeverity.ERR)
 
     def _command_allowed(self, name,
                          state_allowed=None, obs_state_allowed=None,

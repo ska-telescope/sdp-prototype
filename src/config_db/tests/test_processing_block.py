@@ -3,7 +3,7 @@
 import os
 import pytest
 
-from ska_sdp_config import config, entity, backend
+from ska_sdp_config import config, entity, ConfigCollision
 
 # pylint: disable=missing-docstring,redefined-outer-name
 
@@ -52,7 +52,7 @@ def test_create_pb(cfg):
         pb1 = entity.ProcessingBlock(pb1_id, None, WORKFLOW)
         assert txn.get_processing_block(pb1_id) is None
         txn.create_processing_block(pb1)
-        with pytest.raises(backend.ConfigCollision):
+        with pytest.raises(ConfigCollision):
             txn.create_processing_block(pb1)
         assert txn.get_processing_block(pb1_id).id == pb1_id
 
@@ -154,7 +154,7 @@ def test_pb_state(cfg):
 
     # Try to create PB state again and check it raises a collision exception
     for txn in cfg.txn():
-        with pytest.raises(backend.ConfigCollision):
+        with pytest.raises(ConfigCollision):
             txn.create_processing_block_state(pb_id, state1)
 
     # Update PB state to state2

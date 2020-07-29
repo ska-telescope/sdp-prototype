@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""PIP setup script for the SDP Logging package."""
+"""PIP setup script for the helm deploy package."""
 
 import setuptools
 
@@ -10,18 +10,17 @@ with open("README.md", "r") as fh:
     LONG_DESCRIPTION = fh.read()
 
 setuptools.setup(
-    name='processing_controller',
+    name='helm_deploy',
     version=VERSION,
-    description='SDP service responsible for the controlling the execution of processing blocks',
+    description='Helm deployment controller',
     author='SKA Sim Team',
     license='License :: OSI Approved :: BSD License',
     long_description=LONG_DESCRIPTION,
     long_description_content_type='text/markdown',
-    url='https://gitlab.com/ska-telescope/sdp-prototype/src/processing_controller/',
+    url='https://gitlab.com/ska-telescope/sdp-prototype/src/helm_deploy/',
     packages=setuptools.find_packages(),
     install_requires=[
-        'jsonschema',
-        'requests',
+        'python-dotenv',
         'ska-sdp-config>=0.0.9',
         'ska-sdp-logging>=0.0.6'
     ],
@@ -31,9 +30,9 @@ setuptools.setup(
         'pytest',
         'pytest-cov',
         'pytest-json-report',
-        'pytest-pylint',
         'pytest-pycodestyle',
-        'pytest-pydocstyle'
+        'pytest-pydocstyle',
+        'pytest-pylint',
     ],
     zip_safe=False,
     classifiers=[

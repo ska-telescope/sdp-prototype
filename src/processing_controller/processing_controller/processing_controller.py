@@ -18,6 +18,7 @@ _RE_DEPLOY_PROC_WF = re.compile('^proc-(?P<pb_id>{})-workflow$'.format(_RE_PB))
 # This one matches any processing deployment
 _RE_DEPLOY_PROC_ANY = re.compile('^proc-(?P<pb_id>{}).*$'.format(_RE_PB))
 
+
 class ProcessingController:
     """
     SDP Processing Controller
@@ -50,6 +51,7 @@ class ProcessingController:
         :param txn:
         """
         pb_ids = txn.list_processing_blocks()
+        logging.info("ids {}".format(pb_ids))
 
         for pb_id in pb_ids:
             state = txn.get_processing_block_state(pb_id)
@@ -165,13 +167,12 @@ class ProcessingController:
         :param backend: config backend to use.
         """
         # Initialise workflow definitions
-        LOG.info('Initialising workflow definitions')
+        LOG.info('Initialising workflow definitions from %s', self._url)
         self._workflows.update_url(self._url)
         next_workflows_refresh = time.time() + self._refresh
 
         # Connect to config DB
         LOG.info('Connecting to config DB')
-        # Note: sdp_config supports this by design but is not fully implemented.
         config = ska_sdp_config.Config(backend=backend)
 
         LOG.info('Starting main loop')

@@ -21,10 +21,13 @@ test:processing_controller:
 build:processing_controller:
   extends: .build_docker
   <<: *env
+<<<<<<< HEAD
 
 # ============================================================================
 # Tag and publish Docker image (master only)
 # ============================================================================
+=======
+>>>>>>> 60627fe9a9b6b18d99cae6f46bcc954a3ae6bada
 
 publish:processing_controller:
   extends: .push_docker_nexus

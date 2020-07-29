@@ -39,5 +39,3 @@ class ObsState(enum.IntEnum):
     RESETTING = 8
     FAULT = 9
     RESTARTING = 10
-
-

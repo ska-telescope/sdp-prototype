@@ -1,0 +1,19 @@
+{
+  "id": "sbi-mvp01-20200425-00000",
+  "max_length": 21600.0,
+  "scan_types": [
+    {
+      "id": "science",
+      "channels": [
+        {"count": 372, "start": 0, "stride": 2, "freq_min": 0.35e9, "freq_max": 0.358e9, "link_map": [[0,0], [200,1]]}
+      ]
+    },
+    {
+      "id": "calibration",
+      "channels": [
+        {"count": 372, "start": 0, "stride": 2, "freq_min": 0.35e9, "freq_max": 0.358e9, "link_map": [[0,0], [200,1]]}
+      ]
+    }
+  ],
+  "processing_blocks": []
+}

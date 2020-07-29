@@ -87,8 +87,12 @@ coverage_report:
     - ./build
     expire_in: 1 week
 
+<<<<<<< HEAD
 # Generate linting report
 
+=======
+# Generate linting report.
+>>>>>>> 60627fe9a9b6b18d99cae6f46bcc954a3ae6bada
 linting:
   stage: linting
   image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
