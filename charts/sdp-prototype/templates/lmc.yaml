@@ -69,7 +69,7 @@ spec:
         image: {{ .Values.tangods.lmc.image }}:{{ .Values.tangods.lmc.version }}
         imagePullPolicy: {{ .Values.tangods.lmc.imagePullPolicy }}
         command: ["SDPMaster"]
-        args: ["master", "-v4"]
+        args: ["1", "-v4"]
         resources: {}
         env:
         - name: TANGO_HOST
@@ -100,10 +100,6 @@ spec:
           value: databaseds-tango-base-{{ .Release.Name }}:10000
         - name: TOGGLE_CONFIG_DB
           value: {{ quote (index .Values "feature" "config-db") }}
-        - name: TOGGLE_AUTO_REGISTER
-          value: "0"
-        - name: TOGGLE_RECEIVE_ADDRESSES_HACK
-          value: {{ quote (index .Values "feature" "receive-addresses-hack") }}
 {{- if index .Values "feature" "config-db" }}
         - name: SDP_CONFIG_HOST
           value: {{ include "sdp-prototype.etcd-host" . }}

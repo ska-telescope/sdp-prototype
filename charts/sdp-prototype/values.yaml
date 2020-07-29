@@ -46,7 +46,7 @@ tangods:
   enabled: true
   lmc:
     image: nexus.engageska-portugal.pt/sdp-prototype/ska-sdp-lmc
-    version: 0.12.0
+    version: 0.13.0
     imagePullPolicy: IfNotPresent
 
 # Console
