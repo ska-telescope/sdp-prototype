@@ -37,9 +37,10 @@ class Config:
 
         # Prefixes
         assert global_prefix == '' or global_prefix[0] == '/'
-        self.pb_path = global_prefix+"/pb/"
-        self.sb_path = global_prefix+"/sb/"
-        self.deploy_path = global_prefix+"/deploy/"
+        self.pb_path = global_prefix + '/pb/'
+        self.sb_path = global_prefix + '/sb/'
+        self.subarray_path = global_prefix + '/subarray/'
+        self.deploy_path = global_prefix + '/deploy/'
 
         # Lease associated with client
         self._client_lease = None
@@ -185,6 +186,7 @@ class Transaction:
         self._txn = txn
         self._pb_path = config.pb_path
         self._sb_path = config.sb_path
+        self._subarray_path = config.subarray_path
         self._deploy_path = config.deploy_path
 
     @property
@@ -434,3 +436,46 @@ class Transaction:
         :param state: scheduling block state
         """
         self._update(self._sb_path + sb_id, state)
+
+    def list_subarrays(self, prefix=""):
+        """Query subarray IDs from the configuration.
+
+        :param prefix: if given, only search for subarray IDs
+           with the given prefix
+        :returns: subarray IDs, in lexicographical order
+        """
+        # List keys
+        subarray_path = self._subarray_path
+        keys = self._txn.list_keys(subarray_path + prefix)
+
+        # Return list, stripping the prefix
+        assert all([key.startswith(subarray_path) for key in keys])
+        return list([key[len(subarray_path):] for key in keys])
+
+    def get_subarray(self, subarray_id: str) -> dict:
+        """
+        Get subarray.
+
+        :param subarray_id: subarray ID
+        :returns: subarray state
+        """
+        state = self._get(self._subarray_path + subarray_id)
+        return state
+
+    def create_subarray(self, subarray_id: str, state: dict):
+        """
+        Create subarray.
+
+        :param subarray_id: subarray ID
+        :param state: subarray state
+        """
+        self._create(self._subarray_path + subarray_id, state)
+
+    def update_subarray(self, subarray_id: str, state: dict):
+        """
+        Update subarray.
+
+        :param subarray_id: subarray ID
+        :param state: subarray state
+        """
+        self._update(self._subarray_path + subarray_id, state)
