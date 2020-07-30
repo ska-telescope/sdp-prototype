@@ -11,6 +11,7 @@ import signal
 import logging
 import json
 from enum import IntEnum, unique
+import threading
 
 from ska_sdp_logging import tango_logging
 
@@ -322,13 +323,13 @@ class SDPSubarray(Device):
         LOG.info('On (%s)', self.get_name())
         LOG.info('-------------------------------------------------------')
 
-        # Setting device state to ON state
-        LOG.debug('Setting device state to ON')
-        self.set_state(DevState.ON)
+        # Start the monitoring thread
+        monitoring = threading.Thread(target=self._monitoring_thread())
+        monitoring.start()
 
-        LOG.info('-------------------------------------------------------')
-        LOG.info('On Successful!')
-        LOG.info('-------------------------------------------------------')
+        # Set the state to On in subarray
+
+
 
     def is_Off_allowed(self):
         """Check if the Off command is allowed."""
@@ -809,6 +810,7 @@ class SDPSubarray(Device):
     # Private methods
     # -------------------------------------
 
+
     @staticmethod
     def _get_feature_toggle_env_var(feature_name):
         """Get the env var associated with the feature toggle.
@@ -879,6 +881,27 @@ class SDPSubarray(Device):
             LOG.error(origin)
         tango.Except.throw_exception(reason, desc, origin,
                                      tango.ErrSeverity.ERR)
+
+    def _monitoring_thread(self):
+        """This is the monitoring thread. NEED A BETTER DESCRIPTION."""
+        LOG.info("Monitoring Started")
+
+        LOG.info("Watch subarray")
+        # When the state is On, set the device state to On
+
+        # Setting device state to ON state
+        LOG.debug('Setting device state to ON')
+        self.set_state(DevState.ON)
+
+        LOG.info('-------------------------------------------------------')
+        LOG.info('On Successful!')
+        LOG.info('-------------------------------------------------------')
+
+
+
+
+
+
 
     def _command_allowed(self, name,
                          state_allowed=None, obs_state_allowed=None,
