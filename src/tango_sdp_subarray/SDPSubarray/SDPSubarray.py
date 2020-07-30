@@ -328,6 +328,12 @@ class SDPSubarray(Device):
         monitoring.start()
 
         # Set the state to On in subarray
+        if self._config_db_client is not None:
+            for txn in self._config_db_client.txn():
+                subarray_ids = txn.list_subarrays()
+                LOG.debug(subarray_ids)
+
+
 
 
 
