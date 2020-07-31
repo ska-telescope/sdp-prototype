@@ -92,7 +92,8 @@
     - build:ska-sdp-logging
     - build:ska-sdp-config
   variables:
-    BUILD_REGISTRY_HOST: $CI_REGISTRY/ska-telescope
+    GIT_VERSION: ${CI_COMMIT_SHA:0:8}
+    PREFIX_BUILD: ${CI_REGISTRY_IMAGE}
   tags:
     - docker
     - engageska
@@ -106,8 +107,8 @@
     - cp src/config_db/dist/*.whl $BUILD_PATH
     - cp src/logging/dist/*.whl $BUILD_PATH
     - cd $BUILD_PATH
-    - make DOCKER_REGISTRY_HOST=$BUILD_REGISTRY_HOST build
-    - make DOCKER_REGISTRY_HOST=$BUILD_REGISTRY_HOST push
+    - make build
+    - make push
 
 # ============================================================================
 # Common definitions for publishing Docker images
@@ -118,9 +119,9 @@
   only: [master]
   dependencies: []
   variables:
-    DOCKER_REGISTRY_HOST: $DOCKER_REGISTRY_HOST
-    DOCKER_REGISTRY_USER: $CI_PROJECT_NAME
     GIT_VERSION: ${CI_COMMIT_SHA:0:8}
+    PREFIX_BUILD: ${CI_REGISTRY_IMAGE}
+    PREFIX_RELEASE: ${DOCKER_REGISTRY_HOST}/${CI_PROJECT_NAME}
   tags:
     - docker
     - engageska
@@ -129,12 +130,12 @@
     - docker:dind
   before_script:
     - apk add make git
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker login -u $DOCKER_REGISTRY_USERNAME -p $DOCKER_REGISTRY_PASSWORD $DOCKER_REGISTRY_HOST
   script:
     - cd $BUILD_PATH
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - make DOCKER_REGISTRY_HOST=${CI_REGISTRY}/ska-telescope  pull_gitlab
-    - docker login -u $DOCKER_REGISTRY_USERNAME -p $DOCKER_REGISTRY_PASSWORD $DOCKER_REGISTRY_HOST
-    - make DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST push_version_gitlab
+    - make pull
+    - make push_release
   retry: 2
 
 # ============================================================================
