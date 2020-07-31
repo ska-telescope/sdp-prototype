@@ -100,17 +100,31 @@ class MemoryBackend:
         """
         _op(path, value, self._check_exists, self._put)
 
-    def delete(self, path, *args, **kwargs) -> None:
+    def delete(self, path, must_exist=True, recursive=False, max_depth=16, **kwargs) -> None:
         """
         Delete an entry at the given path.
 
         :param path: to create an entry
         :param value: of the entry
-        :param args: arbitrary, not used
+        :param must_exist: if true, gives an error if doesn't exist
+        :param recursive: Delete children keys at lower levels recursively
+        :param max_depth: maximum depth of recursion
         :param kwargs: arbitrary, not used
         :return: nothing
         """
-        _op(path, None, self._check_exists, lambda t, _: self._data.pop(t))
+        _check_path(path)
+        tag = _tag_depth(path)
+        if must_exist:
+            self._check_exists(tag)
+        if recursive:
+            depth = _depth(path)
+            for lvl in range(depth+1, depth+max_depth):
+                tag = _tag_depth(path, depth=lvl)
+                for key in self._data.copy().keys():
+                    if key.startswith(tag):
+                        self._data.pop(key)
+        elif tag in self._data.keys():
+            self._data.pop(tag)
 
     def list_keys(self, path: str) -> List[str]:
         """
@@ -207,17 +221,18 @@ class MemoryTransaction:
         """
         self.backend.update(path, value)
 
-    def delete(self, path, *args, **kwargs):
+    def delete(self, path, must_exist=True, recursive=False, **kwargs):
         """
         Delete an entry at the given path.
 
         :param path: to create an entry
         :param value: of the entry
-        :param args: arbitrary, not used
+        :param must_exist: if true, gives an error if doesn't exist
+        :param recursive: Delete children keys at lower levels recursively
         :param kwargs: arbitrary, not used
         :return: nothing
         """
-        self.backend.delete(path)
+        self.backend.delete(path, must_exist=must_exist, recursive=recursive)
 
     def list_keys(self, path: str) -> List[str]:
         """

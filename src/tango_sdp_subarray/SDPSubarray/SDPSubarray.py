@@ -392,6 +392,7 @@ class SDPSubarray(Device):
 
         # Get the receive addresses and publish them on the attribute
         receive_addresses = self._workflows.get_receive_addresses()
+        LOG.info('receive addresses is %s', receive_addresses)
         self._set_receive_addresses(receive_addresses)
 
         # Set obsState to IDLE
@@ -683,9 +684,11 @@ class SDPSubarray(Device):
 
     def _set_receive_addresses(self, value):
         """Set the receiveAddresses and issue a change event."""
+        LOG.info('set receive address to %s', value)
         self._receive_addresses = value
         self.push_change_event('receiveAddresses',
                                json.dumps(self._receive_addresses))
+        LOG.info('pushed event')
 
     def _raise_command_error(self, desc, origin=''):
         """Raise a command error.

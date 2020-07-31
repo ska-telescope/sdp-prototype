@@ -3,15 +3,31 @@
 
 import logging
 import threading
+from unittest.mock import Mock
 
 import pytest
 from tango.test_context import DeviceTestContext
 
 import ska_sdp_config
-from SDPSubarray import SDPSubarray, release, feature_toggle
+from SDPSubarray import SDPSubarray, workflows, release, feature_toggle
 
 
 logging.basicConfig(level=logging.DEBUG)
+
+RECEIVE_WORKFLOWS = ['test_receive_addresses']
+RECEIVE_ADDRESSES = {
+    'science_A': {
+        'host': [[0, '192.168.0.1'], [2000, '192.168.0.1']],
+        'port': [[0, 9000, 1], [2000, 9000, 1]]
+    },
+    'calibration_B': {
+        'host': [[0, '192.168.0.1'], [2000, '192.168.0.1']],
+        'port': [[0, 9000, 1], [2000, 9000, 1]]
+    }
+}
+
+
+workflows.Workflows.get_receive_addresses = Mock(return_value=RECEIVE_ADDRESSES)
 
 
 @pytest.fixture(scope='session', autouse=True)
@@ -41,19 +57,6 @@ def tango_context():
         tango_context.stop()
     except PermissionError as tango_error:
         print(str(tango_error))
-
-
-RECEIVE_WORKFLOWS = ['test_receive_addresses']
-RECEIVE_ADDRESSES = {
-    'science_A': {
-        'host': [[0, '192.168.0.1'], [2000, '192.168.0.1']],
-        'port': [[0, 9000, 1], [2000, 9000, 1]]
-    },
-    'calibration_B': {
-        'host': [[0, '192.168.0.1'], [2000, '192.168.0.1']],
-        'port': [[0, 9000, 1], [2000, 9000, 1]]
-    }
-}
 
 
 def mock_pc_and_rw_loop(end, timeout=5):

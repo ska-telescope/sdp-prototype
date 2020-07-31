@@ -4,10 +4,7 @@ from enum import IntEnum, unique
 import logging
 import os
 
-try:
-    import ska_sdp_config
-except ImportError:
-    ska_sdp_config = None
+import ska_sdp_config
 
 
 @unique
@@ -62,14 +59,18 @@ def set_feature_toggle_default(feature_name, default):
 
 def new_config_db():
     """Return a config db object (factory method)."""
-    if ska_sdp_config is not None \
-            and is_feature_active(FeatureToggle.CONFIG_DB):
-        config_db_client = ska_sdp_config.Config()
-        logging.debug('SDP Config DB enabled')
-    else:
-        config_db_client = None
-        logging.warning('SDP Config DB disabled %s',
-                        '(ska_sdp_config package not found)'
-                        if ska_sdp_config is None
-                        else 'by feature toggle')
-    return config_db_client
+    #if ska_sdp_config is not None \
+    #        and is_feature_active(FeatureToggle.CONFIG_DB):
+    #    config_db_client = ska_sdp_config.Config()
+    #    logging.debug('SDP Config DB enabled')
+    #else:
+    #    config_db_client = None
+    #    logging.warning('SDP Config DB disabled %s',
+    #                    '(ska_sdp_config package not found)'
+    #                    if ska_sdp_config is None
+    #                    else 'by feature toggle')
+    backend = 'etcd3' if is_feature_active(FeatureToggle.CONFIG_DB) else 'memory'
+    logging.info("Using config db backend %s", backend)
+    config_db = ska_sdp_config.Config(backend=backend)
+    logging.info("Backend is %s", type(config_db._backend))
+    return config_db

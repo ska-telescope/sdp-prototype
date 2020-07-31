@@ -70,7 +70,7 @@ class Workflows:
         """
         pb_state_list = []
 
-        if self.db_client is not None and self.is_sbi_active():
+        if self.is_sbi_active():
             self._lock()
             for txn in self.db_client.txn():
                 sb = txn.get_scheduling_block(self.sbi_id)
@@ -94,7 +94,7 @@ class Workflows:
         sb = None
 
         self._lock()
-        if self.db_client is not None and self.is_sbi_active():
+        if self.is_sbi_active():
             for txn in self.db_client.txn():
                 sb = txn.get_scheduling_block(self.sbi_id)
         self._unlock()
@@ -109,11 +109,11 @@ class Workflows:
         existing_sb_ids = []
         existing_pb_ids = []
         self._lock()
-        if self.db_client is not None:
-            for txn in self.db_client.txn():
-                existing_sb_ids = txn.list_scheduling_blocks()
-                existing_pb_ids = txn.list_processing_blocks()
+        for txn in self.db_client.txn():
+            existing_sb_ids = txn.list_scheduling_blocks()
+            existing_pb_ids = txn.list_processing_blocks()
         self._unlock()
+        logging.info("Existing sbs %s", existing_sb_ids)
         return existing_sb_ids, existing_pb_ids
 
     def create_sb_and_pbs(self, sb: Dict, pbs: List) -> None:
@@ -125,27 +125,27 @@ class Workflows:
         :param sb: scheduling block
         :param pbs: list of processing blocks
         """
-        if self.db_client is not None:
-            self._lock()
-            for txn in self.db_client.txn():
-                sbi_id = sb.get('id')
-                txn.create_scheduling_block(sbi_id, sb)
-                for pb in pbs:
-                    txn.create_processing_block(pb)
-            self._unlock()
+        self._lock()
+        for txn in self.db_client.txn():
+            logging.info("before create %s", txn.list_scheduling_blocks())
+            sbi_id = sb.get('id')
+            txn.create_scheduling_block(sbi_id, sb)
+            for pb in pbs:
+                txn.create_processing_block(pb)
+            logging.info("after create %s", txn.list_scheduling_blocks())
+        self._unlock()
 
     def update_sb(self, new_values: Dict) -> None:
         """Update SB in the config DB.
 
         :param new_values: dict containing key/value pairs to update
         """
-        if self.db_client is not None:
-            self._lock()
-            for txn in self.db_client.txn():
-                sb = txn.get_scheduling_block(self.sbi_id)
-                sb.update(new_values)
-                txn.update_scheduling_block(self.sbi_id, sb)
-            self._unlock()
+        self._lock()
+        for txn in self.db_client.txn():
+            sb = txn.get_scheduling_block(self.sbi_id)
+            sb.update(new_values)
+            txn.update_scheduling_block(self.sbi_id, sb)
+        self._unlock()
 
     def get_receive_addresses(self) -> Dict:
         """Get the receive addresses from the receive PB state.
@@ -158,9 +158,6 @@ class Workflows:
 
         :returns: dict mapping scan type to receive addresses
         """
-        if self.db_client is None:
-            return None
-
         logging.info('Waiting for receive addresses')
 
         # Wait for pb_receive_addresses in SBI
@@ -195,31 +192,30 @@ class Workflows:
         :returns: True if the configuration is good, False if there is an
             error
         """
-        if self.db_client is not None:
-            self._lock()
+        self._lock()
 
-            # Get the existing scan types from SB
-            for txn in self.db_client.txn():
-                sb = txn.get_scheduling_block(self.sbi_id)
-            scan_types = sb.get('scan_types')
+        # Get the existing scan types from SB
+        for txn in self.db_client.txn():
+            sb = txn.get_scheduling_block(self.sbi_id)
+        scan_types = sb.get('scan_types')
 
-            # Extend the list of scan types with new ones, if supplied
-            if new_scan_types is not None:
-                scan_types.extend(new_scan_types)
+        # Extend the list of scan types with new ones, if supplied
+        if new_scan_types is not None:
+            scan_types.extend(new_scan_types)
 
-            # Check scan type is in the list of scan types
-            scan_type_ids = [st.get('id') for st in scan_types]
-            if scan_type not in scan_type_ids:
-                logging.error('Unknown scan_type: %s', scan_type)
-                return False
+        # Check scan type is in the list of scan types
+        scan_type_ids = [st.get('id') for st in scan_types]
+        if scan_type not in scan_type_ids:
+            logging.error('Unknown scan_type: %s', scan_type)
+            return False
 
-            # Set current scan type, and update list of scan types if it has
-            # been extended
-            if new_scan_types is not None:
-                self.update_sb({'current_scan_type': scan_type,
-                                'scan_types': scan_types})
-            else:
-                self.update_sb({'current_scan_type': scan_type})
+        # Set current scan type, and update list of scan types if it has
+        # been extended
+        if new_scan_types is not None:
+            self.update_sb({'current_scan_type': scan_type,
+                            'scan_types': scan_types})
+        else:
+            self.update_sb({'current_scan_type': scan_type})
 
-            self._unlock()
+        self._unlock()
         return True

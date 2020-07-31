@@ -9,4 +9,4 @@ __version__ = release.VERSION
 __version_info__ = release.VERSION_INFO
 
 __all__ = ["SDPSubarray", "AdminMode", "HealthState", "ObsState", "main",
-           "release", '__version__', '__version_info__']
+           "release", "workflows", '__version__', '__version_info__']
