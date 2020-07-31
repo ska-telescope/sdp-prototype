@@ -92,7 +92,7 @@
     - build:ska-sdp-logging
     - build:ska-sdp-config
   variables:
-    GIT_VERSION: ${CI_COMMIT_SHA:0:8}
+    GIT_VERSION: ${CI_COMMIT_SHORT_SHA}
     PREFIX_BUILD: ${CI_REGISTRY_IMAGE}
   tags:
     - docker
@@ -119,7 +119,7 @@
   only: [master]
   dependencies: []
   variables:
-    GIT_VERSION: ${CI_COMMIT_SHA:0:8}
+    GIT_VERSION: ${CI_COMMIT_SHORT_SHA}
     PREFIX_BUILD: ${CI_REGISTRY_IMAGE}
     PREFIX_RELEASE: ${DOCKER_REGISTRY_HOST}/${CI_PROJECT_NAME}
   tags:
