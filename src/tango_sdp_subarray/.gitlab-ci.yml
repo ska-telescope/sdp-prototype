@@ -24,33 +24,34 @@ build:ska-sdp-subarray:
 # Test Python package
 # ============================================================================
 
-test:ska-sdp-subarray:
-  extends:
-    - .test_python
-    - .test_with_coverage
-  variables:
-    BUILD_PATH: src/tango_sdp_subarray
-    TOGGLE_CONFIG_DB: 0
-    TOGGLE_RECEIVE_ADDRESSES_HACK: 0
-  before_script:
-    - cd $BUILD_PATH
-    - pip3 install -r requirements.txt -r requirements-test.txt
-    - cd ../..
-  after_script:
-    - cd $BUILD_PATH
-    - mv htmlcov ../../build/sdp_subarray_htmlcov
-    - mv coverage.xml ../../build/code-coverage.xml
-    - mv cucumber.json ../../build/cucumber.json
+
+#test:ska-sdp-subarray:
+#  extends:
+#    - .test_python
+#    - .test_with_coverage
+#  variables:
+#    BUILD_PATH: src/tango_sdp_subarray
+#    TOGGLE_CONFIG_DB: 0
+#    TOGGLE_RECEIVE_ADDRESSES_HACK: 0
+#  before_script:
+#    - cd $BUILD_PATH
+#    - pip3 install -r requirements.txt -r requirements-test.txt
+#    - cd ../..
+#  after_script:
+#    - cd $BUILD_PATH
+#    - mv htmlcov ../../build/sdp_subarray_htmlcov
+#    - mv coverage.xml ../../build/code-coverage.xml
+#    - mv cucumber.json ../../build/cucumber.json
 
 # ============================================================================
 # Publish Python package (master only)
 # ============================================================================
-
-publish:ska-sdp-subarray:
-  extends: .publish_python_release
-  dependencies:
-    - build:ska-sdp-subarray
-  <<: *env
+# Commented out just for NOW
+#publish:ska-sdp-subarray:
+#  extends: .publish_python_release
+#  dependencies:
+#    - build:ska-sdp-subarray
+#  <<: *env
 
 # ============================================================================
 # Build Docker development image
