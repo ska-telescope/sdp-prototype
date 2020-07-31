@@ -33,7 +33,7 @@ test:ska-sdp-logging:
 # ============================================================================
 
 publish:ska-sdp-logging:
-  extends: .publish_python_release
+  extends: .publish_python
   dependencies:
     - build:ska-sdp-logging
   <<: *env

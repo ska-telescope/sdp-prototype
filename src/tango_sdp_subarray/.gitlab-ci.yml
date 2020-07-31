@@ -47,7 +47,7 @@ test:ska-sdp-subarray:
 # ============================================================================
 
 publish:ska-sdp-subarray:
-  extends: .publish_python_release
+  extends: .publish_python
   dependencies:
     - build:ska-sdp-subarray
   <<: *env
@@ -66,7 +66,7 @@ build:tangods_sdp_subarray:
 # ============================================================================
 
 publish:tangods_sdp_subarray:
-  extends: .push_docker_nexus
+  extends: .publish_docker
   dependencies:
     - build:tangods_sdp_subarray
   <<: *env

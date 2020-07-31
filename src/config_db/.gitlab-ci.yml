@@ -52,7 +52,7 @@ test:ska-sdp-config:
 # ============================================================================
 
 publish:ska-sdp-config:
-  extends: .publish_python_release
+  extends: .publish_python
   dependencies:
     - build:ska-sdp-config
   variables:

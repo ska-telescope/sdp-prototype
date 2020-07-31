@@ -23,7 +23,7 @@ build:processing_controller:
   <<: *env
 
 publish:processing_controller:
-  extends: .push_docker_nexus
+  extends: .publish_docker
   dependencies:
     - build:processing_controller
   <<: *env

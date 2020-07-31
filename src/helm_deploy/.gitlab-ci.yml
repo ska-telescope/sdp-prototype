@@ -28,7 +28,7 @@ test:helm_deploy:
 # ============================================================================
 
 publish:helm_deploy:
-  extends: .push_docker_nexus
+  extends: .publish_docker
   dependencies:
     - build:helm_deploy
   variables:

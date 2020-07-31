@@ -41,7 +41,7 @@
 # Common definitions for publishing Python packages
 # ============================================================================
 
-.publish_python_release:
+.publish_python:
   stage: publish
   only: [master]
   variables:
@@ -114,7 +114,7 @@
 # Common definitions for publishing Docker images
 # ============================================================================
 
-.push_docker_nexus:
+.publish_docker:
   stage: publish
   only: [master]
   dependencies: []
