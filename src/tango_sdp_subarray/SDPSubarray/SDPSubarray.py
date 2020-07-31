@@ -22,6 +22,7 @@ from tango.server import Device, DeviceMeta, attribute, command, \
     device_property, run
 
 import jsonschema
+import time
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 from release import VERSION as SERVER_VERSION   # noqa
@@ -185,6 +186,7 @@ class SDPSubarray(Device):
         self._set_admin_mode(AdminMode.ONLINE)
         self._set_health_state(HealthState.OK)
         self._set_receive_addresses(None)
+        self._timeout_expired = False
 
         # Initialise instance variables
         self._sbi_id = None
@@ -323,19 +325,16 @@ class SDPSubarray(Device):
         LOG.info('On (%s)', self.get_name())
         LOG.info('-------------------------------------------------------')
 
-        # Start the monitoring thread
-        monitoring = threading.Thread(target=self._monitoring_thread())
-        monitoring.start()
-
         # Set the state to On in subarray
         if self._config_db_client is not None:
             for txn in self._config_db_client.txn():
+                txn.create_subarray('01', {'state': 'ON'})
                 subarray_ids = txn.list_subarrays()
-                LOG.debug(subarray_ids)
+                LOG.debug('Subarray ids (%s)', subarray_ids)
 
-
-
-
+        # Start the monitoring thread
+        monitoring = threading.Thread(target=self._monitoring_thread())
+        monitoring.start()
 
     def is_Off_allowed(self):
         """Check if the Off command is allowed."""
@@ -893,21 +892,49 @@ class SDPSubarray(Device):
         LOG.info("Monitoring Started")
 
         LOG.info("Watch subarray")
-        # When the state is On, set the device state to On
-
+        # # When the state is On, set the device state to On
+        # if self._config_db_client is not None:
+        #     for txn in self._config_db_client.txn():
+        #         subarray_ids = txn.list_subarrays()
+        #         if not subarray_ids:
+        #             txn.loop(wait=True)
+        # #
+        #     LOG.info(subarray_ids)
+        #     LOG.info("Subarray Ids are not empty")
+        #     for txn in self._config_db_client.txn():
+        #         for subarray_id in subarray_ids:
+        #             state = txn.get_subarray(subarray_id)
+        #             LOG.info("I am in here")
+        #             LOG.info(state)
+        #             LOG.info(type(state))
+        #             if state.get('state') == 'ON':
         # Setting device state to ON state
-        LOG.debug('Setting device state to ON')
-        self.set_state(DevState.ON)
+        # LOG.debug('Setting device state to ON')
+        # self.set_state(DevState.ON)
+        #
+        # LOG.info('-------------------------------------------------------')
+        # LOG.info('On Successful!')
+        # LOG.info('-------------------------------------------------------')
+        #                 break
+        #             txn.loop(wait=True)
+        while True:
+            time.sleep(0.1)
+            if self._config_db_client is not None:
+                for txn in self._config_db_client.txn():
+                    subarray_ids = txn.list_subarrays()
+                    LOG.info(subarray_ids)
+                    LOG.info("Subarray Ids are not empty")
+                    for subarray_id in subarray_ids:
+                        state = txn.get_subarray(subarray_id)
+                        if state.get('state') == 'ON':
+                            # Setting device state to ON state
+                            LOG.debug('Setting device state to ON')
+                            self.set_state(DevState.ON)
 
-        LOG.info('-------------------------------------------------------')
-        LOG.info('On Successful!')
-        LOG.info('-------------------------------------------------------')
-
-
-
-
-
-
+                            LOG.info('-------------------------------------------------------')
+                            LOG.info('On Successful!')
+                            LOG.info('-------------------------------------------------------')
+                            break
 
     def _command_allowed(self, name,
                          state_allowed=None, obs_state_allowed=None,
