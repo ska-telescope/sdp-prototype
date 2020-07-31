@@ -70,7 +70,7 @@ publish-python:ska-sdp-lmc:
 # ============================================================================
 
 # Build and push `tangods_sdp_subarray` image.
-build:tangods_sdp_subarray:
+build:ska-sdp-lmc:
   extends: .build_docker
   <<: *env
 
@@ -79,10 +79,10 @@ build:tangods_sdp_subarray:
 # Tag and publish Docker image (master only)
 # ============================================================================
 
-publish:tangods_sdp_subarray:
+publish:ska-sdp-lmc:
   extends: .push_docker_nexus
   dependencies:
-    - build:tangods_sdp_subarray
+    - build:ska-sdp-lmc
   <<: *env
 
 # ============================================================================
