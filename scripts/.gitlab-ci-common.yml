@@ -7,7 +7,7 @@
 .build_python:
   stage: build
   dependencies: []
-  image: python:3.7
+  image: python:latest
   artifacts:
     paths:
       - ./$BUILD_PATH/dist/
@@ -43,6 +43,7 @@
 
 .publish_python:
   stage: publish
+  image: python:latest
   only: [master]
   variables:
     TWINE_USERNAME: $TWINE_USERNAME

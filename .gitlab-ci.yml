@@ -41,7 +41,7 @@ include:
 
 build_docs:
   stage: test
-  image: nexus.engageska-portugal.pt/sdp-prototype/pytango_ska_dev:latest
+  image: python:latest
   before_script:
     - pip install -r docs/requirements.txt
   script:
