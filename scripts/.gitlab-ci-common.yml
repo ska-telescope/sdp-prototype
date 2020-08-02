@@ -60,16 +60,16 @@
     - pip3 install ska-sdp-logging --find-links src/logging/dist
   script:
     - cd $BUILD_PATH
+    - pip3 install -r requirements.txt -r requirements-test.txt
     - python3 setup.py test
-    # Make the coverage report available at the top level, which will merge it.
-    - mv .coverage ../../$CI_JOB_NAME.coverage
-    - cp build/reports/unit-tests.xml ../../unit-tests-${CI_JOB_NAME}.xml
-    - mv build ../../build
+  after_script:
+    # Move the coverage and unit test reports to the top level
+    - mv $BUILD_PATH/.coverage $CI_JOB_NAME.coverage
+    - mv $BUILD_PATH/unit-tests.xml unit-tests-${CI_JOB_NAME}.xml
   artifacts:
     paths:
-      - ./$CI_JOB_NAME.coverage
-      - ./unit-tests-${CI_JOB_NAME}.xml
-      - ./build
+      - $CI_JOB_NAME.coverage
+      - unit-tests-${CI_JOB_NAME}.xml
     expire_in: 1 week
     when: always
 
@@ -149,6 +149,6 @@
   script:
     - 'curl -X POST -H "Content-Type: application/json" --fail
          -H "Authorization: Basic $JIRA_AUTH"
-         --data @build/cucumber.json
+         --data @cucumber.json
          https://jira.skatelescope.org/rest/raven/1.0/import/execution/cucumber'
   retry: 2 # In case JIRA doesn't work first time

@@ -28,22 +28,21 @@ setup(
         'SDPMaster'
     ],
     install_requires=[
-        'pytango'
+        'pytango',
+        'ska-sdp-logging>=0.0.6'
     ],
     entry_points={
         'console_scripts': ['SDPMaster = SDPMaster:main']
     },
     setup_requires=['pytest-runner'],
     tests_require=[
+        'pylint2junit',
         'pytest',
         'pytest-cov',
         'pytest-json-report',
         'pytest-pycodestyle',
         'pytest-pydocstyle',
-        'pyassert',
-        'pytest-json-report',
-        'pylint2junit'
-
+        'pytest-pylint'
     ],
     zip_safe=False,
     classifiers=[
