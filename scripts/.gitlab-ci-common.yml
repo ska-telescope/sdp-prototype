@@ -6,7 +6,6 @@
 
 .build_python:
   stage: build
-  dependencies: []
   image: python:latest
   artifacts:
     paths:
@@ -17,7 +16,6 @@
 
 .build_python_dev:
   extends: .build_python
-  dependencies: []
   script:
     - cd $BUILD_PATH
     - python3 setup.py egg_info -b+dev.$CI_COMMIT_SHORT_SHA sdist bdist_wheel
@@ -127,7 +125,6 @@
 .publish_docker:
   stage: publish
   only: [master]
-  dependencies: []
   variables:
     GIT_VERSION: ${CI_COMMIT_SHORT_SHA}
     PREFIX_BUILD: ${CI_REGISTRY_IMAGE}

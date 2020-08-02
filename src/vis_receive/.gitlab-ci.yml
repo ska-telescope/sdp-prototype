@@ -5,7 +5,6 @@
 # ============================================================================
 
 .build_vis_docker:
-  dependencies: []
   image: ubuntu:bionic
   before_script:
     - apt update
