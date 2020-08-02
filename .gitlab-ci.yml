@@ -58,7 +58,6 @@ build_docs:
 
 coverage_report:
   stage: post_test
-  tags: [docker]
   image: python:latest
   before_script:
     - pip install coverage
@@ -92,8 +91,6 @@ coverage_report:
 linting:
   stage: linting
   image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
-  tags:
-    - docker
   before_script:
     - pip install pylint_junit pylint2junit
   script:
@@ -122,7 +119,6 @@ linting:
 
 pages:
   stage: pages
-  tags: [docker]
   image: python:latest
   dependencies: [coverage_report]
   script:
@@ -140,7 +136,6 @@ create_ci_metrics:
   stage: .post
   image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
   when: always
-  tags: [docker]
   script:
     # Gitlab CI badges creation: START
     - apt-get -y update

@@ -61,7 +61,6 @@
 .test_python:
   stage: test
   extends: .install_artifacts
-  tags: [docker]
   image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
 
 .test_with_coverage:
@@ -108,9 +107,6 @@
   variables:
     GIT_VERSION: ${CI_COMMIT_SHORT_SHA}
     PREFIX_BUILD: ${CI_REGISTRY_IMAGE}
-  tags:
-    - docker
-    - engageska
   image: docker:stable
   services:
     - docker:dind
@@ -136,9 +132,6 @@
     GIT_VERSION: ${CI_COMMIT_SHORT_SHA}
     PREFIX_BUILD: ${CI_REGISTRY_IMAGE}
     PREFIX_RELEASE: ${DOCKER_REGISTRY_HOST}/${CI_PROJECT_NAME}
-  tags:
-    - docker
-    - engageska
   image: docker:stable
   services:
     - docker:dind
@@ -161,7 +154,6 @@
   only: [master]
   when: always
   allow_failure: true
-  tags: [docker]
   image: python:latest
   script:
     - 'curl -X POST -H "Content-Type: application/json" --fail
