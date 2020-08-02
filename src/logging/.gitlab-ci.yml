@@ -23,9 +23,7 @@ build:ska-sdp-logging:
 # ============================================================================
 
 test:ska-sdp-logging:
-  extends:
-    - .test_python
-    - .test_with_coverage
+  extends: .test_python
   <<: *env
 
 # ============================================================================

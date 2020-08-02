@@ -30,11 +30,6 @@
     - python3 setup.py sdist bdist_wheel
   only: [master]
 
-.install_artifacts:
-  before_script: # Install from build artifacts
-    - pip3 install ska-sdp-config --find-links src/config_db/dist
-    - pip3 install ska-sdp-logging --find-links src/logging/dist
-
 # ============================================================================
 # Common definitions for publishing Python packages
 # ============================================================================
@@ -58,11 +53,11 @@
 
 .test_python:
   stage: test
-  extends: .install_artifacts
   image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
-
-.test_with_coverage:
-  stage: test
+  before_script:
+    # Install from build artifacts
+    - pip3 install ska-sdp-config --find-links src/config_db/dist
+    - pip3 install ska-sdp-logging --find-links src/logging/dist
   script:
     - cd $BUILD_PATH
     - python3 setup.py test
@@ -79,7 +74,6 @@
     when: always
 
 .test_with_etcd:
-  stage: test
   services:
     - name: quay.io/coreos/etcd:latest
       alias: etcd

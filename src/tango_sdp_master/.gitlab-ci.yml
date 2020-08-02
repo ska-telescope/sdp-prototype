@@ -25,9 +25,7 @@ build:ska-sdp-master:
 # ============================================================================
 
 test:ska-sdp-master:
-  extends:
-    - .test_python
-    - .test_with_coverage
+  extends: .test_python
   <<: *env
 
 # ============================================================================

@@ -28,7 +28,6 @@ build:ska-sdp-config:
 test:ska-sdp-config:
   extends:
     - .test_python
-    - .test_with_coverage
     - .test_with_etcd
   variables:
     BUILD_PATH: src/config_db

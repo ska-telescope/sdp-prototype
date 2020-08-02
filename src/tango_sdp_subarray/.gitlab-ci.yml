@@ -25,9 +25,7 @@ build:ska-sdp-subarray:
 # ============================================================================
 
 test:ska-sdp-subarray:
-  extends:
-    - .test_python
-    - .test_with_coverage
+  extends: .test_python
   variables:
     BUILD_PATH: src/tango_sdp_subarray
     TOGGLE_CONFIG_DB: 0
