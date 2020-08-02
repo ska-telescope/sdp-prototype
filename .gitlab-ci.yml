@@ -33,7 +33,7 @@ include:
   - local: /src/console/.gitlab-ci.yml
   - local: /src/processing_controller/.gitlab-ci.yml
   - local: /src/helm_deploy/.gitlab-ci.yml
-  - local: /src/vis_receive/.gitlab-ci.yml
+  # - local: /src/vis_receive/.gitlab-ci.yml
 
 # ============================================================================
 # Build documentation
