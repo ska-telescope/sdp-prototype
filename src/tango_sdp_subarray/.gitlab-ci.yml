@@ -32,10 +32,10 @@ test:ska-sdp-subarray:
     BUILD_PATH: src/tango_sdp_subarray
     TOGGLE_CONFIG_DB: 0
     TOGGLE_RECEIVE_ADDRESSES_HACK: 0
-  before_script:
-    - cd $BUILD_PATH
-    - pip3 install -r requirements.txt -r requirements-test.txt
-    - cd ../..
+#  before_script:
+#    - cd $BUILD_PATH
+#    - pip3 install -r requirements.txt -r requirements-test.txt
+#    - cd ../..
   after_script:
     - cd $BUILD_PATH
     - mv htmlcov ../../build/sdp_subarray_htmlcov
