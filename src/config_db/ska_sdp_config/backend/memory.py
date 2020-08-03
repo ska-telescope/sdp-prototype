@@ -100,7 +100,8 @@ class MemoryBackend:
         """
         _op(path, value, self._check_exists, self._put)
 
-    def delete(self, path, must_exist=True, recursive=False, max_depth=16, **kwargs) -> None:
+    def delete(self, path, must_exist=True, recursive=False,
+               max_depth=16, **kwargs) -> None:
         """
         Delete an entry at the given path.
 
