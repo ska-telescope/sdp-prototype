@@ -26,10 +26,16 @@ def device(device_info):
     context = DeviceTestContext(
         device_info['class'],
         device_name=device_info['name'],
-        process=True
+        # process=True
     )
-    with context as device_to_test:
-        yield device_to_test
+    print()
+    print('Starting context...')
+    context.start()
+    yield context
+    print('Stopping context...')
+    context.stop()
+    # with context as device_to_test:
+    #     yield device_to_test
 
 
 RECEIVE_WORKFLOWS = ['test_receive_addresses']

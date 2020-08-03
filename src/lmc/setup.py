@@ -27,6 +27,9 @@ setup(
     packages=[
         'ska_sdp_lmc'
     ],
+    package_data={
+        'ska_sdp_lmc': 'schema/*.json'
+    },
     install_requires=[
         'pytango',
         'jsonschema',
