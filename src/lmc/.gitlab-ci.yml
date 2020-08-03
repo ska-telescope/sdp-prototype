@@ -23,7 +23,7 @@ build-python:ska-sdp-lmc:
 test:ska-sdp-lmc:
   extends:
     - .test_python
-    - .test_with_coverage
+#    - .test_with_coverage
 #  services:
 #    - name: quay.io/coreos/etcd:latest
 #      alias: etcd
@@ -38,15 +38,16 @@ test:ska-sdp-lmc:
     BUILD_PATH: src/lmc
     SDP_CONFIG_HOST: etcd
     TOGGLE_CONFIG_DB: 0
-  before_script:
+  script:
     - cd $BUILD_PATH
     - pip3 install -r requirements.txt -r requirements-test.txt
-    - cd ../..
-  after_script:
-    - cd $BUILD_PATH
-    - mv htmlcov ../../build/lmc_htmlcov
-    - mv coverage.xml ../../build/code-coverage.xml
-    - mv cucumber.json ../../build/cucumber.json
+    - python3 setup.py test
+#    - cd ../..
+#  after_script:
+#    - cd $BUILD_PATH
+##    - mv htmlcov ../../build/lmc_htmlcov
+##    - mv coverage.xml ../../build/code-coverage.xml
+##    - mv cucumber.json ../../build/cucumber.json
 
 # ============================================================================
 # Publish Python package (master only)
