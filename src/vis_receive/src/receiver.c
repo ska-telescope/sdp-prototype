@@ -4,6 +4,7 @@
 #endif
 #include <fcntl.h>
 #include <stdio.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
@@ -22,12 +23,6 @@
 #   include <oskar_measurement_set.h>
 #endif
 
-#include <liburing.h>
-#include <sys/uio.h>
-
-#define QUEUE_DEPTH             256
-struct io_uring ring; 
-
 /**
  * Manage the buffer and returns the buffer to use for the current data packet
  *
@@ -44,6 +39,8 @@ struct Buffer* receiver_buffer(struct Receiver* self, int heap, size_t length,
         double timestamp)
 {
     if (!self) return 0;
+    //if (self->use_iouring) return 0;
+
     struct Buffer* buf = 0;
     int oldest = -1, min_heap_start = 1 << 30;
     pthread_mutex_lock(&self->lock);
@@ -86,7 +83,9 @@ struct Buffer* receiver_buffer(struct Receiver* self, int heap, size_t length,
         /* Create a new buffer. */
         buf = buffer_create(self->num_times_in_buffer, self->num_streams,
                 self->num_baselines, self->num_buffers, self);
+#if 1
         LOG_INFO(0, "Created buffer %d", self->num_buffers);
+#endif 
         self->num_buffers++;
         self->buffers = (struct Buffer**) realloc(self->buffers,
                 self->num_buffers * sizeof(struct Buffer*));
@@ -120,7 +119,7 @@ struct Buffer* receiver_buffer(struct Receiver* self, int heap, size_t length,
 struct Receiver* receiver_create(int num_stations, int max_num_buffers, int num_times_in_buffer,
         int num_threads_recv, int num_threads_write, int num_streams,
         unsigned short int port_start, int num_channels_per_file,
-        const char* output_root, const int use_iouring)
+        const char* output_root)
 {
     struct Receiver* cls =
             (struct Receiver*) calloc(1, sizeof(struct Receiver));
@@ -159,8 +158,11 @@ struct Receiver* receiver_create(int num_stations, int max_num_buffers, int num_
             num_pols, ref_freq_hz, freq_inc_hz, write_autocorr,
             write_crosscorr);
 #endif
-    cls->use_iouring = use_iouring;
-    return cls;
+/*     cls->rings = (struct io_uring*) calloc(num_streams, sizeof(struct io_uring));
+    for (int s = 0; s < num_streams; s++){
+        io_uring_queue_init(QUEUE_DEPTH, &cls->rings[s], 0);
+   } */
+   return cls;
 }
 
 
@@ -482,57 +484,28 @@ static void* thread_receive(void* arg)
 void receiver_start(struct Receiver* self)
 {
     if (!self) return;
+    tmr_start(self->tmr);
     const int num_threads = self->num_threads_recv;
     pthread_attr_t attr;
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
     pthread_t* threads = (pthread_t*) malloc(num_threads * sizeof(pthread_t));
     struct ThreadArg* args =
-            (struct ThreadArg*) malloc(num_threads * sizeof(struct ThreadArg));
-    tmr_start(self->tmr);
+        (struct ThreadArg*) malloc(num_threads * sizeof(struct ThreadArg));
+    
+    for (int i = 0; i < num_threads; ++i)
+    {   
+        args[i].thread_id = i;
+        args[i].receiver = self;
 
-    if (self->use_iouring == 1 ){
-        printf("using io_uring recv\n");
-        struct io_uring_cqe *cqe;
-        io_uring_queue_init(QUEUE_DEPTH, &ring, 0);
-        
-        /* we have control over the number of reads we put in the queue */ 
-        /* we reuse the number of receive threads command line parameter */
-        for (int i = 0; i < num_threads; i++) {
-            add_read_request(self->streams[0]);
-
-        }
-        
-        while (1) {
-            /* now wait for completed read requests and handle them as they come in */
-            io_uring_wait_cqe(&ring, &cqe);
-            //struct request req = (struct request *)cqe->user_data;
-
-            struct request *req = (struct request *) cqe->user_data;
-
-            handle_packet(req, self->streams[0]);
-            /* the read request was handled, add a new one to keep queue filled */
-            /* is this actually necessary?? */
-            /* add_read_request(self->streams[0]); */
-        
-        }
-
-    } else{ 
-
-        for (int i = 0; i < num_threads; ++i)
-        {   
-            args[i].thread_id = i;
-            args[i].receiver = self;
-
-            pthread_create(&threads[i], &attr, &thread_receive, &args[i]);
-        }      
-        for (int i = 0; i < num_threads; ++i)
-        pthread_join(threads[i], NULL);
-        pthread_attr_destroy(&attr);
-        free(args);
-        free(threads);
-        LOG_INFO(0, "All %d stream(s) completed.", self->num_streams);
-    }
+        pthread_create(&threads[i], &attr, &thread_receive, &args[i]);
+    }      
+    for (int i = 0; i < num_threads; ++i)
+    pthread_join(threads[i], NULL);
+    pthread_attr_destroy(&attr);
+    free(args);
+    free(threads);
+    LOG_INFO(0, "All %d stream(s) completed.", self->num_streams);
 }
 
 void receiver_set_phase(struct Receiver* self, double ra, double dec)
@@ -587,32 +560,4 @@ void calculate_uvw(struct Buffer* arg)
     free(antenna_differences_x);
     free(antenna_differences_y);
     free(antenna_differences_z);
-}
-
-
-int add_read_request(struct Stream* stream) {
-    struct io_uring_sqe *sqe = io_uring_get_sqe(&ring);
-    struct request *req = malloc(sizeof(*req) + sizeof(struct iovec));
-    req->iov[0].iov_base = malloc(READ_SZ);
-    req->iov[0].iov_len = READ_SZ;
-    req->event_type = EVENT_TYPE_READ;
-    req->client_socket = stream->socket_handle;
-    memset(req->iov[0].iov_base, 0, READ_SZ);
-    /* Linux kernel 5.5 has support for readv, but not for recv() or read() */
-    io_uring_prep_readv(sqe, req->client_socket, &req->iov[0], 1, 0);
-    io_uring_sqe_set_data(sqe, req);
-    io_uring_submit(&ring);
-    return 0;
-}
-
-int handle_packet(struct request *req, struct Stream* stream) {
-
-    int offset = 0;
-    while ((req->iov[0].iov_len - offset) >=8) {
-        int bytes_decoded = stream_decode(stream, req->iov[0].iov_base + offset, 0);
-        offset += bytes_decoded;
-        printf("message length: %ld, bytes decoded: %d\n", req->iov[0].iov_len, bytes_decoded);
-    }
-
-    return 0;
 }

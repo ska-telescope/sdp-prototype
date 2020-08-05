@@ -14,11 +14,6 @@
 extern "C" {
 #endif
 
-
-#define READ_SZ                 8192
-#define EVENT_TYPE_READ         0
-
-
 struct ThreadBarrier;
 struct ThreadPool;
 struct Timer;
@@ -29,16 +24,6 @@ struct Antenna;
 /**
  * Receiver data structure
  */
-
-struct request 
-{
-    int event_type;
-    int iovec_count;
-    int client_socket;
-    struct iovec iov[];
-};
-
-
 struct Receiver
 {
     pthread_mutex_t lock;
@@ -72,7 +57,6 @@ struct Receiver
     int write_counter;
     oskar_MeasurementSet* ms;
 #endif
-    int use_iouring;
 };
 
 struct Antenna
@@ -97,7 +81,7 @@ struct Buffer* receiver_buffer(struct Receiver* self, int heap, size_t length,
 struct Receiver* receiver_create(int num_stations, int max_num_buffers,
         int num_times_in_buffer, int num_threads_recv, int num_threads_write,
         int num_streams, unsigned short int port_start,
-        int num_channels_per_file, const char* output_root, const int use_iouring);
+        int num_channels_per_file, const char* output_root);
 
 /**
  * @brief Destroys the receiver object.
@@ -112,11 +96,6 @@ void receiver_start(struct Receiver* self);
 void receiver_set_phase(struct Receiver* self, double ra, double dec);
 
 void calculate_uvw(struct Buffer* self);
-
-int add_read_request(struct Stream* stream);
-
-int handle_packet(struct request *req, struct Stream* stream);
-
 
 #ifdef __cplusplus
 }
