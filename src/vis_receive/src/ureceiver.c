@@ -178,7 +178,7 @@ static void* handle_uring(void* arg) {
         } else if (req->event_type == EVENT_TYPE_WRITE) {
             wqueue--;
             offset += cqe->res;
-            LOG_DEBUG(0, "offset now: %d", offset)
+            //LOG_DEBUG(0, "offset now: %d", offset)
             if (cqe->res != req->iov->iov_len) {
                 LOG_WARN(0, "cqe->res != req->iov->iov_len:: %d != %d", cqe->res, req->iov->iov_len);   
                 // short write, requeue with adjusted values
@@ -235,12 +235,12 @@ int add_write_request(struct uStream *stream, struct io_uring* ring, void* iov_b
     struct request *req = malloc(sizeof(*req) + sizeof(struct iovec));
 
     // LOG_INFO(0, "write request for %d bytes", bytes);
-    req->iov[0].iov_base = malloc(bytes);
+    req->iov[0].iov_base = iov_base; // malloc(bytes);
     req->iov[0].iov_len = bytes;
     req->event_type = EVENT_TYPE_WRITE ;
     req->client_socket = stream->file_descriptor;
     // memset(req->iov[0].iov_base, 0, bytes);
-    memcpy(req->iov[0].iov_base, iov_base, bytes);
+    //memcpy(req->iov[0].iov_base, iov_base, bytes);
 
 
     io_uring_prep_writev(sqe, req->client_socket, &req->iov[0], 1, offset);
