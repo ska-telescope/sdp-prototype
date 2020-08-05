@@ -13,11 +13,11 @@
 
 #include "log.h"
 #include "receiver.h"
+#include "ureceiver.h"
+
 #ifdef WITH_MS
 #include "write_ms_access.h"
 #endif
-
-static int use_iouring = 0;
 
 static char* construct_output_root(const char* output_location,
                                    const char* output_name)
@@ -118,6 +118,8 @@ int main(int argc, char** argv)
     const char* antenna_file = 0;
     struct Antenna* antennas = 0;
 
+    int use_iouring = 1;
+    int write_to_file = 0;
     
     while(1) {
         static struct option lopts[] =
@@ -134,10 +136,11 @@ int main(int argc, char** argv)
             {"declination", optional_argument, 0, 'd'},
             {"ascension", optional_argument, 0, 'a'},
             {"antenna", required_argument, 0, 'x'},
-            {"io_uring", optional_argument, 0, 'u'}
+            {"io_uring", optional_argument, 0, 'u'},
+            {"file_write", optional_argument, 0, 'f'}
         };
         int opt_index = 0;
-        opt = getopt_long(argc, argv, "s:r:w:b:t:p:c:o:e:d:a:x:u:", lopts, &opt_index);
+        opt = getopt_long(argc, argv, "s:r:w:b:t:p:c:o:e:d:a:x:u:f:", lopts, &opt_index);
         if(opt == -1)
             break;
         switch(opt){
@@ -189,6 +192,9 @@ int main(int argc, char** argv)
             case 'u':
                 use_iouring = 1;
                 break;
+            case 'f':
+                write_to_file = 1;
+                break;
             default:
                 abort();
         }
@@ -217,24 +223,28 @@ int main(int argc, char** argv)
     LOG_INFO(0, " + Output root                 : %s", output_root);
 
     // Create and start the receiver.
-    struct Receiver* receiver = receiver_create( num_stations,
-            max_num_buffers, num_times_in_buffer, num_threads_recv,
-            num_threads_write, num_streams, port_start,
-            num_channels_per_file, output_root, use_iouring);
 
-    if(antennas != 0)
-    {
-        receiver->name = antennas->name;
-        receiver->diam = antennas->size;
-        receiver->coords_x = antennas->coords_x;
-        receiver->coords_y = antennas->coords_y;
-        receiver->coords_z = antennas->coords_z;
+    if (!use_iouring){
+        struct Receiver* receiver = receiver_create( num_stations,
+                max_num_buffers, num_times_in_buffer, num_threads_recv,
+                num_threads_write, num_streams, port_start,
+                num_channels_per_file, output_root);
+
+        if(antennas != 0) {
+            receiver->name = antennas->name;
+            receiver->diam = antennas->size;
+            receiver->coords_x = antennas->coords_x;
+            receiver->coords_y = antennas->coords_y;
+            receiver->coords_z = antennas->coords_z;
+        }
+        receiver_start(receiver);
+        receiver_free(receiver);
+        free(antennas); /* FIXME Memory leak! */
+        free(output_root);
+    } else {
+        struct uReceiver* ureceiver = ureceiver_create( num_stations, num_streams, port_start, write_to_file );
+        ureceiver_start(ureceiver);
+        ureceiver_free(ureceiver);
     }
-
-    receiver_start(receiver);
-    receiver_free(receiver);
-    free(antennas); /* FIXME Memory leak! */
-    free(output_root);
-
     return 0;
 }
