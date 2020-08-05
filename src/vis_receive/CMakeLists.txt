@@ -83,6 +83,11 @@ if(ENABLE_TSAN)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=thread")
 endif()
 
+
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+
+
 # -----------------------------------------------------------------------------
 # Source files
 # -----------------------------------------------------------------------------
@@ -98,6 +103,8 @@ set(recv_SRC
     ${PROJECT_SOURCE_DIR}/src/thread_barrier.c
     ${PROJECT_SOURCE_DIR}/src/thread_pool.c
     ${PROJECT_SOURCE_DIR}/src/timer.c
+    ${PROJECT_SOURCE_DIR}/src/ustream.c
+    ${PROJECT_SOURCE_DIR}/src/ureceiver.c
 )
 
 if (OSKAR_MS_FOUND)
