@@ -25,15 +25,13 @@ setuptools.setup(
     # ],
     setup_requires=['pytest-runner'],
     tests_require=[
-        'python-coveralls',
+        'pylint2junit',
         'pytest',
-        'pytest-pylint',
-        'pytest-pycodestyle',
-        'pytest-pydocstyle',
-        'pyassert',
         'pytest-cov',
         'pytest-json-report',
-        'pylint2junit'
+        'pytest-pycodestyle',
+        'pytest-pydocstyle',
+        'pytest-pylint'
     ],
     zip_safe=False,
     classifiers=[

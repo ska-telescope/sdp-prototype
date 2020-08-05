@@ -14,7 +14,7 @@ build:console:
 # ============================================================================
 
 publish:console:
-  extends: .push_docker_nexus
+  extends: .publish_docker
   dependencies:
     - build:console
   variables:

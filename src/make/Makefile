@@ -3,105 +3,82 @@ CBLUE=\033[0;34m
 CEND=\033[0m
 LINE:=$(shell printf '=%.0s' {1..70})
 
-# Set default docker registry user.
-ifeq ($(strip $(DOCKER_REGISTRY_USER)),)
-	DOCKER_REGISTRY_USER=sdp-prototype
-#  	DOCKER_REGISTRY_USER:=skaorca
-endif
-
-ifeq ($(strip $(DOCKER_REGISTRY_HOST)),)
-	DOCKER_REGISTRY_HOST=nexus.engageska-portugal.pt
-#	DOCKER_REGISTRY_HOST=index.docker.io
-endif
-
-ifeq ($(DOCKER_REGISTRY_HOST),index.docker.io)
-	IMAGE_PREFIX:=$(DOCKER_REGISTRY_USER)
-else
-	IMAGE_PREFIX:=$(DOCKER_REGISTRY_HOST)/$(DOCKER_REGISTRY_USER)
-endif
-
-IMAGE=$(IMAGE_PREFIX)/$(NAME)
-BASE_IMAGE:=$(IMAGE_PREFIX)/pytango_ska_base:latest
-DEV_IMAGE:=$(IMAGE_PREFIX)/pytango_ska_dev:latest
-TEST_IMAGE:=$(IMAGE_PREFIX)/pytango_ska_test:latest
-
-ifeq ($(strip $(GIT_VERSION)),)
-	GIT_VERSION=$(shell git rev-parse --verify --short=8 HEAD)
-endif
-
-DEFAULT_TAG=$(IMAGE):$(VERSION)-$(GIT_VERSION)
-
 .DEFAULT_GOAL := help
 
-piplock:  ## Rebuild the Pipfile.lock file
-	-@pipenv --rm 2>/dev/null || true
-	pipenv lock -v --clear --dev
+# Git hash
 
-CACHE_IMAGE:=$(shell docker image ls -q --filter=reference="$(IMAGE):latest")
-ifeq ($(CACHE_IMAGE),)
-	CACHE_FROM_ARG =
-else
-	CACHE_FROM_ARG = --cache-from $(IMAGE):latest
-endif
+GIT_VERSION ?= $(shell git rev-parse --verify --short=8 HEAD)
 
-build:  ## Build the image, tagged as :$(VERSION)-$(GIT_VERSION)
+# Docker registries for building and releasing the image. A different registry
+# can be used to build the image to avoid pushing development versions to the
+# release registry.
+
+PREFIX_BUILD ?= registry.gitlab.com/ska-telescope/sdp-prototype
+PREFIX_RELEASE ?= nexus.engageska-portugal.pt/sdp-prototype
+
+# Image name with prefixes
+
+NAME_BUILD := $(PREFIX_BUILD)/$(NAME)
+NAME_RELEASE := $(PREFIX_RELEASE)/$(NAME)
+
+# Image name with tags:
+#
+# - build: in the build registry, tagged with the version and git hash
+# - release: in the release registry, tagged with the version
+# - latest: in the release registry, tagged with 'latest'
+
+TAG_BUILD := $(NAME_BUILD):$(VERSION)-$(GIT_VERSION)
+TAG_RELEASE := $(NAME_RELEASE):$(VERSION)
+TAG_LATEST := $(NAME_RELEASE):latest
+
+build: ## Make the build image
 	@echo "$(CRED)$(LINE)$(CEND)"
-	@echo "$(CBLUE)Building image:$(CEND) $(IMAGE):$(VERSION)-$(GIT_VERSION)"
+	@echo "$(CBLUE)Building image:$(CEND) $(TAG_BUILD)"
 	@echo "$(CRED)$(LINE)$(CEND)"
-	docker build \
-	--pull \
-	--build-arg DOCKER_REGISTRY_HOST=$(DOCKER_REGISTRY_HOST) \
-	--build-arg DOCKER_REGISTRY_USER=$(DOCKER_REGISTRY_USER) \
-	$(CACHE_FROM_ARG) \
-	-t $(DEFAULT_TAG) .
+	docker build --pull -t $(TAG_BUILD) .
 
-push: ## Push default image (tagged as :$(VERSION)-(GIT_VERSION)
-	@echo "$(CBLUE)Pushing:$(CEND) $(IMAGE):$(VERSION)-$(GIT_VERSION)"
-	docker push $(DEFAULT_TAG)
+push: ## Push build image
+	@echo "$(CBLUE)Pushing:$(CEND) $(TAG_BUILD)"
+	docker push $(TAG_BUILD)
 
-tag_latest:
-	@echo "$(CBLUE)Tagging:$(CEND) $(DEFAULT_TAG) $(CRED)->$(CEND) $(IMAGE):latest"
-	@docker tag $(DEFAULT_TAG) $(IMAGE):latest
+pull: ## Pull the build image
+	docker pull $(TAG_BUILD) || true
 
-push_latest: tag_latest ## Push the image tagged as :latest
-	@echo "$(CBLUE)Pushing:$(CEND) $(IMAGE):latest"
-	@docker push $(IMAGE):latest
+tag_release: ## Tag the build image as the release image
+	@echo "$(CBLUE)Tagging:$(CEND) $(TAG_BUILD) $(CRED)->$(CEND) $(TAG_RELEASE)"
+	docker tag $(TAG_BUILD) $(TAG_RELEASE)
 
-tag_version:
-	@echo "$(CBLUE)Tagging:$(CEND) $(DEFAULT_TAG) $(CRED)->$(CEND) $(IMAGE):$(VERSION)"
-	@docker tag $(DEFAULT_TAG) $(IMAGE):$(VERSION)
+push_release: tag_release ## Push the release image
+	@echo "$(CBLUE)Pushing:$(CEND) $(TAG_RELEASE)"
+	docker push $(TAG_RELEASE)
 
-push_version: tag_version  ## Push the image tagged as :$(VERSION) (without the git sha)
-	@echo "$(CBLUE)Pushing:$(CEND) $(IMAGE):$(VERSION)"
-	@docker push $(IMAGE):$(VERSION)
+tag_latest: ## Tag the build image as the latest image
+	@echo "$(CBLUE)Tagging:$(CEND) $(TAG_BUILD) $(CRED)->$(CEND) $(TAG_LATEST)"
+	docker tag $(TAG_BUILD) $(TAG_LATEST)
 
-push_version_gitlab: # Push the image tagged as 'gtlab-ci-image'
-	docker tag  gitlab-ci-image $(IMAGE):$(VERSION)
-	docker push $(IMAGE):$(VERSION)
-
-pull_default: ## Fetch the default Git versioned image
-	@docker pull $(DEFAULT_TAG) || true
-
-pull_gitlab: ## Fetch the default Git versioned image and alias as 'gilab-ci-image'
-	docker pull $(DEFAULT_TAG) || true
-	docker tag  $(DEFAULT_TAG) gitlab-ci-image
+push_latest: tag_latest ## Push the latest image
+	@echo "$(CBLUE)Pushing:$(CEND) $(LATEST)"
+	docker push $(TAG_LATEST)
 
 rm:  ## Remove all images built from this folder
-	@echo "$(CBLUE)Removing images matching:$(CEND) $(IMAGE):*"
-	-@docker image rm $(shell docker image ls --filter=reference="$(IMAGE):*" --format '{{.Repository}}:{{.Tag}}') 2> /dev/null || true
+	@echo "$(CBLUE)Removing images matching:$(CEND)"
+	@echo "$(NAME_BUILD):*"
+	@echo "$(NAME_RELEASE):*"
+	-@docker image rm $(shell docker image ls --filter=reference="$(NAME_BUILD):*" --format '{{.Repository}}:{{.Tag}}') 2> /dev/null || true
+	-@docker image rm $(shell docker image ls --filter=reference="$(NAME_RELEASE):*" --format '{{.Repository}}:{{.Tag}}') 2> /dev/null || true
 
-help:  ## Show this help.
+help:  ## Show this help
 	@echo "$(CRED)$(LINE)$(CEND)"
-	@echo "$(CBLUE)NAME        $(CEND): $(NAME)"
-	@echo "$(CBLUE)IMAGE       $(CEND): $(IMAGE)"
-	@echo "$(CBLUE)VERSION     $(CEND): $(VERSION)"
-	@echo "$(CBLUE)GIT VERSION $(CEND): $(GIT_VERSION)"
-	@echo "$(CBLUE)DEFAULT TAG $(CEND): $(DEFAULT_TAG)"
+	@echo "$(CBLUE)NAME         $(CEND): $(NAME)"
+	@echo "$(CBLUE)VERSION      $(CEND): $(VERSION)"
+	@echo "$(CBLUE)GIT VERSION  $(CEND): $(GIT_VERSION)"
+	@echo "$(CBLUE)BUILD IMAGE  $(CEND): $(TAG_BUILD)"
+	@echo "$(CBLUE)RELEASE IMAGE$(CEND): $(TAG_RELEASE)"
+	@echo "$(CBLUE)LATEST IMAGE $(CEND): $(TAG_LATEST)"
 	@echo "$(CRED)$(LINE)$(CEND)"
 	@echo "Imported targets:"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' ../make/Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-30s\033[0m %s\n", $$1, $$2}'
 	@echo "Local targets:"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' ./Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-.PHONY: build clean_build tag_version tag_latest tag
-.PHONY: push pull refresh_pipenv info list_old list_all rm rm_old help
+.PHONY: build push pull tag_release push_release tag_latest push_latest rm help

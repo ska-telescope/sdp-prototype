@@ -25,9 +25,7 @@ build:ska-sdp-master:
 # ============================================================================
 
 test:ska-sdp-master:
-  extends:
-    - .test_python
-    - .test_with_coverage
+  extends: .test_python
   <<: *env
 
 # ============================================================================
@@ -35,7 +33,7 @@ test:ska-sdp-master:
 # ============================================================================
 
 publish:ska-sdp-master:
-  extends: .publish_python_release
+  extends: .publish_python
   dependencies:
     - build:ska-sdp-master
   <<: *env
@@ -53,7 +51,7 @@ build:tangods_sdp_master:
 # ============================================================================
 
 publish:tangods_sdp_master:
-  extends: .push_docker_nexus
+  extends: .publish_docker
   dependencies:
     - build:tangods_sdp_master
   <<: *env

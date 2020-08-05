@@ -9,9 +9,7 @@
 # ============================================================================
 
 test:processing_controller:
-  extends:
-    - .test_python
-    - .test_with_coverage
+  extends: .test_python
   <<: *env
 
 # ============================================================================
@@ -23,7 +21,7 @@ build:processing_controller:
   <<: *env
 
 publish:processing_controller:
-  extends: .push_docker_nexus
+  extends: .publish_docker
   dependencies:
     - build:processing_controller
   <<: *env

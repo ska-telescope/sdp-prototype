@@ -25,29 +25,30 @@ build:ska-sdp-subarray:
 # ============================================================================
 
 test:ska-sdp-subarray:
-  extends:
-    - .test_python
-    - .test_with_coverage
+  extends: .test_python
   variables:
     BUILD_PATH: src/tango_sdp_subarray
     TOGGLE_CONFIG_DB: 0
     TOGGLE_RECEIVE_ADDRESSES_HACK: 0
-  before_script:
-    - cd $BUILD_PATH
-    - pip3 install -r requirements.txt -r requirements-test.txt
-    - cd ../..
   after_script:
-    - cd $BUILD_PATH
-    - mv htmlcov ../../build/sdp_subarray_htmlcov
-    - mv coverage.xml ../../build/code-coverage.xml
-    - mv cucumber.json ../../build/cucumber.json
+    # Move the coverage and unit test reports to the top level
+    - mv $BUILD_PATH/.coverage $CI_JOB_NAME.coverage
+    - mv $BUILD_PATH/unit-tests.xml unit-tests-${CI_JOB_NAME}.xml
+    - mv $BUILD_PATH/cucumber.json cucumber.json
+  artifacts:
+    paths:
+      - $CI_JOB_NAME.coverage
+      - unit-tests-${CI_JOB_NAME}.xml
+      - cucumber.json
+    expire_in: 1 week
+    when: always
 
 # ============================================================================
 # Publish Python package (master only)
 # ============================================================================
 
 publish:ska-sdp-subarray:
-  extends: .publish_python_release
+  extends: .publish_python
   dependencies:
     - build:ska-sdp-subarray
   <<: *env
@@ -66,7 +67,7 @@ build:tangods_sdp_subarray:
 # ============================================================================
 
 publish:tangods_sdp_subarray:
-  extends: .push_docker_nexus
+  extends: .publish_docker
   dependencies:
     - build:tangods_sdp_subarray
   <<: *env
