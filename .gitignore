@@ -18,6 +18,9 @@
 # Python virtualenv folder
 **/venv/
 
+# Pyenv version file
+**/.python-version
+
 # IDE Project files
 **/.idea/
 **/.vscode/
