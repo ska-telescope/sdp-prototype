@@ -9,7 +9,6 @@ import json
 from os.path import dirname, join
 
 import tango
-from tango import DevState
 
 from ska_telmodel.sdp.schema import validate_sdp_receive_addresses
 
@@ -37,7 +36,7 @@ scenarios('features/subarray.feature')
 # -----------------------------------------------------------------------------
 
 
-@given(parsers.parse('I have an {admin_mode_value} SDPSubarray device'))
+@given(parsers.parse('I have an {admin_mode_value:S} SDPSubarray device'))
 def subarray_device(devices, admin_mode_value: str):
     """Get the SDPSubarray device proxy.
 
@@ -55,7 +54,7 @@ def subarray_device(devices, admin_mode_value: str):
         pass
     else:
         call_command(device, 'Off')
-    assert device.state() == DevState.OFF
+    assert device.state() == tango.DevState.OFF
     assert device.obsState == ObsState.EMPTY
 
     # Clear the config DB
@@ -97,7 +96,7 @@ def set_subarray_device_state(subarray_device, state: str):
     elif state == 'ON':
         call_command(subarray_device, 'On')
 
-    assert subarray_device.state() == DevState.names[state]
+    assert subarray_device.state() == tango.DevState.names[state]
 
 
 @when(parsers.parse('obsState is {initial_obs_state:S}'))
@@ -112,7 +111,7 @@ def set_subarray_device_obstate(subarray_device, initial_obs_state: str):
 
     """
     # If the state is OFF, call the On command
-    if subarray_device.state() == DevState.OFF:
+    if subarray_device.state() == tango.DevState.OFF:
         call_command(subarray_device, 'On')
 
     # Set obsState by calling commands
@@ -215,7 +214,7 @@ def device_state_equals(subarray_device, expected):
     :param subarray_device: an SDPSubarray device.
     :param expected: the expected device state.
     """
-    assert subarray_device.state() == DevState.names[expected]
+    assert subarray_device.state() == tango.DevState.names[expected]
 
 
 @then(parsers.parse('obsState should be {final_obs_state:S}'))
@@ -280,8 +279,8 @@ def command_output_type_equals(subarray_device, command, output_type):
     assert command_config.out_type == getattr(tango, output_type)
 
 
-@then(parsers.parse('calling {command:S} raises tango.DevFailed'))
-@then('calling <command> raises tango.DevFailed')
+@then(parsers.parse('calling {command:S} should raise tango.DevFailed'))
+@then('calling <command> should raise tango.DevFailed')
 def command_raises_dev_failed_error(subarray_device, command):
     """Check that calling command raises a tango.DevFailed error.
 

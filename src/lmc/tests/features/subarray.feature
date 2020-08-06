@@ -45,7 +45,7 @@ Feature: SDP Subarray Device
 	Scenario Outline: Command is rejected when the state is OFF
 		Given I have an ONLINE SDPSubarray device
 		When the state is OFF
-		Then calling <command> raises tango.DevFailed
+		Then calling <command> should raise tango.DevFailed
 
 		Examples:
 		|command         |
@@ -121,7 +121,7 @@ Feature: SDP Subarray Device
 	Scenario Outline: Command is rejected in disallowed obsState
 		Given I have an ONLINE SDPSubarray device
 		When obsState is <initial_obs_state>
-		Then calling <command> raises tango.DevFailed
+		Then calling <command> should raise tango.DevFailed
 
 		Examples:
 		|command         |initial_obs_state|
@@ -208,5 +208,5 @@ Feature: SDP Subarray Device
 		Given I have an ONLINE SDPSubarray device
 		When obsState is EMPTY
 		And I call AssignResources with an invalid JSON configuration
-		Then calling ObsReset raises tango.DevFailed
+		Then calling ObsReset should raise tango.DevFailed
 		And obsState should be FAULT
