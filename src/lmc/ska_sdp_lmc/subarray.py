@@ -341,7 +341,6 @@ class SDPSubarray(SDPDevice):
                 'Configuration validation failed',
                 origin='SDPSubarray.AssignResources()'
             )
-            return
 
         # Check IDs against existing IDs in the config DB
         ok = self._config_check_ids(config)
@@ -355,7 +354,6 @@ class SDPSubarray(SDPDevice):
                 ' ID in configuration',
                 origin='SDPSubarray.AssignResources()'
             )
-            return
 
         # Create SBI and PBs in config DB
         ok = self._config_create_sb_and_pbs(config)
@@ -368,7 +366,6 @@ class SDPSubarray(SDPDevice):
                 'Creation of scheduling block and processing blocks failed',
                 origin='SDPSubarray.AssignResources()'
             )
-            return
 
         # Set the scheduling block instance ID
         self._sbi_id = config.get('id')
@@ -464,8 +461,6 @@ class SDPSubarray(SDPDevice):
                 origin='SDPSubarray.Configure()'
             )
 
-            return
-
         # Append new scan types if supplied, and set the scan type
         ok = self._config_set_scan_type(config)
 
@@ -477,7 +472,6 @@ class SDPSubarray(SDPDevice):
                 'Scan type configuration failed',
                 origin='SDPSubarray.Configure()'
             )
-            return
 
         # Set status to READY
         self._update_sb({'status': 'READY'})
@@ -524,7 +518,6 @@ class SDPSubarray(SDPDevice):
                 'Configuration validation failed',
                 origin='SDPSubarray.Scan()'
             )
-            return
 
         # Get the scan ID
         scan_id = config.get('id')
@@ -650,7 +643,6 @@ class SDPSubarray(SDPDevice):
                 message,
                 origin='SDPSubarray.ObsReset()'
             )
-            return
 
         # Clear scan type and scan ID, and set status to IDLE
         self._update_sb({'current_scan_type': None, 'scan_id': None,
