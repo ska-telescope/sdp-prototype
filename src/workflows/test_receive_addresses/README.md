@@ -1,30 +1,26 @@
 ## Test Receive Addresses Workflow
- 
-### Introduction
-The purpose of this workflow is to test the mechanism for generating SDP receive addresses 
-from the channel link map for each scan type which is contained in the list of scan types 
-in the SB. The workflow picks it up from there, uses it to generate the receive addresses 
-for each scan type and writes them to the processing block state. It consists of a map
-of scan type to a receive address map. This address map get publishes to the appropriate 
-attribute once the SDP subarray finishes the transition following AssignResources.
-    
-    
-### Testing
-First checkout the branch, create a file called test.yaml inside the charts directory and add:
-```
-tangods:
-  subarray:
-    version: 0.9.2-<git-hash>
-```
 
-where is the latest git hash of the branch. Then install the prototype with (Helm 3 syntax):
+### Introduction
+
+The purpose of this workflow is to test the mechanism for generating SDP
+receive addresses from the channel link map for each scan type which is
+contained in the list of scan types in the SB. The workflow picks it up from
+there, uses it to generate the receive addresses for each scan type and writes
+them to the processing block state. It consists of a map of scan type to a
+receive address map. This address map get publishes to the appropriate
+attribute once the SDP subarray finishes the transition following
+AssignResources.
+
+
+### Testing
+
+Start the sdp prototype with (Helm 3 syntax):
 
 ```bash
-helm install test sdp-prototype -f test.yaml \                                                    
-  --set processing_controller.workflows.url=https://gitlab.com/ska-telescope/sdp-prototype/raw/receive-addresses-hack/src/workflows/workflows.json
+helm install test sdp-prototype
 ```
 
-Once all the pods are the running. Connect to the Tango interface using the following command:
+Once all the pods are running, connect to the Tango interface using the following command:
 
 ```
 kubectl exec -it itango-tango-base-test /venv/bin/itango3
@@ -85,19 +81,19 @@ Start the scheduling block instance by the AssignResources command:
 d.AssignResources(config)
 ```
 
-You can connect to the configuration database by running the following command: 
+You can connect to the configuration database by running the following command:
 
 ``` kubectl exec -it deploy/test-sdp-prototype-console bash ``` and from there to see the full list run ```sdpcfg ls -R /```
 
-To check if the receive addresses are updated in the processing block state correctly, run the following command: 
+To check if the receive addresses are updated in the processing block state correctly, run the following command:
 
 ```
 sdpcfg list values /pb/pb-mvp01-20200318-0001/state
-``` 
+```
 
 and the output should look like this:
 
-```
+```json
 /pb/pb-mvp01-20200318-0001/state = {
   "receive_addresses": {
     "calibration_B": {
