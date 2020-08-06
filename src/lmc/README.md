@@ -9,8 +9,14 @@ Install with:
 pip install ska-sdp-lmc
 ```
 
-Usage:
+If you have Tango set up locally, you can run the devices with:
 
 ```bash
 SDPMaster <instance name> [-v4]
+```
+
+or:
+
+```bash
+SDPSubarray <instance name> [-v4]
 ```

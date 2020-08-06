@@ -11,7 +11,7 @@ RELEASE_INFO = {}
 RELEASE_PATH = os.path.join('ska_sdp_lmc', 'release.py')
 exec(open(RELEASE_PATH).read(), RELEASE_INFO)
 
-with open('README.pypi.md', 'r') as file:
+with open('README.md', 'r') as file:
     LONG_DESCRIPTION = file.read()
 
 setup(
