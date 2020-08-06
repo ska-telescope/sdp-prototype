@@ -3,7 +3,7 @@ Feature: SDP Master Device
     Scenario: Device startup
         Given I have an SDPMaster device
         When the device is initialised
-        Then the state should be ON
+        Then the state should be STANDBY
         And healthState should be OK
 
     Scenario Outline: On command succeeds

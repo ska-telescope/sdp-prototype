@@ -44,7 +44,7 @@ class SDPMaster(SDPDevice):
         LOG.info('Initialising SDP Master: %s', self.get_name())
         # Initialise attributes
         self._health_state = HealthState.OK
-        self.set_state(DevState.ON)
+        self.set_state(DevState.STANDBY)
         LOG.info('SDP Master initialised: %s', self.get_name())
 
     def always_executed_hook(self):
