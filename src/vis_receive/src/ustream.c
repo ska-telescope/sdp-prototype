@@ -39,17 +39,17 @@ struct uStream* ustream_create(unsigned short int port, int stream_id, struct uR
         perror("setsockopt SO_REUSEADDR failed with ");
         exit(1);
     }
+
+    /* This works on my machine, but may be non-standard */
     if (setsockopt(cls->socket_handle, SOL_SOCKET, SO_REUSEPORT, &(int){1}, sizeof(int)) < 0) { 
         perror("setsockopt SO_REUSEPORT failed with ");
         exit(1);
     }
 
-    setsockopt(cls->socket_handle, SOL_SOCKET, SO_RCVBUF,
-            &cls->buffer_len, sizeof(int));
+    setsockopt(cls->socket_handle, SOL_SOCKET, SO_RCVBUF, &cls->buffer_len, sizeof(int));
 
     uint32_t int_size = (uint32_t) sizeof(int);
-    getsockopt(cls->socket_handle, SOL_SOCKET, SO_RCVBUF,
-            &cls->buffer_len, &int_size);
+    getsockopt(cls->socket_handle, SOL_SOCKET, SO_RCVBUF, &cls->buffer_len, &int_size);
     if ((cls->buffer_len / 2) < requested_buffer_len)
     {
         LOG_WARN(0,
@@ -74,7 +74,7 @@ struct uStream* ustream_create(unsigned short int port, int stream_id, struct uR
         char* fbuf = (char*) calloc(32, sizeof(char));
         
         snprintf(fbuf, 32, "output_%d.dat", stream_id);
-        cls->file_descriptor=open(fbuf, O_WRONLY | O_CREAT );
+        cls->file_descriptor=open(fbuf, O_WRONLY | O_CREAT | O_TRUNC, S_IRWXU | S_IRWXG );
 
         LOG_INFO(0, "file opened with file descriptor %d", cls->file_descriptor);
     }
