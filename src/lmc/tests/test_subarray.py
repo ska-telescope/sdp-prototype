@@ -23,16 +23,6 @@ try:
 except ImportError:
     ska_sdp_config = None
 
-# Turn off the SDP config DB by default. This will be overridden if the
-# TOGGLE_CONFIG_DB environment variable is set to 1.
-
-SDPSubarray.set_feature_default('config_db', False)
-
-# Set the device class and name. This is used to generate the 'device' test
-# fixture, which is an instance running in a Tango DeviceTestContext. See
-# conftest.py for details.
-
-device_info = {'class': SDPSubarray, 'name': 'test_sdp/elt/subarray_1'}
 
 # -----------------------------------------------------------------------------
 # Scenarios : Specify what we want the software to do
@@ -48,13 +38,15 @@ scenarios('features/subarray.feature')
 
 
 @given(parsers.parse('I have an {admin_mode_value} SDPSubarray device'))
-def subarray_device(device, admin_mode_value: str):
-    """Get a SDPSubarray device object
+def subarray_device(devices, admin_mode_value: str):
+    """Get the SDPSubarray device proxy.
 
-    :param device: an instance of the device in a Tango DeviceTestContext
-    :param admin_mode_value: adminMode value the device is created with
+    :param devices: the devices in a MultiDeviceTestContext
+    :param admin_mode_value: adminMode value to set
 
     """
+    device = devices.get_device('test_sdp/elt/subarray_1')
+
     # Initialise SDPSubarray device
     device.adminMode = AdminMode[admin_mode_value]
 

@@ -7,14 +7,7 @@ from pytest_bdd import (given, parsers, scenarios, then, when)
 
 from tango import DevState
 
-from ska_sdp_lmc import SDPMaster, HealthState
-
-
-# Set the device class and name. This is used to generate the 'device' test
-# fixture, which is an instance running in a Tango DeviceTestContext. See
-# conftest.py for details.
-
-device_info = {'class': SDPMaster, 'name': 'test_sdp/elt/master'}
+from ska_sdp_lmc import HealthState
 
 
 # -------------------------------
@@ -29,12 +22,13 @@ scenarios('features/master.feature')
 # -----------
 
 @given('I have an SDPMaster device')
-def master_device(device):
-    """Get a SDPMaster device object.
+def master_device(devices):
+    """Get the SDPMaster device proxy.
 
-    :param device: an instance of the device in a Tango DeviceTestContext
+    :param devices: the devices in a MultiDeviceTestContext
 
     """
+    device = devices.get_device('test_sdp/elt/master')
     return device
 
 

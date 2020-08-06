@@ -3,33 +3,43 @@
 # pylint: disable=redefined-outer-name
 
 import threading
-
 import ska_sdp_config
+
 import pytest
-from tango.test_context import DeviceTestContext
+from tango.test_context import MultiDeviceTestContext
+
+from ska_sdp_lmc import SDPMaster, SDPSubarray
+
+# Turn off the SDP config DB in the subarray by default. This will be
+# overridden if the TOGGLE_CONFIG_DB environment variable is set to 1.
+
+SDPSubarray.set_feature_default('config_db', False)
+
+# List of devices for the test session
+
+device_info = [
+    {
+        'class': SDPMaster,
+        'devices': [
+            {'name': 'test_sdp/elt/master'}
+        ]
+    },
+    {
+        'class': SDPSubarray,
+        'devices': [
+            {'name': 'test_sdp/elt/subarray_1'}
+        ]
+    }
+]
 
 
-@pytest.fixture(scope='module')
-def device_info(request):
-    """Get device_info from test module."""
-    yield getattr(request.module, 'device_info')
-
-
-@pytest.fixture(scope='module')
-def device(device_info):
-    """Create an instance of the device in a Tango DeviceTestContext.
-
-    This uses process=True, otherwise it is impossible to create more than one
-    test context during the session.
-
-    """
-    context = DeviceTestContext(
-        device_info['class'],
-        device_name=device_info['name'],
-        process=True
-    )
-    with context as device_to_test:
-        yield device_to_test
+@pytest.fixture(scope='session')
+def devices():
+    """Start the devices in a MultiDeviceTestContext."""
+    context = MultiDeviceTestContext(device_info)
+    context.start()
+    yield context
+    context.stop()
 
 
 RECEIVE_WORKFLOWS = ['test_receive_addresses']
@@ -75,7 +85,7 @@ def mock_pc_and_rw_loop(end, timeout=5):
         txn.loop(wait=True, timeout=timeout)
 
 
-@pytest.fixture(scope='session')
+# @pytest.fixture(scope='session')
 def mock_pc_and_rw():
     """Fixture to mock processing controller and receive workflow.
 
