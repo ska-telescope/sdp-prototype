@@ -18,7 +18,6 @@ combination of the Tango device state and the observing state (obsState).
    :align: center
 
 
-
 Behaviour
 ---------
 
@@ -40,7 +39,7 @@ Attributes
 ======================= ====== ========== =========================== ===========
 Attribute               Type   Read/Write Values                      Description
 ======================= ====== ========== =========================== ===========
-serverVersion           String Read       Semantic version            Subarray device server version
+version                 String Read       Semantic version            Subarray device server version
 ----------------------- ------ ---------- --------------------------- -----------
 obsState                Enum   Read       :ref:`subarray_obsstate`    Subarray observing state
 ----------------------- ------ ---------- --------------------------- -----------
@@ -63,27 +62,27 @@ obsState values
 =============== ===========
 obsState        Description
 =============== ===========
-EMPTY (0)
+EMPTY (0)       No receive and real-time processing resources are assigned to the subarray
 --------------- -----------
-RESOURCING (1)
+RESOURCING (1)  Resources are being assigned or released
 --------------- -----------
-IDLE (2)
+IDLE (2)        Receive and real-time processing resources are assigned to the subarray as specified in the Scheduling Block Instance
 --------------- -----------
-CONFIGURING (3)
+CONFIGURING (3) Scan type is being configured
 --------------- -----------
-READY (4)
+READY (4)       Scan type is configured and the subarray is ready to scan
 --------------- -----------
-SCANNING (5)
+SCANNING (5)    Scanning
 --------------- -----------
-ABORTING (6)
+ABORTING (6)    Current activity is being aborted
 --------------- -----------
-ABORTED (7)
+ABORTED (7)     Most recent activity has been aborted
 --------------- -----------
-RESETTING (8)
+RESETTING (8)   Resetting to IDLE obsState
 --------------- -----------
-FAULT (9)
+FAULT (9)       A fault has occurred in observing
 --------------- -----------
-RESTARTING (10)
+RESTARTING (10) Restarting in EMPTY obsState
 =============== ===========
 
 .. _subarray_adminmode:
@@ -129,8 +128,8 @@ Commands
 ================ ============= =========== ======
 Command          Argument type Return type Action
 ================ ============= =========== ======
-On               None          None        Device is in its operational state. Sets the DeviceState to ON and obsState to EMPTY.
-Off              None          None        Device is not active. Sets the DeviceState to OFF.
+On               None          None        Sets the device state to ON and obsState to EMPTY.
+Off              None          None        Sets the device state to OFF.
 AssignResources  String (JSON) None        :ref:`Assigns processing resources to the SBI. Sets obsState to IDLE <subarray_assign_resources>`.
 ReleaseResources None          None        Releases all real-time processing in the SBI. Sets obsState to EMPTY.
 Configure        String (JSON) None        :ref:`Configures scan type for the next scans. Sets obsState to READY <subarray_configure>`.
@@ -182,17 +181,17 @@ An example of the argument is below. Note that:
       "processing_blocks": [
         {
           "id": "pb-mvp01-20200425-00000",
-          "workflow": {"type": "realtime", "id": "test_realtime", "version": "0.2.0"},
-          "parameters": {}
-        },
-        {
-          "id": "pb-mvp01-20200425-00001",
           "workflow": {"type": "realtime", "id": "test_receive_addresses", "version": "0.3.2"},
           "parameters": {}
         },
         {
+          "id": "pb-mvp01-20200425-00001",
+          "workflow": {"type": "realtime", "id": "test_realtime", "version": "0.2.0"},
+          "parameters": {}
+        },
+        {
           "id": "pb-mvp01-20200425-00002",
-          "workflow": {"type": "batch", "id": "ical", "version": "0.1.0"},
+          "workflow": {"type": "batch", "id": "test_batch", "version": "0.2.0"},
           "parameters": {},
           "dependencies": [
             {"pb_id": "pb-mvp01-20200425-00000", "type": ["visibilities"]}
@@ -200,7 +199,7 @@ An example of the argument is below. Note that:
         },
         {
           "id": "pb-mvp01-20200425-00003",
-          "workflow": {"type": "batch", "id": "dpreb", "version": "0.1.0"},
+          "workflow": {"type": "batch", "id": "test_batch", "version": "0.2.0"},
           "parameters": {},
           "dependencies": [
             {"pb_id": "pb-mvp01-20200425-00002", "type": ["calibration"]}
@@ -256,6 +255,6 @@ An example of the argument:
 Python API
 ----------
 
-.. automodule:: SDPSubarray
+.. automodule:: ska_sdp_lmc.subarray
     :members:
     :undoc-members:
