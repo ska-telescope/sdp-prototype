@@ -29,7 +29,8 @@ RECEIVE_ADDRESSES = {
 # Turn off the SDP config DB in the subarray by default. This will be
 # overridden if the TOGGLE_CONFIG_DB environment variable is set to 1.
 feature_toggle.set_feature_toggle_default('config_db', False)
-workflows.Workflows.get_receive_addresses = Mock(return_value=RECEIVE_ADDRESSES)
+workflows.Workflows.get_receive_addresses =\
+    Mock(return_value=RECEIVE_ADDRESSES)
 
 # List of devices for the test session
 device_info = [

@@ -45,6 +45,11 @@ class Config:
         # Lease associated with client
         self._client_lease = None
 
+    @property
+    def backend(self):
+        """ Get the backend database object. """
+        return self._backend
+
     @staticmethod
     def _determine_backend(backend, **cargs):
 

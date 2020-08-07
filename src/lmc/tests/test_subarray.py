@@ -53,12 +53,11 @@ def subarray_device(devices, admin_mode_value: str):
     assert device.obsState == ObsState.EMPTY
 
     # Clear the config DB
-    # Clear the config DB
     config_db_client = feature_toggle.new_config_db()
-    config_db_client._backend.delete("/pb", must_exist=False,
-                                      recursive=True)
-    config_db_client._backend.delete("/sb", must_exist=False,
-                                      recursive=True)
+    config_db_client.backend.delete("/pb", must_exist=False,
+                                    recursive=True)
+    config_db_client.backend.delete("/sb", must_exist=False,
+                                    recursive=True)
 
     return device
 
