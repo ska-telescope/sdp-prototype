@@ -41,17 +41,12 @@ processing_controller:
     url: https://gitlab.com/ska-telescope/sdp-prototype/-/raw/master/src/workflows/workflows.json
     refresh: 300
 
-# Tango devices
-tangods:
+# LMC (Tango devices)
+lmc:
   enabled: true
-  master:
-    image: nexus.engageska-portugal.pt/sdp-prototype/tangods_sdp_master
-    version: 0.3.3
-    imagePullPolicy: IfNotPresent
-  subarray:
-    image: nexus.engageska-portugal.pt/sdp-prototype/tangods_sdp_subarray
-    version: 0.11.0
-    imagePullPolicy: IfNotPresent
+  image: nexus.engageska-portugal.pt/sdp-prototype/ska-sdp-lmc
+  version: 0.12.0
+  imagePullPolicy: IfNotPresent
 
 # Console
 console:

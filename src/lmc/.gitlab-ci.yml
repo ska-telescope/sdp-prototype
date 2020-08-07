@@ -1,0 +1,76 @@
+# Local GitLab CI file for Local Monitoring and Control (Tango devices)
+
+.env: &env
+  variables:
+    BUILD_PATH: src/lmc
+
+# ============================================================================
+# Build Python package
+# ============================================================================
+
+build-python:ska-sdp-lmc-dev:
+  extends: .build_python_dev
+  <<: *env
+
+build-python:ska-sdp-lmc:
+  extends: .build_python_release
+  <<: *env
+
+# ============================================================================
+# Test Python package
+# ============================================================================
+
+test:ska-sdp-lmc:
+  extends: .test_python
+  variables:
+    BUILD_PATH: src/lmc
+    SDP_CONFIG_HOST: etcd
+    TOGGLE_CONFIG_DB: 0
+    TOGGLE_RECEIVE_ADDRESSES_HACK: 0
+  after_script:
+    # Move the coverage and unit test reports to the top level
+    - mv $BUILD_PATH/.coverage $CI_JOB_NAME.coverage
+    - mv $BUILD_PATH/unit-tests.xml unit-tests-${CI_JOB_NAME}.xml
+    - mv $BUILD_PATH/cucumber.json cucumber.json
+  artifacts:
+    paths:
+      - $CI_JOB_NAME.coverage
+      - unit-tests-${CI_JOB_NAME}.xml
+      - cucumber.json
+    expire_in: 1 week
+    when: always
+
+# ============================================================================
+# Publish Python package (master only)
+# ============================================================================
+
+publish-python:ska-sdp-lmc:
+  extends: .publish_python
+  dependencies:
+    - build-python:ska-sdp-lmc
+  <<: *env
+
+# ============================================================================
+# Build Docker development image
+# ============================================================================
+
+build:ska-sdp-lmc:
+  extends: .build_docker
+  <<: *env
+
+# ============================================================================
+# Tag and publish Docker image (master only)
+# ============================================================================
+
+publish:ska-sdp-lmc:
+  extends: .publish_docker
+  dependencies:
+    - build:ska-sdp-lmc
+  <<: *env
+
+# ============================================================================
+# Upload XRay test report to JIRA (master only)
+# ============================================================================
+
+xray_report:
+  extends: .xray_report

@@ -35,10 +35,10 @@ Find out about the SDP Tango devices
 ++++++++++++++++++++++++++++++++++++
 
 Details on the interface and Python API for the SDP Master device
-can be found at :doc:`tango_devices/sdp_master`.
+can be found at :doc:`lmc/sdp_master`.
 
 Details on the interface and Python API for the SDP Subarray device can be found at
-:doc:`tango_devices/sdp_subarray`.
+:doc:`lmc/sdp_subarray`.
 
 Know more about the SDP configuration database
 ++++++++++++++++++++++++++++++++++++++++++++++

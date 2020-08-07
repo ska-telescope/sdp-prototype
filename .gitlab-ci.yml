@@ -28,8 +28,7 @@ include:
   - local: /scripts/.gitlab-ci-common.yml # Common definitions
   - local: /src/logging/.gitlab-ci.yml
   - local: /src/config_db/.gitlab-ci.yml
-  - local: /src/tango_sdp_master/.gitlab-ci.yml
-  - local: /src/tango_sdp_subarray/.gitlab-ci.yml
+  - local: /src/lmc/.gitlab-ci.yml
   - local: /src/console/.gitlab-ci.yml
   - local: /src/processing_controller/.gitlab-ci.yml
   - local: /src/helm_deploy/.gitlab-ci.yml
@@ -85,7 +84,9 @@ coverage_report:
     - cov_report.svg
     expire_in: 1 week
 
-# Generate linting report.
+
+# Generate linting report
+
 linting:
   stage: linting
   image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
@@ -100,8 +101,7 @@ linting:
       processing_controller/processing_controller
       pss_receive/pss-receive
       pss_receive/pss-send
-      tango_sdp_master/SDPMaster
-      tango_sdp_subarray/SDPSubarray
+      lmc/ska_sdp_lmc
       > ../build/reports/linting.xml
   when: always
   artifacts:
