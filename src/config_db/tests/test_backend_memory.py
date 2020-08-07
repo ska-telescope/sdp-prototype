@@ -32,6 +32,15 @@ def test_stuff(txn: MemoryTransaction):
     paths = txn.list_keys('/')
     assert len(paths) == 1
     assert paths[0] == '/x'
+    txn.delete('/x')
+    paths = txn.list_keys('/')
+    assert len(paths) == 0
+
+    txn.delete('/x/y/z')
+    txn.delete('/x/y/z', must_exist=False)
+    txn.create('/x/y/z', 'v')
+    txn.delete('/x', must_exist=False, recursive=True)
+    assert len(txn.list_keys('/')) == 0
 
     txn.commit()
     txn.loop()

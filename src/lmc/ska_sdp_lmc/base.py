@@ -16,10 +16,6 @@ class SDPDevice(Device):
 
     # pylint: disable=attribute-defined-outside-init
 
-    # Features: this is dict mapping feature name to default toggle value
-
-    _features = {}
-
     # ----------
     # Attributes
     # ----------
