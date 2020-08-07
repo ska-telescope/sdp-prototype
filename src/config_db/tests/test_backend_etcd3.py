@@ -5,6 +5,7 @@
 import os
 import time
 import pytest
+import logging
 
 from ska_sdp_config.backend import (
     ConfigCollision, ConfigVanished, Etcd3Backend
@@ -12,12 +13,13 @@ from ska_sdp_config.backend import (
 
 PREFIX = "/__test"
 
+OPS_THRESHOLD = 64
 
 @pytest.fixture(scope="session")
 def etcd3():
     host = os.getenv('SDP_TEST_HOST', '127.0.0.1')
     port = os.getenv('SDP_CONFIG_PORT', '2379')
-    with Etcd3Backend(host=host, port=port) as etcd3:
+    with Etcd3Backend(host=host, port=port, txn_ops_warn_threshold=OPS_THRESHOLD) as etcd3:
         etcd3.delete(PREFIX, must_exist=False, recursive=True)
         yield etcd3
         etcd3.delete(PREFIX, must_exist=False, recursive=True)
@@ -641,6 +643,33 @@ def test_transaction_retries(etcd3):
             txn.loop()
     assert i == 11
 
+def test_txn_size_warning(etcd3, caplog):
+
+    key = PREFIX + "/test_txn_size"
+
+    # Check no warning gets generated if we are under the threshold
+    for txn in etcd3.txn():
+        for i in range(OPS_THRESHOLD//2-1):
+            txn.create(key + "/" + str(i), str(i))
+    assert len(caplog.records) == 0
+    for txn in etcd3.txn():
+        for i in range(OPS_THRESHOLD//2-1):
+            txn.get(key + "/" + str(i))
+    assert len(caplog.records) == 0
+
+    etcd3.delete(key, recursive=True, must_exist=False)
+
+    # Check that a warning gets generated exactly if we touch more
+    # paths than the threshold.
+    for txn in etcd3.txn():
+        for i in range(OPS_THRESHOLD):
+            txn.create(key + "/" + str(i), str(i))
+
+    assert len(caplog.records) == 1
+    record = caplog.records[0]
+    assert f"Large transaction with more than {OPS_THRESHOLD} operations:" in record.message
+    assert record.levelno == logging.WARNING
+    assert record.module == 'backend'
 
 if __name__ == '__main__':
     pytest.main()

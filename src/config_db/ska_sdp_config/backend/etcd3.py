@@ -2,6 +2,7 @@
 
 import time
 import queue as queue_m
+import logging
 
 import etcd3
 from .common import (
@@ -16,13 +17,14 @@ class Etcd3Backend:
     See https://github.com/etcd-io/etcd
     """
 
-    def __init__(self, *args, **kw_args):
+    def __init__(self, *args, txn_ops_warn_threshold=64, **kw_args):
         """Instantiate the database client.
 
         All parameters will be passed on
         to pmeth:`etcd3.Client`.
         """
         self._client = etcd3.Client(*args, **kw_args)
+        self._txn_ops_warn_threshold = txn_ops_warn_threshold
 
     def lease(self, ttl=10):
         """Generate a new lease.
@@ -532,6 +534,7 @@ class Etcd3Transaction:
 
         # Create transaction
         txn = self._client.Txn()
+        txn_ops = []
 
         # Verify get() calls from the query log
         for path, (_, rev) in self._get_queries.items():
@@ -547,6 +550,7 @@ class Etcd3Transaction:
                 # actually guarantees that the key has not been
                 # touched since we read it.
                 txn.compare(txn.key(tagged_path).mod == rev.mod_revision)
+            txn_ops.append(path)
 
         # Verify list_keys() calls from the query log
         for (path, depth), (result, rev) in self._list_queries.items():
@@ -556,12 +560,14 @@ class Etcd3Transaction:
             for res_path in result:
                 tagged_res_path = _tag_depth(res_path)
                 txn.compare(txn.key(tagged_res_path).version > 0)
+                txn_ops.append(res_path)
 
             # Also check that no new keys have entered the range
             # (by checking whether the request would contain any
             # keys with a newer create revision than our request)
             txn.compare(txn.key(tagged_path, prefix=True).create
                         < self._revision.revision+1)
+            txn_ops.append(path)
 
         # Commit changes. Note that the dictionary guarantees that we
         # only update any key at most once.
@@ -572,6 +578,14 @@ class Etcd3Transaction:
                 txn.success(txn.delete(tagged_path, value, lease_id))
             else:
                 txn.success(txn.put(tagged_path, value, lease_id))
+            txn_ops.append(path)
+
+        # Warn if there are too many operations. The database might
+        # eventually refuse the transaction entirely, so we need to
+        # pay attention to this.
+        if len(txn_ops) > self._backend._txn_ops_warn_threshold:
+            LOGGER.warning('Large transaction with more than %d operations: %r',
+                           self._backend._txn_ops_warn_threshold, txn_ops)
 
         # Done
         self._committed = True
