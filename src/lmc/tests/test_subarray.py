@@ -15,8 +15,7 @@ from ska_telmodel.sdp.schema import validate_sdp_receive_addresses
 import pytest
 from pytest_bdd import (given, parsers, scenarios, then, when)
 
-from ska_sdp_lmc import (AdminMode, HealthState, ObsState, SDPSubarray,
-                         feature_toggle)
+from ska_sdp_lmc import (AdminMode, HealthState, ObsState, feature_toggle)
 
 # -----------------------------------------------------------------------------
 # Scenarios : Specify what we want the software to do

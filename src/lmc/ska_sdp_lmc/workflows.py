@@ -106,7 +106,6 @@ class Workflows:
 
         :return: tuple of ids, scheduling then processing
         """
-        logging.info("workflow: %s", self.db_client._backend._data)
         existing_sb_ids = []
         existing_pb_ids = []
         self._lock()
@@ -114,7 +113,6 @@ class Workflows:
             existing_sb_ids = txn.list_scheduling_blocks()
             existing_pb_ids = txn.list_processing_blocks()
         self._unlock()
-        logging.info("Existing sbs %s", existing_sb_ids)
         return existing_sb_ids, existing_pb_ids
 
     def create_sb_and_pbs(self, sb: Dict, pbs: List) -> None:

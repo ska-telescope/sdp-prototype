@@ -154,6 +154,9 @@ class MemoryBackend:
         :return: nothing
         """
 
+    def __repr__(self) -> str:
+        return str(self._data)
+
 
 class MemoryTransaction:
     """
