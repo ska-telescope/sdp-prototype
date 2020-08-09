@@ -669,7 +669,7 @@ def test_txn_size_warning(etcd3, caplog):
     record = caplog.records[0]
     assert f"Large transaction with more than {OPS_THRESHOLD} operations:" in record.message
     assert record.levelno == logging.WARNING
-    assert record.module == 'backend'
+    assert record.module == 'etcd3'
 
 if __name__ == '__main__':
     pytest.main()
