@@ -9,6 +9,7 @@ from .common import (
     _tag_depth, _untag_depth, _check_path, ConfigCollision, ConfigVanished
 )
 
+LOGGER = logging.getLogger(__name__)
 
 class Etcd3Backend:
     """
