@@ -169,21 +169,14 @@ class ProcessingController:
                     deploy = txn.get_deployment(deploy_id)
                     txn.delete_deployment(deploy)
 
-    def main(self, backend=None):
+    def run(self, config, loop=True):
         """
-        Main loop
-        :param backend: config backend to use.
+        Event loop
+        :param config: configuration database connection
+        :param loop: Loop forever? Otherwise returns immediately once there is nothing to do
         """
-        # Initialise workflow definitions
-        LOG.info('Initialising workflow definitions from %s', self._url)
-        self._workflows.update_url(self._url)
+
         next_workflows_refresh = time.time() + self._refresh
-
-        # Connect to config DB
-        LOG.info('Connecting to config DB')
-        config = ska_sdp_config.Config(backend=backend)
-
-        LOG.info('Starting main loop')
         for txn in config.txn():
 
             # Update workflow definitions if it is time to do so
@@ -197,5 +190,24 @@ class ProcessingController:
             self._release_pbs_with_finished_dependencies(txn)
             self._delete_deployments_without_pb(txn)
 
-            LOG.debug('Waiting...')
-            txn.loop(wait=True, timeout=next_workflows_refresh - time.time())
+            if loop:
+                LOG.debug('Waiting...')
+                txn.loop(wait=True, timeout=next_workflows_refresh - time.time())
+
+    def main(self, backend=None):
+        """
+        Main entry point
+        :param backend: config backend to use.
+        """
+        # Initialise workflow definitions
+        LOG.info('Initialising workflow definitions from %s', self._url)
+        self._workflows.update_url(self._url)
+
+        # Connect to config DB
+        LOG.info('Connecting to config DB')
+        # Note: sdp_config supports this by design but is not fully implemented.
+        config = ska_sdp_config.Config(backend=backend)
+
+        # Start looping
+        LOG.info('Starting main loop')
+        self.run(config)

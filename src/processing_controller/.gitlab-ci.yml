@@ -3,13 +3,16 @@
 .env: &env
   variables:
     BUILD_PATH: src/processing_controller
+    SDP_TEST_HOST: etcd
 
 # ============================================================================
 # Test Python package
 # ============================================================================
 
 test:processing_controller:
-  extends: .test_python
+  extends:
+    - .test_python
+    - .test_with_etcd
   <<: *env
 
 # ============================================================================
