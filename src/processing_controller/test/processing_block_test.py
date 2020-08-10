@@ -6,6 +6,7 @@ import workflows_test
 
 import pytest
 import datetime
+import os
 
 CFG_PREFIX = '/__test_pb'
 
@@ -14,7 +15,10 @@ def config():
     """
     Configuration database client
     """
-    with ska_sdp_config.Config(backend='etcd3', global_prefix=CFG_PREFIX) as cfg:
+    host = os.getenv('SDP_TEST_HOST', '127.0.0.1')
+    port = os.getenv('SDP_CONFIG_PORT', '2379')
+    with ska_sdp_config.Config(backend='etcd3', host=host, port=port,
+                               global_prefix=CFG_PREFIX) as cfg:
         cfg._backend.delete(CFG_PREFIX, must_exist=False, recursive=True, prefix=True)
         yield cfg
         cfg._backend.delete(CFG_PREFIX, must_exist=False, recursive=True, prefix=True)
