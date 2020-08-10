@@ -12,8 +12,13 @@ spec:
        restartPolicy: Never
        containers:
        - name: sender
-         image: nexus.engageska-portugal.pt/sdp-prototype/pss-send:0.1.0
-         imagePullPolicy: Always 
+         image: nexus.engageska-portugal.pt/ska-telescope/pss-docker-centos-dev:0.0.0
+         resources: 
+             limits:
+                 cpu: "10"
+             requests:
+                 cpu: "8"
+         imagePullPolicy: IfNotPresent
          tty: True
   completions: 1
           
