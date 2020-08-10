@@ -118,7 +118,7 @@ int main(int argc, char** argv)
     const char* antenna_file = 0;
     struct Antenna* antennas = 0;
 
-    int use_iouring = 1;
+    int use_iouring = 0;
     int write_to_file = 0;
     
     while(1) {

@@ -17,6 +17,7 @@
 #include "ustream.h"
 #include "timer.h"
 
+#include <errno.h>
 #include <liburing.h>
 #include <sys/uio.h>
 
@@ -58,60 +59,12 @@ struct uReceiver* ureceiver_create(int num_stations, int num_streams, unsigned s
     return receiver;
 }
 
-
-
-void ureceiver_start(struct uReceiver* self) {
-    //struct io_uring_cqe *cqe;
-    //io_uring_queue_init(QUEUE_DEPTH, &ring, 0); // this is now done in the creation step
-
-    /* we have control over the number of reads we put in the queue */ 
-    /* we hard code a number defined in receiver.h */
-/*    for (int s = 0; s < self->num_streams; s++){
-        for (int i = 0; i < NUM_READS_IN_RING; i++) {
-            LOG_DEBUG(0, "adding read request #%d to ring #%d", i, s);
-            add_read_request(self->streams[s], &self->rings[s]);
-            rqueue++;
-        }
-    }
-*/
-                
-    /* main io_uring based server loop */
-
-    /* each stream gets its own receive thread */
-    pthread_attr_t attr; 
-    pthread_attr_init(&attr);
-    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-    pthread_t* threads = (pthread_t*) malloc(self->num_streams * sizeof(pthread_t));
-    struct uThreadArg* args =
-        (struct uThreadArg*) malloc(self->num_streams * (sizeof(struct uThreadArg) + NUM_READS_IN_RING * sizeof(struct io_uring)));
-
-
-    for (int i = 0; i < self->num_streams; i++) {
-        args[i].thread_id = i;
-        args[i].receiver = self;
-        //args[i].stream = self->streams[i];
-        //args[i].ring = self->rings[i];
-      
-        //args[i].stream->stream_id = i;
-
-        pthread_create(&threads[i], &attr, &handle_uring, &args[i]);
-    }
-
-
-    for (int i = 0; i < self->num_streams; i++){
-        pthread_join(threads[i], NULL);
-    }
-    pthread_attr_destroy(&attr);
-    free(args);
-    free(threads);
-}
-
 static void* handle_uring(void* arg) {
     struct uThreadArg* thread_args = (struct uThreadArg*) arg;
     struct uReceiver* receiver = thread_args->receiver;
     int thread_id = thread_args->thread_id;
-    struct uStream* stream = thread_args->receiver->streams[thread_id];
-    struct io_uring ring = thread_args->receiver->rings[thread_id];
+    struct uStream* stream = receiver->streams[thread_id];
+    struct io_uring ring = receiver->rings[thread_id];
 
     int wqueue, rqueue = 0;
     int bytes, offset = 0;
@@ -137,9 +90,9 @@ static void* handle_uring(void* arg) {
             if (cqe->res == -EAGAIN) {
                 struct request *req = (struct request *) cqe->user_data;
                 if (req->event_type == EVENT_TYPE_READ){
-                    add_read_request(stream, &ring);
+		  add_read_request(stream, &ring);
                 } else if (req->event_type == EVENT_TYPE_WRITE){
-                    add_write_request(stream, &ring, req->iov->iov_base, req->iov->iov_len, offset);
+		  //add_write_request(stream, &ring, req->iov->iov_base, req->iov->iov_len, offset);
                     
                 } else {
                     LOG_ERROR(0,"UNKNOWN EVENT TYPE");
@@ -147,16 +100,16 @@ static void* handle_uring(void* arg) {
                 }
 
                 io_uring_cqe_seen(&ring, cqe);
-                //LOG_DEBUG(0, "resubmitting cqe. Current queue depth: %u\n",queue);
-                continue;   
+                LOG_DEBUG(0, "resubmitting cqe. Current queue depth: %u\n",rqueue);
+		continue;   
             } else {
                 LOG_ERROR(0, "cqe->res returned < 0");
                 LOG_ERROR(0, "output is %d", cqe->res);
                 perror("cqe->res failed with: ");
                 exit(1);
             }
-        }
-
+	}
+	
         struct request *req = (struct request *) cqe->user_data;
 
         if (req->event_type == EVENT_TYPE_READ) {
@@ -178,7 +131,7 @@ static void* handle_uring(void* arg) {
         } else if (req->event_type == EVENT_TYPE_WRITE) {
             wqueue--;
             offset += cqe->res;
-            //LOG_DEBUG(0, "offset now: %d", offset)
+            LOG_DEBUG(0, "offset now: %d", offset)
             if (cqe->res != req->iov->iov_len) {
                 LOG_WARN(0, "cqe->res != req->iov->iov_len:: %d != %d", cqe->res, req->iov->iov_len);   
                 // short write, requeue with adjusted values
@@ -196,9 +149,57 @@ static void* handle_uring(void* arg) {
         /* the read request was handled, add a new one to keep queue filled */
 /*         add_read_request(stream, &ring);
         rqueue++;*/    
-    } 
+    }
     return 0;
 }
+
+
+void ureceiver_start(struct uReceiver* self) {
+    //struct io_uring_cqe *cqe;
+    //io_uring_queue_init(QUEUE_DEPTH, &ring, 0); // this is now done in the creation step
+
+    /* we have control over the number of reads we put in the queue */ 
+    /* we hard code a number defined in receiver.h */
+/*    for (int s = 0; s < self->num_streams; s++){
+        for (int i = 0; i < NUM_READS_IN_RING; i++) {
+            LOG_DEBUG(0, "adding read request #%d to ring #%d", i, s);
+            add_read_request(self->streams[s], &self->rings[s]);
+            rqueue++;
+        }
+    }
+*/
+                
+    /* main io_uring based server loop */
+
+    /* each stream gets its own receive thread */
+    pthread_attr_t attr; 
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+    pthread_t* threads = (pthread_t*) malloc(self->num_streams * sizeof(pthread_t));
+    struct uThreadArg* args =
+        (struct uThreadArg*) malloc(self->num_streams * (sizeof(struct uThreadArg)));
+
+
+    for (int i = 0; i < self->num_streams; i++) {
+        args[i].thread_id = i;
+        args[i].receiver = self;
+        //args[i].stream = self->streams[i];
+        //args[i].ring = self->rings[i];
+      
+        //args[i].stream->stream_id = i;
+
+        pthread_create(&threads[i], &attr, &handle_uring, &args[i]);
+    }
+
+
+    for (int i = 0; i < self->num_streams; i++){
+        pthread_join(threads[i], NULL);
+    }
+    pthread_attr_destroy(&attr);
+    free(args);
+    free(threads);
+}
+
 
 void ureceiver_free(struct uReceiver* self) {
     if (!self) return;
@@ -253,12 +254,6 @@ int add_write_request(struct uStream *stream, struct io_uring* ring, void* iov_b
     return 0;
 }
 
-int handle_write_event(struct request *req, struct uStream* stream) {
-    /* probably a NOP, everything is already done in the io_uring queue */
-    return 0;
-
-}
-
 
 int handle_packet(struct request *req, struct uStream* stream) {
 #if 0
@@ -279,6 +274,9 @@ int handle_packet(struct request *req, struct uStream* stream) {
         //offset += bytes_decoded;
         offset = bytes_decoded;
         if ( bytes_decoded > 8 ) printf("stream %d, message length: %ld, bytes decoded: %d, read queue depth: %u, write queue depth: %u\n", stream->stream_id, req->iov[0].iov_len, bytes_decoded, rqueue, wqueue);
+
+	exit(1);
+
     }
 
     return offset;

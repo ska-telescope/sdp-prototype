@@ -64,10 +64,9 @@ void ureceiver_free(struct uReceiver* self);
 int add_read_request(struct uStream* stream, struct io_uring* ring);
 int add_write_request(struct uStream* stream, struct io_uring* ring, void* iov_base, int bytes, int offset);
 int handle_packet(struct request *req, struct uStream* stream);
-int handle_write_event(struct request *req, struct uStream* stream);
 
 /* main io_uring handling loop */
-static void* handle_uring(void* arg);
+
 
 #ifdef __cplusplus
 }
