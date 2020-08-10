@@ -11,7 +11,7 @@ import logging
 from typing import Dict, List, Tuple, Optional
 
 
-class Workflows:
+class SubarrayConfig:
     """Class to hold workflow and database state."""
 
     # pylint: disable=invalid-name

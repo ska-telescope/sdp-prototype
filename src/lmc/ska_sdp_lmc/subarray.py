@@ -23,7 +23,7 @@ from .attributes import AdminMode, HealthState, ObsState
 from .base import SDPDevice
 from .feature_toggle import new_config_db
 from .util import terminate, log_command, log_lines
-from .workflows import Workflows
+from .subarray_config import SubarrayConfig
 
 LOG = logging.getLogger()
 CONFIG_MSG = 'Configuration string:'
@@ -115,7 +115,7 @@ class SDPSubarray(SDPDevice):
         self._set_receive_addresses(None)
 
         # Initialise instance variables
-        self._workflows = Workflows(new_config_db())
+        self._workflows = SubarrayConfig(new_config_db())
 
         # The subarray device is initialised in the OFF state.
         self.set_state(DevState.OFF)

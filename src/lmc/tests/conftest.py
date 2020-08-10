@@ -10,7 +10,7 @@ import pytest
 from tango.test_context import MultiDeviceTestContext
 
 import ska_sdp_config
-from ska_sdp_lmc import SDPMaster, SDPSubarray, workflows, feature_toggle
+from ska_sdp_lmc import SDPMaster, SDPSubarray, subarray_config, feature_toggle
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -29,7 +29,7 @@ RECEIVE_ADDRESSES = {
 # Turn off the SDP config DB in the subarray by default. This will be
 # overridden if the TOGGLE_CONFIG_DB environment variable is set to 1.
 feature_toggle.set_feature_toggle_default('config_db', False)
-workflows.Workflows.get_receive_addresses =\
+subarray_config.SubarrayConfig.get_receive_addresses =\
     Mock(return_value=RECEIVE_ADDRESSES)
 
 # List of devices for the test session
