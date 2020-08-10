@@ -559,9 +559,10 @@ class Etcd3Transaction:
 
             # Make sure that all returned keys still exist
             for res_path in result:
-                tagged_res_path = _tag_depth(res_path)
-                txn.compare(txn.key(tagged_res_path).version > 0)
-                txn_ops.append(res_path)
+                if res_path not in self._get_queries:
+                    tagged_res_path = _tag_depth(res_path)
+                    txn.compare(txn.key(tagged_res_path).version > 0)
+                    txn_ops.append(res_path)
 
             # Also check that no new keys have entered the range
             # (by checking whether the request would contain any
