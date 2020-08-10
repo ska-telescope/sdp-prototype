@@ -8,7 +8,7 @@ from .workflows import Workflows
 LOG = logging.getLogger('processing_controller')
 
 # Regular expression to match processing block ID as substring
-_RE_PB = 'pb(-[0-9a-zA-Z]*){3}'
+_RE_PB = 'pb(-[0-9a-z]*){3}'
 
 # Compiled regular expressions to match processing deployments associated with
 # processing blocks
@@ -76,13 +76,19 @@ class ProcessingController:
         wf_id = pb.workflow['id']
         wf_version = pb.workflow['version']
 
+        # Check processing block ID
+        if not re.match(f'^{_RE_PB}$', pb_id):
+            LOG.error('Invalid processing block ID: ' + pb_id)
+            txn.create_processing_block_state(pb_id, {'status': 'FAILED'})
+            return
+
         # Get the container image for the workflow
         if wf_type == 'realtime':
             wf_image = self._workflows.realtime(wf_id, wf_version)
         elif wf_type == 'batch':
             wf_image = self._workflows.batch(wf_id, wf_version)
         else:
-            LOG.error('Unknown workflow type %s', wf_type)
+            LOG.error('Unknown workflow type %s for %s!', wf_type, pb_id)
             wf_image = None
 
         if wf_image is not None :
@@ -92,7 +98,7 @@ class ProcessingController:
             deploy_id = 'proc-{}-workflow'.format(pb_id)
             values = {}
             for v in ['SDP_CONFIG_HOST', 'SDP_HELM_NAMESPACE']:
-                values['env.' + v] = os.environ[v]
+                values['env.' + v] = os.environ.get(v)
             values['wf_image'] = wf_image
             values['pb_id'] = pb_id
             chart = {
@@ -107,6 +113,8 @@ class ProcessingController:
                 'resources_available': False
             }
         else:
+            LOG.error('Could not find image %s:%s:%s for %s!',
+                      wf_type, wf_id, wf_version, pb_id)
             # Invalid workflow, so set status to FAILED
             state = {
                 'status': 'FAILED'
