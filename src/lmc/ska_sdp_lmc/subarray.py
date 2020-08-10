@@ -21,7 +21,6 @@ import ska_sdp_config
 
 from .attributes import AdminMode, HealthState, ObsState
 from .base import SDPDevice
-from .feature_toggle import new_config_db
 from .util import terminate, log_command, log_lines
 from .subarray_config import SubarrayConfig
 
@@ -115,7 +114,7 @@ class SDPSubarray(SDPDevice):
         self._set_receive_addresses(None)
 
         # Initialise instance variables
-        self._workflows = SubarrayConfig(new_config_db())
+        self._workflows = SubarrayConfig()
 
         # The subarray device is initialised in the OFF state.
         self.set_state(DevState.OFF)

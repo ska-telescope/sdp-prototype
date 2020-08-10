@@ -10,18 +10,28 @@ into that layer.
 import logging
 from typing import Dict, List, Tuple, Optional
 
+import ska_sdp_config
+from .feature_toggle import FeatureToggles
+
+CONFIG_DB = 'config_db'
+FEATURES = FeatureToggles((CONFIG_DB,))
+
+
+def new_config_db():
+    """Return a config db object (factory function)."""
+    backend = 'etcd3' if FEATURES.is_active(CONFIG_DB) else 'memory'
+    logging.info("Using config db backend %s", backend)
+    config_db = ska_sdp_config.Config(backend=backend)
+    return config_db
+
 
 class SubarrayConfig:
     """Class to hold workflow and database state."""
 
     # pylint: disable=invalid-name
-    def __init__(self, db_client):
-        """
-        Create the object.
-
-        :param db_client: database client
-        """
-        self.db_client = db_client
+    def __init__(self):
+        """Create the object."""
+        self.db_client = new_config_db()
         self._sbi_id = None
 
     def _lock(self) -> None:

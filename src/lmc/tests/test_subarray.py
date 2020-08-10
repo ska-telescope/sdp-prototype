@@ -15,7 +15,7 @@ from ska_telmodel.sdp.schema import validate_sdp_receive_addresses
 import pytest
 from pytest_bdd import (given, parsers, scenarios, then, when)
 
-from ska_sdp_lmc import (AdminMode, HealthState, ObsState, feature_toggle)
+from ska_sdp_lmc import (AdminMode, HealthState, ObsState, subarray_config)
 
 # -----------------------------------------------------------------------------
 # Scenarios : Specify what we want the software to do
@@ -52,7 +52,7 @@ def subarray_device(devices, admin_mode_value: str):
     assert device.obsState == ObsState.EMPTY
 
     # Clear the config DB
-    config_db_client = feature_toggle.new_config_db()
+    config_db_client = subarray_config.new_config_db()
     config_db_client.backend.delete("/pb", must_exist=False,
                                     recursive=True)
     config_db_client.backend.delete("/sb", must_exist=False,
@@ -306,7 +306,7 @@ def check_config_db():
                     'command_AssignResources.json')
     with open(filename, 'r') as file:
         config = json.load(file)
-    config_db_client = feature_toggle.new_config_db()
+    config_db_client = subarray_config.new_config_db()
     for txn in config_db_client.txn():
         pb_ids = txn.list_processing_blocks()
     for pb in config['processing_blocks']:
