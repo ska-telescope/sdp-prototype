@@ -17,6 +17,7 @@
 #include "ustream.h"
 #include "timer.h"
 
+#include <errno.h>
 #include <liburing.h>
 #include <sys/uio.h>
 
@@ -110,8 +111,8 @@ static void* handle_uring(void* arg) {
     struct uThreadArg* thread_args = (struct uThreadArg*) arg;
     struct uReceiver* receiver = thread_args->receiver;
     int thread_id = thread_args->thread_id;
-    struct uStream* stream = thread_args->receiver->streams[thread_id];
-    struct io_uring ring = thread_args->receiver->rings[thread_id];
+    struct uStream* stream = receiver->streams[thread_id];
+    struct io_uring ring = receiver->rings[thread_id];
 
     int wqueue, rqueue = 0;
     int bytes, offset = 0;
@@ -137,9 +138,9 @@ static void* handle_uring(void* arg) {
             if (cqe->res == -EAGAIN) {
                 struct request *req = (struct request *) cqe->user_data;
                 if (req->event_type == EVENT_TYPE_READ){
-                    add_read_request(stream, &ring);
+		  add_read_request(stream, &ring);
                 } else if (req->event_type == EVENT_TYPE_WRITE){
-                    add_write_request(stream, &ring, req->iov->iov_base, req->iov->iov_len, offset);
+		  add_write_request(stream, &ring, req->iov->iov_base, req->iov->iov_len, offset);
                     
                 } else {
                     LOG_ERROR(0,"UNKNOWN EVENT TYPE");
@@ -147,16 +148,16 @@ static void* handle_uring(void* arg) {
                 }
 
                 io_uring_cqe_seen(&ring, cqe);
-                //LOG_DEBUG(0, "resubmitting cqe. Current queue depth: %u\n",queue);
-                continue;   
+                LOG_DEBUG(0, "resubmitting cqe. Current queue depth: %u\n",rqueue);
+		continue;   
             } else {
                 LOG_ERROR(0, "cqe->res returned < 0");
                 LOG_ERROR(0, "output is %d", cqe->res);
                 perror("cqe->res failed with: ");
                 exit(1);
             }
-        }
-
+	}
+	
         struct request *req = (struct request *) cqe->user_data;
 
         if (req->event_type == EVENT_TYPE_READ) {
@@ -178,7 +179,7 @@ static void* handle_uring(void* arg) {
         } else if (req->event_type == EVENT_TYPE_WRITE) {
             wqueue--;
             offset += cqe->res;
-            //LOG_DEBUG(0, "offset now: %d", offset)
+            LOG_DEBUG(0, "offset now: %d", offset)
             if (cqe->res != req->iov->iov_len) {
                 LOG_WARN(0, "cqe->res != req->iov->iov_len:: %d != %d", cqe->res, req->iov->iov_len);   
                 // short write, requeue with adjusted values
@@ -196,7 +197,7 @@ static void* handle_uring(void* arg) {
         /* the read request was handled, add a new one to keep queue filled */
 /*         add_read_request(stream, &ring);
         rqueue++;*/    
-    } 
+    }
     return 0;
 }
 
@@ -251,12 +252,6 @@ int add_write_request(struct uStream *stream, struct io_uring* ring, void* iov_b
     io_uring_submit(ring);
 
     return 0;
-}
-
-int handle_write_event(struct request *req, struct uStream* stream) {
-    /* probably a NOP, everything is already done in the io_uring queue */
-    return 0;
-
 }
 
 
