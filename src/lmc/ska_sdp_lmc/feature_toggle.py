@@ -8,6 +8,7 @@ from typing import Sequence
 
 class FeatureToggles:
     """Defines a set of feature toggles."""
+
     def __init__(self, feature_names: Sequence[str]):
         """
         Construct feature toggles.
@@ -52,4 +53,3 @@ class FeatureToggles:
         if not os.environ.get(env_var):
             logging.debug('Setting default for toggle: %s = %s', env_var, default)
             os.environ[env_var] = str(int(default))
-

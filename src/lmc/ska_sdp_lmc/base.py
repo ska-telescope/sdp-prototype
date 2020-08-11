@@ -109,13 +109,15 @@ class SDPDevice(Device):
             return message_out
 
         # Tango device state
-        if state_allowed is not None and self.get_state() not in state_allowed:
+        if (state_allowed is not None and
+                self.get_state() not in state_allowed):
             allowed = False
             message = compose_message(message, name, 'the device',
                                       self.get_state())
 
         # Observing state
-        if obs_state_allowed is not None and self._obs_state not in obs_state_allowed:
+        if (obs_state_allowed is not None and
+                self._obs_state not in obs_state_allowed):
             allowed = False
             message = compose_message(message, name, 'obsState',
                                       self._obs_state.name)
