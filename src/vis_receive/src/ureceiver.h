@@ -13,8 +13,7 @@ extern "C" {
 #define READ_SZ                 8192
 #define EVENT_TYPE_READ         0
 #define EVENT_TYPE_WRITE        1
-#define NUM_READS_IN_RING       2
-#define QUEUE_DEPTH             10
+#define NUM_READS_IN_RING       10
 
 
 struct request 

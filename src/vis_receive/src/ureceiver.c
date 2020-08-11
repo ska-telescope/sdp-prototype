@@ -51,7 +51,7 @@ struct uReceiver* ureceiver_create(int num_stations, int num_streams, unsigned s
 
     receiver->rings = (struct io_uring*) calloc(num_streams, sizeof(struct io_uring));
     for (int s = 0; s < num_streams; s++){
-        io_uring_queue_init(QUEUE_DEPTH, &receiver->rings[s], 0);
+        io_uring_queue_init(NUM_READS_IN_RING, &receiver->rings[s], 0);
     }
     receiver->write_to_file = write_to_file;
 
@@ -83,7 +83,7 @@ void ureceiver_start(struct uReceiver* self) {
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
     pthread_t* threads = (pthread_t*) malloc(self->num_streams * sizeof(pthread_t));
     struct uThreadArg* args =
-        (struct uThreadArg*) malloc(self->num_streams * (sizeof(struct uThreadArg) + NUM_READS_IN_RING * sizeof(struct io_uring)));
+        (struct uThreadArg*) malloc(self->num_streams * (sizeof(struct uThreadArg)));
 
 
     for (int i = 0; i < self->num_streams; i++) {
@@ -279,6 +279,7 @@ int handle_packet(struct request *req, struct uStream* stream) {
         //offset += bytes_decoded;
         offset = bytes_decoded;
         if ( bytes_decoded > 8 ) printf("stream %d, message length: %ld, bytes decoded: %d, read queue depth: %u, write queue depth: %u\n", stream->stream_id, req->iov[0].iov_len, bytes_decoded, rqueue, wqueue);
+        
     }
 
     return offset;
