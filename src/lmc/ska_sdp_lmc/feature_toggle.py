@@ -51,5 +51,6 @@ class FeatureToggles:
         """
         env_var = self._get_env_var(feature_name)
         if not os.environ.get(env_var):
-            logging.debug('Setting default for toggle: %s = %s', env_var, default)
+            logging.debug('Setting default for toggle: %s = %s',
+                          env_var, default)
             os.environ[env_var] = str(int(default))
