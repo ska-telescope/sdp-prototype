@@ -92,7 +92,7 @@ static void* handle_uring(void* arg) {
                 if (req->event_type == EVENT_TYPE_READ){
 		  add_read_request(stream, &ring);
                 } else if (req->event_type == EVENT_TYPE_WRITE){
-		  //add_write_request(stream, &ring, req->iov->iov_base, req->iov->iov_len, offset);
+		  add_write_request(stream, &ring, req->iov->iov_base, req->iov->iov_len, offset);
                     
                 } else {
                     LOG_ERROR(0,"UNKNOWN EVENT TYPE");
@@ -275,7 +275,6 @@ int handle_packet(struct request *req, struct uStream* stream) {
         offset = bytes_decoded;
         if ( bytes_decoded > 8 ) printf("stream %d, message length: %ld, bytes decoded: %d, read queue depth: %u, write queue depth: %u\n", stream->stream_id, req->iov[0].iov_len, bytes_decoded, rqueue, wqueue);
 
-	exit(1);
 
     }
 
