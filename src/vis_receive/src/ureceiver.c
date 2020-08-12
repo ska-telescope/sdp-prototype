@@ -59,7 +59,102 @@ struct uReceiver* ureceiver_create(int num_stations, int num_streams, unsigned s
     return receiver;
 }
 
+static void* handle_uring(void* arg) {
+    struct uThreadArg* thread_args = (struct uThreadArg*) arg;
+    struct uReceiver* receiver = thread_args->receiver;
+    int thread_id = thread_args->thread_id;
+    struct uStream* stream = receiver->streams[thread_id];
+    struct io_uring ring = receiver->rings[thread_id];
 
+    int wqueue, rqueue = 0;
+    int bytes, offset = 0;
+    struct io_uring_cqe *cqe;
+
+    for (int i = 0; i < NUM_READS_IN_RING; i++) {
+        //LOG_DEBUG(0, "creating read request %d in ring %d", i, thread_args->thread_id);
+        add_read_request(stream, &ring);
+        rqueue++;
+    }
+
+    while (stream) {
+        /* now wait for completed read requests and handle them as they come in */
+        /* exit the loop when the stream is closed */
+        int ret = io_uring_wait_cqe(&ring , &cqe);
+
+        if (ret < 0) {
+            LOG_ERROR(0, "io_uring_wait_cqe returned < 0");
+                perror("io_uring_wait_cqe");
+        }
+
+        if (cqe->res < 0) {
+            if (cqe->res == -EAGAIN) {
+                struct request *req = (struct request *) cqe->user_data;
+                if (req->event_type == EVENT_TYPE_READ){
+                    free_request(req);
+		            add_read_request(stream, &ring);
+                } else if (req->event_type == EVENT_TYPE_WRITE){
+                    add_write_request(stream, &ring, req->iov->iov_base, req->iov->iov_len, offset);
+                    
+                } else {
+                    LOG_ERROR(0,"UNKNOWN EVENT TYPE");
+                    exit(1);
+                }
+
+                io_uring_cqe_seen(&ring, cqe);
+                //LOG_DEBUG(0, "resubmitting cqe. Current queue depth: %u\n",rqueue);
+		continue;   
+            } else {
+                LOG_ERROR(0, "cqe->res returned < 0");
+                LOG_ERROR(0, "output is %d", cqe->res);
+                perror("cqe->res failed with: ");
+                exit(1);
+            }
+	}
+	
+        struct request *req = (struct request *) cqe->user_data;
+
+        if (req->event_type == EVENT_TYPE_READ) {
+            rqueue--;
+            bytes = handle_packet(req, stream);
+            /* mark this request as handled */
+
+            if (stream->write_to_file) {
+                // add write request
+                add_write_request(stream, &ring, req->iov->iov_base, bytes, offset);
+                wqueue++;
+            } else {
+                // we don't write, so add read request to keep ring filled
+                free_request(req);
+                add_read_request(stream, &ring);
+                rqueue++;
+            }
+            io_uring_cqe_seen(&ring, cqe);
+
+        } else if (req->event_type == EVENT_TYPE_WRITE) {
+            wqueue--;
+            offset += cqe->res;
+            //LOG_DEBUG(0, "offset now: %d", offset)
+            if (cqe->res != req->iov->iov_len) {
+                LOG_WARN(0, "cqe->res != req->iov->iov_len:: %d != %d", cqe->res, req->iov->iov_len);   
+                // short write, requeue with adjusted values
+                req->iov->iov_base += cqe->res;
+                req->iov->iov_len -= cqe->res;
+                add_write_request(stream, &ring, req->iov->iov_base, req->iov->iov_len, offset);
+                wqueue++;
+            } else {
+                //handle_write_event(req, stream);
+                free_request(req);
+                io_uring_cqe_seen(&ring, cqe);
+                add_read_request(stream, &ring);
+                rqueue++;
+            }
+        }
+        /* the read request was handled, add a new one to keep queue filled */
+/*         add_read_request(stream, &ring);
+        rqueue++;*/    
+    }
+    return 0;
+}
 
 void ureceiver_start(struct uReceiver* self) {
     //struct io_uring_cqe *cqe;
@@ -107,99 +202,6 @@ void ureceiver_start(struct uReceiver* self) {
     free(threads);
 }
 
-static void* handle_uring(void* arg) {
-    struct uThreadArg* thread_args = (struct uThreadArg*) arg;
-    struct uReceiver* receiver = thread_args->receiver;
-    int thread_id = thread_args->thread_id;
-    struct uStream* stream = receiver->streams[thread_id];
-    struct io_uring ring = receiver->rings[thread_id];
-
-    int wqueue, rqueue = 0;
-    int bytes, offset = 0;
-    struct io_uring_cqe *cqe;
-
-    for (int i = 0; i < NUM_READS_IN_RING; i++) {
-        //LOG_DEBUG(0, "creating read request %d in ring %d", i, thread_args->thread_id);
-        add_read_request(stream, &ring);
-        rqueue++;
-    }
-
-    while (stream) {
-        /* now wait for completed read requests and handle them as they come in */
-        /* exit the loop when the stream is closed */
-        int ret = io_uring_wait_cqe(&ring , &cqe);
-
-        if (ret < 0) {
-            LOG_ERROR(0, "io_uring_wait_cqe returned < 0");
-                perror("io_uring_wait_cqe");
-        }
-
-        if (cqe->res < 0) {
-            if (cqe->res == -EAGAIN) {
-                struct request *req = (struct request *) cqe->user_data;
-                if (req->event_type == EVENT_TYPE_READ){
-		  add_read_request(stream, &ring);
-                } else if (req->event_type == EVENT_TYPE_WRITE){
-		  add_write_request(stream, &ring, req->iov->iov_base, req->iov->iov_len, offset);
-                    
-                } else {
-                    LOG_ERROR(0,"UNKNOWN EVENT TYPE");
-                    exit(1);
-                }
-
-                io_uring_cqe_seen(&ring, cqe);
-                LOG_DEBUG(0, "resubmitting cqe. Current queue depth: %u\n",rqueue);
-		continue;   
-            } else {
-                LOG_ERROR(0, "cqe->res returned < 0");
-                LOG_ERROR(0, "output is %d", cqe->res);
-                perror("cqe->res failed with: ");
-                exit(1);
-            }
-	}
-	
-        struct request *req = (struct request *) cqe->user_data;
-
-        if (req->event_type == EVENT_TYPE_READ) {
-            rqueue--;
-            bytes = handle_packet(req, stream);
-            /* mark this request as handled */
-
-            if (stream->write_to_file) {
-                // add write request
-                add_write_request(stream, &ring, req->iov->iov_base, bytes, offset);
-                wqueue++;
-            } else {
-                // we don't write, so add read request to keep ring filled
-                add_read_request(stream, &ring);
-                rqueue++;
-            }
-            io_uring_cqe_seen(&ring, cqe);
-
-        } else if (req->event_type == EVENT_TYPE_WRITE) {
-            wqueue--;
-            offset += cqe->res;
-            LOG_DEBUG(0, "offset now: %d", offset)
-            if (cqe->res != req->iov->iov_len) {
-                LOG_WARN(0, "cqe->res != req->iov->iov_len:: %d != %d", cqe->res, req->iov->iov_len);   
-                // short write, requeue with adjusted values
-                req->iov->iov_base += cqe->res;
-                req->iov->iov_len -= cqe->res;
-                add_write_request(stream, &ring, req->iov->iov_base, req->iov->iov_len, offset);
-                wqueue++;
-            } else {
-                //handle_write_event(req, stream);
-                io_uring_cqe_seen(&ring, cqe);
-                add_read_request(stream, &ring);
-                rqueue++;
-            }
-        }
-        /* the read request was handled, add a new one to keep queue filled */
-/*         add_read_request(stream, &ring);
-        rqueue++;*/    
-    }
-    return 0;
-}
 
 void ureceiver_free(struct uReceiver* self) {
     if (!self) return;
@@ -270,12 +272,17 @@ int handle_packet(struct request *req, struct uStream* stream) {
     //while ((req->iov[0].iov_len - offset) >= 8) {
     while (offset <= 8) {
 
-        int bytes_decoded = ustream_decode(stream, (unsigned char*) req->iov[0].iov_base + offset, 0);
-        //offset += bytes_decoded;
-        offset = bytes_decoded;
-        if ( bytes_decoded > 8 ) printf("stream %d, message length: %ld, bytes decoded: %d, read queue depth: %u, write queue depth: %u\n", stream->stream_id, req->iov[0].iov_len, bytes_decoded, rqueue, wqueue);
+      int bytes_decoded = ustream_decode(stream, (unsigned char*) req->iov[0].iov_base + offset, 0);
+      //offset += bytes_decoded;
+      offset = bytes_decoded;
+      if ( bytes_decoded > 8 ) LOG_INFO(0, "stream %d, message length: %ld, bytes decoded: %d\n", stream->stream_id, req->iov[0].iov_len, bytes_decoded);
         
     }
 
     return offset;
+}
+
+void free_request(struct request *req) {
+    free(req->iov[0].iov_base);
+    free(req);
 }
