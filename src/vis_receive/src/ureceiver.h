@@ -60,7 +60,8 @@ struct uReceiver* ureceiver_create(int num_stations, int num_streams, unsigned s
 void ureceiver_start(struct uReceiver* self);
 void ureceiver_free(struct uReceiver* self);
 
-int add_read_request(struct uStream* stream, struct io_uring* ring);
+//int add_read_request(struct uStream* stream, struct io_uring* ring);
+int add_read_request(struct uStream* stream, struct io_uring* ring, struct request* req);
 int add_write_request(struct uStream* stream, struct io_uring* ring, void* iov_base, int bytes, int offset);
 int handle_packet(struct request *req, struct uStream* stream);
 void free_request(struct request *req);

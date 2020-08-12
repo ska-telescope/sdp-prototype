@@ -72,7 +72,10 @@ static void* handle_uring(void* arg) {
 
     for (int i = 0; i < NUM_READS_IN_RING; i++) {
         //LOG_DEBUG(0, "creating read request %d in ring %d", i, thread_args->thread_id);
-        add_read_request(stream, &ring);
+        struct request *req = malloc(sizeof(*req) + sizeof(struct iovec));
+        req->iov[0].iov_base = malloc(READ_SZ);
+
+        add_read_request(stream, &ring, req);
         rqueue++;
     }
 
@@ -90,8 +93,8 @@ static void* handle_uring(void* arg) {
             if (cqe->res == -EAGAIN) {
                 struct request *req = (struct request *) cqe->user_data;
                 if (req->event_type == EVENT_TYPE_READ){
-                    free_request(req);
-		            add_read_request(stream, &ring);
+                    //free_request(req);
+		            add_read_request(stream, &ring, req);
                 } else if (req->event_type == EVENT_TYPE_WRITE){
                     add_write_request(stream, &ring, req->iov->iov_base, req->iov->iov_len, offset);
                     
@@ -124,8 +127,8 @@ static void* handle_uring(void* arg) {
                 wqueue++;
             } else {
                 // we don't write, so add read request to keep ring filled
-                free_request(req);
-                add_read_request(stream, &ring);
+                //free_request(req);
+                add_read_request(stream, &ring, req);
                 rqueue++;
             }
             io_uring_cqe_seen(&ring, cqe);
@@ -143,15 +146,15 @@ static void* handle_uring(void* arg) {
                 wqueue++;
             } else {
                 //handle_write_event(req, stream);
-                free_request(req);
+                //free_request(req);
                 io_uring_cqe_seen(&ring, cqe);
-                add_read_request(stream, &ring);
+                add_read_request(stream, &ring, req);
                 rqueue++;
             }
         }
         /* the read request was handled, add a new one to keep queue filled */
 /*         add_read_request(stream, &ring);
-        rqueue++;*/    
+        rqueue++;*/
     }
     return 0;
 }
@@ -209,31 +212,27 @@ void ureceiver_free(struct uReceiver* self) {
     
     for (int i = 0; i < self->num_streams; i++) ustream_free(self->streams[i]);
     for (int i = 0; i < self->num_streams; i++) io_uring_queue_exit(&self->rings[i]);
-    
+
     free(self->streams);
     free(self->rings);
     free(self);
 }
 
-int add_read_request(struct uStream* stream, struct io_uring* ring) {
-
-    //LOG_DEBUG(0, "stream pointer: 0x%08x, ring pointer 0x%08x", stream, ring);
-
+int add_read_request(struct uStream* stream, struct io_uring* ring, struct request* req){
     struct io_uring_sqe *sqe = io_uring_get_sqe(ring);
-    struct request *req = malloc(sizeof(*req) + sizeof(struct iovec));
-    req->iov[0].iov_base = malloc(READ_SZ);
+
     req->iov[0].iov_len = READ_SZ;
     req->event_type = EVENT_TYPE_READ;
     req->client_socket = stream->socket_handle;
-    memset(req->iov[0].iov_base, 0, READ_SZ);
-    /* Linux kernel 5.5 has support for readv, but not for recv() or read() */
+
+    //memset(req->iov[0].iov_base, 0, READ_SZ);
+
     io_uring_prep_readv(sqe, req->client_socket, &req->iov[0], 1, 0);
     io_uring_sqe_set_data(sqe, req);
     io_uring_submit(ring);
 
     return 0;
 }
-
 
 int add_write_request(struct uStream *stream, struct io_uring* ring, void* iov_base, int bytes, int offset){
 
@@ -280,9 +279,4 @@ int handle_packet(struct request *req, struct uStream* stream) {
     }
 
     return offset;
-}
-
-void free_request(struct request *req) {
-    free(req->iov[0].iov_base);
-    free(req);
 }
