@@ -28,12 +28,11 @@ include:
   - local: /scripts/.gitlab-ci-common.yml # Common definitions
   - local: /src/logging/.gitlab-ci.yml
   - local: /src/config_db/.gitlab-ci.yml
-  - local: /src/tango_sdp_master/.gitlab-ci.yml
-  - local: /src/tango_sdp_subarray/.gitlab-ci.yml
+  - local: /src/lmc/.gitlab-ci.yml
   - local: /src/console/.gitlab-ci.yml
   - local: /src/processing_controller/.gitlab-ci.yml
   - local: /src/helm_deploy/.gitlab-ci.yml
-  - local: /src/vis_receive/.gitlab-ci.yml
+  # - local: /src/vis_receive/.gitlab-ci.yml
 
 # ============================================================================
 # Build documentation
@@ -41,7 +40,7 @@ include:
 
 build_docs:
   stage: test
-  image: nexus.engageska-portugal.pt/sdp-prototype/pytango_ska_dev:latest
+  image: python:latest
   before_script:
     - pip install -r docs/requirements.txt
   script:
@@ -54,46 +53,43 @@ build_docs:
 # Generate test reports
 # ============================================================================
 
-# Generate combined test coverage report
+# Generate combined coverage and unit test reports
 
 coverage_report:
   stage: post_test
-  tags: [docker]
   image: python:latest
   before_script:
-    - pip install coverage
-    - pip install coveralls
-    - pip install pyyaml
-    - pip install anybadge
-    - pip install junitparser
+    - pip install anybadge coverage junitparser
   script:
+    # Create directory for combined reports
+    - mkdir -p build/reports
+    - chmod 777 build/reports
+    # Combine coverage reports
     - coverage --version
     - coverage combine *.coverage
     - coverage report
     - coverage html
     - coverage xml
-    - mkdir -p build/reports
-    - chmod 777 build/reports
-    - mv coverage.xml ./build/reports/code-coverage.xml
+    - mv coverage.xml build/reports/code-coverage.xml
+    # Make coverage report badge
     - cov=$(grep -m 1 data-ratio htmlcov/index.html | cut -d">" -f2 | cut -d% -f1)
-    - anybadge -l "coverage report" -v ${cov} -f build/cov_report.svg coverage
-    - junitparser merge unit-tests-*.xml ./build/reports/unit-tests.xml
+    - anybadge -l "coverage report" -v ${cov} -f cov_report.svg coverage
+    # Merge unit test reports
+    - junitparser merge unit-tests-*.xml build/reports/unit-tests.xml
   coverage: '/TOTAL\s+\d+\s+\d+\s+\d+\s+\d+\s+(\d+\%)/'
-  after_script:
-    # FIXME: this is not working but doesn't break the build.
-    - coveralls --merge=coveralls.json
   artifacts:
     paths:
+    - build
     - htmlcov
-    - ./build
+    - cov_report.svg
     expire_in: 1 week
 
-# Generate linting report.
+
+# Generate linting report
+
 linting:
   stage: linting
   image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
-  tags:
-    - docker
   before_script:
     - pip install pylint_junit pylint2junit
   script:
@@ -105,13 +101,12 @@ linting:
       processing_controller/processing_controller
       pss_receive/pss-receive
       pss_receive/pss-send
-      tango_sdp_master/SDPMaster
-      tango_sdp_subarray/SDPSubarray
+      lmc/ska_sdp_lmc
       > ../build/reports/linting.xml
   when: always
   artifacts:
     paths:
-      - ./build
+      - build
     expire_in: 1 week
 
 # ============================================================================
@@ -122,15 +117,15 @@ linting:
 
 pages:
   stage: pages
-  tags: [docker]
   image: python:latest
   dependencies: [coverage_report]
   script:
     # Publish the output of coverage_report
     - mv htmlcov public
-    - mv build/cov_report.svg public
+    - mv cov_report.svg public
   artifacts:
-    paths: [public/]
+    paths:
+      - public
     expire_in: 1 week
   rules:
     - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"'
@@ -140,7 +135,6 @@ create_ci_metrics:
   stage: .post
   image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
   when: always
-  tags: [docker]
   script:
     # Gitlab CI badges creation: START
     - apt-get -y update
@@ -149,5 +143,5 @@ create_ci_metrics:
     # Gitlab CI badges creation: END
   artifacts:
     paths:
-      - ./build
+      - build
     expire_in: 1 week

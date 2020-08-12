@@ -37,10 +37,7 @@ import sphinx_rtd_theme
 # -- Path set up --------------------------------------------------------------
 
 sys.path.insert(0, os.path.abspath(
-    os.path.join('..', '..', 'src', 'tango_sdp_subarray', 'SDPSubarray')
-))
-sys.path.insert(0, os.path.abspath(
-    os.path.join('..', '..', 'src', 'tango_sdp_master', 'SDPMaster')
+    os.path.join('..', '..', 'src', 'lmc')
 ))
 sys.path.insert(0, os.path.abspath(
     os.path.join('..', '..', 'src', 'config_db')

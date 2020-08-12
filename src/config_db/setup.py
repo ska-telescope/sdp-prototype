@@ -22,17 +22,26 @@ setuptools.setup(
     install_requires=[
         'etcd3-py', 'docopt-ng', 'pyyaml'
     ],
-    classifiers=[
-        'Topic :: Database :: Front-Ends',
-        'Topic :: Scientific/Engineering :: Astronomy',
-        'Topic :: System :: Distributed Computing',
+    setup_requires=['pytest-runner'],
+    tests_require=[
+        'pylint2junit',
+        'pytest',
+        'pytest-cov',
+        'pytest-json-report',
+        'pytest-pycodestyle',
+        'pytest-pydocstyle',
+        'pytest-pylint',
+        'pytest-timeout'
     ],
     packages=[
         'ska_sdp_config',
         'ska_sdp_config/backend',
         'ska_sdp_config/entity'
     ],
-    test_suite='tests',
-    tests_require=['pytest'],
-    scripts=['scripts/sdpcfg']
+    scripts=['scripts/sdpcfg'],
+    classifiers=[
+        'Topic :: Database :: Front-Ends',
+        'Topic :: Scientific/Engineering :: Astronomy',
+        'Topic :: System :: Distributed Computing',
+    ]
 )

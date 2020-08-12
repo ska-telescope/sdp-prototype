@@ -1,0 +1,4 @@
+pytango
+jsonschema
+ska-sdp-config >= 0.0.10
+ska-sdp-logging >= 0.0.6

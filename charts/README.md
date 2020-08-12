@@ -69,20 +69,20 @@ pods (copy the full name from `kubectl` output) to verify that they
 are doing okay:
 
 ```console
-$ kubectl logs test-sdp-prototype-tangods-[...] sdp-subarray-1
-1|2020-04-25T12:46:27.075Z|INFO|MainThread|init_device|SDPSubarray.py#171|SDPSubarray|Initialising SDP Subarray: mid_sdp/elt/subarray_1
+$ kubectl logs test-sdp-prototype-lmc-[...] sdp-subarray-1
+1|2020-08-06T15:17:41.369Z|INFO|MainThread|init_device|subarray.py#110|SDPSubarray|Initialising SDP Subarray: mid_sdp/elt/subarray_1
 ...
-1|2020-04-25T12:46:27.119Z|INFO|MainThread|init_device|SDPSubarray.py#195|SDPSubarray|SDP Subarray initialised: mid_sdp/elt/subarray_1
+1|2020-08-06T15:17:41.377Z|INFO|MainThread|init_device|subarray.py#140|SDPSubarray|SDP Subarray initialised: mid_sdp/elt/subarray_1
 $ kubectl logs test-sdp-prototype-processing-controller-[...]
 ...
-1|2020-04-25T12:46:23.134Z|DEBUG|MainThread|main|processing_controller.py#189||Waiting...
+1|2020-08-06T15:14:30.068Z|DEBUG|MainThread|main|processing_controller.py#192||Waiting...
 $ kubectl logs test-sdp-prototype-helm-deploy-[...]
 ...
-1|2020-04-25T12:46:31.461Z|INFO|MainThread|main|helm_deploy.py#175||Found 0 existing deployments
+1|2020-08-06T15:14:31.662Z|INFO|MainThread|main|helm_deploy.py#146||Found 0 existing deployments.
 ```
 
-Just to name a few. If it looks like this, there is a good chance
-everything has been deployed correctly.
+If it looks like this, there is a good chance everything has been deployed
+correctly.
 
 Testing it out
 --------------
@@ -244,13 +244,18 @@ and changing attributes and issuing commands:
 ```python
 In [2]: d = DeviceProxy('mid_sdp/elt/subarray_1')
 
-In [3]: d.obsState
-Out[3]: <obsState.IDLE: 0>
+In [3]: d.state()
+Out[3]: tango._tango.DevState.OFF
 
-In [4]: d.state()
-Out[4]: tango._tango.DevState.OFF
+In [4]: d.On()
 
-In [5]: config_sbi = '''
+In [5]: d.state()
+Out[5]: tango._tango.DevState.ON
+
+In [6]: d.obsState
+Out[6]: <obsState.EMPTY: 0>
+
+In [7]: config_sbi = '''
     ...: {
     ...:   "id": "sbi-mvp01-20200425-00000",
     ...:   "max_length": 21600.0,
@@ -293,41 +298,40 @@ In [5]: config_sbi = '''
     ...: }
     ...: '''
 
-In [6]: d.AssignResources(config_sbi)
+In [8]: d.AssignResources(config_sbi)
 
-In [7]: d.state()
-Out[7]: tango._tango.DevState.ON
+In [9]: d.obsState
+Out[9]: <obsState.IDLE: 0>
 
-In [8]: d.obsState
-Out[8]: <obsState.IDLE: 0>
+In [10]: d.Configure('{"scan_type": "science"}')
 
-In [9]: d.Configure('{"scan_type": "science"}')
+In [11]: d.obsState
+Out[11]: <obsState.READY: 2>
 
-In [10]: d.obsState
-Out[10]: <obsState.READY: 2>
+In [12]: d.Scan('{"id": 1}')
 
-In [11]: d.Scan('{"id": 1}')
+In [13]: d.obsState
+Out[13]: <obsState.SCANNING: 3>
 
-In [12]: d.obsState
-Out[12]: <obsState.SCANNING: 3>
+In [14]: d.EndScan()
 
-In [13]: d.EndScan()
+In [15]: d.obsState
+Out[15]: <obsState.READY: 2>
 
-In [14]: d.obsState
-Out[14]: <obsState.READY: 2>
+In [16]: d.End()
 
-In [15]: d.Reset()
+In [17]: d.obsState
+Out[17]: <obsState.IDLE: 0>
 
-In [16]: d.obsState
-Out[16]: <obsState.IDLE: 0>
+In [18]: d.ReleaseResources()
 
-In [17]: d.ReleaseResources()
+In [19]: d.obsState
+Out[19]: <obsState.EMPTY: 0>
 
-In [18]: d.obsState
-Out[18]: <obsState.IDLE: 0>
+In [20]: d.Off()
 
-In [19]: d.state()
-Out[19]: tango._tango.DevState.OFF
+In [21]: d.state()
+Out[21]: tango._tango.DevState.OFF
 ```
 
 Removing the SDP

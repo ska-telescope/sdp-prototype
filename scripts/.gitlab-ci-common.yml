@@ -6,8 +6,7 @@
 
 .build_python:
   stage: build
-  dependencies: []
-  image: python:3.7
+  image: python:latest
   artifacts:
     paths:
       - ./$BUILD_PATH/dist/
@@ -17,7 +16,6 @@
 
 .build_python_dev:
   extends: .build_python
-  dependencies: []
   script:
     - cd $BUILD_PATH
     - python3 setup.py egg_info -b+dev.$CI_COMMIT_SHORT_SHA sdist bdist_wheel
@@ -32,17 +30,13 @@
     - python3 setup.py sdist bdist_wheel
   only: [master]
 
-.install_artifacts:
-  before_script: # Install from build artifacts
-    - pip3 install ska-sdp-config --find-links src/config_db/dist
-    - pip3 install ska-sdp-logging --find-links src/logging/dist
-
 # ============================================================================
 # Common definitions for publishing Python packages
 # ============================================================================
 
-.publish_python_release:
+.publish_python:
   stage: publish
+  image: python:latest
   only: [master]
   variables:
     TWINE_USERNAME: $TWINE_USERNAME
@@ -59,26 +53,37 @@
 
 .test_python:
   stage: test
-  extends: .install_artifacts
-  tags: [docker]
   image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
-
-.test_with_coverage:
-  stage: test
+  before_script:
+    # Install from build artifacts
+    - pip3 install ska-sdp-config --find-links src/config_db/dist
+    - pip3 install ska-sdp-logging --find-links src/logging/dist
   script:
     - cd $BUILD_PATH
+    - pip3 install -r requirements.txt -r requirements-test.txt
     - python3 setup.py test
-    # Make the coverage report available at the top level, which will merge it.
-    - mv .coverage ../../$CI_JOB_NAME.coverage
-    - cp build/reports/unit-tests.xml ../../unit-tests-${CI_JOB_NAME}.xml
-    - mv build ../../build
+  after_script:
+    # Move the coverage and unit test reports to the top level
+    - mv $BUILD_PATH/.coverage $CI_JOB_NAME.coverage
+    - mv $BUILD_PATH/unit-tests.xml unit-tests-${CI_JOB_NAME}.xml
   artifacts:
     paths:
-      - ./$CI_JOB_NAME.coverage
-      - ./unit-tests-${CI_JOB_NAME}.xml
-      - ./build
+      - $CI_JOB_NAME.coverage
+      - unit-tests-${CI_JOB_NAME}.xml
     expire_in: 1 week
     when: always
+
+.test_with_etcd:
+  services:
+    - name: quay.io/coreos/etcd:latest
+      alias: etcd
+      command:
+        - /usr/local/bin/etcd
+        - "--advertise-client-urls=http://0.0.0.0:2379"
+        - "--listen-client-urls=http://0.0.0.0:2379"
+        - "--initial-advertise-peer-urls=http://0.0.0.0:2380"
+        - "--listen-peer-urls=http://0.0.0.0:2380"
+        - "--initial-cluster=default=http://0.0.0.0:2380"
 
 # ============================================================================
 # Common definitions for building Docker images
@@ -92,10 +97,8 @@
     - build:ska-sdp-logging
     - build:ska-sdp-config
   variables:
-    BUILD_REGISTRY_HOST: $CI_REGISTRY/ska-telescope
-  tags:
-    - docker
-    - engageska
+    GIT_VERSION: ${CI_COMMIT_SHORT_SHA}
+    PREFIX_BUILD: ${CI_REGISTRY_IMAGE}
   image: docker:stable
   services:
     - docker:dind
@@ -106,35 +109,31 @@
     - cp src/config_db/dist/*.whl $BUILD_PATH
     - cp src/logging/dist/*.whl $BUILD_PATH
     - cd $BUILD_PATH
-    - make DOCKER_REGISTRY_HOST=$BUILD_REGISTRY_HOST build
-    - make DOCKER_REGISTRY_HOST=$BUILD_REGISTRY_HOST push
+    - make build
+    - make push
 
 # ============================================================================
 # Common definitions for publishing Docker images
 # ============================================================================
 
-.push_docker_nexus:
+.publish_docker:
   stage: publish
   only: [master]
-  dependencies: []
   variables:
-    DOCKER_REGISTRY_HOST: $DOCKER_REGISTRY_HOST
-    DOCKER_REGISTRY_USER: $CI_PROJECT_NAME
-    GIT_VERSION: ${CI_COMMIT_SHA:0:8}
-  tags:
-    - docker
-    - engageska
+    GIT_VERSION: ${CI_COMMIT_SHORT_SHA}
+    PREFIX_BUILD: ${CI_REGISTRY_IMAGE}
+    PREFIX_RELEASE: ${DOCKER_REGISTRY_HOST}/${CI_PROJECT_NAME}
   image: docker:stable
   services:
     - docker:dind
   before_script:
     - apk add make git
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker login -u $DOCKER_REGISTRY_USERNAME -p $DOCKER_REGISTRY_PASSWORD $DOCKER_REGISTRY_HOST
   script:
     - cd $BUILD_PATH
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - make DOCKER_REGISTRY_HOST=${CI_REGISTRY}/ska-telescope  pull_gitlab
-    - docker login -u $DOCKER_REGISTRY_USERNAME -p $DOCKER_REGISTRY_PASSWORD $DOCKER_REGISTRY_HOST
-    - make DOCKER_REGISTRY_HOST=$DOCKER_REGISTRY_HOST push_version_gitlab
+    - make pull
+    - make push_release
   retry: 2
 
 # ============================================================================
@@ -146,11 +145,10 @@
   only: [master]
   when: always
   allow_failure: true
-  tags: [docker]
   image: python:latest
   script:
     - 'curl -X POST -H "Content-Type: application/json" --fail
          -H "Authorization: Basic $JIRA_AUTH"
-         --data @build/cucumber.json
+         --data @cucumber.json
          https://jira.skatelescope.org/rest/raven/1.0/import/execution/cucumber'
   retry: 2 # In case JIRA doesn't work first time
