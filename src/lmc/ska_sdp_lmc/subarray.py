@@ -84,6 +84,20 @@ class SDPSubarray(SDPDevice):
             'JSON string.'
     )
 
+    scanType = attribute(
+        label='Scan Type',
+        dtype=str,
+        access=AttrWriteType.READ,
+        doc='Scan type.'
+    )
+
+    scanID = attribute(
+        label='Scan ID',
+        dtype=str,
+        access=AttrWriteType.READ,
+        doc='Scan ID.'
+    )
+
     processingBlockState = attribute(
         label='State of real-time processing blocks',
         dtype=str,
@@ -115,17 +129,19 @@ class SDPSubarray(SDPDevice):
         self.set_change_event('adminMode', True)
         self.set_change_event('healthState', True)
         self.set_change_event('receiveAddresses', True)
+        self.set_change_event('scanType', True)
+        self.set_change_event('scanID', True)
 
         # Initialise attributes
         self._set_obs_state(ObsState.EMPTY)
         self._set_admin_mode(AdminMode.ONLINE)
         self._set_health_state(HealthState.OK)
         self._set_receive_addresses(None)
+        self._set_scan_type(None)
+        self._set_scan_id(None)
 
         # Initialise instance variables
         self._sbi_id = None
-        self._error_message = None
-        self._error_origin = None
         # TODO NEED TO THINK ABOUT THIS
         self._pb_ids = None
 
@@ -204,6 +220,28 @@ class SDPSubarray(SDPDevice):
 
         """
         return json.dumps(self._receive_addresses)
+
+    def read_scanType(self):
+        """Get the scan type.
+
+        More details are provided on SKA confluence at the address:
+        http://bit.ly/2Gad55Q
+
+        :returns: JSON describing receive addresses
+
+        """
+        return json.dumps(self._scan_type)
+
+    def read_scanID(self):
+        """Get the scan ID.
+
+        More details are provided on SKA confluence at the address:
+        http://bit.ly/2Gad55Q
+
+        :returns: JSON describing receive addresses
+
+        """
+        return json.dumps(self._scan_id)
 
     def read_processingBlockState(self):
         """Get the states of the real-time processing blocks.
@@ -296,6 +334,7 @@ class SDPSubarray(SDPDevice):
         LOG.info('-------------------------------------------------------')
 
         LOG.debug('Setting Subarray %s state to OFF', self._subarray_id)
+        self._update_subarray_state('commanded_obs_state', 'EMPTY')
 
         if self._obs_state != ObsState.EMPTY:
             LOG.info('obsState is not EMPTY')
@@ -313,7 +352,6 @@ class SDPSubarray(SDPDevice):
 
         # Set the state to OFF in subarray
         self._update_subarray_state('state', 'OFF')
-        self._update_subarray_state('commanded_obs_state', 'EMPTY')
 
         LOG.info('-------------------------------------------------------')
         LOG.info('Off Successful!')
@@ -358,16 +396,11 @@ class SDPSubarray(SDPDevice):
         if config is None:
             # Validation has failed, so set obsState to FAULT and raise
             # an error
-            # TODO (NJT) - NEED TO FIX THIS
-            self._update_subarray_state('obsState', 'FAULT')
-            self._set_obs_state(ObsState.FAULT)
+            self._update_subarray_state('commanded_obs_state', 'FAULT')
             self._raise_command_error(
                 'Configuration validation failed',
                 origin='SDPSubarray.AssignResources()'
             )
-            # self._error_message = 'Configuration validation failed',
-            # self._error_origin = 'SDPSubarray.AssignResources()'
-            # self._update_subarray_state('obsState', 'FAULT')
 
         # Check IDs against existing IDs in the config DB
         ok = self._config_check_ids(config)
@@ -375,8 +408,7 @@ class SDPSubarray(SDPDevice):
         if not ok:
             # Duplicate scheduling block, so set obsState to FAULT and
             # raise an error
-            # self._update_subarray_obs_state('obsState', 'FAULT')
-            # self._set_obs_state(ObsState.FAULT)
+            self._update_subarray_state('commanded_obs_state', 'FAULT')
             self._raise_command_error(
                 'Duplicate scheduling block instance ID or processing block'
                 ' ID in configuration',
@@ -389,8 +421,7 @@ class SDPSubarray(SDPDevice):
         if not ok:
             # Creation of SBI and PBs failed, so set obsState to FAULT and
             # raise an error
-            # self._update_subarray_state('obsState', 'FAULT')
-            self._set_obs_state(ObsState.FAULT)
+            self._update_subarray_state('commanded_obs_state', 'FAULT')
             self._raise_command_error(
                 'Creation of scheduling block and processing blocks failed',
                 origin='SDPSubarray.AssignResources()'
@@ -435,6 +466,8 @@ class SDPSubarray(SDPDevice):
         # Clear the scheduling block instance ID
         self._sbi_id = None
         self._update_subarray_state('sbi_id', None)
+        # TODO (NJT) NEED TO FIX THIS
+        self._update_subarray_state('subarray_id', None)
 
         LOG.info('-------------------------------------------------------')
         LOG.info('ReleaseResources Successful!')
@@ -473,7 +506,7 @@ class SDPSubarray(SDPDevice):
         if config is None:
             # Validation has failed, so set obsState to FAULT and raise
             # an error
-            self._set_obs_state(ObsState.FAULT)
+            self._update_subarray_state('commanded_obs_state', 'FAULT')
             self._raise_command_error(
                 'Configuration validation failed',
                 origin='SDPSubarray.Configure()'
@@ -485,7 +518,7 @@ class SDPSubarray(SDPDevice):
         if not ok:
             # Scan type configuration has failed, so set obsState to FAULT
             # and raise an error
-            self._set_obs_state(ObsState.FAULT)
+            self._update_subarray_state('commanded_obs_state', 'FAULT')
             self._raise_command_error(
                 'Scan type configuration failed',
                 origin='SDPSubarray.Configure()'
@@ -531,7 +564,7 @@ class SDPSubarray(SDPDevice):
         if config is None:
             # Validation has failed, so set obsState to FAULT and raise
             # an error
-            self._set_obs_state(ObsState.FAULT)
+            self._update_subarray_state('commanded_obs_state', 'FAULT')
             self._raise_command_error(
                 'Configuration validation failed',
                 origin='SDPSubarray.Scan()'
@@ -562,6 +595,9 @@ class SDPSubarray(SDPDevice):
         LOG.info('EndScan (%s)', self.get_name())
         LOG.info('-------------------------------------------------------')
 
+        # Set commanded obsState to READY
+        self._update_subarray_state('commanded_obs_state', 'READY')
+
         # Clear scan ID and set status to READY
         self._update_sb({'scan_id': None, 'status': 'READY'})
 
@@ -583,6 +619,9 @@ class SDPSubarray(SDPDevice):
         LOG.info('-------------------------------------------------------')
         LOG.info('Reset (%s)', self.get_name())
         LOG.info('-------------------------------------------------------')
+
+        # Set commanded obsState to IDLE
+        self._update_subarray_state('commanded_obs_state', 'IDLE')
 
         # Clear scan type and scan ID, and set status to IDLE
         self._update_sb({'current_scan_type': None, 'scan_id': None,
@@ -638,13 +677,13 @@ class SDPSubarray(SDPDevice):
         LOG.info('-------------------------------------------------------')
 
         # Set obsState to RESETTING
-        self._update_subarray_state('obsState', 'RESETTING')
+        self._update_subarray_state('commanded_obs_state', 'IDLE')
 
         if self._sbi_id is None:
             message = 'Scheduling block instance is not configured, ' + \
                 'ObsReset is not permitted'
             LOG.error(message)
-            self._set_obs_state(ObsState.FAULT)
+            self._update_subarray_state('commanded_obs_state', 'FAULT')
             self._raise_command_error(
                 message,
                 origin='SDPSubarray.ObsReset()'
@@ -676,16 +715,17 @@ class SDPSubarray(SDPDevice):
         LOG.info('Restart (%s)', self.get_name())
         LOG.info('-------------------------------------------------------')
 
-        # Set obsState to RESTARTING
-        self._update_subarray_state('obsState', 'RESTARTING')
+        # Set obsState to EMPTY
+        self._update_subarray_state('commanded_obs_state', 'EMPTY')
 
         if self._sbi_id is not None:
             # Clear scan type and scan ID, and set status to CANCELLED
             self._update_sb({'current_scan_type': None, 'scan_id': None,
                              'status': 'CANCELLED'})
-        else:
-            # Set obsState to EMPTY
-            self._update_subarray_state('obsState', 'EMPTY')
+
+            # Clear the scheduling block instance ID
+            self._sbi_id = None
+            self._update_subarray_state('sbi_id', None)
 
         LOG.info('-------------------------------------------------------')
         LOG.info('Restart Successful')
@@ -724,13 +764,12 @@ class SDPSubarray(SDPDevice):
             state[current_state] = current_value
             txn.update_subarray(self._subarray_id, state)
 
-
-    def _get_obs_state(self, txn):
-        LOG.debug("TESTING")
+    # def _get_obs_state(self, txn):
+    #     LOG.debug("TESTING")
 
     def _monitoring_thread(self):
         """This is the monitoring thread."""
-        LOG.debug("Monitoring Thread Started")
+        LOG.info("Monitoring Thread Started")
         for txn in self._config_db_client.txn():
             state = txn.get_subarray(self._subarray_id)
             if state.get('state') == 'ON':
@@ -739,184 +778,112 @@ class SDPSubarray(SDPDevice):
                     LOG.info('Setting device state to ON')
                     self.set_state(DevState.ON)
                 sbi_id = state.get('sbi_id')
-                LOG.debug("Before checking commanded state")
+
+                # Monitoring SBI and PB states
                 if state.get('commanded_obs_state') == 'IDLE':
-                    LOG.debug("INSIDE idle")
                     if sbi_id is not None:
                         sb = txn.get_scheduling_block(sbi_id)
                         self._pb_ids = sb.get('pb_realtime')
-                        if self._obs_state != ObsState.RESOURCING:
-                            LOG.info("ObsState is set to RESOURCING")
-                            self._set_obs_state(ObsState.RESOURCING)
+                        if self._obs_state == ObsState.FAULT or \
+                                self._obs_state == ObsState.ABORTED:
+                            LOG.info("ObsState is set to RESETTING")
+                            self._set_obs_state(ObsState.RESETTING)
+                        elif self._obs_state == ObsState.EMPTY:
+                            if self._obs_state != ObsState.RESOURCING:
+                                LOG.info("ObsState is set to RESOURCING")
+                                self._set_obs_state(ObsState.RESOURCING)
                         for pb_id in self._pb_ids:
                             pb_state = txn.get_processing_block_state(pb_id)
-                            # Monitoring SBI and PB states
                             if pb_state is not None:
                                 receive_addresses = self._get_receive_addresses(pb_state)
                                 if receive_addresses is not None:
                                     self._set_receive_addresses(receive_addresses)
                                 if pb_state.get('status') == 'RUNNING' and \
-                                    sb.get('pb_receive_addresses') is not None:
+                                        sb.get('pb_receive_addresses') is not None and \
+                                        self._obs_state == 'RESOURCING':
                                     LOG.info("ObsState is set to IDLE")
                                     self._set_obs_state(ObsState.IDLE)
+                                elif sb.get('current_scan_type') is None and \
+                                        sb.get('scan_id') is None:
+                                    self._set_scan_type(sb.get('current_scan_type'))
+                                    self._set_scan_id(sb.get('scan_id'))
+                                    LOG.info("ObsState is set to IDLE")
+                                    self._set_obs_state(ObsState.IDLE)
+
                 elif state.get('commanded_obs_state') == 'EMPTY':
-                    LOG.debug("INSIDE EMPTY")
                     if sbi_id is None:
-                        if self._obs_state != ObsState.RESOURCING:
+                        if self._obs_state == ObsState.IDLE:
                             LOG.info("ObsState is set to RESOURCING")
                             self._set_obs_state(ObsState.RESOURCING)
-                        LOG.debug("PB_IDS {}", self._pb_ids)
-                        for pb_id in self._pb_ids:
-                            pb_state = txn.get_processing_block_state(pb_id)
-                            if pb_state is not None:
-                                if pb_state.get('status') == 'FINISHED':
-                                    # TODO NEED TO EMPTY SUBARRAY ID
-                                    # Clear the receive addresses
-                                    self._set_receive_addresses(None)
-                                    self._set_obs_state(ObsState.EMPTY)
+                        elif self._obs_state == ObsState.ABORTED or \
+                                self._obs_state == ObsState.FAULT:
+                            LOG.info("ObsState is set to RESTARTING")
+                            self._set_obs_state(ObsState.RESTARTING)
+                        if self._pb_ids is not None:
+                            for pb_id in self._pb_ids:
+                                pb_state = txn.get_processing_block_state(pb_id)
+                                if pb_state is not None:
+                                    if pb_state.get('status') == 'FINISHED':
+                                        # Clear the receive addresses
+                                        self._set_receive_addresses(None)
+                                        LOG.info("ObsState is set to EMPTY")
+                                        self._set_obs_state(ObsState.EMPTY)
+                                    else:
+                                        # Clear the receive addresses
+                                        self._set_receive_addresses(None)
+                                        LOG.debug("TEMPORARY - UNTIL WORKFLOW IS UPDATED")
+                                        LOG.info("ObsState is set to EMPTY")
+                                        self._set_obs_state(ObsState.EMPTY)
+                        else:
+                            LOG.debug("TEMPORARY - UNTIL WORKFLOW IS UPDATED ")
+                            LOG.info("ObsState is set to EMPTY")
+                            self._set_obs_state(ObsState.EMPTY)
+
                 elif state.get('commanded_obs_state') == 'READY':
-                    LOG.debug("INSIDE READY")
-                    if self._obs_state != ObsState.CONFIGURING:
-                        LOG.info("ObsState is set to CONFIGURING")
-                        self._set_obs_state(ObsState.CONFIGURING)
+                    if self._obs_state == ObsState.IDLE:
+                        if self._obs_state != ObsState.CONFIGURING:
+                            LOG.info("ObsState is set to CONFIGURING")
+                            self._set_obs_state(ObsState.CONFIGURING)
+
                     sb = txn.get_scheduling_block(sbi_id)
-                    # TODO NEED TO UPDATE CURRENT_SCAN_TYPE AND SCAN_ID ATTRIBUTES
                     if sb.get('current_scan_type') is not None and \
                             sb.get('scan_id') is None:
+                        self._set_scan_type(sb.get('current_scan_type'))
+                        self._set_scan_id(sb.get('scan_id'))
                         LOG.info("ObsState is set to READY")
                         self._set_obs_state(ObsState.READY)
+
                 elif state.get('commanded_obs_state') == 'SCANNING':
                     sb = txn.get_scheduling_block(sbi_id)
-                    # TODO NEED TO UPDATE CURRENT_SCAN_TYPE AND SCAN_ID ATTRIBUTES
                     if sb.get('scan_id') is not None:
-                        LOG.debug('ObsState is set to SCANNING')
+                        self._set_scan_id(sb.get('scan_id'))
+                        LOG.info('ObsState is set to SCANNING')
                         self._set_obs_state(ObsState.SCANNING)
+
                 elif state.get('commanded_obs_state') == 'ABORTED':
                     LOG.debug('ObsState is set to ABORTING')
                     self._set_obs_state(ObsState.ABORTING)
                     sb = txn.get_scheduling_block(sbi_id)
                     if sb.get('status') == 'ABORTED':
+                        LOG.info('ObsState is set to ABORTED')
                         self._set_obs_state(ObsState.ABORTED)
 
+                elif state.get('commanded_obs_state') == 'FAULT':
+                    LOG.info('ObsState is set to FAULT')
+                    self._set_obs_state(ObsState.FAULT)
+
             elif state.get('state') == 'OFF':
-                LOG.debug("INSIDE OFF STATE STATEMENT")
                 if state.get('commanded_obs_state') == 'EMPTY':
-                    # sbi_id = state.get('sbi_id')
-                    # sb = txn.get_scheduling_block(sbi_id)
-                    # if sb.get('status') == 'CANCELLED':
-                    #     # TODO (NJT) NEED TO CHECK IF THE WORKFLOW HAS EXISTED
+                    sbi_id = state.get('sbi_id')
+                    # TODO (NJT) NEED TO CHECK IF THE WORKFLOW HAS EXISTED
                     if sbi_id is None:
                         # Clear the receive addresses
                         self._set_receive_addresses(None)
                         self._set_obs_state(ObsState.EMPTY)
-                        LOG.debug('Setting device state to OFF')
+                        LOG.info('Setting device state to OFF')
                         self.set_state(DevState.OFF)
                         return
             txn.loop(wait=True)
-
-    # sb = txn.get_scheduling_block(sbi_id)
-    # pb_ids = sb.get('pb_realtime')
-    # for pb_id in pb_ids:
-    #     pb_state = txn.get_processing_block_state(pb_id)
-    #     if pb_state is not None:
-    #         receive_addresses = self._get_receive_addresses(pb_state)
-    #         if receive_addresses is not None:
-    #             self._set_receive_addresses(receive_addresses)
-    #         if pb_state.get('status') == 'RUNNING' and \
-    #             sb.get('pb_receive_addresses') is not None:
-    #             self._set_obs_state(ObsState.IDLE)
-    #         elif sb.get('status') == 'FINISHED' and \
-    #                 pb_state.get('status') == 'FINISHED':
-    #
-    #             # TODO (njt) how TO PUT THIS PART OF RELEASE RESOURCE COMMAND
-    #             # Clear the scheduling block instance ID
-    #             self._sbi_id = None
-    #             self._update_subarray_state('sbi_id', None)
-    #             self._set_obs_state(ObsState.RESOURCING)
-    #
-    #             # Clear the receive addresses
-    #             self._set_receive_addresses(None)
-    #             self._set_obs_state(ObsState.EMPTY)
-
-    # elif state.get('obsState') == 'CONFIGURING':
-    #     if self._obs_state != ObsState.CONFIGURING:
-    #         LOG.debug('ObsState is set to CONFIGURING')
-    #         self._set_obs_state(ObsState.CONFIGURING)
-    #
-    #     if sb.get('current_scan_type') is not None and \
-    #             sb.get('scan_id') is None:
-    #         state['obsState'] = 'READY'
-    #         txn.update_subarray(self._subarray_id, state)
-    #
-    # elif state.get('obsState') == 'READY':
-    #     if self._obs_state != ObsState.READY:
-    #         LOG.debug('ObsState is set to READY')
-    #         self._set_obs_state(ObsState.READY)
-    #
-    #     if sb.get('current_scan_type') is None and \
-    #             sb.get('scan_id') is None:
-    #         self._set_obs_state(ObsState.IDLE)
-    #
-    #     if sb.get('scan_id') is not None:
-    #         state['obsState'] = 'SCANNING'
-    #         txn.update_subarray(self._subarray_id, state)
-    #
-    # elif state.get('obsState') == 'SCANNING':
-    #     if self._obs_state != ObsState.SCANNING:
-    #         LOG.debug('ObsState is set to SCANNING')
-    #         self._set_obs_state(ObsState.SCANNING)
-    #
-    #     if sb.get('current_scan_type') is not None and \
-    #             sb.get('scan_id') is None:
-    #         state['obsState'] = 'READY'
-    #         txn.update_subarray(self._subarray_id, state)
-    #
-    # elif state.get('obsState') == 'RESETTING':
-    #     if self._obs_state != ObsState.RESETTING:
-    #         LOG.debug('ObsState is set to RESETTING')
-    #         self._set_obs_state(ObsState.RESETTING)
-    #
-    #     if sb.get('current_scan_type') is None and \
-    #             sb.get('scan_id') is None:
-    #         self._set_obs_state(ObsState.IDLE)
-    #
-    # elif state.get('obsState') == 'ABORTING':
-    #     if self._obs_state != ObsState.RESETTING:
-    #         LOG.debug('ObsState is set to ABORTING')
-    #         self._set_obs_state(ObsState.ABORTING)
-    #
-    #     if sb.get('status') == 'ABORTED':
-    #         state['obsState'] = 'ABORTED'
-    #         txn.update_subarray(self._subarray_id, state)
-    #
-    # elif state.get('obsState') == 'ABORTED':
-    #     if self._obs_state != ObsState.ABORTED:
-    #         LOG.debug('ObsState is set to ABORTED')
-    #         self._set_obs_state(ObsState.ABORTED)
-    #
-    # elif state.get('obsState') == 'RESTARTING':
-    #     if self._obs_state != ObsState.RESTARTING:
-    #         LOG.debug('ObsState is set to RESTARTING')
-    #         self._set_obs_state(ObsState.RESTARTING)
-    #
-    #     if sb.get('status') == 'CANCELLED':
-    #         # TODO (NJT) NEED TO CHECK IF THE WORKFLOW HAS EXISTED
-    #         # Clear the receive addresses
-    #         self._set_receive_addresses(None)
-    #
-    #         # Clear the scheduling block instance ID
-    #         # Set obsState to EMPTY
-    #         self._sbi_id = None
-    #         state['sbi_id'] = None
-    #         state['obsState'] = 'EMPTY'
-    #         txn.update_subarray(self._subarray_id, state)
-    #
-    # elif state.get('obsState') == 'FAULT':
-    #     if self._obs_state != ObsState.FAULT:
-    #         LOG.debug('ObsState is set to FAULT')
-    #         self._set_obs_state(ObsState.FAULT)
-
-
 
     def _set_obs_state(self, value, verbose=True):
         """Set the obsState and issue a change event."""
@@ -944,6 +911,18 @@ class SDPSubarray(SDPDevice):
         self._receive_addresses = value
         self.push_change_event('receiveAddresses',
                                json.dumps(self._receive_addresses))
+
+    def _set_scan_type(self, value):
+        """Set the scanType and issue a change event."""
+        self._scan_type = value
+        self.push_change_event('scanType',
+                               json.dumps(self._scan_type))
+
+    def _set_scan_id(self, value):
+        """Set the scanID and issue a change event."""
+        self._scan_id = value
+        self.push_change_event('scanID',
+                               json.dumps(self._scan_id))
 
     def _command_allowed(self, name,
                          state_allowed=None, obs_state_allowed=None,
