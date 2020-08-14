@@ -766,12 +766,7 @@ class SDPSubarray(SDPDevice):
 
     def _get_transitional_state(self, sbi_id=None):
         """Get the correct transitional state."""
-        LOG.debug("TRANSITIONAL_OBS_STATE")
-        if self._obs_state == ObsState.FAULT or \
-                self._obs_state == ObsState.ABORTED:
-            LOG.info("ObsState is set to RESETTING")
-            return ObsState.RESETTING
-        elif self._obs_state == ObsState.EMPTY or \
+        if self._obs_state == ObsState.EMPTY or \
             self._obs_state == ObsState.IDLE and sbi_id is None:
                 LOG.info("ObsState is set to RESOURCING")
                 return ObsState.RESOURCING
@@ -781,17 +776,18 @@ class SDPSubarray(SDPDevice):
                 return ObsState.CONFIGURING
         elif self._obs_state == ObsState.ABORTED or \
                 self._obs_state == ObsState.FAULT:
-            LOG.info("ObsState is set to RESTARTING")
-            return ObsState.RESTARTING
-
+            if sbi_id is None:
+                LOG.info("ObsState is set to RESTARTING")
+                return ObsState.RESTARTING
+            else:
+                LOG.info("ObsState is set to RESETTING")
+                return ObsState.RESETTING
         return None
 
     def _get_obs_state(self, txn, sbi_id=None, pb_state=None):
         """Get the correct obs state."""
-        LOG.debug("OBS_STATE")
-
-        sb = txn.get_scheduling_block(sbi_id)
-        LOG.debug(sb)
+        if sbi_id is not None:
+            sb = txn.get_scheduling_block(sbi_id)
 
         if pb_state is not None:
             if pb_state.get('status') == 'RUNNING' and \
@@ -800,26 +796,32 @@ class SDPSubarray(SDPDevice):
                     sb.get('scan_id') is None:
                     self._set_scan_type(sb.get('current_scan_type'))
                     self._set_scan_id(sb.get('scan_id'))
-                    LOG.debug("I AM IN HEREEEEE")
                     LOG.info("ObsState is set to IDLE")
                     return ObsState.IDLE
-            elif pb_state.get('status') == 'FINISHED' or \
-                    pb_state is None:
+            elif pb_state.get('status') == 'FINISHED':
+                # Clear the receive addresses
+                # TODO (NJT) NEED TO UPDATE WORKFLOW TO GET RESTART TO WORK
+                self._set_receive_addresses(None)
+                LOG.info("ObsState is set to EMPTY")
+                return ObsState.EMPTY
+            elif pb_state.get('status') == 'RUNNING' and \
+                    self._obs_state == ObsState.RESTARTING:
                 # Clear the receive addresses
                 self._set_receive_addresses(None)
                 LOG.info("ObsState is set to EMPTY")
                 return ObsState.EMPTY
-        elif sb.get('scan_id') is not None:
-            LOG.info('ObsState is set to SCANNING')
-            return ObsState.SCANNING
-        elif sb.get('current_scan_type') is not None and \
-                sb.get('scan_id') is None:
-            LOG.info("ObsState is set to READY")
-            return ObsState.READY
-        elif self._pb_ids is None:
-            LOG.debug("TEMPORARY - UNTIL WORKFLOW IS UPDATED")
-            LOG.info("ObsState is set to EMPTY")
-            return ObsState.EMPTY
+        else:
+            if sb.get('scan_id') is not None:
+                LOG.info('ObsState is set to SCANNING')
+                return ObsState.SCANNING
+            elif sb.get('current_scan_type') is not None and \
+                    sb.get('scan_id') is None:
+                LOG.info("ObsState is set to READY")
+                return ObsState.READY
+            elif self._pb_ids is None:
+                LOG.debug("TEMPORARY - UNTIL WORKFLOW IS UPDATED")
+                LOG.info("ObsState is set to EMPTY")
+                return ObsState.EMPTY
 
         return None
 
@@ -863,7 +865,7 @@ class SDPSubarray(SDPDevice):
                             for pb_id in self._pb_ids:
                                 pb_state = txn.get_processing_block_state(pb_id)
                                 if pb_state is not None:
-                                    obs_state = self._get_obs_state(txn, sbi_id=sbi_id, pb_state=pb_state)
+                                    obs_state = self._get_obs_state(txn, pb_state=pb_state)
                                     if obs_state is not None:
                                         self._set_obs_state(obs_state)
 
