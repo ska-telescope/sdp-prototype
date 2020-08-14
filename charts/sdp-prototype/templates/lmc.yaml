@@ -89,19 +89,19 @@ spec:
         - name: SDP_CONFIG_HOST
           value: {{ include "sdp-prototype.etcd-host" . }}
 {{- end }}
-      - name: sdp-subarray-2
-        image: {{ .Values.lmc.image }}:{{ .Values.lmc.version }}
-        imagePullPolicy: {{ .Values.lmc.imagePullPolicy }}
-        command: ["SDPSubarray"]
-        args: ["2", "-v4"]
-        resources: {}
-        env:
-        - name: TANGO_HOST
-          value: databaseds-tango-base-{{ .Release.Name }}:10000
-        - name: TOGGLE_CONFIG_DB
-          value: {{ quote (index .Values "feature" "config-db") }}
-{{- if index .Values "feature" "config-db" }}
-        - name: SDP_CONFIG_HOST
-          value: {{ include "sdp-prototype.etcd-host" . }}
-{{- end }}
+#      - name: sdp-subarray-2
+#        image: {{ .Values.lmc.image }}:{{ .Values.lmc.version }}
+#        imagePullPolicy: {{ .Values.lmc.imagePullPolicy }}
+#        command: ["SDPSubarray"]
+#        args: ["2", "-v4"]
+#        resources: {}
+#        env:
+#        - name: TANGO_HOST
+#          value: databaseds-tango-base-{{ .Release.Name }}:10000
+#        - name: TOGGLE_CONFIG_DB
+#          value: {{ quote (index .Values "feature" "config-db") }}
+#{{- if index .Values "feature" "config-db" }}
+#        - name: SDP_CONFIG_HOST
+#          value: {{ include "sdp-prototype.etcd-host" . }}
+#{{- end }}
 {{ end }}

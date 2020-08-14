@@ -1,4 +1,3 @@
-tangods:
-  subarray:
-    image: registry.gitlab.com/ska-telescope/sdp-prototype/tangods_sdp_subarray
-    version: 0.11.0-d1d4caa7
+lmc:
+  image: registry.gitlab.com/ska-telescope/sdp-prototype/ska-sdp-lmc
+  version: 0.12.1-19e783f9

@@ -764,8 +764,64 @@ class SDPSubarray(SDPDevice):
             state[current_state] = current_value
             txn.update_subarray(self._subarray_id, state)
 
-    # def _get_obs_state(self, txn):
-    #     LOG.debug("TESTING")
+    def _get_transitional_state(self, sbi_id=None):
+        """Get the correct transitional state."""
+        LOG.debug("TRANSITIONAL_OBS_STATE")
+        if self._obs_state == ObsState.FAULT or \
+                self._obs_state == ObsState.ABORTED:
+            LOG.info("ObsState is set to RESETTING")
+            return ObsState.RESETTING
+        elif self._obs_state == ObsState.EMPTY or \
+            self._obs_state == ObsState.IDLE and sbi_id is None:
+                LOG.info("ObsState is set to RESOURCING")
+                return ObsState.RESOURCING
+        elif self._obs_state == ObsState.IDLE:
+            if self._obs_state != ObsState.CONFIGURING:
+                LOG.info("ObsState is set to CONFIGURING")
+                return ObsState.CONFIGURING
+        elif self._obs_state == ObsState.ABORTED or \
+                self._obs_state == ObsState.FAULT:
+            LOG.info("ObsState is set to RESTARTING")
+            return ObsState.RESTARTING
+
+        return None
+
+    def _get_obs_state(self, txn, sbi_id=None, pb_state=None):
+        """Get the correct obs state."""
+        LOG.debug("OBS_STATE")
+
+        sb = txn.get_scheduling_block(sbi_id)
+        LOG.debug(sb)
+
+        if pb_state is not None:
+            if pb_state.get('status') == 'RUNNING' and \
+                sb.get('pb_receive_addresses') is not None:
+                if sb.get('current_scan_type') is None and \
+                    sb.get('scan_id') is None:
+                    self._set_scan_type(sb.get('current_scan_type'))
+                    self._set_scan_id(sb.get('scan_id'))
+                    LOG.debug("I AM IN HEREEEEE")
+                    LOG.info("ObsState is set to IDLE")
+                    return ObsState.IDLE
+            elif pb_state.get('status') == 'FINISHED' or \
+                    pb_state is None:
+                # Clear the receive addresses
+                self._set_receive_addresses(None)
+                LOG.info("ObsState is set to EMPTY")
+                return ObsState.EMPTY
+        elif sb.get('scan_id') is not None:
+            LOG.info('ObsState is set to SCANNING')
+            return ObsState.SCANNING
+        elif sb.get('current_scan_type') is not None and \
+                sb.get('scan_id') is None:
+            LOG.info("ObsState is set to READY")
+            return ObsState.READY
+        elif self._pb_ids is None:
+            LOG.debug("TEMPORARY - UNTIL WORKFLOW IS UPDATED")
+            LOG.info("ObsState is set to EMPTY")
+            return ObsState.EMPTY
+
+        return None
 
     def _monitoring_thread(self):
         """This is the monitoring thread."""
@@ -779,96 +835,73 @@ class SDPSubarray(SDPDevice):
                     self.set_state(DevState.ON)
                 sbi_id = state.get('sbi_id')
 
-                # Monitoring SBI and PB states
                 if state.get('commanded_obs_state') == 'IDLE':
+                    # AssignResources ObsReset and End command
                     if sbi_id is not None:
                         sb = txn.get_scheduling_block(sbi_id)
                         self._pb_ids = sb.get('pb_realtime')
-                        if self._obs_state == ObsState.FAULT or \
-                                self._obs_state == ObsState.ABORTED:
-                            LOG.info("ObsState is set to RESETTING")
-                            self._set_obs_state(ObsState.RESETTING)
-                        elif self._obs_state == ObsState.EMPTY:
-                            if self._obs_state != ObsState.RESOURCING:
-                                LOG.info("ObsState is set to RESOURCING")
-                                self._set_obs_state(ObsState.RESOURCING)
+                        transitional_state = self._get_transitional_state(sbi_id)
+                        if transitional_state is not None:
+                            self._set_obs_state(transitional_state)
                         for pb_id in self._pb_ids:
                             pb_state = txn.get_processing_block_state(pb_id)
                             if pb_state is not None:
                                 receive_addresses = self._get_receive_addresses(pb_state)
                                 if receive_addresses is not None:
                                     self._set_receive_addresses(receive_addresses)
-                                if pb_state.get('status') == 'RUNNING' and \
-                                        sb.get('pb_receive_addresses') is not None and \
-                                        self._obs_state == 'RESOURCING':
-                                    LOG.info("ObsState is set to IDLE")
-                                    self._set_obs_state(ObsState.IDLE)
-                                elif sb.get('current_scan_type') is None and \
-                                        sb.get('scan_id') is None:
-                                    self._set_scan_type(sb.get('current_scan_type'))
-                                    self._set_scan_id(sb.get('scan_id'))
-                                    LOG.info("ObsState is set to IDLE")
-                                    self._set_obs_state(ObsState.IDLE)
+                                obs_state = self._get_obs_state(txn, sbi_id=sbi_id, pb_state=pb_state)
+                                if obs_state is not None:
+                                    self._set_obs_state(obs_state)
 
                 elif state.get('commanded_obs_state') == 'EMPTY':
+                    # ReleaseResources and Restart command
                     if sbi_id is None:
-                        if self._obs_state == ObsState.IDLE:
-                            LOG.info("ObsState is set to RESOURCING")
-                            self._set_obs_state(ObsState.RESOURCING)
-                        elif self._obs_state == ObsState.ABORTED or \
-                                self._obs_state == ObsState.FAULT:
-                            LOG.info("ObsState is set to RESTARTING")
-                            self._set_obs_state(ObsState.RESTARTING)
+                        transitional_state = self._get_transitional_state(sbi_id)
+                        if transitional_state is not None:
+                            self._set_obs_state(transitional_state)
                         if self._pb_ids is not None:
                             for pb_id in self._pb_ids:
                                 pb_state = txn.get_processing_block_state(pb_id)
                                 if pb_state is not None:
-                                    if pb_state.get('status') == 'FINISHED':
-                                        # Clear the receive addresses
-                                        self._set_receive_addresses(None)
-                                        LOG.info("ObsState is set to EMPTY")
-                                        self._set_obs_state(ObsState.EMPTY)
-                                    else:
-                                        # Clear the receive addresses
-                                        self._set_receive_addresses(None)
-                                        LOG.debug("TEMPORARY - UNTIL WORKFLOW IS UPDATED")
-                                        LOG.info("ObsState is set to EMPTY")
-                                        self._set_obs_state(ObsState.EMPTY)
-                        else:
-                            LOG.debug("TEMPORARY - UNTIL WORKFLOW IS UPDATED ")
-                            LOG.info("ObsState is set to EMPTY")
-                            self._set_obs_state(ObsState.EMPTY)
+                                    obs_state = self._get_obs_state(txn, sbi_id=sbi_id, pb_state=pb_state)
+                                    if obs_state is not None:
+                                        self._set_obs_state(obs_state)
 
                 elif state.get('commanded_obs_state') == 'READY':
-                    if self._obs_state == ObsState.IDLE:
-                        if self._obs_state != ObsState.CONFIGURING:
-                            LOG.info("ObsState is set to CONFIGURING")
-                            self._set_obs_state(ObsState.CONFIGURING)
-
+                    # Configure and EndScan command
+                    transitional_state = self._get_transitional_state(sbi_id)
+                    if transitional_state is not None:
+                        self._set_obs_state(transitional_state)
                     sb = txn.get_scheduling_block(sbi_id)
                     if sb.get('current_scan_type') is not None and \
                             sb.get('scan_id') is None:
                         self._set_scan_type(sb.get('current_scan_type'))
                         self._set_scan_id(sb.get('scan_id'))
-                        LOG.info("ObsState is set to READY")
-                        self._set_obs_state(ObsState.READY)
+                        obs_state = self._get_obs_state(txn, sbi_id=sbi_id)
+                        if obs_state is not None:
+                            self._set_obs_state(obs_state)
 
                 elif state.get('commanded_obs_state') == 'SCANNING':
+                    # Scan command
                     sb = txn.get_scheduling_block(sbi_id)
                     if sb.get('scan_id') is not None:
                         self._set_scan_id(sb.get('scan_id'))
-                        LOG.info('ObsState is set to SCANNING')
-                        self._set_obs_state(ObsState.SCANNING)
+                        obs_state = self._get_obs_state(txn, sbi_id=sbi_id)
+                        if obs_state is not None:
+                            self._set_obs_state(obs_state)
 
                 elif state.get('commanded_obs_state') == 'ABORTED':
+                    # Abort command
                     LOG.debug('ObsState is set to ABORTING')
                     self._set_obs_state(ObsState.ABORTING)
                     sb = txn.get_scheduling_block(sbi_id)
+                    # TODO (NJT) Need to work on this
                     if sb.get('status') == 'ABORTED':
                         LOG.info('ObsState is set to ABORTED')
                         self._set_obs_state(ObsState.ABORTED)
 
                 elif state.get('commanded_obs_state') == 'FAULT':
+                    # Set to Fault
                     LOG.info('ObsState is set to FAULT')
                     self._set_obs_state(ObsState.FAULT)
 
@@ -1184,7 +1217,6 @@ class SDPSubarray(SDPDevice):
         if pb_state is not None:
             receive_addresses = pb_state.get('receive_addresses')
             return receive_addresses
-
 
 def main(args=None, **kwargs):
     """Run server."""
