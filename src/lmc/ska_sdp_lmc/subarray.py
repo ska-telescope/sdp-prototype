@@ -114,7 +114,7 @@ class SDPSubarray(SDPDevice):
         self._set_receive_addresses(None)
 
         # Initialise instance variables
-        self._workflows = SubarrayConfig()
+        self._config = SubarrayConfig()
 
         # The subarray device is initialised in the OFF state.
         self.set_state(DevState.OFF)
@@ -172,7 +172,7 @@ class SDPSubarray(SDPDevice):
         :returns: JSON describing real-time processing block states
 
         """
-        return json.dumps(self._workflows.get_processing_block_state())
+        return json.dumps(self._config.get_processing_block_state())
 
     def read_schedulingBlockInstance(self):
         """Get the scheduling block instance.
@@ -180,7 +180,7 @@ class SDPSubarray(SDPDevice):
         :returns: JSON describing scheduling block instance
 
         """
-        return json.dumps(self._workflows.get_scheduling_block())
+        return json.dumps(self._config.get_scheduling_block())
 
     def write_adminMode(self, admin_mode):
         """Set the adminMode attribute.
@@ -228,19 +228,19 @@ class SDPSubarray(SDPDevice):
         if self._obs_state != ObsState.EMPTY:
             LOG.info('obsState is not EMPTY')
 
-            if self._workflows.is_sbi_active():
+            if self._config.is_sbi_active():
                 LOG.info('Cancelling the scheduling block instance')
 
                 # Clear scan type, scan ID and set status to CANCELLED
-                self._workflows.update_sb({'current_scan_type': None,
-                                           'scan_id': None,
-                                           'status': 'CANCELLED'})
+                self._config.update_sb({'current_scan_type': None,
+                                        'scan_id': None,
+                                        'status': 'CANCELLED'})
 
                 # Clear the receive addresses
                 self._set_receive_addresses(None)
 
                 # Clear the scheduling block instance ID
-                self._workflows.clear_sbi()
+                self._config.clear_sbi()
 
             # Set obsState to EMPTY
             self._set_obs_state(ObsState.EMPTY)
@@ -311,10 +311,10 @@ class SDPSubarray(SDPDevice):
             )
 
         # Set the scheduling block instance ID
-        self._workflows.sbi_id = config.get('id')
+        self._config.sbi_id = config.get('id')
 
         # Get the receive addresses and publish them on the attribute
-        receive_addresses = self._workflows.get_receive_addresses()
+        receive_addresses = self._config.get_receive_addresses()
         self._set_receive_addresses(receive_addresses)
 
         # Set obsState to IDLE
@@ -343,13 +343,13 @@ class SDPSubarray(SDPDevice):
         self._set_obs_state(ObsState.RESOURCING)
 
         # Set status to FINISHED
-        self._workflows.update_sb({'status': 'FINISHED'})
+        self._config.update_sb({'status': 'FINISHED'})
 
         # Clear the receive addresses
         self._set_receive_addresses(None)
 
         # Clear the scheduling block instance ID
-        self._workflows.clear_sbi()
+        self._config.clear_sbi()
 
         # Set obsState to EMPTY
         self._set_obs_state(ObsState.EMPTY)
@@ -401,7 +401,7 @@ class SDPSubarray(SDPDevice):
             )
 
         # Set status to READY
-        self._workflows.update_sb({'status': 'READY'})
+        self._config.update_sb({'status': 'READY'})
 
         # Set obsState to READY
         self._set_obs_state(ObsState.READY)
@@ -441,7 +441,7 @@ class SDPSubarray(SDPDevice):
         scan_id = config.get('id')
 
         # Set scan ID and set status to SCANNING
-        self._workflows.update_sb({'scan_id': scan_id, 'status': 'SCANNING'})
+        self._config.update_sb({'scan_id': scan_id, 'status': 'SCANNING'})
 
         # Set obsState to SCANNING
         self._set_obs_state(ObsState.SCANNING)
@@ -459,7 +459,7 @@ class SDPSubarray(SDPDevice):
     def EndScan(self):
         """End scan."""
         # Clear scan ID and set status to READY
-        self._workflows.update_sb({'scan_id': None, 'status': 'READY'})
+        self._config.update_sb({'scan_id': None, 'status': 'READY'})
 
         # Set obsState to READY
         self._set_obs_state(ObsState.READY)
@@ -477,8 +477,8 @@ class SDPSubarray(SDPDevice):
     def End(self):
         """End."""
         # Clear scan type and scan ID, and set status to IDLE
-        self._workflows.update_sb({'current_scan_type': None, 'scan_id': None,
-                                   'status': 'IDLE'})
+        self._config.update_sb({'current_scan_type': None, 'scan_id': None,
+                                'status': 'IDLE'})
 
         # Set obsState to IDLE
         self._set_obs_state(ObsState.IDLE)
@@ -501,7 +501,7 @@ class SDPSubarray(SDPDevice):
         self._set_obs_state(ObsState.ABORTING)
 
         # Set status to ABORTED
-        self._workflows.update_sb({'status': 'ABORTED'})
+        self._config.update_sb({'status': 'ABORTED'})
 
         # Set obsState to IDLE
         self._set_obs_state(ObsState.ABORTED)
@@ -524,7 +524,7 @@ class SDPSubarray(SDPDevice):
         # Set obsState to RESETTING
         self._set_obs_state(ObsState.RESETTING)
 
-        if not self._workflows.is_sbi_active():
+        if not self._config.is_sbi_active():
             message = 'Scheduling block instance is not configured, ' + \
                 'ObsReset is not permitted'
             LOG.error(message)
@@ -535,8 +535,8 @@ class SDPSubarray(SDPDevice):
             )
 
         # Clear scan type and scan ID, and set status to IDLE
-        self._workflows.update_sb({'current_scan_type': None, 'scan_id': None,
-                                   'status': 'IDLE'})
+        self._config.update_sb({'current_scan_type': None, 'scan_id': None,
+                                'status': 'IDLE'})
 
         # Set obsState to IDLE
         self._set_obs_state(ObsState.IDLE)
@@ -559,17 +559,17 @@ class SDPSubarray(SDPDevice):
         # Set obsState to RESTARTING
         self._set_obs_state(ObsState.RESTARTING)
 
-        if self._workflows.is_sbi_active():
+        if self._config.is_sbi_active():
             # Clear scan type and scan ID, and set status to CANCELLED
-            self._workflows.update_sb({'current_scan_type': None,
-                                       'scan_id': None,
-                                       'status': 'CANCELLED'})
+            self._config.update_sb({'current_scan_type': None,
+                                    'scan_id': None,
+                                    'status': 'CANCELLED'})
 
             # Clear the receiveAddresses attribute
             self._set_receive_addresses(None)
 
             # Clear the scheduling block instance ID
-            self._workflows.clear_sbi()
+            self._config.clear_sbi()
 
         # Set obsState to EMPTY
         self._set_obs_state(ObsState.EMPTY)
@@ -690,7 +690,7 @@ class SDPSubarray(SDPDevice):
         LOG.info('Processing blocks %s', pb_ids)
 
         # Get lists of existing scheduling blocks and processing blocks
-        existing_sb_ids, existing_pb_ids = self._workflows.get_existing_ids()
+        existing_sb_ids, existing_pb_ids = self._config.get_existing_ids()
 
         # Check for duplicate IDs
         ok = True
@@ -770,7 +770,7 @@ class SDPSubarray(SDPDevice):
             )
 
         # Write the SB and PBs to the config DB
-        self._workflows.create_sb_and_pbs(sb, pbs)
+        self._config.create_sb_and_pbs(sb, pbs)
 
         return True
 
@@ -787,7 +787,7 @@ class SDPSubarray(SDPDevice):
         """
         new_scan_types = config.get('new_scan_types')
         scan_type = config.get('scan_type')
-        return self._workflows.set_scan_type(new_scan_types, scan_type)
+        return self._config.set_scan_type(new_scan_types, scan_type)
 
 
 def main(args=None, **kwargs):
