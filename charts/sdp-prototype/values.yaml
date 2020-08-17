@@ -45,7 +45,7 @@ processing_controller:
 lmc:
   enabled: true
   image: nexus.engageska-portugal.pt/sdp-prototype/ska-sdp-lmc
-  version: 0.12.0
+  version: 0.12.1
   imagePullPolicy: IfNotPresent
 
 # Console
