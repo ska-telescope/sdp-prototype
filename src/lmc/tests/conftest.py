@@ -2,21 +2,37 @@
 
 # pylint: disable=redefined-outer-name
 
+import logging
 import threading
-import ska_sdp_config
-
+from unittest.mock import Mock
 import pytest
+
 from tango.test_context import MultiDeviceTestContext
 
-from ska_sdp_lmc import SDPMaster, SDPSubarray
+import ska_sdp_config
+from ska_sdp_lmc import SDPMaster, SDPSubarray, subarray_config
+
+logging.basicConfig(level=logging.DEBUG)
+
+RECEIVE_WORKFLOWS = ['test_receive_addresses']
+RECEIVE_ADDRESSES = {
+    'science_A': {
+        'host': [[0, '192.168.0.1'], [2000, '192.168.0.1']],
+        'port': [[0, 9000, 1], [2000, 9000, 1]]
+    },
+    'calibration_B': {
+        'host': [[0, '192.168.0.1'], [2000, '192.168.0.1']],
+        'port': [[0, 9000, 1], [2000, 9000, 1]]
+    }
+}
 
 # Turn off the SDP config DB in the subarray by default. This will be
 # overridden if the TOGGLE_CONFIG_DB environment variable is set to 1.
-
-SDPSubarray.set_feature_default('config_db', False)
+subarray_config.FEATURES.set_default(subarray_config.CONFIG_DB, False)
+subarray_config.SubarrayConfig.get_receive_addresses =\
+    Mock(return_value=RECEIVE_ADDRESSES)
 
 # List of devices for the test session
-
 device_info = [
     {
         'class': SDPMaster,
@@ -40,19 +56,6 @@ def devices():
     context.start()
     yield context
     context.stop()
-
-
-RECEIVE_WORKFLOWS = ['test_receive_addresses']
-RECEIVE_ADDRESSES = {
-    'science_A': {
-        'host': [[0, '192.168.0.1'], [2000, '192.168.0.1']],
-        'port': [[0, 9000, 1], [2000, 9000, 1]]
-    },
-    'calibration_B': {
-        'host': [[0, '192.168.0.1'], [2000, '192.168.0.1']],
-        'port': [[0, 9000, 1], [2000, 9000, 1]]
-    }
-}
 
 
 def mock_pc_and_rw_loop(end, timeout=5):

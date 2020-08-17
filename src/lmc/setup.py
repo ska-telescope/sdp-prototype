@@ -33,7 +33,7 @@ setup(
     install_requires=[
         'pytango',
         'jsonschema',
-        'ska-sdp-config>=0.0.10',
+        'ska-sdp-config>=0.0.11',
         'ska-sdp-logging>=0.0.6'
     ],
     entry_points={

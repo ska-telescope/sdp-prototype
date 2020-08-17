@@ -1,6 +1,5 @@
 """SDP Tango device base class module."""
 
-import os
 import logging
 
 from tango import AttrWriteType, ErrSeverity, Except
@@ -15,10 +14,6 @@ class SDPDevice(Device):
     """SDP Tango device base class."""
 
     # pylint: disable=attribute-defined-outside-init
-
-    # Features: this is dict mapping feature name to default toggle value
-
-    _features = {}
 
     # ----------
     # Attributes
@@ -48,42 +43,6 @@ class SDPDevice(Device):
         """Return server version."""
         return self._version
 
-    # --------------
-    # Public methods
-    # --------------
-
-    @classmethod
-    def is_feature_active(cls, name: str):
-        """Get the value of a feature toggle.
-
-        :param name: Name of the feature
-
-        """
-        if name not in cls._features.keys():
-            message = f'Unknown feature: {name}'
-            LOG.error(message)
-            raise ValueError(message)
-        env_var = 'TOGGLE_' + name.upper()
-        if env_var in os.environ:
-            value = os.getenv(env_var) == '1'
-        else:
-            value = cls._features[name]
-        return value
-
-    @classmethod
-    def set_feature_default(cls, name: str, value: bool):
-        """Set the default value of a feature toggle.
-
-        :param name: Name of the feature
-        :param values: Default value for the feature toggle
-
-        """
-        if name not in cls._features.keys():
-            message = f'Unknown feature: {name}'
-            LOG.error(message)
-            raise ValueError(message)
-        cls._features[name] = value
-
     # ---------------
     # Private methods
     # ---------------
@@ -111,6 +70,7 @@ class SDPDevice(Device):
         LOG.error(desc)
         if origin != '':
             LOG.error(origin)
+        # SG: my IDE gives a type warning here.
         Except.throw_exception(reason, desc, origin, ErrSeverity.ERR)
 
     def _check_command(self, name,
@@ -149,18 +109,18 @@ class SDPDevice(Device):
             return message_out
 
         # Tango device state
-        if state_allowed is not None:
-            if self.get_state() not in state_allowed:
-                allowed = False
-                message = compose_message(message, name, 'the device',
-                                          self.get_state())
+        if (state_allowed is not None and
+                self.get_state() not in state_allowed):
+            allowed = False
+            message = compose_message(message, name, 'the device',
+                                      self.get_state())
 
         # Observing state
-        if obs_state_allowed is not None:
-            if self._obs_state not in obs_state_allowed:
-                allowed = False
-                message = compose_message(message, name, 'obsState',
-                                          self._obs_state.name)
+        if (obs_state_allowed is not None and
+                self._obs_state not in obs_state_allowed):
+            allowed = False
+            message = compose_message(message, name, 'obsState',
+                                      self._obs_state.name)
 
         # Administration mode
         if admin_mode_allowed is not None:
@@ -172,10 +132,9 @@ class SDPDevice(Device):
                 message = compose_message(message, name, 'adminMode',
                                           self._admin_mode.name)
         # Tango device state
-        if state_allowed is not None:
-            if self.get_state() not in state_allowed:
-                allowed = False
-                message = compose_message(message, name, 'the device',
-                                          self.get_state())
+        if state_allowed is not None and self.get_state() not in state_allowed:
+            allowed = False
+            message = compose_message(message, name, 'the device',
+                                      self.get_state())
 
         return allowed, message

@@ -15,13 +15,7 @@ from ska_telmodel.sdp.schema import validate_sdp_receive_addresses
 import pytest
 from pytest_bdd import (given, parsers, scenarios, then, when)
 
-from ska_sdp_lmc import (AdminMode, HealthState, ObsState, SDPSubarray)
-
-try:
-    import ska_sdp_config
-except ImportError:
-    ska_sdp_config = None
-
+from ska_sdp_lmc import (AdminMode, HealthState, ObsState, subarray_config)
 
 # -----------------------------------------------------------------------------
 # Scenarios : Specify what we want the software to do
@@ -58,13 +52,11 @@ def subarray_device(devices, admin_mode_value: str):
     assert device.obsState == ObsState.EMPTY
 
     # Clear the config DB
-    if ska_sdp_config is not None \
-            and SDPSubarray.is_feature_active('config_db'):
-        config_db_client = ska_sdp_config.Config()
-        config_db_client._backend.delete("/pb", must_exist=False,
-                                         recursive=True)
-        config_db_client._backend.delete("/sb", must_exist=False,
-                                         recursive=True)
+    config_db_client = subarray_config.new_config_db()
+    config_db_client.backend.delete("/pb", must_exist=False,
+                                    recursive=True)
+    config_db_client.backend.delete("/sb", must_exist=False,
+                                    recursive=True)
 
     return device
 
@@ -310,17 +302,15 @@ def check_config_db():
 
     Only run this step if the config DB is enabled.
     """
-    if ska_sdp_config is not None \
-            and SDPSubarray.is_feature_active('config_db'):
-        filename = join(dirname(__file__), 'data',
-                        'command_AssignResources.json')
-        with open(filename, 'r') as file:
-            config = json.load(file)
-        config_db_client = ska_sdp_config.Config()
-        for txn in config_db_client.txn():
-            pb_ids = txn.list_processing_blocks()
-        for pb in config['processing_blocks']:
-            assert pb['id'] in pb_ids
+    filename = join(dirname(__file__), 'data',
+                    'command_AssignResources.json')
+    with open(filename, 'r') as file:
+        config = json.load(file)
+    config_db_client = subarray_config.new_config_db()
+    for txn in config_db_client.txn():
+        pb_ids = txn.list_processing_blocks()
+    for pb in config['processing_blocks']:
+        assert pb['id'] in pb_ids
 
 
 @then('the receiveAddresses attribute should return the expected value')
@@ -331,10 +321,7 @@ def receive_addresses_attribute_ok(subarray_device):
     """
     receive_addresses = subarray_device.receiveAddresses
     receive_addresses = json.loads(receive_addresses)
-
-    if ska_sdp_config is not None \
-            and SDPSubarray.is_feature_active('config_db'):
-        validate_sdp_receive_addresses(3, receive_addresses, 2)
+    validate_sdp_receive_addresses(3, receive_addresses, 2)
 
 
 @then('the receiveAddresses attribute should return an empty JSON object')

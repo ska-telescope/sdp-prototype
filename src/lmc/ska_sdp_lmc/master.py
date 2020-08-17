@@ -11,7 +11,7 @@ from ska_sdp_logging import tango_logging
 
 from .attributes import HealthState
 from .base import SDPDevice
-from .util import terminate
+from .util import terminate, log_command
 
 LOG = logging.getLogger()
 
@@ -79,16 +79,11 @@ class SDPMaster(SDPDevice):
             state_allowed=[DevState.OFF, DevState.STANDBY, DevState.DISABLE]
         )
 
+    @log_command
     @command()
     def On(self):
         """Turn the SDP on."""
-        LOG.info('-------------------------------------------------------')
-        LOG.info('On (%s)', self.get_name())
-        LOG.info('-------------------------------------------------------')
         self.set_state(DevState.ON)
-        LOG.info('-------------------------------------------------------')
-        LOG.info('On Successful!')
-        LOG.info('-------------------------------------------------------')
 
     def is_Disable_allowed(self):
         """Check if the Disable command is allowed."""
@@ -97,16 +92,11 @@ class SDPMaster(SDPDevice):
             state_allowed=[DevState.OFF, DevState.STANDBY, DevState.ON]
         )
 
+    @log_command
     @command()
     def Disable(self):
         """Set the SDP to disable."""
-        LOG.info('-------------------------------------------------------')
-        LOG.info('Disable (%s)', self.get_name())
-        LOG.info('-------------------------------------------------------')
         self.set_state(DevState.DISABLE)
-        LOG.info('-------------------------------------------------------')
-        LOG.info('Disable Successful!')
-        LOG.info('-------------------------------------------------------')
 
     def is_Standby_allowed(self):
         """Check if the Standby command is allowed."""
@@ -115,16 +105,11 @@ class SDPMaster(SDPDevice):
             state_allowed=[DevState.OFF, DevState.DISABLE, DevState.ON]
         )
 
+    @log_command
     @command()
     def Standby(self):
         """Set the SDP to standby."""
-        LOG.info('-------------------------------------------------------')
-        LOG.info('Standby (%s)', self.get_name())
-        LOG.info('-------------------------------------------------------')
         self.set_state(DevState.STANDBY)
-        LOG.info('-------------------------------------------------------')
-        LOG.info('Standby Successful!')
-        LOG.info('-------------------------------------------------------')
 
     def is_Off_allowed(self):
         """Check if the Off command is allowed."""
@@ -133,16 +118,11 @@ class SDPMaster(SDPDevice):
             state_allowed=[DevState.STANDBY, DevState.DISABLE, DevState.ON]
         )
 
+    @log_command
     @command()
     def Off(self):
         """Turn the SDP off."""
-        LOG.info('-------------------------------------------------------')
-        LOG.info('Off (%s)', self.get_name())
-        LOG.info('-------------------------------------------------------')
         self.set_state(DevState.OFF)
-        LOG.info('-------------------------------------------------------')
-        LOG.info('Off Successful!')
-        LOG.info('-------------------------------------------------------')
 
     # ---------------
     # Private methods
