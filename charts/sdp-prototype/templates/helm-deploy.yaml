@@ -28,14 +28,10 @@ spec:
           value: {{ include "sdp-prototype.etcd-host" . }}
         - name: SDP_HELM_NAMESPACE
           value: {{ quote .Values.helm_deploy.namespace }}
-        - name: SDP_CHART_REPO
-          value: "{{ .Values.helm_deploy.chart_repo.url }}"
-        - name: SDP_CHART_REPO_REF
-          value: "{{ .Values.helm_deploy.chart_repo.ref }}"
-        - name: SDP_CHART_REPO_PATH
-          value: "{{ .Values.helm_deploy.chart_repo.path }}"
+        - name: SDP_CHART_REPO_URL
+          value: {{ quote .Values.helm_deploy.chart_repo.url }}
         - name: SDP_CHART_REPO_REFRESH
-          value: "{{ .Values.helm_deploy.chart_repo.refresh }}"
+          value: {{ quote .Values.helm_deploy.chart_repo.refresh }}
       serviceAccountName: {{ include "sdp-prototype.fullname" . }}-helm
 ---
 apiVersion: v1

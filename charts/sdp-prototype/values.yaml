@@ -8,14 +8,12 @@ feature:
 # Helm deployment controller
 helm_deploy:
   image: nexus.engageska-portugal.pt/sdp-prototype/helm-deploy
-  version: 0.5.1
+  version: 0.6.0
   imagePullPolicy: IfNotPresent
   replicas: 1
   namespace: sdp
   chart_repo:
-    url: https://gitlab.com/ska-telescope/sdp-prototype.git
-    ref: YAN-340
-    path: src/helm_deploy/charts
+    url: https://gitlab.com/ska-telescope/sdp-prototype/-/raw/master/src/helm_deploy/chart-repo/
     refresh: 300
 
 # Configuration database
@@ -40,7 +38,7 @@ processing_controller:
   resources: {}
   imagePullPolicy: IfNotPresent
   workflows:
-    url: https://gitlab.com/ska-telescope/sdp-prototype/-/raw/YAN-340/src/workflows/workflows.json
+    url: https://gitlab.com/ska-telescope/sdp-prototype/-/raw/master/src/workflows/workflows.json
     refresh: 300
 
 # Tango devices
