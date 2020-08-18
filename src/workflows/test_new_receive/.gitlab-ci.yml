@@ -14,8 +14,8 @@ build:new_receive_workflow_build:
 # ============================================================================
 
 publish:new_receive_workflow_deploy:
-  extends: .push_docker_nexus
+  extends: .publish_docker
   dependencies:
-    - build:helm_deploy
+    - build:new_receive_workflow_build
   variables:
     BUILD_PATH: src/workflows/test_new_receive/
