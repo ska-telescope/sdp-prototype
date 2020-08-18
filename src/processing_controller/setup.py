@@ -5,7 +5,7 @@
 import setuptools
 
 with open("version.txt", "r") as fh:
-    VERSION = fh.read()
+    VERSION = fh.read().rstrip()
 with open("README.md", "r") as fh:
     LONG_DESCRIPTION = fh.read()
 
@@ -22,19 +22,18 @@ setuptools.setup(
     install_requires=[
         'jsonschema',
         'requests',
-        'ska-sdp-config'
+        'ska-sdp-config>=0.0.9',
+        'ska-sdp-logging>=0.0.6'
     ],
     setup_requires=['pytest-runner'],
     tests_require=[
-        'python-coveralls',
+        'pylint2junit',
         'pytest',
-        'pytest-pylint',
-        'pytest-pycodestyle',
-        'pytest-pydocstyle',
-        'pyassert',
         'pytest-cov',
         'pytest-json-report',
-        'pylint2junit'
+        'pytest-pylint',
+        'pytest-pycodestyle',
+        'pytest-pydocstyle'
     ],
     zip_safe=False,
     classifiers=[

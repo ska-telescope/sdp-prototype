@@ -17,4 +17,4 @@ maintainers:
 dependencies:
   - name: tango-base
     version: 0.1.0
-    condition: tangods.enabled
+    condition: lmc.enabled

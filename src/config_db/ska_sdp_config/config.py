@@ -24,11 +24,42 @@ class Config:
             ownership.
         :param cargs: Backend client arguments
         """
+        self._backend = self._determine_backend(backend, **cargs)
+
+        # Owner dictionary
+        if owner is None:
+            owner = {
+                'pid': os.getpid(),
+                'hostname': gethostname(),
+                'command': sys.argv
+            }
+        self.owner = dict(owner)
+
+        # Prefixes
+        assert global_prefix == '' or global_prefix[0] == '/'
+        self.pb_path = global_prefix + '/pb/'
+        self.sb_path = global_prefix + '/sb/'
+        self.subarray_path = global_prefix + '/subarray/'
+        self.deploy_path = global_prefix + '/deploy/'
+
+        # Lease associated with client
+        self._client_lease = None
+
+    @property
+    def backend(self):
+        """ Get the backend database object. """
+        return self._backend
+
+    @staticmethod
+    def _determine_backend(backend, **cargs):
+
         # Determine backend
-        backend = os.getenv('SDP_CONFIG_BACKEND', 'etcd3')
+        if not backend:
+            backend = os.getenv('SDP_CONFIG_BACKEND', 'etcd3')
 
         # Instantiate backend, reading configuration from environment/dotenv
         if backend == 'etcd3':
+
             if 'host' not in cargs:
                 cargs['host'] = os.getenv('SDP_CONFIG_HOST', '127.0.0.1')
             if 'port' not in cargs:
@@ -42,28 +73,16 @@ class Config:
             if 'password' not in cargs:
                 cargs['password'] = os.getenv('SDP_CONFIG_PASSWORD', None)
 
-            self._backend = backend_mod.Etcd3(**cargs)
+            return backend_mod.Etcd3Backend(**cargs)
+
+        elif backend == 'memory':
+
+            return backend_mod.MemoryBackend()
+
         else:
+
             raise ValueError(
                 "Unknown configuration backend {}!".format(backend))
-
-        # Owner dictionary
-        if owner is None:
-            owner = {
-                'pid': os.getpid(),
-                'hostname': gethostname(),
-                'command': sys.argv
-            }
-        self.owner = dict(owner)
-
-        # Prefixes
-        assert global_prefix == '' or global_prefix[0] == '/'
-        self.pb_path = global_prefix+"/pb/"
-        self.sb_path = global_prefix+"/sb/"
-        self.deploy_path = global_prefix+"/deploy/"
-
-        # Lease associated with client
-        self._client_lease = None
 
     def lease(self, ttl=10):
         """
@@ -172,6 +191,7 @@ class Transaction:
         self._txn = txn
         self._pb_path = config.pb_path
         self._sb_path = config.sb_path
+        self._subarray_path = config.subarray_path
         self._deploy_path = config.deploy_path
 
     @property
@@ -255,7 +275,7 @@ class Transaction:
         """
         Add a new :class:`ProcessingBlock` to the configuration.
 
-        :param obj: Processing block to create
+        :param pb: Processing block to create
         """
         assert isinstance(pb, entity.ProcessingBlock)
         self._create(self._pb_path + pb.id, pb.to_dict())
@@ -264,7 +284,7 @@ class Transaction:
         """
         Update a :class:`ProcessingBlock` in the configuration.
 
-        :param obj: Processing block to update
+        :param pb: Processing block to update
         """
         assert isinstance(pb, entity.ProcessingBlock)
         self._update(self._pb_path + pb.id, pb.to_dict())
@@ -421,3 +441,46 @@ class Transaction:
         :param state: scheduling block state
         """
         self._update(self._sb_path + sb_id, state)
+
+    def list_subarrays(self, prefix=""):
+        """Query subarray IDs from the configuration.
+
+        :param prefix: if given, only search for subarray IDs
+           with the given prefix
+        :returns: subarray IDs, in lexicographical order
+        """
+        # List keys
+        subarray_path = self._subarray_path
+        keys = self._txn.list_keys(subarray_path + prefix)
+
+        # Return list, stripping the prefix
+        assert all([key.startswith(subarray_path) for key in keys])
+        return list([key[len(subarray_path):] for key in keys])
+
+    def get_subarray(self, subarray_id: str) -> dict:
+        """
+        Get subarray.
+
+        :param subarray_id: subarray ID
+        :returns: subarray state
+        """
+        state = self._get(self._subarray_path + subarray_id)
+        return state
+
+    def create_subarray(self, subarray_id: str, state: dict):
+        """
+        Create subarray.
+
+        :param subarray_id: subarray ID
+        :param state: subarray state
+        """
+        self._create(self._subarray_path + subarray_id, state)
+
+    def update_subarray(self, subarray_id: str, state: dict):
+        """
+        Update subarray.
+
+        :param subarray_id: subarray ID
+        :param state: subarray state
+        """
+        self._update(self._subarray_path + subarray_id, state)

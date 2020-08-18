@@ -1,21 +1,31 @@
 # GitLab CI jobs for Helm deployer
 
+.env: &env
+  variables:
+    BUILD_PATH: src/helm_deploy
+
 # ============================================================================
 # Build Docker development image
 # ============================================================================
 
 build:helm_deploy:
   extends: .build_docker
-  variables:
-    BUILD_PATH: src/helm_deploy
+  <<: *env
+
+# ============================================================================
+# Test Python package
+# ============================================================================
+
+test:helm_deploy:
+  extends: .test_python
+  <<: *env
 
 # ============================================================================
 # Tag and publish Docker image (master only)
 # ============================================================================
 
 publish:helm_deploy:
-  extends: .push_docker_nexus
+  extends: .publish_docker
   dependencies:
     - build:helm_deploy
-  variables:
-    BUILD_PATH: src/helm_deploy
+  <<: *env

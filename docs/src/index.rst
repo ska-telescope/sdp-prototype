@@ -27,17 +27,11 @@ system capable of configuring and executing workflows.
 
 .. toctree::
   :maxdepth: 1
-  :caption: Building and testing
+  :caption: LMC
 
-  building/building_tango_devices
-  building/testing_tango_devices
-
-.. toctree::
-  :maxdepth: 1
-  :caption: Tango Devices
-
-  tango_devices/sdp_master
-  tango_devices/sdp_subarray
+  lmc/sdp_master
+  lmc/sdp_subarray
+  lmc/building_and_testing
 
 .. toctree::
   :maxdepth: 1
