@@ -15,7 +15,7 @@ import json
 
 import jsonschema
 
-from tango import AttrWriteType, DevState, LogLevel
+from tango import AttrWriteType, DevState, LogLevel, EnsureOmniThread
 from tango.server import attribute, command, run
 
 from ska_sdp_logging import tango_logging
@@ -132,8 +132,8 @@ class SDPSubarray(SDPDevice):
         self._subarray_add_command(subarray, None, ObsState.EMPTY)
         self._config.init_subarray(subarray)
 
-        # Get event loop
-        self._event_loop = self._get_event_loop()
+        # Start event loop
+        self._event_loop = self._start_event_loop()
 
         LOG.info('SDP Subarray initialised: %s', self.get_name())
 
@@ -766,21 +766,42 @@ class SDPSubarray(SDPDevice):
     # Event loop methods
     # ------------------
 
-    def _get_event_loop(self):
+    def _start_event_loop(self):
         """Start event loop."""
         if FEATURE_EVENT_LOOP.is_active():
+            # Start event loop in thread
             thread = threading.Thread(
-                target=self._set_attributes, name='EventLoop', daemon=True
+                target=self._event_loop, name='EventLoop', daemon=True
             )
             thread.start()
         else:
+            # Add command to manually update attributes
             thread = None
+            cmd = command(f=self.update_attributes)
+            self.add_command(cmd, True)
         return thread
 
-    def _set_attributes(self):
-        """Event loop to monitor config DB and set attributes accordingly."""
-        LOG.info("Event loop started")
+    def _event_loop(self):
+        """Event loop to update attributes automatically."""
+        LOG.info('Starting event loop')
+        # Use EnsureOmniThread to make it thread-safe under Tango
+        with EnsureOmniThread():
+            self._set_attributes()
 
+    def update_attributes(self):
+        """Update the device attributes manually."""
+        LOG.info('Updating attributes')
+        self._set_attributes(loop=False)
+
+    def _set_attributes(self, loop=True):
+        """Set attributes based on configuration.
+
+        if `loop` is `True`, it acts as an event loop to watch for changes to
+        the configuration. If `loop` is `False` it makes a single pass.
+
+        :param loop: watch for changes to configuration and loop
+
+        """
         for txn in self._config.db_client.txn():
 
             # Get the following from the config DB:
@@ -833,8 +854,9 @@ class SDPSubarray(SDPDevice):
             scan_id = sbi.get('scan_id')
             self._set_scan_id(0 if scan_id is None else scan_id)
 
-            # Wait for update to config DB
-            txn.loop(wait=True)
+            if loop:
+                # Loop the transaction when the config entries are changed
+                txn.loop(wait=True)
 
     # ---------------
     # Utility methods
@@ -876,7 +898,8 @@ def main(args=None, **kwargs):
     log_level = LogLevel.LOG_INFO
     if len(sys.argv) > 2 and '-v' in sys.argv[2]:
         log_level = LogLevel.LOG_DEBUG
-    tango_logging.init(device_name='SDPSubarray', level=log_level)
+    tango_logging.init(name=LOG.name, device_name='SDPSubarray',
+                       level=log_level)
 
     # Register SIGTERM handler.
     signal.signal(signal.SIGTERM, terminate)
