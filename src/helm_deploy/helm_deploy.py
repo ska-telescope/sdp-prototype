@@ -21,7 +21,7 @@ load_dotenv()
 HELM = shutil.which(os.getenv('SDP_HELM', 'helm'))
 HELM_TIMEOUT = int(os.getenv('SDP_HELM_TIMEOUT', '300'))
 NAMESPACE = os.getenv('SDP_HELM_NAMESPACE', 'sdp')
-CHART_REPO_URL = os.getenv('SDP_CHART_REPO_URL', 'https://gitlab.com/ska-telescope/sdp-prototype/-/raw/master/src/helm_deploy/chart-repo/')
+CHART_REPO_URL = os.getenv('SDP_CHART_REPO_URL', 'https://gitlab.com/ska-telescope/sdp-prototype/-/raw/SP-996/src/helm_deploy/chart-repo/')
 CHART_REPO_REFRESH = int(os.getenv('SDP_CHART_REPO_REFRESH', '300'))
 LOG_LEVEL = os.getenv('SDP_LOG_LEVEL', 'DEBUG')
 
