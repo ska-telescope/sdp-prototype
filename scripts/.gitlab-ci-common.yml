@@ -118,7 +118,7 @@
 
 .publish_docker:
   stage: publish
-#  only: [master]
+  only: [master]
   variables:
     GIT_VERSION: ${CI_COMMIT_SHORT_SHA}
     PREFIX_BUILD: ${CI_REGISTRY_IMAGE}
