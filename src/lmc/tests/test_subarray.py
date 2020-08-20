@@ -5,6 +5,7 @@
 # pylint: disable=protected-access
 # pylint: disable=fixme
 
+
 import json
 from os.path import dirname, join
 
@@ -16,6 +17,18 @@ import pytest
 from pytest_bdd import (given, parsers, scenarios, then, when)
 
 from ska_sdp_lmc import (AdminMode, HealthState, ObsState, subarray_config)
+
+RECEIVE_WORKFLOWS = ['test_receive_addresses']
+RECEIVE_ADDRESSES = {
+    'science_A': {
+        'host': [[0, '192.168.0.1'], [2000, '192.168.0.1']],
+        'port': [[0, 9000, 1], [2000, 9000, 1]]
+    },
+    'calibration_B': {
+        'host': [[0, '192.168.0.1'], [2000, '192.168.0.1']],
+        'port': [[0, 9000, 1], [2000, 9000, 1]]
+    }
+}
 
 # -----------------------------------------------------------------------------
 # Scenarios : Specify what we want the software to do
@@ -40,14 +53,18 @@ def subarray_device(devices, admin_mode_value: str):
     """
     device = devices.get_device('test_sdp/elt/subarray_1')
 
-    # Initialise SDPSubarray device
-    device.adminMode = AdminMode[admin_mode_value]
+    # # Initialise SDPSubarray device
+    # device.adminMode = AdminMode[admin_mode_value]
 
     # Reset state to OFF and obsState to EMPTY
     if device.state().name == 'OFF' and device.obsState.name == 'EMPTY':
         pass
+    elif admin_mode_value == 'OFFLINE':
+        call_command(device, 'update_attributes')
     else:
+        call_command(device, 'update_attributes')
         call_command(device, 'Off')
+        call_command(device, 'update_attributes')
     assert device.state() == tango.DevState.OFF
     assert device.obsState == ObsState.EMPTY
 
@@ -73,6 +90,7 @@ def init_device(subarray_device):
 
     """
     subarray_device.Init()
+    call_command(subarray_device, 'update_attributes')
 
 
 @when(parsers.parse('the state is {state:S}'))
@@ -105,6 +123,7 @@ def set_subarray_device_obstate(subarray_device, initial_obs_state: str):
     # If the state is OFF, call the On command
     if subarray_device.state() == tango.DevState.OFF:
         call_command(subarray_device, 'On')
+        call_command(subarray_device, 'update_attributes')
 
     # Set obsState by calling commands
     if initial_obs_state == 'EMPTY':
@@ -113,21 +132,30 @@ def set_subarray_device_obstate(subarray_device, initial_obs_state: str):
         call_command(subarray_device, 'AssignResources')
     elif initial_obs_state == 'READY':
         call_command(subarray_device, 'AssignResources')
+        call_command(subarray_device, 'update_attributes')
         call_command(subarray_device, 'Configure')
     elif initial_obs_state == 'SCANNING':
         call_command(subarray_device, 'AssignResources')
+        call_command(subarray_device, 'update_attributes')
         call_command(subarray_device, 'Configure')
+        call_command(subarray_device, 'update_attributes')
         call_command(subarray_device, 'Scan')
     elif initial_obs_state == 'ABORTED':
         call_command(subarray_device, 'AssignResources')
+        call_command(subarray_device, 'update_attributes')
         call_command(subarray_device, 'Abort')
     elif initial_obs_state == 'FAULT':
         # Note this configures an SBI
         call_command(subarray_device, 'AssignResources')
+        call_command(subarray_device, 'update_attributes')
+        print("I am here")
         call_command_with_invalid_json(subarray_device, 'Configure')
     else:
         msg = 'obsState {} is not settable with commands'
         raise ValueError(msg.format(initial_obs_state))
+
+    # Update attribute
+    call_command(subarray_device, 'update_attributes')
 
     # Check obsState
     assert subarray_device.ObsState == ObsState[initial_obs_state]
@@ -163,6 +191,9 @@ def call_command(subarray_device, command):
             raise ValueError(msg.format(command))
         # Call the command
         command_func(config_str)
+        if command == 'AssignResources':
+            call_command(subarray_device, 'update_attributes')
+            mock_pc_and_rw_loop()
     else:
         msg = 'Test cannot handle argument of type {}'
         raise ValueError(msg.format(command_config.in_type))
@@ -206,6 +237,7 @@ def device_state_equals(subarray_device, expected):
     :param subarray_device: an SDPSubarray device.
     :param expected: the expected device state.
     """
+    call_command(subarray_device, 'update_attributes')
     assert subarray_device.state() == tango.DevState.names[expected]
 
 
@@ -217,6 +249,7 @@ def obs_state_equals(subarray_device, final_obs_state):
     :param subarray_device: an SDPSubarray device.
     :param final_obs_state: the expected obsState.
     """
+    call_command(subarray_device, 'update_attributes')
     assert subarray_device.obsState == ObsState[final_obs_state]
 
 
@@ -297,11 +330,12 @@ def command_raises_dev_failed_error(subarray_device, command):
 
 
 @then('the processing blocks should be in the config DB')
-def check_config_db():
+def check_config_db(subarray_device):
     """Check that the config DB has the configured PBs.
 
     Only run this step if the config DB is enabled.
     """
+    call_command(subarray_device, 'update_attributes')
     filename = join(dirname(__file__), 'data',
                     'command_AssignResources.json')
     with open(filename, 'r') as file:
@@ -319,6 +353,7 @@ def receive_addresses_attribute_ok(subarray_device):
 
     :param subarray_device: An SDPSubarray device.
     """
+    call_command(subarray_device, 'update_attributes')
     receive_addresses = subarray_device.receiveAddresses
     receive_addresses = json.loads(receive_addresses)
     validate_sdp_receive_addresses(3, receive_addresses, 2)
@@ -330,5 +365,37 @@ def receive_addresses_empty(subarray_device):
 
     :param subarray_device: An SDPSubarray device.
     """
+    call_command(subarray_device, 'update_attributes')
     receive_addresses = subarray_device.receiveAddresses
     assert receive_addresses == 'null'
+
+
+def mock_pc_and_rw_loop():
+    """Execute main loop for mocking PC and and receive workflow.
+
+    :param end: event used to signal loop to exit
+    :param timeout: timeout on loop
+
+    """
+    # pylint: disable=invalid-name
+    config_db_client = subarray_config.new_config_db()
+    for txn in config_db_client.txn():
+        pb_list = txn.list_processing_blocks()
+        for pb_id in pb_list:
+            pb_state = txn.get_processing_block_state(pb_id)
+            if pb_state is None:
+                pb_state = {'status': 'RUNNING'}
+                pb = txn.get_processing_block(pb_id)
+                # for i in range(5):
+                #     if pb.workflow['id'] in RECEIVE_WORKFLOWS:
+                #         break
+                #     time.sleep(0.1)
+                if pb.workflow['id'] in RECEIVE_WORKFLOWS:
+                    sb = txn.get_scheduling_block(pb.sbi_id)
+                    sb['pb_receive_addresses'] = pb_id
+                    txn.update_scheduling_block(pb.sbi_id, sb)
+                    # This uses the hard-coded values, it should really set
+                    # them based on the scan types in the SBI, like this:
+                    # pb_state['receive_addresses'] = parse(sb['scan_types'])
+                    pb_state['receive_addresses'] = RECEIVE_ADDRESSES
+                txn.create_processing_block_state(pb_id, pb_state)

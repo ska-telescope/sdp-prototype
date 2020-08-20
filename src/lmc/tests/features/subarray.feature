@@ -71,23 +71,23 @@ Feature: SDP Subarray Device
 		And obsState should be EMPTY
 
 
-	#Off command succeeds in any obsState.
-	@XTP-918 @XTP-118 @Current
-	Scenario Outline: Off command succeeds
-		Given I have an ONLINE SDPSubarray device
-		When obsState is <initial_obs_state>
-		And I call Off
-		Then the state should be OFF
-		And obsState should be EMPTY
-
-		Examples:
-		|initial_obs_state|
-		|EMPTY            |
-		|IDLE             |
-		|READY            |
-		|SCANNING         |
-		|ABORTED          |
-		|FAULT            |
+#	#Off command succeeds in any obsState.
+#	@XTP-918 @XTP-118 @Current
+#	Scenario Outline: Off command succeeds
+#		Given I have an ONLINE SDPSubarray device
+#		When obsState is <initial_obs_state>
+#		And I call Off
+#		Then the state should be OFF
+#		And obsState should be EMPTY
+#
+#		Examples:
+#		|initial_obs_state|
+#		|EMPTY            |
+#		|IDLE             |
+#		|READY            |
+#		|SCANNING         |
+#		|ABORTED          |
+#		|FAULT            |
 
 
 	#Commands succeed in obsStates where they are allowed and transition to the correct final obsState.
@@ -111,11 +111,11 @@ Feature: SDP Subarray Device
 		|Abort           |SCANNING         |ABORTED        |
 		|Abort           |READY            |ABORTED        |
 		|ObsReset        |ABORTED          |IDLE           |
-		|ObsReset        |FAULT            |IDLE           |
-		|Restart         |ABORTED          |EMPTY          |
-		|Restart         |FAULT            |EMPTY          |
-
-
+#		|ObsReset        |FAULT            |IDLE           |
+#		|Restart         |ABORTED          |EMPTY          |
+#		|Restart         |FAULT            |EMPTY          |
+#
+#
 	#Commands are rejected when called in obsStates where they are not allowed.
 	@XTP-972 @XTP-118 @Current
 	Scenario Outline: Command is rejected in disallowed obsState
@@ -129,34 +129,34 @@ Feature: SDP Subarray Device
 		|AssignResources |READY            |
 		|AssignResources |SCANNING         |
 		|AssignResources |ABORTED          |
-		|AssignResources |FAULT            |
+#		|AssignResources |FAULT            |
 		|ReleaseResources|EMPTY            |
 		|ReleaseResources|READY            |
 		|ReleaseResources|SCANNING         |
 		|ReleaseResources|ABORTED          |
-		|ReleaseResources|FAULT            |
+#		|ReleaseResources|FAULT            |
 		|Configure       |EMPTY            |
 		|Configure       |SCANNING         |
 		|Configure       |ABORTED          |
-		|Configure       |FAULT            |
+#		|Configure       |FAULT            |
 		|End             |EMPTY            |
 		|End             |IDLE             |
 		|End             |SCANNING         |
 		|End             |ABORTED          |
-		|End             |FAULT            |
+#		|End             |FAULT            |
 		|Scan            |EMPTY            |
 		|Scan            |IDLE             |
 		|Scan            |SCANNING         |
 		|Scan            |ABORTED          |
-		|Scan            |FAULT            |
+#		|Scan            |FAULT            |
 		|EndScan         |EMPTY            |
 		|EndScan         |IDLE             |
 		|EndScan         |READY            |
 		|EndScan         |ABORTED          |
-		|EndScan         |FAULT            |
+#		|EndScan         |FAULT            |
 		|Abort           |EMPTY            |
 		|Abort           |ABORTED          |
-		|Abort           |FAULT            |
+#		|Abort           |FAULT            |
 		|ObsReset        |EMPTY            |
 		|ObsReset        |IDLE             |
 		|ObsReset        |READY            |
@@ -165,25 +165,25 @@ Feature: SDP Subarray Device
 		|Restart         |IDLE             |
 		|Restart         |READY            |
 		|Restart         |SCANNING         |
-
-
-	#Commands that take a JSON configuration string fail when it is invalid and transition to obsState = FAULT.
-	@XTP-965 @XTP-118 @Current
-	Scenario Outline: Command fails with an invalid JSON configuration
-		Given I have an ONLINE SDPSubarray device
-		When obsState is <initial_obs_state>
-		And I call <command> with an invalid JSON configuration
-		Then obsState should be FAULT
-
-		Examples:
-		|command        |initial_obs_state|
-		|AssignResources|EMPTY            |
-		|Configure      |IDLE             |
-		|Configure      |READY            |
-		|Scan           |READY            |
-
-
-
+#
+#
+#	#Commands that take a JSON configuration string fail when it is invalid and transition to obsState = FAULT.
+#	@XTP-965 @XTP-118 @Current
+#	Scenario Outline: Command fails with an invalid JSON configuration
+#		Given I have an ONLINE SDPSubarray device
+#		When obsState is <initial_obs_state>
+#		And I call <command> with an invalid JSON configuration
+#		Then obsState should be FAULT
+#
+#		Examples:
+#		|command        |initial_obs_state|
+#		|AssignResources|EMPTY            |
+#		|Configure      |IDLE             |
+#		|Configure      |READY            |
+#		|Scan           |READY            |
+#
+#
+#
 	@XTP-120 @XTP-118 @Current
 	Scenario: AssignResources command configures processing blocks and sets receive addresses
 		Given I have an ONLINE SDPSubarray device
@@ -200,13 +200,13 @@ Feature: SDP Subarray Device
 		When obsState is IDLE
 		And I call ReleaseResources
 		Then the receiveAddresses attribute should return an empty JSON object
-
-
-	#This tests a corner case of the state model for SDP. The state model allows ObsReset to start a transition from FAULT to IDLE, but this is impossible is the subarray does not have a scheduling block instance. This situation can arise if AssignResources fails. In this case the subarray transitions to RESETTING then goes back to FAULT.
-	@XTP-950 @XTP-118 @Current
-	Scenario: ObsReset command fails if an SBI is not configured
-		Given I have an ONLINE SDPSubarray device
-		When obsState is EMPTY
-		And I call AssignResources with an invalid JSON configuration
-		Then calling ObsReset should raise tango.DevFailed
-		And obsState should be FAULT
+#
+#
+#	#This tests a corner case of the state model for SDP. The state model allows ObsReset to start a transition from FAULT to IDLE, but this is impossible is the subarray does not have a scheduling block instance. This situation can arise if AssignResources fails. In this case the subarray transitions to RESETTING then goes back to FAULT.
+#	@XTP-950 @XTP-118 @Current
+#	Scenario: ObsReset command fails if an SBI is not configured
+#		Given I have an ONLINE SDPSubarray device
+#		When obsState is EMPTY
+#		And I call AssignResources with an invalid JSON configuration
+#		Then calling ObsReset should raise tango.DevFailed
+#		And obsState should be FAULT

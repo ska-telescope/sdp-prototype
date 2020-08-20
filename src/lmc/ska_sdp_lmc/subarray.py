@@ -5,6 +5,7 @@
 # pylint: disable=wrong-import-position
 # pylint: disable=too-many-public-methods
 # pylint: disable=unused-import
+# pylint: disable=E0202
 
 import os
 import sys
