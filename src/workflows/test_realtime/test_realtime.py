@@ -3,12 +3,12 @@ Workflow to test real-time processing.
 """
 
 import sys
-import time
 import signal
 import logging
+import ska.logging
 import ska_sdp_config
 
-logging.basicConfig()
+ska.logging.configure_logging()
 LOG = logging.getLogger('test_realtime')
 LOG.setLevel(logging.DEBUG)
 
@@ -28,8 +28,8 @@ def main(argv):
         pb = txn.get_processing_block(pb_id)
     LOG.info('Claimed processing block')
 
-    sb_id = pb.sbi_id
-    LOG.info('SB id: %s', sb_id)
+    sbi_id = pb.sbi_id
+    LOG.info('SBI id: %s', sbi_id)
 
     # Set state to indicate workflow is waiting for resources
     LOG.info('Setting status to WAITING')
@@ -57,20 +57,21 @@ def main(argv):
 
     # ... Do some processing here ...
 
-    # Wait until EndSB command is received.
-    LOG.info('Waiting for SB to end')
+    # Wait until SBI is marked as FINISHED or CANCELLED
+    LOG.info('Waiting for SBI to end')
     for txn in config.txn():
-        sb = txn.get_scheduling_block(sb_id)
-        if sb.get('status') == 'FINISHED':
-            LOG.info('SB has ended')
+        sbi = txn.get_scheduling_block(sbi_id)
+        status = sbi.get('status')
+        if status in ['FINISHED', 'CANCELLED']:
+            LOG.info('SBI is %s', status)
             break
         txn.loop(wait=True)
 
-    # Set state to indicate processing is finished
-    LOG.info('Setting status to FINISHED')
+    # Set state to indicate processing has ended
+    LOG.info('Setting status to %s', status)
     for txn in config.txn():
         state = txn.get_processing_block_state(pb_id)
-        state['status'] = 'FINISHED'
+        state['status'] = status
         txn.update_processing_block_state(pb_id, state)
 
     # Close connection to config DB
