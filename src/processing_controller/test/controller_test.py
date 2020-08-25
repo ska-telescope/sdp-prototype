@@ -20,13 +20,13 @@ os.environ['SDP_HELM_NAMESPACE'] = 'helm'
 
 def test_stuff():
     controller = processing_controller.ProcessingController(workflows_test.SCHEMA,
-                                                            workflows_test.WORKFLOW, 1)
+                                                            workflows_test.WORKFLOWS, 1)
 
     # Annoyingly requests doesn't support local (file) URLs, so redirect. It is possible to
     # create an adapter for this, but that seems like overkill.
     controller._workflows.update_url = controller._workflows.update_file
 
-    wf = {'type': 'batch', 'id':  'test_batch', 'version': '0.2.0'}
+    wf = {'type': 'batch', 'id':  'test_batch', 'version': '0.2.1'}
     pb = ska_sdp_config.ProcessingBlock(
         id='test',
         sbi_id='test',
