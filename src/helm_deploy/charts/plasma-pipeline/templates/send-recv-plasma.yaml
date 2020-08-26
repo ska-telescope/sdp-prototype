@@ -18,7 +18,7 @@ spec:
       - image: {{ .Values.cbf_sdp_emulator.container }}:{{ .Values.cbf_sdp_emulator.version }}
         imagePullPolicy: {{ .Values.cbf_sdp_emulator.imagePullPolicy }}
         name: plasma-store
-        command: ["/usr/local/bin/plasma_store", "-s", "/plasma/socket", "-m", "1000000000"]
+        command: ["/usr/local/bin/plasma_store", "-s", "/plasma/socket", "-m", "100000000"]
         volumeMounts:
         - mountPath: /plasma
           name: plasma-storage-volume
