@@ -13,7 +13,7 @@ helm_deploy:
   replicas: 1
   namespace: sdp
   chart_repo:
-    url: https://gitlab.com/ska-telescope/sdp-prototype/-/raw/master/src/helm_deploy/chart-repo/
+    url: https://gitlab.com/ska-telescope/sdp-prototype/-/raw/SP-996/src/helm_deploy/chart-repo/
     refresh: 300
 
 # Configuration database
