@@ -5,15 +5,19 @@ LINE:=$(shell printf '=%.0s' {1..70})
 
 .DEFAULT_GOAL := help
 
+# Get the path to this Makefile. This is used by the help target.
+
+THIS_MAKEFILE := $(lastword $(MAKEFILE_LIST))
+
 # Git hash
 
 GIT_VERSION ?= $(shell git rev-parse --verify --short=8 HEAD)
 
 # Docker registries for building and releasing the image. A different registry
 # can be used to build the image to avoid pushing development versions to the
-# release registry.
+# release registry. This is used by the sdp-prototype CI pipeline.
 
-PREFIX_BUILD ?= registry.gitlab.com/ska-telescope/sdp-prototype
+PREFIX_BUILD ?= nexus.engageska-portugal.pt/sdp-prototype
 PREFIX_RELEASE ?= nexus.engageska-portugal.pt/sdp-prototype
 
 # Image name with prefixes
@@ -77,7 +81,7 @@ help:  ## Show this help
 	@echo "$(CBLUE)LATEST IMAGE $(CEND): $(TAG_LATEST)"
 	@echo "$(CRED)$(LINE)$(CEND)"
 	@echo "Imported targets:"
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' ../make/Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-30s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(THIS_MAKEFILE) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-30s\033[0m %s\n", $$1, $$2}'
 	@echo "Local targets:"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' ./Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-30s\033[0m %s\n", $$1, $$2}'
 

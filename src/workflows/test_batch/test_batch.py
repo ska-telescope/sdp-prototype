@@ -6,9 +6,10 @@ import sys
 import time
 import signal
 import logging
+import ska.logging
 import ska_sdp_config
 
-logging.basicConfig()
+ska.logging.configure_logging()
 LOG = logging.getLogger('test_batch')
 LOG.setLevel(logging.DEBUG)
 

@@ -3,37 +3,33 @@ from pathlib import Path
 from processing_controller import processing_controller
 
 LOG = logging.getLogger(__name__)
-FILE = Path(processing_controller.__file__)
-PRJ_ROOT = str(FILE.parent)
-SDP_ROOT = str(FILE.parent.parent)
-SRC_ROOT = str(FILE.parent.parent.parent)
-SCHEMA = PRJ_ROOT+"/schema/workflows.json"
-WORKFLOW = SRC_ROOT+"/workflows/workflows.json"
-WORK_URL = Path(WORKFLOW).as_uri()
+PC_DIR = Path(processing_controller.__file__).parent
+TEST_DIR = Path(__file__).parent
+SCHEMA = PC_DIR / 'schema' / 'workflows.json'
+WORKFLOWS = TEST_DIR  / 'data' / 'workflows.json'
 
 
-def test_without_json():
-    wf = processing_controller.Workflows("not_there.json")
+def test_with_nonexistent_file():
+    wf = processing_controller.Workflows('not_there.json')
     assert wf.version == {}
 
 
-def test_bad_json():
-    wf = processing_controller.Workflows(PRJ_ROOT+"/workflows.py")
+def test_with_non_json():
+    wf = processing_controller.Workflows(PC_DIR / 'workflows.py')
     assert wf.version == {}
 
 
-def test_with_json():
+def test_with_bad_json():
+    wf = processing_controller.Workflows(WORKFLOWS)
+    assert wf.version == {}
+
+
+def test_before_update():
     wf = processing_controller.Workflows(SCHEMA)
     assert wf.version == {}
 
 
-def test_scan():
+def test_workflows_version():
     wf = processing_controller.Workflows(SCHEMA)
-    wf.update_file(SDP_ROOT+"/examples/scan.json")
-    assert wf.version == {}
-
-
-def test_workflow():
-    wf = processing_controller.Workflows(SCHEMA)
-    wf.update_file(WORKFLOW)
+    wf.update_file(WORKFLOWS)
     assert wf.version['date-time'].startswith('20')
