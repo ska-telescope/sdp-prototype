@@ -68,7 +68,7 @@ entries:
     sources:
     - https://gitlab.com/ska-telescope/sdp-prototype
     urls:
-    - pss-receive-0.1.0.tgz
+    - test-pss-receive-0.1.0.tgz
     version: 0.1.0
   vis-receive:
   - apiVersion: v1
