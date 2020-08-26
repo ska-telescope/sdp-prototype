@@ -3,10 +3,10 @@ entries:
   buffer:
   - apiVersion: v2
     appVersion: 0.1.0
-    created: "2020-08-26T17:16:28.347796+10:00"
+    created: "2020-08-26T18:25:25.318504+10:00"
     description: Helm chart to create an SDP buffer reservation using a persistent
       volume claim
-    digest: b20acbf816ec01ced87fc0005dfc7727859e0a5310398a3198820e1878b885a8
+    digest: 1e5e9121417659fd5051642a6cf5df19c0d926bb2ffb1382882c889ae112cab3
     home: https://developer.skatelescope.org/projects/sdp-prototype/
     icon: http://www.skatelescope.org/wp-content/uploads/2016/07/09545_NEW_LOGO_2014.png
     maintainers:
@@ -22,9 +22,9 @@ entries:
   cbf_sdp_emulator:
   - apiVersion: v1
     appVersion: "1.0"
-    created: "2020-08-26T17:16:28.348198+10:00"
+    created: "2020-08-26T18:25:25.318917+10:00"
     description: A Helm chart to deploy a sender/receiver CBF-SDP emulator example
-    digest: 099cddd495c31bcad3e9ef1c33a6814a39b6710aa790687219977ccea3f164b1
+    digest: 5a271e1690c68da0c2bc3a5b3bf8d54d7423fd8d25c6100b42763f5239d93ce1
     home: https://developer.skatelescope.org/projects/cbf-sdp-emulator
     maintainers:
     - email: rtobar@icrar.org, stephen.ord@csiro.au
@@ -36,9 +36,9 @@ entries:
   daliuge:
   - apiVersion: v1
     appVersion: "1.0"
-    created: "2020-08-26T17:16:28.348503+10:00"
+    created: "2020-08-26T18:25:25.320114+10:00"
     description: A Helm chart to deploy DALiuGE
-    digest: 2e5ab825f51a51517b750b10accae018050e79c4a63fa8161faa69ebde3cc759
+    digest: 3ce6df7e778cfc4b4da6f5cad9d666a9679c8555d7aeb897c57eb7cf62a59710
     home: https://developer.skatelescope.org/projects/sdp-prototype/
     maintainers:
     - email: rtobar@icrar.org
@@ -50,9 +50,9 @@ entries:
   dask:
   - apiVersion: v2
     appVersion: 0.1.0
-    created: "2020-08-26T17:16:28.349504+10:00"
+    created: "2020-08-26T18:25:25.321507+10:00"
     description: Helm chart to deploy SDP Dask execution engine
-    digest: f277a1fc2db7bea2ba331f4198c6eb9117b4fae81ceed5d698bda80cf919bc8f
+    digest: 85055d781990d6ebc8983cdd0309c7fad6715a2d7260dba485ec01669ff7c925
     home: https://developer.skatelescope.org/projects/sdp-prototype/
     icon: http://www.skatelescope.org/wp-content/uploads/2016/07/09545_NEW_LOGO_2014.png
     maintainers:
@@ -70,10 +70,10 @@ entries:
   multicast-example:
   - apiVersion: v1
     appVersion: "1.0"
-    created: "2020-08-26T17:16:28.349875+10:00"
+    created: "2020-08-26T18:25:25.321916+10:00"
     description: A Helm chart that deploys a sender and multiple receivers and send
       data via UDP multicast
-    digest: dcde3ec7bf18fb6e9039d67ab9fbf55b915e20b06ab5412be8a564844b3a55ba
+    digest: 13660a92cc03ab5b89ca81749eb9db41dcdf434a1ef72355b2289bb01d94b7e8
     home: https://developer.skatelescope.org/projects/cbf-sdp-emulator
     maintainers:
     - email: rtobar@icrar.org, stephen.ord@csiro.au
@@ -85,10 +85,10 @@ entries:
   plasma_pipeline:
   - apiVersion: v1
     appVersion: "1.0"
-    created: "2020-08-26T17:16:28.350201+10:00"
+    created: "2020-08-26T18:25:25.323648+10:00"
     description: A Helm chart to deploy a sender/receiver+plasma-writer/plasma-processor
       CBF-SDP emulator example
-    digest: 69d496ac416ccbb879efa08a64a6ef0ea3716667655332dc6dc3852997c11b64
+    digest: beb7f5bf53ceb9a3303a12741966633a5f0040ba038e8d4757b22b13293d55ca
     home: https://developer.skatelescope.org/projects/cbf-sdp-emulator
     maintainers:
     - email: rtobar@icrar.org, stephen.ord@csiro.au
@@ -100,9 +100,9 @@ entries:
   pss-receive:
   - apiVersion: v1
     appVersion: "1.0"
-    created: "2020-08-26T17:16:28.350598+10:00"
+    created: "2020-08-26T18:25:25.323968+10:00"
     description: Helm chart to deploy the SDP Prototype pss receiver execution engine
-    digest: a389553862bd335e0fa9f243bcd94871de2ccdeb8ebe6ff3d2ac5d4b7e73f2ed
+    digest: bc2901b2ef52e0d7ce70f136bb43f669108e41532ae3387ae0f5aac0dfabf665
     home: https://developer.skatelescope.org/projects/sdp-prototype/
     icon: http://www.skatelescope.org/wp-content/uploads/2016/07/09545_NEW_LOGO_2014.png
     maintainers:
@@ -117,10 +117,10 @@ entries:
   vis-receive:
   - apiVersion: v1
     appVersion: "1.0"
-    created: "2020-08-26T17:16:28.350966+10:00"
+    created: "2020-08-26T18:25:25.324296+10:00"
     description: Helm chart to deploy the SDP Prototype visibility receiver execution
       engine
-    digest: 9c2995396733dedeb6d358220d3bd1f9c48b2331132686a5bb58a6c1a95299a9
+    digest: 658ed0bd2622097f6beb97d086168b0e31a61c41ecb352d134db8a9bbd1e0eef
     home: https://developer.skatelescope.org/projects/sdp-prototype/
     icon: http://www.skatelescope.org/wp-content/uploads/2016/07/09545_NEW_LOGO_2014.png
     maintainers:
@@ -135,9 +135,9 @@ entries:
   workflow:
   - apiVersion: v2
     appVersion: 0.1.0
-    created: "2020-08-26T17:16:28.351263+10:00"
+    created: "2020-08-26T18:25:25.324558+10:00"
     description: Helm chart to deploy an SDP workflow
-    digest: de07745faa86384c3617f0b44345033bd12086488ea51d91d1977c63e3d8b372
+    digest: 4f8eb57130233e3fd1687514f5f7b7bdde2011a5ea75bc7edd6cab011d267bbe
     home: https://developer.skatelescope.org/projects/sdp-prototype/
     icon: http://www.skatelescope.org/wp-content/uploads/2016/07/09545_NEW_LOGO_2014.png
     maintainers:
@@ -150,4 +150,4 @@ entries:
     urls:
     - workflow-0.1.0.tgz
     version: 0.1.0
-generated: "2020-08-26T17:16:28.344631+10:00"
+generated: "2020-08-26T18:25:25.317556+10:00"
