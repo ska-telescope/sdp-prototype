@@ -6,7 +6,8 @@
     "date-time": "2020-07-14T02:41:00Z"
   },
   "repositories": [
-    {"name": "nexus", "path": "nexus.engageska-portugal.pt/sdp-prototype"}
+    {"name": "nexus", "path": "nexus.engageska-portugal.pt/sdp-prototype"},
+    {"name": "gitlab", "path": "registry.gitlab.com/ska-telescope/sdp-prototype"}
   ],
   "workflows": [
     {"type": "batch", "id":  "test_batch", "repository": "nexus", "image": "workflow-test-batch", "versions": ["0.2.0"]},
@@ -19,6 +20,6 @@
     {"type": "realtime", "id":  "vis_receive", "repository": "nexus", "image": "workflow-vis-receive", "versions": ["0.2.0"]},
     {"type": "realtime", "id":  "pss_receive", "repository": "nexus", "image": "workflow-pss-receive", "versions": ["0.2.0"]},
     {"type": "realtime", "id":  "test_new_receive", "repository": "nexus", "image": "workflow-test-new-receive", "versions": ["0.1.0"]},
-    {"type": "realtime", "id":  "plasma_pipeline", "repository": "nexus", "image": "workflow-plasma-pipeline", "versions": ["0.1.0-518ca066"]}
+    {"type": "realtime", "id":  "plasma_pipeline", "repository": "gitlab", "image": "workflow-plasma-pipeline", "versions": ["0.1.0-e4652caa"]}
   ]
 }
