@@ -20,6 +20,6 @@
     {"type": "realtime", "id":  "vis_receive", "repository": "nexus", "image": "workflow-vis-receive", "versions": ["0.2.0"]},
     {"type": "realtime", "id":  "pss_receive", "repository": "nexus", "image": "workflow-pss-receive", "versions": ["0.2.0"]},
     {"type": "realtime", "id":  "test_new_receive", "repository": "nexus", "image": "workflow-test-new-receive", "versions": ["0.1.0"]},
-    {"type": "realtime", "id":  "plasma_pipeline", "repository": "gitlab", "image": "workflow-plasma-pipeline", "versions": ["0.1.0-e4652caa"]}
+    {"type": "realtime", "id":  "plasma_pipeline", "repository": "gitlab", "image": "workflow-plasma-pipeline", "versions": ["0.1.0"]}
   ]
 }
