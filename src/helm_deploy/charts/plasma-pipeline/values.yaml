@@ -4,7 +4,7 @@
 cbf_sdp_emulator:
   container: nexus.engageska-portugal.pt/ska-docker/cbf_sdp_emulator
   version: latest
-  imagePullPolicy: IfNotPresent
+  imagePullPolicy: Always
 
 input:
   mountType: hostPath
