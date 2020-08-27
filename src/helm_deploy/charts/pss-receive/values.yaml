@@ -2,7 +2,7 @@ receiver:
         completions: 1
         image: nexus.engageska-portugal.pt/ska-telescope/pss-docker-centos-dev:0.0.0
         command: ["/opt/build/thirdparty/cheetah/src/cheetah-build/cheetah/candidate_pipeline/cheetah_candidate_pipeline"]
-        args: ["-s", "spead", "-p", "empty", "--log-level", "debug", "--config", "/opt/pss-pipeline/configurations/candidate_pipeline_config.xml"]
+        args: ["-h"]
         imagePullPolicy: IfNotPresent
         containerPort: 9021
         protocol: UDP
