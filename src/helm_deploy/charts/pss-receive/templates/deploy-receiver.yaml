@@ -12,6 +12,8 @@ spec:
     spec:
       containers:
       - name: receiver
+        command: {{ .Values.receiver.command }}
+        args: {{ .Values.receiver.args }}
         image: {{ .Values.receiver.image }}
         imagePullPolicy: {{ .Values.receiver.imagePullPolicy }}
         tty: True
