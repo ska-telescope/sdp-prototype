@@ -20,7 +20,7 @@ Feature: SDP Subarray Device
 	#Required commands are present and they have the correct argument type and return type.
 	@XTP-969 @XTP-118 @Current
 	Scenario Outline: Command is present and has correct input and output types
-		Given I have an SDPSubarray Device
+		Given I have an SDPSubarray device
 		When the device is initialised
 		Then the input type of <command> should be <input_type>
 		And the output type of <command> should be <output_type>

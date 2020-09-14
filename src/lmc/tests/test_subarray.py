@@ -35,7 +35,7 @@ scenarios('features/subarray.feature')
 # Given steps: set the initial context of the system
 # -----------------------------------------------------------------------------
 
-@given(parsers.parse('I have an SDPSubarray device'))
+@given('I have an SDPSubarray device', target_fixture='subarray_device')
 def subarray_device(devices):
     """Get the SDPSubarray device proxy.
 
