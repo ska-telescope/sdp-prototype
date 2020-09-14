@@ -2,84 +2,59 @@
 Workflow to test generation of receive addresses.
 
 The purpose of this workflow is to test the mechanism for generating SDP
-receive addresses from the channel link map for each scan type which is
-contained in the list of scan types in the SB. The workflow picks it up
-from there, uses it to generate the receive addresses for each scan type
-and writes them to the processing block state. It consists of a map
-of scan type to a receive address map. This address map get publishes to
-the appropriate attribute once the SDP subarray finishes the transition
-following AssignResources.
+receive addresses from the channel link map contained in the SBI. The workflow
+picks it up from there, uses it to generate the receive addresses for each scan
+type and writes them to the processing block state. The subarray publishes this
+address map on the appropriate attribute to complete the transition following
+AssignResources.
 
 This workflow does not generate any deployments.
 """
 
 import sys
-import logging
 import signal
+import logging
+import ska.logging
 import ska_sdp_config
-import random
 
-logging.basicConfig()
+ska.logging.configure_logging()
 LOG = logging.getLogger('test_receive_addresses')
 LOG.setLevel(logging.DEBUG)
 
 
-def channel_list(channel_link_map):
-    """
-    Generate flat list of channels from the channel link map.
-
-    :param channel_link_map: channel link map.
-    :returns: list of channels.
-    """
-    channels = []
-    i = 0
-    for channel in channel_link_map['channels']:
-        host_incr = i+1
-        channel = dict(
-            numchan=channel['count'],
-            startchan=channel['start'],
-            scan_type=channel_link_map.get('id'),
-            host=host_incr
-        )
-        channels.append(channel)
-
-    return channels
-
-
 def minimal_receive_addresses(channels):
     """
-    Provide a minimal version of the receive addresses.
+    Generate a minimal version of the receive addresses for a single scan type.
 
     :param channels: list of channels
     :returns: receive addresses
+
     """
-
-    host_list = []
-    port_list = []
-    receive_addresses = {}
-    for chan in channels:
-        host_list.append([chan['startchan'], '192.168.0.{}'.format(chan['host'])])
-        port_list.append([chan['startchan'], 9000, 1])
-    receive_addresses[chan['scan_type']] = dict(host=host_list, port=port_list)
-
+    host = []
+    port = []
+    for i, chan in enumerate(channels):
+        start = chan.get('start')
+        host.append([start, '192.168.0.{}'.format(i+1)])
+        port.append([start, 9000, 1])
+    receive_addresses = dict(host=host, port=port)
     return receive_addresses
 
 
 def generate_receive_addresses(scan_types):
     """
-    Generate receive addresses based on channel link map.
+    Generate receive addresses for all scan types.
 
     This function generates a minimal fake response.
-    :param scan_types: scan types from SB
+
+    :param scan_types: scan types from SBI
     :return: receive addresses
+
     """
-
-    receive_addresses_dict = {}
-    for channel_link_map in scan_types:
-        channels = channel_list(channel_link_map)
-        receive_addresses_dict.update(minimal_receive_addresses(channels))
-
-    return receive_addresses_dict
+    receive_addresses = {}
+    for scan_type in scan_types:
+        channels = scan_type.get('channels')
+        receive_addresses[scan_type.get('id')] = minimal_receive_addresses(channels)
+    return receive_addresses
 
 
 def main(argv):
@@ -97,8 +72,8 @@ def main(argv):
         pb = txn.get_processing_block(pb_id)
     LOG.info('Claimed processing block %s', pb_id)
 
-    sb_id = pb.sbi_id
-    LOG.info('SB id: %s', sb_id)
+    sbi_id = pb.sbi_id
+    LOG.info('SBI id: %s', sbi_id)
 
     # Set status to WAITING
     LOG.info('Setting status to WAITING')
@@ -122,46 +97,47 @@ def main(argv):
         state['status'] = 'RUNNING'
         txn.update_processing_block_state(pb_id, state)
 
-    # Get the channel link map from SB
-    LOG.info("Retrieving channel link map from SB")
+    # Get the channel link map from SBI
+    LOG.info('Retrieving channel link map from SBI')
     for txn in config.txn():
-        sb = txn.get_scheduling_block(sb_id)
-        sb_scan_types = sb.get('scan_types')
+        sbi = txn.get_scheduling_block(sbi_id)
+        scan_types = sbi.get('scan_types')
 
     # Generate receive addresses
-    LOG.info("Generating receive addresses")
-    receive_addresses = generate_receive_addresses(sb_scan_types)
+    LOG.info('Generating receive addresses')
+    receive_addresses = generate_receive_addresses(scan_types)
 
     # Update receive addresses in processing block state
-    LOG.info("Updating receive addresses in processing block state")
+    LOG.info('Updating receive addresses in processing block state')
     for txn in config.txn():
         state = txn.get_processing_block_state(pb_id)
         state['receive_addresses'] = receive_addresses
         txn.update_processing_block_state(pb_id, state)
 
-    # Adding pb_id in pb_receive_address in SB
-    LOG.info("Adding PB ID to pb_receive_addresses in SB")
+    # Write pb_id in pb_receive_addresses in SBI
+    LOG.info('Writing PB ID to pb_receive_addresses in SBI')
     for txn in config.txn():
-        sb = txn.get_scheduling_block(sb_id)
-        sb['pb_receive_addresses'] = pb_id
-        txn.update_scheduling_block(sb_id, sb)
+        sbi = txn.get_scheduling_block(sbi_id)
+        sbi['pb_receive_addresses'] = pb_id
+        txn.update_scheduling_block(sbi_id, sbi)
 
     # ... Do some processing here ...
 
-    # Wait until ReleaseResources command is received.
-    LOG.info('Waiting for SB to end')
+    # Wait until SBI is marked as FINISHED or CANCELLED
+    LOG.info('Waiting for SBI to end')
     for txn in config.txn():
-        sb = txn.get_scheduling_block(sb_id)
-        if sb.get('status') == 'FINISHED':
-            LOG.info('SB has ended')
+        sbi = txn.get_scheduling_block(sbi_id)
+        status = sbi.get('status')
+        if status in ['FINISHED', 'CANCELLED']:
+            LOG.info('SBI is %s', status)
             break
         txn.loop(wait=True)
 
-    # Set state to indicate processing is finished
-    LOG.info('Setting status to FINISHED')
+    # Set state to indicate processing has ended
+    LOG.info('Setting status to %s', status)
     for txn in config.txn():
         state = txn.get_processing_block_state(pb_id)
-        state['status'] = 'FINISHED'
+        state['status'] = status
         txn.update_processing_block_state(pb_id, state)
 
     # Close connection to config DB
@@ -169,8 +145,9 @@ def main(argv):
     config.close()
 
 
-def terminate(signal, frame):
+def terminate(signal_, frame):
     """Terminate the program."""
+    # pylint: disable=unused-argument
     LOG.info('Asked to terminate')
     sys.exit(0)
 

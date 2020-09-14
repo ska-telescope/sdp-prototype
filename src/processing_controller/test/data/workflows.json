@@ -1,0 +1,15 @@
+{
+  "about": [
+    "SDP Processing Controller workflow image definitions"
+  ],
+  "version": {
+    "date-time": "2020-04-25T15:00:00Z"
+  },
+  "repositories": [
+    {"name": "nexus", "path": "nexus.engageska-portugal.pt/sdp-prototype"}
+  ],
+  "workflows": [
+    {"type": "batch", "id":  "test_batch", "repository": "nexus", "image": "workflow-test-batch", "versions": ["0.2.1"]},
+    {"type": "realtime", "id":  "test_realtime", "repository": "nexus", "image": "workflow-test-realtime", "versions": ["0.2.1"]}
+  ]
+}
