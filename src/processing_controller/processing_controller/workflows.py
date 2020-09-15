@@ -6,8 +6,10 @@ import json
 import logging
 import requests
 import jsonschema
+from ska.logging import configure_logging
 
-LOG = logging.getLogger('processing_controller')
+configure_logging()
+LOG = logging.getLogger(__name__)
 
 
 class Workflows:

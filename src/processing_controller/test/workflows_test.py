@@ -6,7 +6,7 @@ LOG = logging.getLogger(__name__)
 PC_DIR = Path(processing_controller.__file__).parent
 TEST_DIR = Path(__file__).parent
 SCHEMA = PC_DIR / 'schema' / 'workflows.json'
-WORKFLOWS = TEST_DIR  / 'data' / 'workflows.json'
+WORKFLOWS = TEST_DIR / 'data' / 'workflows.json'
 
 
 def test_with_nonexistent_file():

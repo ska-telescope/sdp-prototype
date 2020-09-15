@@ -2,10 +2,11 @@ import os
 import re
 import time
 import logging
+
 import ska_sdp_config
 from .workflows import Workflows
 
-LOG = logging.getLogger('processing_controller')
+LOG = logging.getLogger(__name__)
 
 # Regular expression to match processing block ID as substring
 _RE_PB = 'pb(-[0-9a-zA-Z]*){3}'

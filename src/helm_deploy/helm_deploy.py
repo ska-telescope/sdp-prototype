@@ -37,7 +37,7 @@ CHART_REPO_LIST = [
 
 # Initialise logger.
 configure_logging(level=LOG_LEVEL)
-log = logging.getLogger('helm_deploy')
+log = logging.getLogger(__name__)
 
 
 def invoke(*cmd_line):
