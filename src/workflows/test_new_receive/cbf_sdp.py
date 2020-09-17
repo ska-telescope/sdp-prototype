@@ -28,7 +28,7 @@ def main(argv):
 
     # Deploy Vis Receive with 1 worker.
     log.info("Deploying CBF-SDP Receive Workflow...")
-    deploy_id = 'proc-{}'.format(pb.id)
+    deploy_id = 'proc-{}-cbf-sdp-emulator'.format(pb.id)
     deploy = ska_sdp_config.Deployment(
         deploy_id, "helm", {
             'chart': 'cbf-sdp-emulator',  # Helm chart deploy from the repo

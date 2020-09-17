@@ -28,7 +28,7 @@ def main(argv):
 
     # Deploy Plasma Pipeline.
     log.info("Deploying CBF-SDP Plama Receive Workflow...")
-    deploy_id = 'proc-{}'.format(pb.id)
+    deploy_id = 'proc-{}-plasma-pipeline'.format(pb.id)
     deploy = ska_sdp_config.Deployment(
         deploy_id, "helm", {
             'chart': 'plasma-pipeline',  # Helm chart deploy from the repo
