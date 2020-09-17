@@ -22,7 +22,7 @@ scenarios('features/master.feature')
 # Given steps
 # -----------
 
-@given('I have an SDPMaster device')
+@given('I have an SDPMaster device', target_fixture='master_device')
 def master_device(devices):
     """Get the SDPMaster device proxy.
 

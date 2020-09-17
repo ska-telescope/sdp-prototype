@@ -1,11 +1,11 @@
-"""Device attributes."""
+"""Device attribute values."""
 
 import enum
 
 
 @enum.unique
 class AdminMode(enum.IntEnum):
-    """AdminMode enum."""
+    """Administration mode attribute values."""
 
     OFFLINE = 0
     ONLINE = 1
@@ -16,7 +16,7 @@ class AdminMode(enum.IntEnum):
 
 @enum.unique
 class HealthState(enum.IntEnum):
-    """HealthState enum."""
+    """Health state attribute values."""
 
     OK = 0
     DEGRADED = 1
@@ -26,7 +26,7 @@ class HealthState(enum.IntEnum):
 
 @enum.unique
 class ObsState(enum.IntEnum):
-    """ObsState enum."""
+    """Observing state attribute values."""
 
     EMPTY = 0
     RESOURCING = 1
