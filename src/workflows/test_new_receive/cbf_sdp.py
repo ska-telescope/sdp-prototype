@@ -31,7 +31,7 @@ def main(argv):
     deploy_id = 'proc-{}'.format(pb.id)
     deploy = ska_sdp_config.Deployment(
         deploy_id, "helm", {
-            'chart': 'cbf_sdp_emulator',  # Helm chart deploy from the repo
+            'chart': 'cbf-sdp-emulator',  # Helm chart deploy from the repo
         })
     for txn in config.txn():
         txn.create_deployment(deploy)
