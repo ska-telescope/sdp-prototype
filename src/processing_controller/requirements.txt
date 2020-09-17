@@ -1,3 +1,5 @@
+--index-url https://nexus.engageska-portugal.pt/repository/pypi/simple
+--extra-index-url https://pypi.org/simple
 jsonschema
 requests
 ska-sdp-config >= 0.0.9
