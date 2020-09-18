@@ -25,8 +25,7 @@ def main(argv):
 
     # Claim processing block
     LOG.info("Claim processing block")
-    sbi_id = workflow.claim_processing_block(pb_id)
-    LOG.info(sbi_id)
+    workflow.claim_processing_block(pb_id)
 
     # Resource Request
     LOG.info("Resource Request")
@@ -38,8 +37,8 @@ def main(argv):
 
     # ... Do some processing here ...
 
-    LOG.info("Monitoring SBI")
-    workflow.monitor_sbi(sbi_id, pb_id)
+    # LOG.info("Monitoring SBI")
+    # workflow.monitor_sbi(sbi_id, pb_id)
 
 
 def terminate(signal, frame):

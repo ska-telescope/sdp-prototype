@@ -186,7 +186,7 @@ An example of the argument is below. Note that:
         },
         {
           "id": "pb-mvp01-20200425-00001",
-          "workflow": {"type": "realtime", "id": "test_realtime", "version": "0.2.1-1a9507a1"},
+          "workflow": {"type": "realtime", "id": "test_realtime", "version": "0.2.11-1a9507a1"},
           "parameters": {}
         },
         {
