@@ -1,0 +1,44 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "cbf_sdp_emulator.fullname" . }}-send-recv
+  namespace: {{ .Release.Namespace }}
+  labels:
+{{ include "cbf_sdp_emulator.labels" . | indent 4 }}
+spec:
+  completions: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "cbf_sdp_emulator.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      restartPolicy: {{ .Values.cbf_sdp_emulator.restartPolicy }}
+      containers:
+      - image: {{ .Values.cbf_sdp_emulator.container }}:{{ .Values.cbf_sdp_emulator.version }}
+        imagePullPolicy: {{ .Values.cbf_sdp_emulator.imagePullPolicy }}
+        name: receiver
+        command: ["emu-recv", "-o", "transmission.channels_per_stream=4", "-o", "reception.datamodel=/mnt/input.ms", "-o", "reception.outputfilename=/mnt/output.ms"]
+        volumeMounts:
+        - mountPath: /mnt
+          name: task-pv-storage
+        {{- with .Values.receiver.resources }}
+        resources:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+      - image: {{ .Values.cbf_sdp_emulator.container }}:{{ .Values.cbf_sdp_emulator.version }}
+        imagePullPolicy: {{ .Values.cbf_sdp_emulator.imagePullPolicy }}
+        name: sender
+        command: ["emu-send", "/mnt/input.ms", "-o", "transmission.channels_per_stream=4", "-o", "transmission.rate=147000"]
+        volumeMounts:
+        - mountPath: /mnt
+          name: task-pv-storage
+        {{- with .Values.sender.resources }}
+        resources:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+      volumes:
+      - name: task-pv-storage
+        persistentVolumeClaim:
+            claimName: task-pv-claim
+  backoffLimit: 1
