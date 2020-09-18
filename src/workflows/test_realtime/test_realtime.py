@@ -8,6 +8,8 @@ import logging
 
 import ska_sdp_workflow
 
+# from .workflow_lib import Workflow
+
 LOG = logging.getLogger('test_realtime')
 LOG.setLevel(logging.DEBUG)
 
@@ -19,10 +21,12 @@ def main(argv):
 
     # Workflow library
     workflow = ska_sdp_workflow.Workflow()
+    # workflow = ska_sdp_workflow.Workflow()
 
     # Claim processing block
     LOG.info("Claim processing block")
     sbi_id = workflow.claim_processing_block(pb_id)
+    LOG.info(sbi_id)
 
     # Resource Request
     LOG.info("Resource Request")
