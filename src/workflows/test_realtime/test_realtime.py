@@ -19,10 +19,6 @@ def main(argv):
     # Workflow library
     workflow = ska_sdp_workflow.Workflow()
 
-    # Test function
-    value = workflow.func_test()
-    LOG.info(value)
-
     # Claim processing block
     LOG.info("Claim processing block")
     sbi_id = workflow.claim_processing_block(pb_id)
