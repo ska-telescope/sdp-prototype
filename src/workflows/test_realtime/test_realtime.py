@@ -5,7 +5,6 @@ Workflow to test real-time processing.
 import sys
 import signal
 import logging
-
 import ska_sdp_workflow
 
 LOG = logging.getLogger('test_realtime')
@@ -19,7 +18,6 @@ def main(argv):
 
     # Workflow library
     workflow = ska_sdp_workflow.Workflow()
-    # workflow = ska_sdp_workflow.Workflow()
 
     # Test function
     value = workflow.func_test()
@@ -28,20 +26,19 @@ def main(argv):
     # Claim processing block
     LOG.info("Claim processing block")
     sbi_id = workflow.claim_processing_block(pb_id)
-    LOG.info(sbi_id)
-    #
-    # # Resource Request
-    # LOG.info("Resource Request")
-    # workflow.resource_request(pb_id)
-    #
-    # # Process started
-    # LOG.info("Process started")
-    # workflow.process_started(pb_id)
+
+    # Resource Request
+    LOG.info("Resource Request")
+    workflow.resource_request(pb_id)
+
+    # Process started
+    LOG.info("Process started")
+    workflow.process_started(pb_id)
 
     # ... Do some processing here ...
 
-    # LOG.info("Monitoring SBI")
-    # workflow.monitor_sbi(sbi_id, pb_id)
+    LOG.info("Monitoring SBI")
+    workflow.monitor_sbi(sbi_id, pb_id)
 
 
 def terminate(signal, frame):
