@@ -2,4 +2,4 @@
 --extra-index-url https://pypi.org/simple
 ska-logging
 ska-sdp-config >= 0.0.11
-ska-sdp-workflow==0.0.1+dev.024a073a
+ska-sdp-workflow==0.0.1+dev.1bdd7894
