@@ -24,7 +24,8 @@ def main(argv):
 
     # Claim processing block
     LOG.info("Claim processing block")
-    sbi_id, pb = workflow.claim_processing_block(pb_id)
+    sbi_id = workflow.claim_processing_block(pb_id)
+    LOG.info(sbi_id)
 
     # Get parameter and parse it
     duration = workflow.get_parameters(pb_id)
