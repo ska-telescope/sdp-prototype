@@ -1,0 +1,22 @@
+# Default values for CBF-SDP emulator
+# Declare variables to be passed into your templates.
+
+cbf_sdp_emulator:
+  container: nexus.engageska-portugal.pt/ska-docker/cbf_sdp_emulator
+  version: latest
+  imagePullPolicy: Always
+
+input:
+  mountType: hostPath
+  mountTypeOptions:
+     type: Directory
+     path: /tmp/input.ms
+
+sender:
+  resources: {}
+
+receiver:
+  resources: {}
+
+nameOverride: ""
+fullnameOverride: ""
