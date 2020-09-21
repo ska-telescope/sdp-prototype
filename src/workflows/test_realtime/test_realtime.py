@@ -5,8 +5,10 @@ Workflow to test real-time processing.
 import sys
 import signal
 import logging
+import ska.logging
 import ska_sdp_workflow
 
+ska.logging.configure_logging()
 LOG = logging.getLogger('test_realtime')
 LOG.setLevel(logging.DEBUG)
 

@@ -7,7 +7,7 @@ import time
 import signal
 import logging
 import ska.logging
-import ska_sdp_config
+import ska_sdp_workflow
 
 ska.logging.configure_logging()
 LOG = logging.getLogger('test_batch')
@@ -19,61 +19,22 @@ def main(argv):
     pb_id = argv[0]
     LOG.info('PB id: %s', pb_id)
 
-    # Get connection to config DB
-    LOG.info('Opening connection to config DB')
-    config = ska_sdp_config.Config()
+    # Workflow library
+    workflow = ska_sdp_workflow.Workflow()
 
     # Claim processing block
-    for txn in config.txn():
-        txn.take_processing_block(pb_id, config.client_lease)
-        pb = txn.get_processing_block(pb_id)
-    LOG.info('Claimed processing block')
+    LOG.info("Claim processing block")
+    sbi_id, pb = workflow.claim_processing_block(pb_id)
 
     # Get parameter and parse it
-    duration = pb.parameters.get('duration')
-    if duration is None:
-        duration = 60.0
-    LOG.info('duration: %f s', duration)
+    duration = workflow.get_parameters(pb_id)
 
-    # Set state to indicate workflow is waiting for resources
-    LOG.info('Setting status to WAITING')
-    for txn in config.txn():
-        state = txn.get_processing_block_state(pb_id)
-        state['status'] = 'WAITING'
-        txn.update_processing_block_state(pb_id, state)
+    # Resource Request
+    LOG.info("Resource Request")
+    workflow.resource_request(pb_id)
 
-    # Wait for resources_available to be true
-    LOG.info('Waiting for resources to be available')
-    for txn in config.txn():
-        state = txn.get_processing_block_state(pb_id)
-        ra = state.get('resources_available')
-        if ra is not None and ra:
-            LOG.info('Resources are available')
-            break
-        txn.loop(wait=True)
-
-    # Set state to indicate workflow is running
-    LOG.info('Setting status to RUNNING')
-    for txn in config.txn():
-        state = txn.get_processing_block_state(pb_id)
-        state['status'] = 'RUNNING'
-        txn.update_processing_block_state(pb_id, state)
-
-    # Do some 'processing' for the required duration
-    LOG.info('Starting processing for %f s', duration)
-    time.sleep(duration)
-    LOG.info('Finished processing')
-
-    # Set state to indicate processing has ended
-    LOG.info('Setting status to FINISHED')
-    for txn in config.txn():
-        state = txn.get_processing_block_state(pb_id)
-        state['status'] = 'FINISHED'
-        txn.update_processing_block_state(pb_id, state)
-
-    # Close connection to config DB
-    LOG.info('Closing connection to config DB')
-    config.close()
+    LOG.info("Monitoring SBI")
+    workflow.monitor_sbi_batch(pb_id, duration)
 
 
 def terminate(signal, frame):

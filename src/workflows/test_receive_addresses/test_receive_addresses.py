@@ -14,9 +14,10 @@ This workflow does not generate any deployments.
 import sys
 import signal
 import logging
-import ska_sdp_config
+import ska.logging
 import ska_sdp_workflow
 
+ska.logging.configure_logging()
 LOG = logging.getLogger('test_receive_addresses')
 LOG.setLevel(logging.DEBUG)
 
