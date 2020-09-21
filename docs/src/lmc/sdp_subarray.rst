@@ -181,17 +181,17 @@ An example of the argument is below. Note that:
       "processing_blocks": [
         {
           "id": "pb-mvp01-20200425-00000",
-          "workflow": {"type": "realtime", "id": "test_receive_addresses", "version": "0.3.3-3f3e2822"},
+          "workflow": {"type": "realtime", "id": "test_receive_addresses", "version": "0.3.3-943e2e78"},
           "parameters": {}
         },
         {
           "id": "pb-mvp01-20200425-00001",
-          "workflow": {"type": "realtime", "id": "test_realtime", "version": "0.2.1-3f3e2822"},
+          "workflow": {"type": "realtime", "id": "test_realtime", "version": "0.2.1-943e2e78"},
           "parameters": {}
         },
         {
           "id": "pb-mvp01-20200425-00002",
-          "workflow": {"type": "batch", "id": "test_batch", "version": "0.2.1-22a3b716"},
+          "workflow": {"type": "batch", "id": "test_batch", "version": "0.2.1-943e2e78"},
           "parameters": {},
           "dependencies": [
             {"pb_id": "pb-mvp01-20200425-00000", "type": ["visibilities"]}
@@ -199,7 +199,7 @@ An example of the argument is below. Note that:
         },
         {
           "id": "pb-mvp01-20200425-00003",
-          "workflow": {"type": "batch", "id": "test_batch", "version": "0.2.1-22a3b716"},
+          "workflow": {"type": "batch", "id": "test_batch", "version": "0.2.1-943e2e78"},
           "parameters": {},
           "dependencies": [
             {"pb_id": "pb-mvp01-20200425-00002", "type": ["calibration"]}
