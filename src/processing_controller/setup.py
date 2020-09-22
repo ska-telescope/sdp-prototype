@@ -23,7 +23,7 @@ setuptools.setup(
         'jsonschema',
         'requests',
         'ska-sdp-config>=0.0.9',
-        'ska_logging>=0.3'
+        'ska-logging>=0.3'
     ],
     setup_requires=['pytest-runner'],
     tests_require=[
