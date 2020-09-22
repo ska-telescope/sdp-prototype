@@ -63,6 +63,7 @@ class TangoFilter(logging.Filter):
     This is partially redundant from Python 3.8 as the logging module
     then supports a "stacklevel" keyword.
     """
+
     tags = ()
 
     def __init__(self, *tags):
@@ -72,9 +73,16 @@ class TangoFilter(logging.Filter):
         self.log_man = LogManager()
 
     def filter(self, record: logging.LogRecord) -> bool:
+        """
+        Modify the stack info if necessary.
+
+        :param record: log record
+        :return: true if record should be logged (always)
+        """
         record.tags = ','.join(TangoFilter.tags)
 
-        # If the record originates from this module, insert the right frame info.
+        # If the record originates from this module, insert the
+        # right frame info.
         if record.pathname == __file__:
             thread = threading.current_thread()
             # The thread should be in the dictionary, but may not be if the
@@ -90,6 +98,7 @@ class TangoFilter(logging.Filter):
 def set_level(level: tango.LogLevel) -> None:
     """
     Set log level after initialisation.
+
     :param level: tango level to log
     """
     logging.getLogger().setLevel(to_python_level(level))
