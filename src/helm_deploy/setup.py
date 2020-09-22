@@ -22,7 +22,7 @@ setuptools.setup(
     install_requires=[
         'python-dotenv',
         'ska-sdp-config>=0.0.9',
-        'ska-sdp-logging>=0.0.6'
+        'ska-logging>=0.3'
     ],
     setup_requires=['pytest-runner'],
     tests_require=[

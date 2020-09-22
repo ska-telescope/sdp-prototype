@@ -7,7 +7,7 @@ import logging
 import requests
 import jsonschema
 
-LOG = logging.getLogger('processing_controller')
+LOG = logging.getLogger(__name__)
 
 
 class Workflows:

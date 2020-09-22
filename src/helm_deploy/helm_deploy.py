@@ -7,13 +7,14 @@ the SDP configuration.
 
 # pylint: disable=C0103
 
+import logging
 import os
 import time
 import subprocess
 import signal
 import shutil
 import ska_sdp_config
-from ska_sdp_logging import core_logging
+from ska.logging import configure_logging
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -21,7 +22,8 @@ load_dotenv()
 HELM = shutil.which(os.getenv('SDP_HELM', 'helm'))
 HELM_TIMEOUT = int(os.getenv('SDP_HELM_TIMEOUT', '300'))
 NAMESPACE = os.getenv('SDP_HELM_NAMESPACE', 'sdp')
-CHART_REPO_URL = os.getenv('SDP_CHART_REPO_URL', 'https://gitlab.com/ska-telescope/sdp-prototype/-/raw/master/src/helm_deploy/chart-repo/')
+CHART_REPO_URL = os.getenv('SDP_CHART_REPO_URL',
+                           'https://gitlab.com/ska-telescope/sdp-prototype/-/raw/master/src/helm_deploy/chart-repo/')
 CHART_REPO_REFRESH = int(os.getenv('SDP_CHART_REPO_REFRESH', '300'))
 LOG_LEVEL = os.getenv('SDP_LOG_LEVEL', 'DEBUG')
 
@@ -33,8 +35,9 @@ CHART_REPO_LIST = [
     ('dask', 'https://helm.dask.org/')
 ]
 
-# Initialise logger
-log = core_logging.init(name='helm_deploy', level=LOG_LEVEL)
+# Initialise logger.
+configure_logging(level=LOG_LEVEL)
+log = logging.getLogger(__name__)
 
 
 def invoke(*cmd_line):
