@@ -6,9 +6,7 @@ import json
 import logging
 import requests
 import jsonschema
-from ska.logging import configure_logging
 
-configure_logging()
 LOG = logging.getLogger(__name__)
 
 

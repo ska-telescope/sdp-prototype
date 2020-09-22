@@ -52,7 +52,7 @@ class ProcessingController:
         :param txn:
         """
         pb_ids = txn.list_processing_blocks()
-        logging.info("ids {}".format(pb_ids))
+        LOG.info("ids {}".format(pb_ids))
 
         for pb_id in pb_ids:
             state = txn.get_processing_block_state(pb_id)

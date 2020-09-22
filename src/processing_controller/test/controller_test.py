@@ -1,10 +1,14 @@
 import os
+import logging
 
+from ska.logging import configure_logging
 from processing_controller import processing_controller
-from processing_controller.workflows import LOG
 
 import ska_sdp_config
 import workflows_test
+
+configure_logging()
+LOG = logging.getLogger(__name__)
 
 os.environ['SDP_CONFIG_BACKEND'] = 'memory'
 os.environ['SDP_CONFIG_HOST'] = 'localhost'
