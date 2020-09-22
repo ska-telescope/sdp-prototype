@@ -2,14 +2,11 @@
 
 # pylint: disable=redefined-outer-name
 
-import logging
 import pytest
 
 from tango.test_context import MultiDeviceTestContext
 
 from ska_sdp_lmc import SDPMaster, SDPSubarray, subarray
-
-logging.basicConfig(level=logging.DEBUG)
 
 # Use the config DB memory backend in the subarray. This will be overridden if
 # the TOGGLE_CONFIG_DB environment variable is set to 1.

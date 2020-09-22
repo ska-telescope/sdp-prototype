@@ -1,4 +1,6 @@
+--index-url https://nexus.engageska-portugal.pt/repository/pypi/simple
+--extra-index-url https://pypi.org/simple
 pytango
 jsonschema
 ska-sdp-config >= 0.0.11
-ska-sdp-logging >= 0.0.6
+ska_logging >= 0.3

@@ -34,7 +34,7 @@ setup(
         'pytango',
         'jsonschema',
         'ska-sdp-config>=0.0.11',
-        'ska-sdp-logging>=0.0.6'
+        'ska-logging>=0.3'
     ],
     entry_points={
         'console_scripts': ['SDPMaster = ska_sdp_lmc.master:main',

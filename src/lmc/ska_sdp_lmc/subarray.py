@@ -19,9 +19,9 @@ import jsonschema
 from tango import AttrWriteType, DevState, LogLevel, EnsureOmniThread
 from tango.server import attribute, command, run
 
-from ska_sdp_logging import tango_logging
 import ska_sdp_config
 
+from . import tango_logging
 from .attributes import AdminMode, HealthState, ObsState
 from .base import SDPDevice
 from .util import terminate, log_command, log_lines
@@ -34,6 +34,7 @@ MSG_CONFIG_STR = 'Configuration string:'
 MSG_VALIDATION_FAILED = 'Configuration validation failed'
 MSG_DUPLICATE_ID = 'Duplicate SBI ID or PB ID in configuration'
 
+tango_logging.configure(device_name='SDPSubarray')
 LOG = logging.getLogger('ska_sdp_lmc')
 
 
@@ -899,8 +900,7 @@ def main(args=None, **kwargs):
     log_level = LogLevel.LOG_INFO
     if len(sys.argv) > 2 and '-v' in sys.argv[2]:
         log_level = LogLevel.LOG_DEBUG
-    tango_logging.init(name=LOG.name, device_name='SDPSubarray',
-                       level=log_level)
+    tango_logging.set_level(log_level)
 
     # Register SIGTERM handler.
     signal.signal(signal.SIGTERM, terminate)

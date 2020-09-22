@@ -7,12 +7,12 @@ import logging
 from tango import AttrWriteType, DevState, LogLevel
 from tango.server import attribute, command, run
 
-from ska_sdp_logging import tango_logging
-
+from . import tango_logging
 from .attributes import HealthState
 from .base import SDPDevice
 from .util import terminate, log_command
 
+tango_logging.configure(device_name='SDPMaster')
 LOG = logging.getLogger('ska_sdp_lmc')
 
 
@@ -127,8 +127,7 @@ def main(args=None, **kwargs):
     log_level = LogLevel.LOG_INFO
     if len(sys.argv) > 2 and '-v' in sys.argv[2]:
         log_level = LogLevel.LOG_DEBUG
-    tango_logging.init(name=LOG.name, device_name='SDPMaster',
-                       level=log_level)
+    tango_logging.set_level(log_level)
 
     # Register SIGTERM handler
     signal.signal(signal.SIGTERM, terminate)

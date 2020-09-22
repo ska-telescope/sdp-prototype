@@ -1,11 +1,34 @@
 """Utilities."""
 
 import functools
+import inspect
 import logging
+import pathlib
 import sys
 from typing import Callable
 
 LOG = logging.getLogger('ska_sdp_lmc')
+
+
+# This is to find the stack info of the caller, not the one in this module.
+# For some reason the device subclass is not always in the stack when run from
+# BDD and the test class is found instead (might be ok).
+class _CallerFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        if record.pathname == __file__:
+            frames = inspect.stack()
+            for frame in frames:
+                if frame.filename == __file__:
+                    continue
+                if 'lmc' in frame.filename:
+                    break
+            record.funcName = frame.function
+            record.filename = pathlib.Path(frame.filename).name
+            record.lineno = frame.lineno
+        return True
+
+
+LOG.addFilter(_CallerFilter())
 
 
 def terminate(signame, frame):
