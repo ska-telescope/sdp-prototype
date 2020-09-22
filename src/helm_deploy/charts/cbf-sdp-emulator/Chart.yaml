@@ -1,0 +1,9 @@
+apiVersion: v1
+appVersion: "1.0"
+description: A Helm chart to deploy a sender/receiver CBF-SDP emulator example
+name: cbf-sdp-emulator
+version: 0.1.0
+home: https://developer.skatelescope.org/projects/cbf-sdp-emulator
+maintainers:
+- name: Rodrigo Tobar, Steve Ord
+  email: rtobar@icrar.org, stephen.ord@csiro.au

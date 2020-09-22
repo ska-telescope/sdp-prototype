@@ -1,0 +1,69 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "plasma_pipeline.fullname" . }}-plasma
+  namespace: {{ .Release.Namespace }}
+  labels:
+{{ include "plasma_pipeline.labels" . | indent 4 }}
+spec:
+  completions: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "plasma_pipeline.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      restartPolicy: Never
+      containers:
+      - image: {{ .Values.cbf_sdp_emulator.container }}:{{ .Values.cbf_sdp_emulator.version }}
+        imagePullPolicy: {{ .Values.cbf_sdp_emulator.imagePullPolicy }}
+        name: plasma-store
+        command: ["/usr/local/bin/plasma_store", "-s", "/plasma/socket", "-m", "10000000"]
+        volumeMounts:
+        - mountPath: /plasma
+          name: plasma-storage-volume
+      - image: {{ .Values.cbf_sdp_emulator.container }}:{{ .Values.cbf_sdp_emulator.version }}
+        imagePullPolicy: {{ .Values.cbf_sdp_emulator.imagePullPolicy }}
+        name: sender
+        command: ["emu-send", "/mnt/input.ms", "-o", "transmission.channels_per_stream=4", "-o", "transmission.rate=147000"]
+        volumeMounts:
+        - mountPath: /mnt
+          name: task-pv-storage
+        {{- with .Values.sender.resources }}
+        resources:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+      - image: {{ .Values.cbf_sdp_emulator.container }}:{{ .Values.cbf_sdp_emulator.version }}
+        imagePullPolicy: {{ .Values.cbf_sdp_emulator.imagePullPolicy }}
+        name: receiver-with-plasma-writer
+        command: ["emu-recv", "-o", "transmission.channels_per_stream=4", "-o", "reception.datamodel=/mnt/input.ms", "-o", "reception.consumer=plasma_writer", "-o", "reception.plasma_path=/plasma/socket"]
+        volumeMounts:
+        - mountPath: /plasma
+          name: plasma-storage-volume
+        - mountPath: /mnt
+          name: task-pv-storage
+        {{- with .Values.receiver.resources }}
+        resources:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+      - image: {{ .Values.cbf_sdp_emulator.container }}:{{ .Values.cbf_sdp_emulator.version }}
+        imagePullPolicy: {{ .Values.cbf_sdp_emulator.imagePullPolicy }}
+        name: plasma-processor
+        command: ["plasma-mswriter", "-v", "-s", "/plasma/socket", "/mnt/output.ms"]
+        volumeMounts:
+        - mountPath: /plasma
+          name: plasma-storage-volume
+        - mountPath: /mnt
+          name: task-pv-storage
+        {{- with .Values.receiver.resources }}
+        resources:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+      volumes:
+      - name: task-pv-storage
+        persistentVolumeClaim:
+            claimName: task-pv-claim
+      - name: plasma-storage-volume
+        emptyDir:
+          medium: Memory
+  backoffLimit: 1
