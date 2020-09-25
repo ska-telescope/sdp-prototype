@@ -8,7 +8,7 @@ feature:
 # Helm deployment controller
 helm_deploy:
   image: nexus.engageska-portugal.pt/sdp-prototype/helm-deploy
-  version: 0.6.0
+  version: 0.7.0
   imagePullPolicy: IfNotPresent
   replicas: 1
   namespace: sdp
@@ -33,7 +33,7 @@ dsconfig:
 # Processing controller
 processing_controller:
   image: nexus.engageska-portugal.pt/sdp-prototype/processing-controller
-  version: 0.6.0
+  version: 0.7.0
   replicas: 1
   resources: {}
   imagePullPolicy: IfNotPresent

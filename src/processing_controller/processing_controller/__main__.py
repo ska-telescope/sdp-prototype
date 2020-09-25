@@ -4,7 +4,8 @@ SDP Processing Controller main
 import os
 import sys
 import signal
-from ska_sdp_logging import core_logging
+import logging
+from ska.logging import configure_logging
 from . import ProcessingController
 
 LOG_LEVEL = os.getenv('SDP_LOG_LEVEL', 'DEBUG')
@@ -15,7 +16,8 @@ WORKFLOWS_REFRESH = int(os.getenv('SDP_WORKFLOWS_REFRESH', '300'))
 WORKFLOWS_SCHEMA = os.path.join(os.path.dirname(__file__), 'schema',
                                 'workflows.json')
 
-LOG = core_logging.init(name='processing_controller', level=LOG_LEVEL)
+configure_logging(level=LOG_LEVEL)
+LOG = logging.getLogger(__name__)
 
 
 def terminate(signal, frame):
